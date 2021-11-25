@@ -1,26 +1,26 @@
-package address_provider
+package credit_manager
 
 import (
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/core"
 )
 
-type AddressProvider struct {
+type CreditManager struct {
 	*core.SyncAdapter
 	*core.State
 }
 
-func NewAddressProvider(addr string, client *ethclient.Client, repo core.RepositoryI) *AddressProvider {
-	obj := &AddressProvider{
+func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
+	obj := &CreditManager{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "AddressProvider",
+			Type: "CreditManager",
 			Address: addr,
 			Client: client,
 		},
 		State: &core.State{Repo: repo},
 	}
-	firstDetection:= obj.DiscoverFirstLog()
-	obj.SyncAdapter.DiscoveredAt = firstDetection
+	firstDetection := obj.DiscoverFirstLog()
+	obj.SyncAdapter.DiscoveredAt = discoveredAt
 	obj.SyncAdapter.FirstLogAt = firstDetection
 	obj.SyncAdapter.LastSync = firstDetection
 	return obj

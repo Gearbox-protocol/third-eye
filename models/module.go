@@ -14,4 +14,3 @@ import (
 var Module = fx.Option(
 	fx.Provide(address_provider.NewAddressProvider),
 )
- 

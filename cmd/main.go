@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/gearscan/config"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/repository"
+	"github.com/Gearbox-protocol/gearscan/core" 
 	"github.com/Gearbox-protocol/gearscan/engine" 
 	"github.com/Gearbox-protocol/gearscan/models" 
 	"github.com/Gearbox-protocol/gearscan/log"
@@ -20,7 +21,7 @@ import (
 	"time" 
 )
  
-func StartServer(lc fx.Lifecycle, engine engine.EngineI) {
+func StartServer(lc fx.Lifecycle, engine core.EngineI) {
 
 	// Starting server
 	lc.Append(fx.Hook{
@@ -32,7 +33,6 @@ func StartServer(lc fx.Lifecycle, engine engine.EngineI) {
 			// In production, we'd want to separate the Listen and Serve phases for
 			// better error-handling.
 			go func() {
-				log.Info("harsh")
 				engine.Sync()	
 			}()			
 			return nil

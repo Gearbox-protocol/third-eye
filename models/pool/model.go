@@ -1,27 +1,31 @@
-package address_provider
+package pool
 
 import (
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-type AddressProvider struct {
+type Pool struct {
 	*core.SyncAdapter
 	*core.State
 }
 
-func NewAddressProvider(addr string, client *ethclient.Client, repo core.RepositoryI) *AddressProvider {
-	obj := &AddressProvider{
+func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
+	obj := &Pool{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "AddressProvider",
+			Type: "Pool",
 			Address: addr,
 			Client: client,
 		},
 		State: &core.State{Repo: repo},
 	}
-	firstDetection:= obj.DiscoverFirstLog()
-	obj.SyncAdapter.DiscoveredAt = firstDetection
+	firstDetection := obj.DiscoverFirstLog()
+	obj.SyncAdapter.DiscoveredAt = discoveredAt
 	obj.SyncAdapter.FirstLogAt = firstDetection
 	obj.SyncAdapter.LastSync = firstDetection
 	return obj
+}
+
+func (mdl *Pool) OnLog(txLog types.Log){
 }

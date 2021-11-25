@@ -1,19 +1,20 @@
-package address_provider
+package acl
 
 import (
-	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/ethclient"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-type AddressProvider struct {
+type ACL struct {
 	*core.SyncAdapter
 	*core.State
 }
 
-func NewAddressProvider(addr string, client *ethclient.Client, repo core.RepositoryI) *AddressProvider {
-	obj := &AddressProvider{
+func NewACL(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *ACL {
+	obj := &ACL{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "AddressProvider",
+			Type: "ACL",
 			Address: addr,
 			Client: client,
 		},
@@ -24,4 +25,8 @@ func NewAddressProvider(addr string, client *ethclient.Client, repo core.Reposit
 	obj.SyncAdapter.FirstLogAt = firstDetection
 	obj.SyncAdapter.LastSync = firstDetection
 	return obj
+}
+
+
+func (mdl *ACL) OnLog(txLog types.Log){
 }

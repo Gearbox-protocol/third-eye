@@ -23,30 +23,36 @@ func  Debug(v ...interface{}) {
 
 
 func  Infof(msg string, args ...interface{}) {
-	log.Printf(detectFunc()+" [Info]: "+msg, args...)
+	log.Printf("[Info]: "+detectFunc()+msg, args...)
 }
 
 func  Info(v ...interface{}) {
-	log.Println(detectFunc()+" [Info]: ", v)
+	args:=[]interface{}{"[Info]: "+detectFunc()}
+	args = append(args, v...)
+	log.Println(args...)
 }
 
 func  Errorf(msg string, args ...interface{}) {
-	log.Printf(detectFunc()+" [Error]: "+msg, args...)
+	log.Printf("[Error]: "+detectFunc()+msg, args...)
 }
 
 func  Error(v ...interface{}) {
-	log.Println(detectFunc()+" [Error]: ", v)
+	args:=[]interface{}{"[Error]: "+detectFunc()}
+	args = append(args, v...)
+	log.Println(args)
 }
 
 func  Fatalf(msg string, args ...interface{}) {
-	log.Fatalf(detectFunc()+" [Fatal]: "+msg, args...)
+	log.Fatalf("[Fatal]: "+detectFunc()+msg, args...)
 }
 
 func  Fatal(v ...interface{}) {
-	log.Fatal(detectFunc()+" [Fatal]: ", v)
+	args:=[]interface{}{"[Fatal]: "+detectFunc()}
+	args = append(args, v...)
+	log.Fatal(args)
 }
 
 func detectFunc() string {
 	_, file, line, _ := runtime.Caller(2)
-	return fmt.Sprintf("%s at %d", file, line)
+	return fmt.Sprintf(" %s:%d ", file, line)
 }
