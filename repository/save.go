@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"gorm.io/gorm/clause"
 	"github.com/Gearbox-protocol/gearscan/log"
+	"gorm.io/gorm/clause"
 )
 
 func (repo *Repository) Flush() (err error) {
@@ -10,19 +10,24 @@ func (repo *Repository) Flush() (err error) {
 	defer repo.mu.Unlock()
 
 	tx := repo.db.Begin()
-	for _, adapter:= range repo.syncAdapters{
+	for _, adapter := range repo.syncAdapters {
 		tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(adapter.GetAdapterState())
 	}
-	for _, block:= range repo.blocks {
+	for _, block := range repo.blocks {
 		tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(block)
 	}
-	info:=tx.Commit()
+	for _, cm := range repo.creditManagers {
+		tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(cm)
+	}
+	info := tx.Commit()
 	if info.Error != nil {
-		log.Fatal(info.Error,*info.Statement)
+		log.Fatal(info.Error, *info.Statement)
 	}
 	return nil
 }

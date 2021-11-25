@@ -1,8 +1,8 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/ethclient"
 )
 
 type CreditManager struct {
@@ -13,9 +13,9 @@ type CreditManager struct {
 func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
 	obj := &CreditManager{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "CreditManager",
+			Type:    "CreditManager",
 			Address: addr,
-			Client: client,
+			Client:  client,
 		},
 		State: &core.State{Repo: repo},
 	}
@@ -23,5 +23,9 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 	obj.SyncAdapter.DiscoveredAt = discoveredAt
 	obj.SyncAdapter.FirstLogAt = firstDetection
 	obj.SyncAdapter.LastSync = firstDetection
+	repo.AddCreditManager(&core.CreditManager{
+		Sessions: core.NewHstore(),
+		Address:  addr,
+	})
 	return obj
 }

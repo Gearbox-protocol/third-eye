@@ -1,26 +1,27 @@
 package core
 
 import (
+	"context"
+	"fmt"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/log" 
+	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
-	"github.com/ethereum/go-ethereum"
-	"context"
 	"math/big"
-	"fmt"
-
 )
+
 const MaxUint = ^int64(0)
+
 type SyncAdapter struct {
-	DiscoveredAt int64 `gorm:"column:discovered_at"`
-	FirstLogAt int64   `gorm:"column:firstlog_at"`
-	LastSync int64     `gorm:"column:last_sync"`
-	Address string  `gorm:"primaryKey;column:address"`
-	Type string   `gorm:"column:type"`
-	Disabled bool `gorm:"column:disabled"`
-	Client *ethclient.Client `gorm:"-"`
+	DiscoveredAt int64             `gorm:"column:discovered_at"`
+	FirstLogAt   int64             `gorm:"column:firstlog_at"`
+	LastSync     int64             `gorm:"column:last_sync"`
+	Address      string            `gorm:"primaryKey;column:address"`
+	Disabled     bool              `gorm:"column:disabled"`
+	Client       *ethclient.Client `gorm:"-"`
+	Type         string            `gorm:"column:type"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -64,7 +65,7 @@ func (s *SyncAdapter) GetType() string {
 // 	obj.LastSync = firstDetection
 // 	return obj
 // }
-func (s *SyncAdapter) GetAdapterState() *SyncAdapter{
+func (s *SyncAdapter) GetAdapterState() *SyncAdapter {
 	return s
 }
 func (s *SyncAdapter) LoadState() {
@@ -84,12 +85,10 @@ func (mdl *SyncAdapter) GetLastSync() int64 {
 	return mdl.LastSync
 }
 
-
-
 func (mdl *SyncAdapter) Monitor(startBlock, endBlock int64) (chan types.Log, event.Subscription, error) {
 	query := ethereum.FilterQuery{
-		FromBlock: new (big.Int).SetInt64(startBlock),
-		ToBlock:   new (big.Int).SetInt64(endBlock),
+		FromBlock: new(big.Int).SetInt64(startBlock),
+		ToBlock:   new(big.Int).SetInt64(endBlock),
 		Addresses: []common.Address{common.HexToAddress(mdl.Address)},
 	}
 	var logs = make(chan types.Log, 2)

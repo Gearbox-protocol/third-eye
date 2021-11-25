@@ -1,8 +1,8 @@
 package pool
 
 import (
-	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -14,9 +14,9 @@ type Pool struct {
 func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
 	obj := &Pool{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "Pool",
+			Type:    "Pool",
 			Address: addr,
-			Client: client,
+			Client:  client,
 		},
 		State: &core.State{Repo: repo},
 	}
@@ -27,5 +27,5 @@ func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, disco
 	return obj
 }
 
-func (mdl *Pool) OnLog(txLog types.Log){
+func (mdl *Pool) OnLog(txLog types.Log) {
 }

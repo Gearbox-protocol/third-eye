@@ -6,24 +6,24 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/ethereum/go-ethereum/ethclient"
 )
 
 // Client defines typed wrappers for the Ethereum RPC API.
 type Client struct {
-	urls []string
-	index int
+	urls   []string
+	index  int
 	client *ethclient.Client
 }
 
 // Dial connects a client to the given URL.
 func Dial(rawurl string) (*Client, error) {
 	urls := strings.Split(rawurl, ",")
-	c:=&Client{urls:urls}
+	c := &Client{urls: urls}
 	var err error
 	c.client, err = ethclient.Dial(c.urls[c.index])
 	return c, err
@@ -31,16 +31,16 @@ func Dial(rawurl string) (*Client, error) {
 
 func DialContext(ctx context.Context, rawurl string) (*Client, error) {
 	urls := strings.Split(rawurl, ",")
-	c:=&Client{urls:urls}
+	c := &Client{urls: urls}
 	var err error
 	c.client, err = ethclient.DialContext(ctx, c.urls[c.index])
 	return c, err
 }
-func (rc *Client) UpdateClient()  error {
+func (rc *Client) UpdateClient() error {
 	// close eth client
 	rc.client.Close()
 	// get new eth client
-	rc.index =(rc.index+1) % len(rc.urls)
+	rc.index = (rc.index + 1) % len(rc.urls)
 	log.Info("New rpc url: ", rc.urls[rc.index])
 	var err error
 	rc.client, err = ethclient.Dial(rc.urls[rc.index])
@@ -52,12 +52,12 @@ func (rc *Client) Close() {
 }
 func (rc *Client) errorHandler(err error) bool {
 	if err != nil {
-		if strings.HasPrefix(err.Error(),"403") {
+		if strings.HasPrefix(err.Error(), "403") {
 			log.Error("Retry because of error: ", err)
 			if err = rc.UpdateClient(); err != nil {
 				log.Error("Next rpc connection failed: ", err)
 			}
-		} else if strings.HasPrefix(err.Error(),"429") {
+		} else if strings.HasPrefix(err.Error(), "429") {
 			log.Error("sleep because of error: ", err)
 			time.Sleep(20 * time.Second)
 		}
@@ -67,7 +67,7 @@ func (rc *Client) errorHandler(err error) bool {
 	return true
 }
 func (rc *Client) ChainID(ctx context.Context) (*big.Int, error) {
-	v, err:=rc.client.ChainID(ctx)
+	v, err := rc.client.ChainID(ctx)
 	if rc.errorHandler(err) {
 		v, err = rc.client.ChainID(ctx)
 	}
@@ -75,7 +75,7 @@ func (rc *Client) ChainID(ctx context.Context) (*big.Int, error) {
 }
 
 func (rc *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Block, error) {
-	v, err:=rc.client.BlockByHash(ctx, hash)
+	v, err := rc.client.BlockByHash(ctx, hash)
 	if rc.errorHandler(err) {
 		v, err = rc.client.BlockByHash(ctx, hash)
 	}
@@ -83,7 +83,7 @@ func (rc *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Blo
 }
 
 func (rc *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
-	v, err:=rc.client.BlockByNumber(ctx, number)
+	v, err := rc.client.BlockByNumber(ctx, number)
 	if rc.errorHandler(err) {
 		v, err = rc.client.BlockByNumber(ctx, number)
 	}
@@ -91,16 +91,15 @@ func (rc *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Bl
 }
 
 func (rc *Client) BlockNumber(ctx context.Context) (uint64, error) {
-	v, err:=rc.client.BlockNumber(ctx)
+	v, err := rc.client.BlockNumber(ctx)
 	if rc.errorHandler(err) {
 		v, err = rc.client.BlockNumber(ctx)
 	}
 	return v, err
 }
 
-
 func (rc *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.Header, error) {
-	v, err:=rc.client.HeaderByHash(ctx, hash)
+	v, err := rc.client.HeaderByHash(ctx, hash)
 	if rc.errorHandler(err) {
 		v, err = rc.client.HeaderByHash(ctx, hash)
 	}
@@ -108,25 +107,24 @@ func (rc *Client) HeaderByHash(ctx context.Context, hash common.Hash) (*types.He
 }
 
 func (rc *Client) HeaderByNumber(ctx context.Context, number *big.Int) (*types.Header, error) {
-	v, err:=rc.client.HeaderByNumber(ctx, number)
+	v, err := rc.client.HeaderByNumber(ctx, number)
 	if rc.errorHandler(err) {
 		v, err = rc.client.HeaderByNumber(ctx, number)
 	}
 	return v, err
 }
 
-
 // TransactionByHash returns the transaction with the given hash.
 func (rc *Client) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
-	a,b, err:=rc.client.TransactionByHash(ctx, hash)
+	a, b, err := rc.client.TransactionByHash(ctx, hash)
 	if rc.errorHandler(err) {
-		a,b, err = rc.client.TransactionByHash(ctx, hash)
+		a, b, err = rc.client.TransactionByHash(ctx, hash)
 	}
-	return a,b, err
+	return a, b, err
 }
 
 func (rc *Client) TransactionSender(ctx context.Context, tx *types.Transaction, block common.Hash, index uint) (common.Address, error) {
-	v,err:=rc.client.TransactionSender(ctx, tx, block, index)
+	v, err := rc.client.TransactionSender(ctx, tx, block, index)
 	if rc.errorHandler(err) {
 		v, err = rc.client.TransactionSender(ctx, tx, block, index)
 	}
@@ -135,7 +133,7 @@ func (rc *Client) TransactionSender(ctx context.Context, tx *types.Transaction, 
 
 // TransactionCount returns the total number of transactions in the given block.
 func (rc *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (uint, error) {
-	v,err:=rc.client.TransactionCount(ctx, blockHash)
+	v, err := rc.client.TransactionCount(ctx, blockHash)
 	if rc.errorHandler(err) {
 		v, err = rc.client.TransactionCount(ctx, blockHash)
 	}
@@ -144,7 +142,7 @@ func (rc *Client) TransactionCount(ctx context.Context, blockHash common.Hash) (
 
 // TransactionInBlock returns a single transaction at index in the given block.
 func (rc *Client) TransactionInBlock(ctx context.Context, blockHash common.Hash, index uint) (*types.Transaction, error) {
-	v,err:=rc.client.TransactionInBlock(ctx, blockHash, index)
+	v, err := rc.client.TransactionInBlock(ctx, blockHash, index)
 	if rc.errorHandler(err) {
 		v, err = rc.client.TransactionInBlock(ctx, blockHash, index)
 	}
@@ -152,7 +150,7 @@ func (rc *Client) TransactionInBlock(ctx context.Context, blockHash common.Hash,
 }
 
 func (rc *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*types.Receipt, error) {
-	v,err:=rc.client.TransactionReceipt(ctx, txHash)
+	v, err := rc.client.TransactionReceipt(ctx, txHash)
 	if rc.errorHandler(err) {
 		v, err = rc.client.TransactionReceipt(ctx, txHash)
 	}
@@ -160,7 +158,7 @@ func (rc *Client) TransactionReceipt(ctx context.Context, txHash common.Hash) (*
 }
 
 func (rc *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error) {
-	v,err:=rc.client.SyncProgress(ctx)
+	v, err := rc.client.SyncProgress(ctx)
 	if rc.errorHandler(err) {
 		v, err = rc.client.SyncProgress(ctx)
 	}
@@ -168,7 +166,7 @@ func (rc *Client) SyncProgress(ctx context.Context) (*ethereum.SyncProgress, err
 }
 
 func (rc *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header) (ethereum.Subscription, error) {
-	v,err:=rc.client.SubscribeNewHead(ctx, ch)
+	v, err := rc.client.SubscribeNewHead(ctx, ch)
 	if rc.errorHandler(err) {
 		v, err = rc.client.SubscribeNewHead(ctx, ch)
 	}
@@ -176,7 +174,7 @@ func (rc *Client) SubscribeNewHead(ctx context.Context, ch chan<- *types.Header)
 }
 
 func (rc *Client) NetworkID(ctx context.Context) (*big.Int, error) {
-	v,err:=rc.client.NetworkID(ctx)
+	v, err := rc.client.NetworkID(ctx)
 	if rc.errorHandler(err) {
 		v, err = rc.client.NetworkID(ctx)
 	}
@@ -184,7 +182,7 @@ func (rc *Client) NetworkID(ctx context.Context) (*big.Int, error) {
 }
 
 func (rc *Client) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
-	v,err:=rc.client.BalanceAt(ctx, account, blockNumber)
+	v, err := rc.client.BalanceAt(ctx, account, blockNumber)
 	if rc.errorHandler(err) {
 		v, err = rc.client.BalanceAt(ctx, account, blockNumber)
 	}
@@ -192,7 +190,7 @@ func (rc *Client) BalanceAt(ctx context.Context, account common.Address, blockNu
 }
 
 func (rc *Client) StorageAt(ctx context.Context, account common.Address, key common.Hash, blockNumber *big.Int) ([]byte, error) {
-	v,err:=rc.client.StorageAt(ctx, account, key, blockNumber)
+	v, err := rc.client.StorageAt(ctx, account, key, blockNumber)
 	if rc.errorHandler(err) {
 		v, err = rc.client.StorageAt(ctx, account, key, blockNumber)
 	}
@@ -200,7 +198,7 @@ func (rc *Client) StorageAt(ctx context.Context, account common.Address, key com
 }
 
 func (rc *Client) CodeAt(ctx context.Context, account common.Address, blockNumber *big.Int) ([]byte, error) {
-	v,err:=rc.client.CodeAt(ctx, account, blockNumber)
+	v, err := rc.client.CodeAt(ctx, account, blockNumber)
 	if rc.errorHandler(err) {
 		v, err = rc.client.CodeAt(ctx, account, blockNumber)
 	}
@@ -208,7 +206,7 @@ func (rc *Client) CodeAt(ctx context.Context, account common.Address, blockNumbe
 }
 
 func (rc *Client) NonceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (uint64, error) {
-	v,err:=rc.client.NonceAt(ctx, account, blockNumber)
+	v, err := rc.client.NonceAt(ctx, account, blockNumber)
 	if rc.errorHandler(err) {
 		v, err = rc.client.NonceAt(ctx, account, blockNumber)
 	}
@@ -216,7 +214,7 @@ func (rc *Client) NonceAt(ctx context.Context, account common.Address, blockNumb
 }
 
 func (rc *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]types.Log, error) {
-	v,err:=rc.client.FilterLogs(ctx, q)
+	v, err := rc.client.FilterLogs(ctx, q)
 	if rc.errorHandler(err) {
 		v, err = rc.client.FilterLogs(ctx, q)
 	}
@@ -224,7 +222,7 @@ func (rc *Client) FilterLogs(ctx context.Context, q ethereum.FilterQuery) ([]typ
 }
 
 func (rc *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
-	v,err:=rc.client.SubscribeFilterLogs(ctx, q, ch)
+	v, err := rc.client.SubscribeFilterLogs(ctx, q, ch)
 	if rc.errorHandler(err) {
 		v, err = rc.client.SubscribeFilterLogs(ctx, q, ch)
 	}
@@ -232,7 +230,7 @@ func (rc *Client) SubscribeFilterLogs(ctx context.Context, q ethereum.FilterQuer
 }
 
 func (rc *Client) PendingBalanceAt(ctx context.Context, account common.Address) (*big.Int, error) {
-	v,err:=rc.client.PendingBalanceAt(ctx, account)
+	v, err := rc.client.PendingBalanceAt(ctx, account)
 	if rc.errorHandler(err) {
 		v, err = rc.client.PendingBalanceAt(ctx, account)
 	}
@@ -240,7 +238,7 @@ func (rc *Client) PendingBalanceAt(ctx context.Context, account common.Address) 
 }
 
 func (rc *Client) PendingStorageAt(ctx context.Context, account common.Address, key common.Hash) ([]byte, error) {
-	v,err:=rc.client.PendingStorageAt(ctx, account, key)
+	v, err := rc.client.PendingStorageAt(ctx, account, key)
 	if rc.errorHandler(err) {
 		v, err = rc.client.PendingStorageAt(ctx, account, key)
 	}
@@ -248,7 +246,7 @@ func (rc *Client) PendingStorageAt(ctx context.Context, account common.Address, 
 }
 
 func (rc *Client) PendingCodeAt(ctx context.Context, account common.Address) ([]byte, error) {
-	v,err:=rc.client.PendingCodeAt(ctx, account)
+	v, err := rc.client.PendingCodeAt(ctx, account)
 	if rc.errorHandler(err) {
 		v, err = rc.client.PendingCodeAt(ctx, account)
 	}
@@ -256,7 +254,7 @@ func (rc *Client) PendingCodeAt(ctx context.Context, account common.Address) ([]
 }
 
 func (rc *Client) PendingNonceAt(ctx context.Context, account common.Address) (uint64, error) {
-	v,err:=rc.client.PendingNonceAt(ctx, account)
+	v, err := rc.client.PendingNonceAt(ctx, account)
 	if rc.errorHandler(err) {
 		v, err = rc.client.PendingNonceAt(ctx, account)
 	}
@@ -264,7 +262,7 @@ func (rc *Client) PendingNonceAt(ctx context.Context, account common.Address) (u
 }
 
 func (rc *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
-	v,err:=rc.client.PendingTransactionCount(ctx)
+	v, err := rc.client.PendingTransactionCount(ctx)
 	if rc.errorHandler(err) {
 		v, err = rc.client.PendingTransactionCount(ctx)
 	}
@@ -272,7 +270,7 @@ func (rc *Client) PendingTransactionCount(ctx context.Context) (uint, error) {
 }
 
 func (rc *Client) CallContract(ctx context.Context, msg ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
-	v,err:=rc.client.CallContract(ctx, msg, blockNumber)
+	v, err := rc.client.CallContract(ctx, msg, blockNumber)
 	if rc.errorHandler(err) {
 		v, err = rc.client.CallContract(ctx, msg, blockNumber)
 	}
@@ -280,7 +278,7 @@ func (rc *Client) CallContract(ctx context.Context, msg ethereum.CallMsg, blockN
 }
 
 func (rc *Client) PendingCallContract(ctx context.Context, msg ethereum.CallMsg) ([]byte, error) {
-	v,err:=rc.client.PendingCallContract(ctx, msg)
+	v, err := rc.client.PendingCallContract(ctx, msg)
 	if rc.errorHandler(err) {
 		v, err = rc.client.PendingCallContract(ctx, msg)
 	}
@@ -288,7 +286,7 @@ func (rc *Client) PendingCallContract(ctx context.Context, msg ethereum.CallMsg)
 }
 
 func (rc *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
-	v,err:=rc.client.SuggestGasPrice(ctx)
+	v, err := rc.client.SuggestGasPrice(ctx)
 	if rc.errorHandler(err) {
 		v, err = rc.client.SuggestGasPrice(ctx)
 	}
@@ -296,7 +294,7 @@ func (rc *Client) SuggestGasPrice(ctx context.Context) (*big.Int, error) {
 }
 
 func (rc *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
-	v,err:=rc.client.SuggestGasTipCap(ctx)
+	v, err := rc.client.SuggestGasTipCap(ctx)
 	if rc.errorHandler(err) {
 		v, err = rc.client.SuggestGasTipCap(ctx)
 	}
@@ -304,7 +302,7 @@ func (rc *Client) SuggestGasTipCap(ctx context.Context) (*big.Int, error) {
 }
 
 func (rc *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64, error) {
-	v,err:=rc.client.EstimateGas(ctx, msg)
+	v, err := rc.client.EstimateGas(ctx, msg)
 	if rc.errorHandler(err) {
 		v, err = rc.client.EstimateGas(ctx, msg)
 	}
@@ -312,7 +310,7 @@ func (rc *Client) EstimateGas(ctx context.Context, msg ethereum.CallMsg) (uint64
 }
 
 func (rc *Client) SendTransaction(ctx context.Context, tx *types.Transaction) error {
-	err:=rc.client.SendTransaction(ctx, tx)
+	err := rc.client.SendTransaction(ctx, tx)
 	if rc.errorHandler(err) {
 		err = rc.client.SendTransaction(ctx, tx)
 	}

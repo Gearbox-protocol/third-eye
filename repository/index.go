@@ -1,31 +1,32 @@
 package repository
 
 import (
-	"gorm.io/gorm"
-	"sync"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/log"
+	"gorm.io/gorm"
+	"sync"
 
-	"math/big"
 	"context"
+	"math/big"
 )
 
 type Repository struct {
-	db *gorm.DB
-	syncAdapters []core.SyncAdapterI
-	mu    *sync.Mutex
-	client *ethclient.Client
-	blocks map[int64]*core.Block
+	db             *gorm.DB
+	syncAdapters   []core.SyncAdapterI
+	mu             *sync.Mutex
+	client         *ethclient.Client
+	blocks         map[int64]*core.Block
+	creditManagers map[string]*core.CreditManager
 }
-
 
 func NewRepository(db *gorm.DB, client *ethclient.Client) core.RepositoryI {
 	r := &Repository{
-		db: db,
-		mu:    &sync.Mutex{},
-		client: client,
-		blocks: make(map[int64]*core.Block),
+		db:             db,
+		mu:             &sync.Mutex{},
+		client:         client,
+		blocks:         make(map[int64]*core.Block),
+		creditManagers: make(map[string]*core.CreditManager),
 	}
 	r.init()
 	return r
@@ -45,18 +46,20 @@ func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 	repo.syncAdapters = append(repo.syncAdapters, adapterI)
 }
 
-func (repo *Repository) loadSyncAdapters()  {
-	data := []*core.SyncAdapter{}
-	err := repo.db.Find(&data, "disabled = ?", false).Error
-	if err != nil {
-		log.Fatal(err)
+func (repo *Repository) AddCreditManager(cm *core.CreditManager) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if repo.creditManagers[cm.Address] != nil {
+		log.Fatal("credit manager already set")
 	}
-	for _, adapter := range data {
-		repo.AddSyncAdapter(prepareSyncAdapter(adapter, repo, repo.client))
-	}
+	repo.creditManagers[cm.Address] = cm
 }
 
-
+func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.blocks[accountOperation.BlockNumber].AddAccountOperation(accountOperation)
+}
 
 func (repo *Repository) SetBlock(blockNum int64) {
 	repo.mu.Lock()

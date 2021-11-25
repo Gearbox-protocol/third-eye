@@ -4,11 +4,16 @@ package core
 
 type (
 	Block struct {
-		BlockNumber         int64                     `gorm:"primaryKey;column:id"` // Block Number
-		Timestamp           uint64                   `gorm:"column:timestamp"`
+		BlockNumber       int64               `gorm:"primaryKey;column:id"` // Block Number
+		Timestamp         uint64              `gorm:"column:timestamp"`
+		AccountOperations []*AccountOperation `gorm:"foreign:block_num"`
 	}
 )
 
 func (Block) TableName() string {
 	return "blocks"
+}
+
+func (b *Block) AddAccountOperation(accountOperation *AccountOperation) {
+	b.AccountOperations = append(b.AccountOperations, accountOperation)
 }

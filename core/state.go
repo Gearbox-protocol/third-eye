@@ -1,7 +1,6 @@
 package core
 
 type State struct {
-	Repo RepositoryI
+	Repo        RepositoryI
 	StateLoaded bool
 }
-

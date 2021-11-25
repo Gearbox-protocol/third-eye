@@ -1,8 +1,8 @@
 package price_oracle
 
 import (
-	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/ethclient"
 )
 
 type PriceOracle struct {
@@ -13,9 +13,9 @@ type PriceOracle struct {
 func NewPriceOracle(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *PriceOracle {
 	obj := &PriceOracle{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "PriceOracle",
+			Type:    "PriceOracle",
 			Address: addr,
-			Client: client,
+			Client:  client,
 		},
 		State: &core.State{Repo: repo},
 	}

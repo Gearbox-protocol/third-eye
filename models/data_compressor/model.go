@@ -1,21 +1,22 @@
 package data_compressor
+
 import (
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/ethereum/go-ethereum/core/types"
 )
+
 type DataCompressor struct {
 	*core.SyncAdapter
 	*core.State
 }
 
-
 func NewDataCompressor(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *DataCompressor {
 	obj := &DataCompressor{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "DataCompressor",
+			Type:    "DataCompressor",
 			Address: addr,
-			Client: client,
+			Client:  client,
 		},
 		State: &core.State{Repo: repo},
 	}
@@ -26,5 +27,5 @@ func NewDataCompressor(addr string, client *ethclient.Client, repo core.Reposito
 	return obj
 }
 
-func (mdl *DataCompressor) OnLog(txLog types.Log){
+func (mdl *DataCompressor) OnLog(txLog types.Log) {
 }

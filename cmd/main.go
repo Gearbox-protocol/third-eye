@@ -2,25 +2,25 @@
 * Gearbox monitoring
 * Copyright (c) 2021. Mikael Lazarev
 *
-*/
+ */
 
 package main
 
 import (
 	"github.com/Gearbox-protocol/gearscan/config"
+	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/engine"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/repository"
-	"github.com/Gearbox-protocol/gearscan/core" 
-	"github.com/Gearbox-protocol/gearscan/engine" 
-	"github.com/Gearbox-protocol/gearscan/models" 
 	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/gearscan/models"
+	"github.com/Gearbox-protocol/gearscan/repository"
 	"github.com/Gearbox-protocol/gearscan/utils"
 	"go.uber.org/fx"
 
 	"context"
-	"time" 
+	"time"
 )
- 
+
 func StartServer(lc fx.Lifecycle, engine core.EngineI) {
 
 	// Starting server
@@ -33,13 +33,13 @@ func StartServer(lc fx.Lifecycle, engine core.EngineI) {
 			// In production, we'd want to separate the Listen and Serve phases for
 			// better error-handling.
 			go func() {
-				engine.Sync()	
-			}()			
+				engine.Sync()
+			}()
 			return nil
 		},
 	})
 }
- 
+
 func main() {
 	app := fx.New(
 		ethclient.Module,
@@ -59,4 +59,3 @@ func main() {
 
 	<-app.Done()
 }
- 

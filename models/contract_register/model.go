@@ -1,21 +1,21 @@
 package contract_register
+
 import (
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
-
 )
+
 type ContractRegister struct {
 	*core.SyncAdapter
 	*core.State
 }
 
-
 func NewContractRegister(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *ContractRegister {
 	obj := &ContractRegister{
 		SyncAdapter: &core.SyncAdapter{
-			Type: "ContractRegister",
+			Type:    "ContractRegister",
 			Address: addr,
-			Client: client,
+			Client:  client,
 		},
 		State: &core.State{Repo: repo},
 	}
