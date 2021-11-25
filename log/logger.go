@@ -48,7 +48,7 @@ func Fatalf(msg string, args ...interface{}) {
 func Fatal(v ...interface{}) {
 	args := []interface{}{"[Fatal]: " + detectFunc()}
 	args = append(args, v...)
-	log.Fatal(args)
+	log.Fatal(args...)
 }
 
 func detectFunc() string {

@@ -10,18 +10,18 @@ type PriceOracle struct {
 	*core.State
 }
 
-func NewPriceOracle(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *PriceOracle {
+func NewPriceOracle(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceOracle {
+	return NewPriceOracleFromAdapter(
+		repo,
+		core.NewSyncAdapter(addr, "PriceOracle", discoveredAt, client),
+	)
+}
+
+func NewPriceOracleFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *PriceOracle {
 	obj := &PriceOracle{
-		SyncAdapter: &core.SyncAdapter{
-			Type:    "PriceOracle",
-			Address: addr,
-			Client:  client,
-		},
+		SyncAdapter: adapter,
 		State: &core.State{Repo: repo},
 	}
-	firstDetection := obj.DiscoverFirstLog()
-	obj.SyncAdapter.DiscoveredAt = discoveredAt
-	obj.SyncAdapter.FirstLogAt = firstDetection
-	obj.SyncAdapter.LastSync = firstDetection
 	return obj
 }
+

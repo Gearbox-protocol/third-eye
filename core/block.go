@@ -6,7 +6,7 @@ type (
 	Block struct {
 		BlockNumber       int64               `gorm:"primaryKey;column:id"` // Block Number
 		Timestamp         uint64              `gorm:"column:timestamp"`
-		AccountOperations []*AccountOperation `gorm:"foreign:block_num"`
+		AccountOperations []*AccountOperation `gorm:"foreignKey:block_num"`
 	}
 )
 

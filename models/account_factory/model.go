@@ -11,19 +11,18 @@ type AccountFactory struct {
 	*core.State
 }
 
-func NewAccountFactory(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *AccountFactory {
+func NewAccountFactory(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *AccountFactory {
+	return NewAccountFactoryFromAdapter(
+		repo,
+		core.NewSyncAdapter(addr, "AccountFactory", discoveredAt, client),
+	)
+}
+
+func NewAccountFactoryFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *AccountFactory {
 	obj := &AccountFactory{
-		SyncAdapter: &core.SyncAdapter{
-			Type:    "AccountFactory",
-			Address: addr,
-			Client:  client,
-		},
+		SyncAdapter: adapter,
 		State: &core.State{Repo: repo},
 	}
-	firstDetection := obj.DiscoverFirstLog()
-	obj.SyncAdapter.DiscoveredAt = discoveredAt
-	obj.SyncAdapter.FirstLogAt = firstDetection
-	obj.SyncAdapter.LastSync = firstDetection
 	return obj
 }
 

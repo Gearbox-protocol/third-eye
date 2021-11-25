@@ -11,19 +11,18 @@ type ACL struct {
 	*core.State
 }
 
-func NewACL(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *ACL {
+func NewACL(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ACL {
+	return NewACLFromAdapter(
+		repo,
+		core.NewSyncAdapter(addr, "ACL", discoveredAt, client),
+	)
+}
+
+func NewACLFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *ACL {
 	obj := &ACL{
-		SyncAdapter: &core.SyncAdapter{
-			Type:    "ACL",
-			Address: addr,
-			Client:  client,
-		},
+		SyncAdapter: adapter,
 		State: &core.State{Repo: repo},
 	}
-	firstDetection := obj.DiscoverFirstLog()
-	obj.SyncAdapter.DiscoveredAt = firstDetection
-	obj.SyncAdapter.FirstLogAt = firstDetection
-	obj.SyncAdapter.LastSync = firstDetection
 	return obj
 }
 

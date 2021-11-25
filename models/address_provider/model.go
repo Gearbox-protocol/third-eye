@@ -11,17 +11,16 @@ type AddressProvider struct {
 }
 
 func NewAddressProvider(addr string, client *ethclient.Client, repo core.RepositoryI) *AddressProvider {
+	return NewAddressProviderFromAdapter(
+		repo,
+		core.NewSyncAdapter(addr, "AddressProvider", -1, client),
+	)
+}
+
+func NewAddressProviderFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *AddressProvider {
 	obj := &AddressProvider{
-		SyncAdapter: &core.SyncAdapter{
-			Type:    "AddressProvider",
-			Address: addr,
-			Client:  client,
-		},
+		SyncAdapter: adapter,
 		State: &core.State{Repo: repo},
 	}
-	firstDetection := obj.DiscoverFirstLog()
-	obj.SyncAdapter.DiscoveredAt = firstDetection
-	obj.SyncAdapter.FirstLogAt = firstDetection
-	obj.SyncAdapter.LastSync = firstDetection
 	return obj
 }

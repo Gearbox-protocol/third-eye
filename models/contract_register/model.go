@@ -10,18 +10,18 @@ type ContractRegister struct {
 	*core.State
 }
 
-func NewContractRegister(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *ContractRegister {
+
+func NewContractRegister(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ContractRegister {
+	return NewContractRegisterFromAdapter(
+		repo,
+		core.NewSyncAdapter(addr, "ContractRegister", discoveredAt, client),
+	)
+}
+
+func NewContractRegisterFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *ContractRegister {
 	obj := &ContractRegister{
-		SyncAdapter: &core.SyncAdapter{
-			Type:    "ContractRegister",
-			Address: addr,
-			Client:  client,
-		},
+		SyncAdapter: adapter,
 		State: &core.State{Repo: repo},
 	}
-	firstDetection := obj.DiscoverFirstLog()
-	obj.SyncAdapter.DiscoveredAt = discoveredAt
-	obj.SyncAdapter.FirstLogAt = firstDetection
-	obj.SyncAdapter.LastSync = firstDetection
 	return obj
 }

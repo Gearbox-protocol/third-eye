@@ -19,7 +19,6 @@ type AccountOperation struct {
 	Transfers   string `gorm:"column:transfers"`
 	// extras
 	Depth     uint8 `gorm:"column:depth"`
-	Timestamp int64 `gorm:"column:timestamp"`
 }
 
 func (AccountOperation) TableName() string {

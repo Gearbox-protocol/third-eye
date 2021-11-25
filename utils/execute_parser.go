@@ -113,23 +113,6 @@ type KnownCall struct {
 	LogId    int
 }
 
-// func (call *Call) getBalances(user common.Address) map[string]*big.Int {
-// 	var balances = make(map[string]*big.Int)
-// 	if (call.CallerOp == "CALL" || call.CallerOp == "DELEGATECALL") {
-// 		if call.Input[:10] == "0x23b872dd" && (len(call.Input)-10)/3 == 64 { // transferFrom(address,address,uint256)
-// 			if common.HexToAddress(call.Input[10:42]) == user {
-// 				i := new (big.Int)
-// 				i.SetString(call.Input[(10+32+32):], 16)
-// 				balances[call.To] = new (big.Int).Mul(big.NewInt(-1), i)
-// 			} else if common.HexToAddress(call.Input[42:(42+32)]) == user {
-// 				i := new (big.Int)
-// 				i.SetString(call.Input[(10+32+32):], 16)
-// 				balances[call.To] = i
-// 			}
-// 		}
-// 	}
-// }
-
 func (call *Call) dappCall(dappAddr common.Address) *KnownCall {
 	if (call.CallerOp == "CALL" || call.CallerOp == "DELEGATECALL") && dappAddr == common.HexToAddress(call.To) {
 		name, arguments := ParseCallData(call.Input)

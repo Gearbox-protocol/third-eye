@@ -7,7 +7,6 @@ import (
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/Gearbox-protocol/gearscan/models/address_provider"
-	"github.com/Gearbox-protocol/gearscan/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -17,19 +16,16 @@ type Engine struct {
 	config        *config.Config
 	client        *ethclient.Client
 	repo          core.RepositoryI
-	executeParser *utils.ExecuteParser
 	nextSyncStop  int64
 }
 
 func NewEngine(config *config.Config,
 	ec *ethclient.Client,
-	repo core.RepositoryI,
-	ep *utils.ExecuteParser) core.EngineI {
+	repo core.RepositoryI) core.EngineI {
 	return &Engine{
 		config:        config,
 		client:        ec,
 		repo:          repo,
-		executeParser: ep,
 	}
 }
 
@@ -48,9 +44,9 @@ func (e *Engine) init() {
 	}
 }
 func (e *Engine) Sync() {
-	log.Info("sleep")
 	e.init()
-	for i := 0; i < 2; i++ {
+	// for i := 0; i < 2; i++ {
+	for  {
 		log.Info("Sync till", e.nextSyncStop)
 		for _, adapter := range e.repo.GetSyncAdapters() {
 			e.SyncModel(adapter, e.nextSyncStop)
@@ -69,7 +65,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 	if syncFrom > syncTill {
 		return
 	}
-	log.Infof("Sync %s(%s) from %d to %d", mdl.GetType(), mdl.GetAddress(), syncFrom, syncTill)
+	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
 	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetInt64(syncFrom),
 		ToBlock:   new(big.Int).SetInt64(syncTill),

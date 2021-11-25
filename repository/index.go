@@ -1,11 +1,13 @@
 package repository
 
 import (
+	"sync"
+
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/gearscan/utils"
 	"gorm.io/gorm"
-	"sync"
 
 	"context"
 	"math/big"
@@ -18,42 +20,34 @@ type Repository struct {
 	client         *ethclient.Client
 	blocks         map[int64]*core.Block
 	creditManagers map[string]*core.CreditManager
+	executeParser *utils.ExecuteParser
 }
 
-func NewRepository(db *gorm.DB, client *ethclient.Client) core.RepositoryI {
+func NewRepository(db *gorm.DB, client *ethclient.Client, ep *utils.ExecuteParser) core.RepositoryI {
 	r := &Repository{
 		db:             db,
 		mu:             &sync.Mutex{},
 		client:         client,
 		blocks:         make(map[int64]*core.Block),
 		creditManagers: make(map[string]*core.CreditManager),
+		executeParser: ep,
 	}
 	r.init()
 	return r
 }
 
+func (repo *Repository) GetExecuteParser() *utils.ExecuteParser {
+	return repo.executeParser
+}
+
 func (repo *Repository) init() {
 	repo.loadSyncAdapters()
+	repo.loadCreditManagers()
 }
 
-func (repo *Repository) GetSyncAdapters() []core.SyncAdapterI {
-	return repo.syncAdapters
-}
 
-func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.syncAdapters = append(repo.syncAdapters, adapterI)
-}
 
-func (repo *Repository) AddCreditManager(cm *core.CreditManager) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	if repo.creditManagers[cm.Address] != nil {
-		log.Fatal("credit manager already set")
-	}
-	repo.creditManagers[cm.Address] = cm
-}
+
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
 	repo.mu.Lock()
