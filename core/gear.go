@@ -19,4 +19,6 @@ type RepositoryI interface {
 	RemoveCreditOwnerSession(cmAddr, owner string)
 	GetCreditOwnerSession(cmAddr, owner string) string
 	GetExecuteParser() *utils.ExecuteParser
+	AddTokenOracle(token, oracle string, blockNum int64)
+	AddPriceFeed(blockNum int64, pf *PriceFeed)
 }

@@ -103,13 +103,21 @@ func (c *Contract) GetAbi() {
 	c.ABI = abi
 }
 
+// setter 
+func (c *Contract) SetAddress(addr string) {
+	c.Address = addr
+}
 // Getter
 
 func (c *Contract) GetAddress() string {
 	return c.Address
 }
+
 func (c *Contract) GetName() string {
 	return c.ContractName
+}
+func (c *Contract) IsDisabled() bool {
+	return c.Disabled
 }
 
 // Extras

@@ -15,6 +15,7 @@ const MaxUint = ^int64(0)
 type SyncAdapter struct {
 	*Contract
 	LastSync int64 `gorm:"column:last_sync"`
+	Oracle string `gorm:"column:oracle"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -29,6 +30,8 @@ type SyncAdapterI interface {
 	GetAddress() string
 	FirstSync() bool
 	GetName() string
+	AfterSyncHook(syncTill int64)
+	IsDisabled() bool
 }
 
 func (s *SyncAdapter) SetLastSync(lastSync int64) {
@@ -38,6 +41,11 @@ func (s *SyncAdapter) SetLastSync(lastSync int64) {
 func (s *SyncAdapter) FirstSync() bool {
 	return s.FirstLogAt == s.LastSync
 }
+
+func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
+	s.SetLastSync(syncTill)
+}
+
 
 func NewSyncAdapter(addr, name string, discoveredAt int64,  client *ethclient.Client) *SyncAdapter {
 	obj := &SyncAdapter{

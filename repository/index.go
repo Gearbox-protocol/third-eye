@@ -45,6 +45,20 @@ func (repo *Repository) init() {
 	repo.loadCreditManagers()
 }
 
+func (repo *Repository) AddTokenOracle(token, oracle string, blockNum int64) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.blocks[blockNum].AddTokenOracle(
+		&core.TokenOracle{Token: token, Oracle: oracle, BlockNumber: blockNum},
+	)
+}
+
+func (repo *Repository) AddPriceFeed(blockNum int64, pf *core.PriceFeed) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.blocks[blockNum].AddPriceFeed(pf)
+}
+
 
 
 

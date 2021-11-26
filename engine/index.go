@@ -58,6 +58,9 @@ func (e *Engine) Sync() {
 }
 
 func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
+	if mdl.IsDisabled() {
+		return
+	}
 	syncFrom := mdl.GetLastSync()
 	if mdl.FirstSync() {
 		syncFrom += 1
@@ -65,6 +68,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 	if syncFrom > syncTill {
 		return
 	}
+
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
 	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetInt64(syncFrom),
@@ -79,5 +83,6 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 		e.repo.SetBlock(int64(log.BlockNumber))
 		mdl.OnLog(log)
 	}
-	mdl.SetLastSync(syncTill)
+	// after sync
+	mdl.AfterSyncHook(syncTill)
 }
