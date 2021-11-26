@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"github.com/Gearbox-protocol/gearscan/log"
 	"fmt"
+	"strconv"
 	// "github.com/Gearbox-protocol/gearscan/models/price_feed"
 )
 
@@ -23,12 +24,13 @@ func IntToFloat(amt *big.Int) *big.Float {
 func (mdl *PriceFeed) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
-		roundId, ok:=new(big.Int).SetString(txLog.Topics[2].Hex()[2:], 16)
-		if ok {
+		roundId, err :=strconv.ParseInt(txLog.Topics[2].Hex()[2:], 16, 64)
+		if err != nil {
 			log.Fatal("roundid failed")
 		}
-		answerBI, err:=new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
-		if err {
+		
+		answerBI, ok:=new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
+		if !ok {
 			log.Fatal("answer parsing failed")
 		}
 		answer, _ := new(big.Float).Quo(
@@ -42,7 +44,7 @@ func (mdl *PriceFeed) OnLog(txLog types.Log) {
 			Token: "",
 			Feed: mdl.Address,
 			RoundId: roundId,
-			PriceETHBI: answerBI,
+			PriceETHBI: (answerBI).String(),
 			PriceETH: answer,
 		})
 	}

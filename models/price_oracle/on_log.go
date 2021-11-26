@@ -20,6 +20,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		token := newPriceFeedEvent.Token.Hex()
 		oracle := newPriceFeedEvent.PriceFeed.Hex()
 		mdl.Repo.AddTokenOracle(token, oracle, blockNum)
+		log.Info(token, oracle)
 		obj := price_feed.NewPriceFeed(oracle, blockNum, mdl.SyncAdapter.Client, mdl.State.Repo)
 		mdl.State.Repo.AddSyncAdapter(obj)
 	}

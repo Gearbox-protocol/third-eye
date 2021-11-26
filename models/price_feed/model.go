@@ -16,10 +16,21 @@ type PriceFeed struct {
 	contractETH *priceFeed.PriceFeed
 }
 
-
+// if oracle and address are same then the normal chainlink interface is not working for this price feed
+// it maybe custom price feed of gearbox . so we will disable on vm execution error.
+// if oracle and adress are same we try to get the pricefeed. 
 func NewPriceFeed(oracle string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceFeed {
-	syncAdapter := core.NewSyncAdapter("", "PriceFeed", discoveredAt, client)
-	syncAdapter.Oracle = oracle
+	syncAdapter := &core.SyncAdapter{
+		Contract: &core.Contract{
+			Address: oracle,
+			DiscoveredAt: discoveredAt,
+			FirstLogAt: discoveredAt,
+			ContractName: "PriceFeed",
+			Client: client,
+		},
+		Oracle: oracle,
+		LastSync: discoveredAt,
+	}
 	return NewPriceFeedFromAdapter(
 		repo, syncAdapter,
 	)
@@ -35,8 +46,10 @@ func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *
 		State: &core.State{Repo: repo},
 		contractETH: pfContract,
 	}
-	pfAddr := obj.GetPriceFeed(adapter.DiscoveredAt)
-	obj.SetAddress(pfAddr)
+	if adapter.Address == adapter.Oracle {
+		pfAddr := obj.GetPriceFeed(adapter.DiscoveredAt)
+		obj.SetAddress(pfAddr)
+	}
 	return obj
 }
 
@@ -57,7 +70,9 @@ func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
 	}
 	phaseId, err := mdl.contractETH.PhaseId(opts)
 	if err != nil {
-		log.Fatal(err)
+		mdl.SetError(err)
+		log.Error(mdl.Oracle, " oracle failed disabling due to ", err)
+		return mdl.Oracle
 	}
 	newPriceFeed, err := mdl.contractETH.PhaseAggregators(opts, phaseId)
 	if err != nil {

@@ -35,7 +35,6 @@ import (
 type Contract struct {
 	DiscoveredAt int64             `gorm:"column:discovered_at"`
 	FirstLogAt   int64             `gorm:"column:firstlog_at"`
-	LastSync     int64             `gorm:"column:last_sync"`
 	Address      string            `gorm:"primaryKey;column:address"`
 	Disabled     bool              `gorm:"column:disabled"`
 	ContractName string            `gorm:"column:type"`
@@ -51,12 +50,12 @@ func NewContract(address , contractName string,  discoveredAt int64,  client *et
 		Address:      address,
 		Client: client,
 	}
+	con.FirstLogAt = con.DiscoverFirstLog()
 	if discoveredAt == -1 {
-		con.DiscoveredAt = con.DiscoverFirstLog()
+		con.DiscoveredAt = con.FirstLogAt
 	} else {
 		con.DiscoveredAt = discoveredAt
 	}
-	con.FirstLogAt = con.DiscoverFirstLog()
 	return con
 }
 

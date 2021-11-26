@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/gearscan/models/credit_manager"
 	"github.com/Gearbox-protocol/gearscan/models/pool"
 	"github.com/Gearbox-protocol/gearscan/models/price_oracle"
+	"github.com/Gearbox-protocol/gearscan/models/price_feed"
 )
 
 func (repo *Repository) loadSyncAdapters() {
@@ -40,6 +41,8 @@ func prepareSyncAdapter(adapter *core.SyncAdapter, repo core.RepositoryI) core.S
 		return credit_manager.NewCreditManagerFromAdapter(repo, adapter)
 	case "PriceOracle":
 		return price_oracle.NewPriceOracleFromAdapter(repo, adapter)
+	case "PriceFeed":
+		return price_feed.NewPriceFeedFromAdapter(repo, adapter)
 	// case "DataCompressor":
 	// 	return data_compressor.NewDataCompressorFromAdapter(repo, adapter)
 	case "ContractRegister":

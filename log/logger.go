@@ -38,7 +38,7 @@ func Errorf(msg string, args ...interface{}) {
 func Error(v ...interface{}) {
 	args := []interface{}{"[Error]: " + detectFunc()}
 	args = append(args, v...)
-	log.Println(args)
+	log.Println(args...)
 }
 
 func Fatalf(msg string, args ...interface{}) {

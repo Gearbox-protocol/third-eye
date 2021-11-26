@@ -16,11 +16,13 @@ type SyncAdapter struct {
 	*Contract
 	LastSync int64 `gorm:"column:last_sync"`
 	Oracle string `gorm:"column:oracle"`
+	Error string `gorm:"column:error"`
 }
 
 func (SyncAdapter) TableName() string {
 	return "sync_adapters"
 }
+
 
 type SyncAdapterI interface {
 	OnLog(txLog types.Log)
@@ -36,6 +38,16 @@ type SyncAdapterI interface {
 
 func (s *SyncAdapter) SetLastSync(lastSync int64) {
 	s.LastSync = lastSync
+}
+
+func (s *SyncAdapter) SetError(err error) {
+	s.Disabled = true 
+	msg := err.Error()
+	msgLen := len(msg)
+	if msgLen > 200 {
+		msgLen = 200
+	}
+	s.Error = err.Error()[:msgLen]
 }
 
 func (s *SyncAdapter) FirstSync() bool {
