@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/gearscan/core"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm"
 )
@@ -45,6 +46,7 @@ func (repo *Repository) Flush() (err error) {
 	// if info.Error != nil {
 	// 	log.Fatal(info.Error, *info.Statement)
 	// }
+	repo.blocks = map[int64]*core.Block{}
 	return nil
 }
 

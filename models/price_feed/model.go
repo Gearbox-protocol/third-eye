@@ -19,7 +19,7 @@ type PriceFeed struct {
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on vm execution error.
 // if oracle and adress are same we try to get the pricefeed. 
-func NewPriceFeed(oracle string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceFeed {
+func NewPriceFeed(oracle, token string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address: oracle,
@@ -28,7 +28,7 @@ func NewPriceFeed(oracle string, discoveredAt int64, client *ethclient.Client, r
 			ContractName: "PriceFeed",
 			Client: client,
 		},
-		Oracle: oracle,
+		Details: map[string]string{"oracle": oracle, "token":token},
 		LastSync: discoveredAt,
 	}
 	return NewPriceFeedFromAdapter(
@@ -37,7 +37,8 @@ func NewPriceFeed(oracle string, discoveredAt int64, client *ethclient.Client, r
 }
 
 func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *PriceFeed {
-	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(adapter.Oracle), adapter.Client)
+	oracleAddr := adapter.Details["oracle"]
+	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracleAddr), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -46,7 +47,7 @@ func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *
 		State: &core.State{Repo: repo},
 		contractETH: pfContract,
 	}
-	if adapter.Address == adapter.Oracle {
+	if adapter.Address == oracleAddr {
 		pfAddr := obj.GetPriceFeed(adapter.DiscoveredAt)
 		obj.SetAddress(pfAddr)
 	}
@@ -58,7 +59,7 @@ func (mdl *PriceFeed) AfterSyncHook(syncedTill int64)  {
 	if newPriceFeed != mdl.Address {
 		mdl.Disabled = true
 		mdl.Repo.AddSyncAdapter(
-			NewPriceFeed(newPriceFeed, mdl.LastSync + 1, mdl.Client, mdl.Repo),
+			NewPriceFeed(newPriceFeed, mdl.Details["token"], mdl.LastSync + 1, mdl.Client, mdl.Repo),
 		)
 	}
 	mdl.SetLastSync(syncedTill)
@@ -71,8 +72,9 @@ func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
 	phaseId, err := mdl.contractETH.PhaseId(opts)
 	if err != nil {
 		mdl.SetError(err)
-		log.Error(mdl.Oracle, " oracle failed disabling due to ", err)
-		return mdl.Oracle
+		oralceAddr := mdl.Details["oracle"]
+		log.Error(oralceAddr, " oracle failed disabling due to ", err)
+		return oralceAddr
 	}
 	newPriceFeed, err := mdl.contractETH.PhaseAggregators(opts, phaseId)
 	if err != nil {

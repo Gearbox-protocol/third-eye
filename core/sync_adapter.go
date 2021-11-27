@@ -15,7 +15,7 @@ const MaxUint = ^int64(0)
 type SyncAdapter struct {
 	*Contract
 	LastSync int64 `gorm:"column:last_sync"`
-	Oracle string `gorm:"column:oracle"`
+	Details Json `gorm:"column:details"`
 	Error string `gorm:"column:error"`
 }
 

@@ -41,7 +41,7 @@ func (mdl *PriceFeed) OnLog(txLog types.Log) {
 		blockNum:=int64(txLog.BlockNumber)
 		mdl.Repo.AddPriceFeed(blockNum, &core.PriceFeed{
 			BlockNumber: blockNum,
-			Token: "",
+			Token: mdl.Details["token"],
 			Feed: mdl.Address,
 			RoundId: roundId,
 			PriceETHBI: (answerBI).String(),

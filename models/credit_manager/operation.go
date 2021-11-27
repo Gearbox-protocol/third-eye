@@ -100,7 +100,7 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token string, value *big.Int) error {
 	cmAddr := txLog.Address.Hex()
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, onBehalfOf)
-	action, args := mdl.ParseEvent("RepayCreditAccount", txLog)
+	action, args := mdl.ParseEvent("AddCollateral", txLog)
 	accountOperation := &core.AccountOperation{
 		TxHash:          txLog.TxHash.Hex(),
 		BlockNumber:        int64(txLog.BlockNumber),
