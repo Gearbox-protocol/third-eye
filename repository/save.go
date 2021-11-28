@@ -4,12 +4,22 @@ import (
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"gorm.io/gorm/clause"
-	"gorm.io/gorm"
 )
 
 func (repo *Repository) Flush() (err error) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	// preferred order adapter => token => pools => cm => credit session => blocks => allowedTokens
+	
+	// credit manager depends on pools
+	// allowed token depends on credit managers
+	// credit sesion depends on credit manager
+	// credit session snapshot on credit session
+	
+	// will be depended in future
+	// block->pricefeed on token
+	// block->protocols on creditManager
+	// block->AccountOperation on session
 
 	// tx := repo.db.Begin()
 	for _, adapter := range repo.syncAdapters {
@@ -17,27 +27,6 @@ func (repo *Repository) Flush() (err error) {
 		err :=repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(adapter.GetAdapterState())
-		if err.Error!=nil {
-			log.Fatal(err.Error)
-		}
-	}
-	for _, block := range repo.blocks {
-		// tx.Clauses(clause.OnConflict{
-		err :=repo.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(block)
-		if err.Error!=nil {
-			err = repo.db.Session(&gorm.Session{DryRun: true}).Clauses(clause.OnConflict{
-				UpdateAll: true,
-			}).Create(block)
-			log.Fatal(err.Error, err.Statement.SQL.String(), err.Statement.Vars)
-		}
-	}
-	for _, cm := range repo.creditManagers {
-		// tx.Clauses(clause.OnConflict{
-		err :=repo.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(cm)
 		if err.Error!=nil {
 			log.Fatal(err.Error)
 		}
@@ -60,11 +49,29 @@ func (repo *Repository) Flush() (err error) {
 			log.Fatal(err.Error)
 		}
 	}
+	for _, cm := range repo.creditManagers {
+		// tx.Clauses(clause.OnConflict{
+		err :=repo.db.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(cm)
+		if err.Error!=nil {
+			log.Fatal(err.Error)
+		}
+	}
 	for _, session := range repo.sessions {
 		// tx.Clauses(clause.OnConflict{
 		err :=repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(session)
+		if err.Error!=nil {
+			log.Fatal(err.Error)
+		}
+	}
+	for _, block := range repo.blocks {
+		// tx.Clauses(clause.OnConflict{
+		err :=repo.db.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).Create(block)
 		if err.Error!=nil {
 			log.Fatal(err.Error)
 		}

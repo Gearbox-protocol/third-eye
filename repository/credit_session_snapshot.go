@@ -34,7 +34,9 @@ func (repo *Repository) GetLastCSS(sessionId string) *core.CreditSessionSnapshot
 	defer repo.mu.Unlock()
 	css := repo.lastCSS[sessionId]
 	if css == nil {
-		log.Fatalf("Credit session snapshot not found for id: %s", css.SessionId)
+		log.Infof("Last Credit session snapshot not found: %s", sessionId)
+		repo.lastCSS[sessionId] = &core.CreditSessionSnapshot{SessionId: sessionId, Balances: make(core.JsonBalance)}
+		css = repo.lastCSS[sessionId]
 	}
 	return css
 }
@@ -42,5 +44,6 @@ func (repo *Repository) GetLastCSS(sessionId string) *core.CreditSessionSnapshot
 func (repo *Repository) AddCreditSessionSnapshot(css *core.CreditSessionSnapshot) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	css.ID = 0
 	repo.blocks[css.BlockNum].AddCreditSessionSnapshot(css)
 }

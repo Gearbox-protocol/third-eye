@@ -273,12 +273,16 @@ func (mdl *CreditManager) updateBalances(txLog *types.Log, sessionId string, bor
 	lastCSS := mdl.Repo.GetLastCSS(sessionId)
 	lastCSS.BlockNum = int64(txLog.BlockNumber)
 	lastCSS.LogId = int64(txLog.Index)
-	uDecimals := mdl.Repo.GetToken(mdl.UToken).Decimals
 	if !clear { 
 		if borrowedAmount != nil {
-			newBorrowedAmount := (new(big.Int).Add(lastCSS.BorrowedAmountBI.Convert(), borrowedAmount))
+			var newBorrowedAmount *big.Int
+			if lastCSS.BorrowedAmountBI != nil {
+				newBorrowedAmount = (new(big.Int).Add(lastCSS.BorrowedAmountBI.Convert(), borrowedAmount))
+			} else {
+				newBorrowedAmount = borrowedAmount
+			}
 			lastCSS.BorrowedAmountBI = (*core.BigInt)(newBorrowedAmount)
-			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(newBorrowedAmount, uDecimals)
+			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(newBorrowedAmount, mdl.UDecimals)
 		}
 		oldBalances := lastCSS.Balances
 		for tokenAddr, amount := range balances {
@@ -306,7 +310,7 @@ func (mdl *CreditManager) updateBalances(txLog *types.Log, sessionId string, bor
 			lastCSS.BorrowedAmount = 0
 		} else {
 			lastCSS.BorrowedAmountBI = (*core.BigInt)(borrowedAmount)
-			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(borrowedAmount, uDecimals)
+			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(borrowedAmount, mdl.UDecimals)
 		}
 		newBalances := core.JsonBalance{}
 		for tokenAddr, amount := range balances {
@@ -335,6 +339,6 @@ func (mdl *CreditManager) updateBalances(txLog *types.Log, sessionId string, bor
 	newCSS.SessionId = lastCSS.SessionId
 	newBorrowBI := *lastCSS.BorrowedAmountBI
 	newCSS.BorrowedAmountBI = &newBorrowBI
-	newCSS.BorrowedAmount = newCSS.BorrowedAmount
+	newCSS.BorrowedAmount = lastCSS.BorrowedAmount
 	mdl.Repo.AddCreditSessionSnapshot(&newCSS)
 }

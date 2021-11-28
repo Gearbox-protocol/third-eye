@@ -184,6 +184,7 @@ func (ep *ExecuteParser) GetExecuteCalls(txLog *types.Log, creditAccount, dappAd
 	for i, raw := range trace.Logs {
 		eventLog := raw.Raw
 		eventSig := eventLog.Topics[0]
+		eventLogAddress := common.HexToAddress(eventLog.Address).Hex()
 		// fmt.Printf("%s %+v %+v %+v\n", raw.Name, eventSig,executeDetails, balances)
 		if Contains(ep.IgnoreCMEventIds, eventSig) && lastExecuteIndex != -1 {
 			executeDetails = append(executeDetails, ExecuteDetails{Balances: balances, LogId: lastExecuteIndex})
@@ -204,13 +205,13 @@ func (ep *ExecuteParser) GetExecuteCalls(txLog *types.Log, creditAccount, dappAd
 			if !b {
 				log.Fatal("failed at serializing transfer data in int")
 			}
-			if balances[eventLog.Address] == nil {
-				balances[eventLog.Address] = big.NewInt(0)
+			if balances[eventLogAddress] == nil {
+				balances[eventLogAddress] = big.NewInt(0)
 			}
 			if src == creditAccount {
-				balances[eventLog.Address] = new(big.Int).Sub(balances[eventLog.Address], amt)
+				balances[eventLogAddress] = new(big.Int).Sub(balances[eventLogAddress], amt)
 			} else if dest == creditAccount {
-				balances[eventLog.Address] = new(big.Int).Add(balances[eventLog.Address], amt)
+				balances[eventLogAddress] = new(big.Int).Add(balances[eventLogAddress], amt)
 			}
 		}
 	}

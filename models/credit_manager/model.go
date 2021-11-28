@@ -17,7 +17,7 @@ type CreditManager struct {
 	contractETH *creditManager.CreditManager
 	LastTxHash string
 	UToken string
-	UDecimals int64
+	UDecimals uint8
 }
 
 func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
@@ -78,6 +78,6 @@ func NewCreditManagerFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapte
 func (mdl *CreditManager) SetUToken() {
 	if mdl.UToken == "" {
 		mdl.UToken = mdl.Repo.GetUnderlyingToken(mdl.Address)
-		mdl.UDecimals = int64(mdl.Repo.GetToken(mdl.UToken).Decimals)
+		mdl.UDecimals = mdl.Repo.GetToken(mdl.UToken).Decimals
 	}
 }

@@ -41,6 +41,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *utils.ExecuteParse
 		tokens: make(map[string]*core.Token),
 		pools: make(map[string]*core.Pool),
 		sessions: make(map[string]*core.CreditSession),
+		lastCSS: make(map[string]*core.CreditSessionSnapshot),
 	}
 	r.init()
 	return r
