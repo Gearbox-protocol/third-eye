@@ -15,6 +15,16 @@ func (repo *Repository) AddToken(addr string) {
 	}
 }
 
+func (repo *Repository) GetToken(addr string) *core.Token {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	token := repo.tokens[addr]
+	if token == nil {
+		log.Fatal("token not found for address", addr)
+	}
+	return token
+}
+
 func (repo *Repository) loadToken() {
 	data := []*core.Token{}
 	err := repo.db.Find(&data).Error

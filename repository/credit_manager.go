@@ -58,3 +58,12 @@ func (repo *Repository) GetCreditOwnerSession(cmAddr, owner string) string {
 	}
 	return sessionId
 }
+
+func (repo *Repository) GetUnderlyingToken(cmAddr string) string {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if repo.creditManagers[cmAddr] == nil {
+		log.Fatal("credit manager not found ", cmAddr)
+	}
+	return repo.creditManagers[cmAddr].UnderlyingToken
+}

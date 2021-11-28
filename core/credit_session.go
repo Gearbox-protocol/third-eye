@@ -53,13 +53,14 @@ type (
 		Since                 int64
 	}
 	CreditSessionSnapshot struct {
-		ID               int64            `gorm:"primaryKey" json:"id"`
+		ID               int64            `gorm:"primaryKey;autoincrement:true" json:"id"`
 		BlockNum         int64            `gorm:"column:block_num"`
+		LogId            int64            `gorm:"column:log_id"`
 		SessionId        string           `gorm:"column:session_id"`
 		BorrowedAmountBI *BigInt          `gorm:"column:borrowed_amount_bi"`
 		BorrowedAmount   float64          `gorm:"column:borrowed_amount"`
 		TotalValueBI     *BigInt          `gorm:"column:total_value_bi"`
 		TotalValue       float64          `gorm:"column:total_value"`
-		Balances         Hstore           `gorm:"column:balances"`
+		Balances         JsonBalance      `gorm:"column:balances"`
 	}
 )

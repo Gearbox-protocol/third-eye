@@ -16,34 +16,47 @@ type CreditManager struct {
 	*core.State
 	contractETH *creditManager.CreditManager
 	LastTxHash string
+	UToken string
+	UDecimals int64
 }
 
 func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
-	cm := NewCreditManagerFromAdapter(
-		repo,
-		core.NewSyncAdapter(addr, "CreditManager", discoveredAt, client),
-	)
+	cmContract, err:=creditManager.NewCreditManager(common.HexToAddress(addr), client)
 	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(cm.DiscoveredAt),
+		BlockNumber: big.NewInt(discoveredAt),
 	}
-	poolAddr, err := cm.contractETH.PoolService(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
-	underlyingToken, err := cm.contractETH.UnderlyingToken(opts)
+	// create underlying token
+	underlyingToken, err := cmContract.UnderlyingToken(opts)
 	if err != nil {
 		log.Fatal(err)
 	}
 	repo.AddToken(underlyingToken.Hex())
-	cm.Repo.AddCreditManager(&core.CreditManager{Address:cm.Address, PoolAddress:poolAddr.Hex(), UnderlyingToken: underlyingToken.Hex(), Sessions: core.NewHstore()})
+	//
+	poolAddr, err := cmContract.PoolService(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// create credit manager for db
+	repo.AddCreditManager(&core.CreditManager{
+		Address:addr, 
+		PoolAddress:poolAddr.Hex(), 
+		UnderlyingToken: underlyingToken.Hex(), 
+		Sessions: core.NewHstore(),
+	})
 
-	creditFilter, err := cm.contractETH.CreditFilter(&bind.CallOpts{})
+	// create creditFilter syncadapter
+	creditFilter, err := cmContract.CreditFilter(&bind.CallOpts{})
 	if err != nil {
 		log.Fatal(err)
 	}
 	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), addr, discoveredAt, client, repo)
 	repo.AddSyncAdapter(cf)
+	//
 
+	cm := NewCreditManagerFromAdapter(
+		repo,
+		core.NewSyncAdapter(addr, "CreditManager", discoveredAt, client),
+	)
 	return cm
 }
 
@@ -58,5 +71,13 @@ func NewCreditManagerFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapte
 		contractETH: cmContract,
 	}
 	obj.GetAbi()
+	obj.SetUToken()
 	return obj
+}
+
+func (mdl *CreditManager) SetUToken() {
+	if mdl.UToken == "" {
+		mdl.UToken = mdl.Repo.GetUnderlyingToken(mdl.Address)
+		mdl.UDecimals = int64(mdl.Repo.GetToken(mdl.UToken).Decimals)
+	}
 }

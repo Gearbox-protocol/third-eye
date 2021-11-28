@@ -3,6 +3,7 @@ package credit_manager
 import (
 	"fmt"
 	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -43,6 +44,10 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		Profit:         (*core.BigInt)(big.NewInt(0)),
 	}
 	mdl.Repo.AddCreditSession(newSession)
+	// create CSS
+	mdl.updateBalances(txLog, sessionId, borrowAmount,  map[string]*big.Int{
+		mdl.UToken: new(big.Int).Add(borrowAmount, amount),
+	}, false)
 	return nil
 }
 
@@ -67,6 +72,10 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 	mdl.Repo.AddAccountOperation(accountOperation)
 	mdl.Repo.RemoveCreditOwnerSession(cmAddr, owner)
 	mdl.closeSession(sessionId, blockNum, remainingFunds, core.Closed)
+	// create credit session snapshot
+	mdl.updateBalances(txLog, sessionId, nil, map[string]*big.Int{
+		mdl.UToken: remainingFunds,
+	}, true)
 	return nil
 }
 
@@ -90,6 +99,10 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 	mdl.Repo.AddAccountOperation(accountOperation)
 	mdl.Repo.RemoveCreditOwnerSession(cmAddr, owner)
 	mdl.closeSession(sessionId, blockNum, remainingFunds, core.Liquidated)
+	// create credit session snapshot
+	mdl.updateBalances(txLog, sessionId, nil, map[string]*big.Int{
+		mdl.UToken: remainingFunds,
+	}, true)
 	return nil
 }
 
@@ -136,6 +149,10 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 	mdl.Repo.AddAccountOperation(accountOperation)
 	mdl.Repo.RemoveCreditOwnerSession(cmAddr, onBehalfOf)
 	mdl.updateSession(sessionId, blockNum)
+	// create credit session snapshot
+	mdl.updateBalances(txLog, sessionId, nil, map[string]*big.Int{
+		token: value,
+	}, false)
 	return nil
 }
 
@@ -158,6 +175,10 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
 	mdl.updateSession(sessionId, blockNum)
+	// create credit session snapshot
+	mdl.updateBalances(txLog, sessionId, amount,  map[string]*big.Int{
+		mdl.UToken: amount,
+	}, false)
 	return nil
 }
 
@@ -212,6 +233,8 @@ func (mdl *CreditManager) onExecuteOrder(txLog *types.Log,
 			Depth: call.Depth,
 		}
 		mdl.Repo.AddAccountOperation(accountOperation)
+		// create credit session snapshot
+		mdl.updateBalances(txLog, sessionId, nil, (map[string]*big.Int)(call.Balances), false)
 	}
 	return nil
 }
@@ -246,6 +269,72 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 }
 
 
-func (mdl *CreditManager) updateBalances(blockNum int64, sessionId string, balances map[string]string) {
+func (mdl *CreditManager) updateBalances(txLog *types.Log, sessionId string, borrowedAmount *big.Int, balances map[string]*big.Int, clear bool) {
+	lastCSS := mdl.Repo.GetLastCSS(sessionId)
+	lastCSS.BlockNum = int64(txLog.BlockNumber)
+	lastCSS.LogId = int64(txLog.Index)
+	uDecimals := mdl.Repo.GetToken(mdl.UToken).Decimals
+	if !clear { 
+		if borrowedAmount != nil {
+			newBorrowedAmount := (new(big.Int).Add(lastCSS.BorrowedAmountBI.Convert(), borrowedAmount))
+			lastCSS.BorrowedAmountBI = (*core.BigInt)(newBorrowedAmount)
+			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(newBorrowedAmount, uDecimals)
+		}
+		oldBalances := lastCSS.Balances
+		for tokenAddr, amount := range balances {
+			tokenBStruct := oldBalances[tokenAddr]
+			token := mdl.Repo.GetToken(tokenAddr)
+			if amount.Sign() != 0 {
+				if oldBalances[tokenAddr] != nil {
+					newAmt := new(big.Int).Add(tokenBStruct.BI.Convert(), amount)
+					oldBalances[tokenAddr] = &core.BalanceType{
+						BI: (*core.BigInt)(newAmt),
+						F: utils.GetFloat64Decimal(newAmt, token.Decimals),
+					}
+				} else {
+					oldBalances[tokenAddr] = &core.BalanceType{
+						BI: (*core.BigInt)(amount),
+						F: utils.GetFloat64Decimal(amount, token.Decimals),
+					}
+				}
+			}
+		}
+		lastCSS.Balances = oldBalances
+	} else {
+		if borrowedAmount == nil {
+			lastCSS.BorrowedAmountBI = nil
+			lastCSS.BorrowedAmount = 0
+		} else {
+			lastCSS.BorrowedAmountBI = (*core.BigInt)(borrowedAmount)
+			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(borrowedAmount, uDecimals)
+		}
+		newBalances := core.JsonBalance{}
+		for tokenAddr, amount := range balances {
+			token := mdl.Repo.GetToken(tokenAddr)
+			newBalances[tokenAddr] = &core.BalanceType{
+				BI: (*core.BigInt)(amount),
+				F: utils.GetFloat64Decimal(amount, token.Decimals),
+			}
+		}
+		lastCSS.Balances = newBalances
+	}
 	
+
+	newCSS := core.CreditSessionSnapshot{}
+	newBalances := core.JsonBalance{}
+	for tokenAddr, details := range lastCSS.Balances {
+		amt := *(details.BI.Convert())
+		newBalances[tokenAddr] = &core.BalanceType {
+			BI: (*core.BigInt)(&amt),
+			F: details.F,
+		}
+	}
+	newCSS.Balances = newBalances
+	newCSS.LogId = lastCSS.LogId
+	newCSS.BlockNum = lastCSS.BlockNum
+	newCSS.SessionId = lastCSS.SessionId
+	newBorrowBI := *lastCSS.BorrowedAmountBI
+	newCSS.BorrowedAmountBI = &newBorrowBI
+	newCSS.BorrowedAmount = newCSS.BorrowedAmount
+	mdl.Repo.AddCreditSessionSnapshot(&newCSS)
 }

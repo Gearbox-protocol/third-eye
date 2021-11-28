@@ -21,25 +21,41 @@ func (Protocol) TableName() string {
 }
 
 type RepositoryI interface {
+	// getting all the adapters for syncing in the engine
 	GetSyncAdapters() []SyncAdapterI
+	// adding the adapters for syncing
 	AddSyncAdapter(adapterI SyncAdapterI)
+	// saving to the db
 	Flush() error
+	// adding block/timestamp
 	SetBlock(blockNum int64)
+	// credit account operations
 	AddAccountOperation(accountOperation *AccountOperation)
+	// credit manager funcs
 	AddCreditManager(cm *CreditManager)
 	AddCreditOwnerSession(cmAddr, owner, sessionId string)
 	RemoveCreditOwnerSession(cmAddr, owner string)
 	GetCreditOwnerSession(cmAddr, owner string) string
+	GetUnderlyingToken(cmAddr string) string
+	// for getting executeparser
 	GetExecuteParser() *utils.ExecuteParser
+	// price feed/oracle funcs
 	AddTokenOracle(token, oracle string, blockNum int64)
 	AddPriceFeed(blockNum int64, pf *PriceFeed)
+	// token funcs
 	AddAllowedProtocol(p *Protocol)
 	AddToken(token string)
 	AddAllowedToken(atoken *AllowedToken)
 	AddTokenObj(token *Token)
 	AddPool(pool *Pool)
 	AddDataCompressor(addr string)
+	GetToken(addr string) *Token
+	// credit session funcs
 	AddCreditSession(session *CreditSession)
 	GetCreditSession(sessionId string)*CreditSession
 	GetCreditSessionData(blockNum int64, sessionId string) dataCompressor.DataTypesCreditAccountDataExtended
+	// credit session snapshots funcs
+	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
+	AddLastCSS(css *CreditSessionSnapshot)
+	GetLastCSS(sessionId string) *CreditSessionSnapshot
 }

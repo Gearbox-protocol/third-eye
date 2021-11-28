@@ -10,6 +10,7 @@ type (
 		TokenOracles      []*TokenOracle      `gorm:"foreignKey:block_num"`
 		PriceFeeds      []*PriceFeed          `gorm:"foreignKey:block_num"`
 		Protocols      []*Protocol          `gorm:"foreignKey:block_num"`
+		CSS    []*CreditSessionSnapshot   `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -28,4 +29,8 @@ func (b *Block) AddPriceFeed(pf *PriceFeed) {
 }
 func (b *Block) AddAllowedProtocol(p *Protocol) {
 	b.Protocols = append(b.Protocols, p)
+}
+
+func (b *Block) AddCreditSessionSnapshot(css *CreditSessionSnapshot) {
+	b.CSS = append(b.CSS, css)
 }

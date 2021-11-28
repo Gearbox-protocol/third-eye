@@ -87,6 +87,16 @@ func NewHstore() Hstore {
 	}
 }
 
+func HstoreFromMap(m map[string]string) Hstore {
+	return Hstore {
+		store: m,
+	}
+}
+
+func (dst *Hstore) GetMap() map[string]string {
+	return dst.store
+}
+
 func (dst *Hstore) Get(key string) string {
 	return dst.store[key]
 }

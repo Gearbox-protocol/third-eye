@@ -27,6 +27,7 @@ type Repository struct {
 	pools         map[string]*core.Pool
 	dc            *dataCompressor.DataCompressor
 	sessions            map[string]*core.CreditSession
+	lastCSS        map[string]*core.CreditSessionSnapshot
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, ep *utils.ExecuteParser) core.RepositoryI {
@@ -50,10 +51,13 @@ func (repo *Repository) GetExecuteParser() *utils.ExecuteParser {
 }
 
 func (repo *Repository) init() {
-	repo.loadSyncAdapters()
-	repo.loadCreditManagers()
+	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
+	repo.loadToken()
 	repo.loadPool()
+	repo.loadCreditManagers()
 	repo.loadCreditSessions()
+	repo.loadLastCSS()
+	repo.loadSyncAdapters()
 }
 
 
