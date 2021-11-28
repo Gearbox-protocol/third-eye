@@ -57,7 +57,7 @@ func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *
 func (mdl *PriceFeed) AfterSyncHook(syncedTill int64)  {
 	newPriceFeed := mdl.GetPriceFeed(mdl.LastSync)
 	if newPriceFeed != mdl.Address {
-		mdl.Disabled = true
+		mdl.Disable()
 		mdl.Repo.AddSyncAdapter(
 			NewPriceFeed(newPriceFeed, mdl.Details["token"], mdl.LastSync + 1, mdl.Client, mdl.Repo),
 		)
@@ -78,7 +78,7 @@ func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
 	}
 	newPriceFeed, err := mdl.contractETH.PhaseAggregators(opts, phaseId)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(mdl.Address, err)
 	}
 	return newPriceFeed.Hex()
 }

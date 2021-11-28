@@ -34,6 +34,7 @@ type SyncAdapterI interface {
 	GetName() string
 	AfterSyncHook(syncTill int64)
 	IsDisabled() bool
+	Disable()
 }
 
 func (s *SyncAdapter) SetLastSync(lastSync int64) {

@@ -9,6 +9,7 @@ type (
 		AccountOperations []*AccountOperation `gorm:"foreignKey:block_num"`
 		TokenOracles      []*TokenOracle      `gorm:"foreignKey:block_num"`
 		PriceFeeds      []*PriceFeed          `gorm:"foreignKey:block_num"`
+		Protocols      []*Protocol          `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -24,4 +25,7 @@ func (b *Block) AddTokenOracle(tokenOracle *TokenOracle) {
 }
 func (b *Block) AddPriceFeed(pf *PriceFeed) {
 	b.PriceFeeds = append(b.PriceFeeds, pf)
+}
+func (b *Block) AddAllowedProtocol(p *Protocol) {
+	b.Protocols = append(b.Protocols, p)
 }

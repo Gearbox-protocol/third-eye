@@ -12,7 +12,6 @@
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"log"
 	"math/big"
  )
  
@@ -38,15 +37,11 @@
  }
  
  func (z *BigInt) Scan(value interface{}) error {
- 
-	log.Printf("%v", value)
- 
 	if value == nil {
 		z = nil
 	}
 	switch t := value.(type) {
 	case string:
-		log.Printf("STRING%s", value)
 		v, ok := new(big.Int).SetString(value.(string), 10)
 		if !ok {
 			return fmt.Errorf("Could not scan type %T into BigInt", t)

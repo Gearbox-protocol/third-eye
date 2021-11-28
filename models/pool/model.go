@@ -7,19 +7,41 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/Gearbox-protocol/gearscan/artifacts/poolService"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"math/big"
 )
 
 type Pool struct {
 	*core.SyncAdapter
 	*core.State
-	ContractETH *poolService.PoolService
+	contractETH *poolService.PoolService
 }
 
 func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
-	return NewPoolFromAdapter(
+	pool := NewPoolFromAdapter(
 		repo,
 		core.NewSyncAdapter(addr, "Pool", discoveredAt, client),
 	)
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(pool.DiscoveredAt),
+	}
+	underlyingToken, err := pool.contractETH.UnderlyingToken(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	repo.AddToken(underlyingToken.Hex())
+	dieselToken, err := pool.contractETH.DieselToken(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	repo.AddToken(dieselToken.Hex())
+	repo.AddPool(&core.Pool{
+		Address:pool.Address, 
+		DieselToken:dieselToken.Hex(),
+		UnderlyingToken: underlyingToken.Hex(),
+	})
+
+	return pool
 }
 
 func NewPoolFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *Pool {
@@ -30,7 +52,7 @@ func NewPoolFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *Pool 
 	obj := &Pool{
 		SyncAdapter: adapter,
 		State: &core.State{Repo: repo},
-		ContractETH: cmContract,
+		contractETH: cmContract,
 	}
 	return obj
 }

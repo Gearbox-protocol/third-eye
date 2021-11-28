@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/log"
+	"fmt"
 )
 
 func (repo *Repository) loadCreditManagers() {
@@ -49,5 +50,11 @@ func (repo *Repository) GetCreditOwnerSession(cmAddr, owner string) string {
 	if repo.creditManagers[cmAddr] == nil {
 		log.Fatal("credit manager not found ", cmAddr)
 	}
-	return repo.creditManagers[cmAddr].Sessions.Get(owner)
+	sessionId := repo.creditManagers[cmAddr].Sessions.Get(owner)
+	if sessionId == "" {
+		panic(
+			fmt.Sprintf("session id not found for %s in %+v\n", owner, repo.creditManagers[cmAddr]),
+		)
+	}
+	return sessionId
 }

@@ -42,6 +42,10 @@ type Contract struct {
 	ABI          *abi.ABI          `gorm:"-"`
 }
 
+func (c *Contract) Disable() {
+	c.Disabled = true
+}
+
 func NewContract(address , contractName string,  discoveredAt int64,  client *ethclient.Client) *Contract {
 
 	con:= &Contract{
