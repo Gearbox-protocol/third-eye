@@ -8,13 +8,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+func (mdl *CreditManager) processExecuteEvents() {
+	if len(mdl.executeParams) > 0 {
+		mdl.handleExecuteEvents()
+		mdl.executeParams = []services.ExecuteParams{}
+	}
+}
 func (mdl *CreditManager) OnLog(txLog types.Log) {
 	// storing execute order in a single tx and processing them  single go on next tx
 	if mdl.LastTxHash != txLog.TxHash.Hex() {
-		if len(mdl.executeParams) > 0 {
-			mdl.handleExecuteEvents()
-			mdl.executeParams = []services.ExecuteParams{}
-		}
+		mdl.processExecuteEvents()
 		mdl.LastTxHash = txLog.TxHash.Hex()
 	}
 	switch txLog.Topics[0] {

@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
+	"sort"
 )
 
 type CreditManager struct {
@@ -20,6 +21,7 @@ type CreditManager struct {
 	UToken string
 	UDecimals uint8
 	executeParams []services.ExecuteParams
+	eventBalances SortedEventbalances
 }
 
 func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
@@ -82,4 +84,13 @@ func (mdl *CreditManager) SetUToken() {
 		mdl.UToken = mdl.Repo.GetUnderlyingToken(mdl.Address)
 		mdl.UDecimals = mdl.Repo.GetToken(mdl.UToken).Decimals
 	}
+}
+
+func (mdl *CreditManager) AfterSyncHook(_ int64) {
+	mdl.processExecuteEvents()
+	sort.Sort(mdl.eventBalances)
+	for _, eventBalance := range mdl.eventBalances {
+		mdl.updateBalance(eventBalance)
+	}
+	mdl.eventBalances = SortedEventbalances{}
 }
