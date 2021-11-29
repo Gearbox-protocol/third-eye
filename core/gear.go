@@ -6,7 +6,7 @@ import (
 )
 
 type EngineI interface {
-	Sync()
+	SyncHandler()
 }
 
 type Protocol struct {

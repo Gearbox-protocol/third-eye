@@ -2,6 +2,9 @@ package engine
 
 import (
 	"context"
+	"math/big"
+	"time"
+
 	"github.com/Gearbox-protocol/gearscan/config"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
@@ -9,13 +12,13 @@ import (
 	"github.com/Gearbox-protocol/gearscan/models/address_provider"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type Engine struct {
 	config       *config.Config
 	client       *ethclient.Client
 	repo         core.RepositoryI
+	blockPerSync int64
 	nextSyncStop int64
 }
 
@@ -29,31 +32,43 @@ func NewEngine(config *config.Config,
 	}
 }
 
-var blockPerSync int64 = 2000
 
 func (e *Engine) init() {
+	e.blockPerSync = 400 * 5
 	adapters := e.repo.GetSyncAdapters()
 	log.Info("init sync adapters", adapters)
 	if len(adapters) == 0 {
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
 		obj := address_provider.NewAddressProvider(addr, e.client, e.repo)
 		e.repo.AddSyncAdapter(obj)
-		e.nextSyncStop = obj.GetLastSync() + blockPerSync
+		e.nextSyncStop = obj.GetLastSync() + e.blockPerSync
 	} else {
-		e.nextSyncStop = adapters[0].GetLastSync() + blockPerSync
+		e.nextSyncStop = adapters[0].GetLastSync() + e.blockPerSync
 	}
 }
-func (e *Engine) Sync() {
+
+func (e *Engine) SyncHandler() {
 	e.init()
-	// for i := 0; i < 2; i++ {
 	for {
+		latestBlockNum, err := e.client.BlockNumber(context.TODO())
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Info("Lastest blocknumber",latestBlockNum)
+		e.sync(int64(latestBlockNum))
+		log.Infof("Synced till %d sleeping for 5 mins", latestBlockNum)
+		time.Sleep(5 * time.Minute)
+		e.blockPerSync = 5 * 5 // on kovan 5 blocks in 1 min , sleep for 5 mins
+	}
+}
+func (e *Engine) sync(latestBlockNum int64) {
+	for ;e.nextSyncStop < latestBlockNum; {
 		log.Info("Sync till", e.nextSyncStop)
 		for _, adapter := range e.repo.GetSyncAdapters() {
 			e.SyncModel(adapter, e.nextSyncStop)
 		}
 		e.repo.Flush()
-		// log.Fatal("end")
-		e.nextSyncStop += blockPerSync
+		e.nextSyncStop += e.blockPerSync
 	}
 }
 
