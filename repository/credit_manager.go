@@ -21,7 +21,7 @@ func (repo *Repository) AddCreditManager(cm *core.CreditManager) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.creditManagers[cm.Address] != nil {
-		log.Fatal("credit manager already set")
+		panic(fmt.Sprintf("credit manager already set %s", cm.Address))
 	}
 	repo.creditManagers[cm.Address] = cm
 }

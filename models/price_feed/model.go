@@ -70,11 +70,15 @@ func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
 		BlockNumber: big.NewInt(blockNum),
 	}
 	phaseId, err := mdl.contractETH.PhaseId(opts)
-	if err != nil {
-		mdl.SetError(err)
-		oralceAddr := mdl.Details["oracle"]
-		log.Error(oralceAddr, " oracle failed disabling due to ", err)
-		return oralceAddr
+	if err != nil  {
+		if err.Error() == "execution aborted (timeout = 10s)" {
+			log.Fatal(err)	
+		} else {
+			mdl.SetError(err)
+			oralceAddr := mdl.Details["oracle"]
+			log.Error(oralceAddr, " oracle failed disabling due to ", err)
+			return oralceAddr
+		}
 	}
 	newPriceFeed, err := mdl.contractETH.PhaseAggregators(opts, phaseId)
 	if err != nil {

@@ -3,11 +3,20 @@ package credit_manager
 import (
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
+	// storing execute order in a single tx and processing them  single go on next tx
+	if mdl.LastTxHash != txLog.TxHash.Hex() {
+		if len(mdl.executeParams) > 0 {
+			mdl.handleExecuteEvents()
+			mdl.executeParams = []services.ExecuteParams{}
+		}
+		mdl.LastTxHash = txLog.TxHash.Hex()
+	}
 	switch txLog.Topics[0] {
 	case core.Topic("OpenCreditAccount(address,address,address,uint256,uint256,uint256)"):
 		openCreditAccountEvent, err := mdl.contractETH.ParseOpenCreditAccount(txLog)
@@ -68,15 +77,11 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 			addCollateralEvent.Token.Hex(),
 			addCollateralEvent.Value)
 	case core.Topic("ExecuteOrder(address,address)"):
-		if mdl.LastTxHash == txLog.TxHash.Hex() {
-			return
-		}
-		mdl.LastTxHash = txLog.TxHash.Hex()
 		execute, err := mdl.contractETH.ParseExecuteOrder(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack ExecuteOrder event", err)
 		}
-		mdl.onExecuteOrder(&txLog, execute.Borrower, execute.Target)
+		mdl.AddParams(&txLog, execute.Borrower, execute.Target)
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.contractETH.ParseTransferAccount(txLog)

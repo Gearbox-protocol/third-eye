@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
 )
 
@@ -38,7 +38,7 @@ type RepositoryI interface {
 	GetCreditOwnerSession(cmAddr, owner string) string
 	GetUnderlyingToken(cmAddr string) string
 	// for getting executeparser
-	GetExecuteParser() *utils.ExecuteParser
+	GetExecuteParser() *services.ExecuteParser
 	// price feed/oracle funcs
 	AddTokenOracle(token, oracle string, blockNum int64)
 	AddPriceFeed(blockNum int64, pf *PriceFeed)

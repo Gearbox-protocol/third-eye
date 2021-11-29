@@ -1,15 +1,14 @@
 package utils
 
 import (
-	"go.uber.org/fx"
 	"math/big"
 	"fmt"
+	"strings"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
 )
 
-var Module = fx.Option(
-	fx.Provide(NewExecuteParser))
-
-
+// maths 
 func GetExpFloat(decimals int64) *big.Float {
 	if decimals < 0 {
 		panic(fmt.Sprintf("GetExpFloat received pow:%d", decimals))
@@ -27,4 +26,28 @@ func GetFloat64Decimal(num *big.Int, decimals uint8) float64 {
 		GetExpFloat(int64(decimals)),
 	).Float64()
 	return floatBorrowedAmount
+}
+
+// others
+
+func GetCreditManagerEventIds() []string {
+	var ids []string
+	if a, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
+		for _, event := range a.Events {
+			// fmt.Println(event.RawName, event.ID.Hex())
+			// if event.RawName != "ExecuteOrder" {
+			ids = append(ids, event.ID.Hex())
+			// }
+		}
+	}
+	return ids
+}
+
+func Contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }

@@ -5,8 +5,8 @@ import (
 
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/utils"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
 	"gorm.io/gorm"
 
@@ -21,7 +21,7 @@ type Repository struct {
 	client         *ethclient.Client
 	blocks         map[int64]*core.Block
 	creditManagers map[string]*core.CreditManager
-	executeParser *utils.ExecuteParser
+	executeParser *services.ExecuteParser
 	tokens        map[string]*core.Token
 	allowedTokens []*core.AllowedToken
 	pools         map[string]*core.Pool
@@ -30,7 +30,7 @@ type Repository struct {
 	lastCSS        map[string]*core.CreditSessionSnapshot
 }
 
-func NewRepository(db *gorm.DB, client *ethclient.Client, ep *utils.ExecuteParser) core.RepositoryI {
+func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecuteParser) core.RepositoryI {
 	r := &Repository{
 		db:             db,
 		mu:             &sync.Mutex{},
@@ -47,7 +47,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *utils.ExecuteParse
 	return r
 }
 
-func (repo *Repository) GetExecuteParser() *utils.ExecuteParser {
+func (repo *Repository) GetExecuteParser() *services.ExecuteParser {
 	return repo.executeParser
 }
 

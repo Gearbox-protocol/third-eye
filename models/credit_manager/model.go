@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/Gearbox-protocol/gearscan/models/credit_filter"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
@@ -18,6 +19,7 @@ type CreditManager struct {
 	LastTxHash string
 	UToken string
 	UDecimals uint8
+	executeParams []services.ExecuteParams
 }
 
 func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {

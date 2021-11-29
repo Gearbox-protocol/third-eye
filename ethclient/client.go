@@ -52,6 +52,10 @@ func (rc *Client) Close() {
 }
 func (rc *Client) errorHandler(err error) bool {
 	if err != nil {
+		if err.Error() == "execution aborted (timeout = 10s)" {
+			log.Error("sleeping due to execution aborted (timeout = 10s)")
+			time.Sleep(2 * time.Second)
+		}
 		if strings.HasPrefix(err.Error(), "403") {
 			log.Error("Retry because of error: ", err)
 			if err = rc.UpdateClient(); err != nil {

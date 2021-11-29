@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -17,6 +18,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 	cmAddr := txLog.Address.Hex()
 	sessionId := fmt.Sprintf("%s_%d_%d", account, txLog.BlockNumber, txLog.Index)
 	action, args := mdl.ParseEvent("OpenCreditAccount", txLog)
+	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: int64(txLog.BlockNumber),
@@ -30,6 +32,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		Dapp:        cmAddr,
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
+	// add session to manager object
 	mdl.Repo.AddCreditOwnerSession(cmAddr, onBehalfOf, sessionId)
 	// create credit session
 	newSession := &core.CreditSession{
@@ -57,6 +60,7 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, owner)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("CloseCreditAccount", txLog)
+	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:          txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
@@ -70,7 +74,9 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 		Dapp: cmAddr,
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
+	// remove session to manager object
 	mdl.Repo.RemoveCreditOwnerSession(cmAddr, owner)
+	// close credit session
 	mdl.closeSession(sessionId, blockNum, remainingFunds, core.Closed)
 	// create credit session snapshot
 	mdl.updateBalances(txLog, sessionId, nil, map[string]*big.Int{
@@ -84,6 +90,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, owner)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("LiquidateCreditAccount", txLog)
+	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:          txLog.TxHash.Hex(),
 		BlockNumber:       blockNum,
@@ -97,7 +104,9 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
+	// remove session to manager object
 	mdl.Repo.RemoveCreditOwnerSession(cmAddr, owner)
+	// close credit session
 	mdl.closeSession(sessionId, blockNum, remainingFunds, core.Liquidated)
 	// create credit session snapshot
 	mdl.updateBalances(txLog, sessionId, nil, map[string]*big.Int{
@@ -111,6 +120,7 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, owner)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("RepayCreditAccount", txLog)
+	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:          txLog.TxHash.Hex(),
 		BlockNumber:        blockNum,
@@ -124,7 +134,9 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 		Dapp: cmAddr,
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
+	// remove session to manager object
 	mdl.Repo.RemoveCreditOwnerSession(cmAddr, owner)
+	// close credit session
 	mdl.closeSession(sessionId, blockNum, nil, core.Repaid)
 	return nil
 }
@@ -134,6 +146,7 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, onBehalfOf)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("AddCollateral", txLog)
+	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:          txLog.TxHash.Hex(),
 		BlockNumber:        blockNum,
@@ -147,7 +160,7 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
-	mdl.Repo.RemoveCreditOwnerSession(cmAddr, onBehalfOf)
+	// update credit session
 	mdl.updateSession(sessionId, blockNum)
 	// create credit session snapshot
 	mdl.updateBalances(txLog, sessionId, nil, map[string]*big.Int{
@@ -161,6 +174,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, borrower)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("IncreaseBorrowedAmount", txLog)
+	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:          txLog.TxHash.Hex(),
 		BlockNumber:        blockNum,
@@ -174,6 +188,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
+	// update credit session
 	mdl.updateSession(sessionId, blockNum)
 	// create credit session snapshot
 	mdl.updateBalances(txLog, sessionId, amount,  map[string]*big.Int{
@@ -186,6 +201,7 @@ func (mdl *CreditManager) onTransferAccount(txLog *types.Log, owner, newOwner st
 	cmAddr := txLog.Address.Hex()
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, owner)
 	action, args := mdl.ParseEvent("TransferAccount", txLog)
+	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:          txLog.TxHash.Hex(),
 		BlockNumber:        int64(txLog.BlockNumber),
@@ -199,6 +215,7 @@ func (mdl *CreditManager) onTransferAccount(txLog *types.Log, owner, newOwner st
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
+	// remove session to manager object
 	mdl.Repo.RemoveCreditOwnerSession(cmAddr, owner)
 	mdl.Repo.AddCreditOwnerSession(cmAddr, newOwner, sessionId)
 	session := mdl.Repo.GetCreditSession(sessionId)
@@ -206,24 +223,38 @@ func (mdl *CreditManager) onTransferAccount(txLog *types.Log, owner, newOwner st
 	return nil
 }
 
-func (mdl *CreditManager) onExecuteOrder(txLog *types.Log,
+func (mdl *CreditManager) AddParams(txLog *types.Log,
 	borrower,
 	targetContract common.Address) error {
 	cmAddr := txLog.Address.Hex()
 	sessionId := mdl.Repo.GetCreditOwnerSession(cmAddr, borrower.Hex())
-	creditAccount := strings.Split(sessionId, "_")[0]
-	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txLog, common.HexToAddress(creditAccount), targetContract)
+	mdl.executeParams = append(mdl.executeParams, services.ExecuteParams{
+		SessionId: sessionId,
+		CreditAccount: common.HexToAddress(strings.Split(sessionId, "_")[0]),
+		Protocol: targetContract,
+		Borrower: borrower,
+		Index: txLog.Index,
+		BlockNumber: int64(txLog.BlockNumber),
+	})
+	return nil
+}
+
+func (mdl *CreditManager) handleExecuteEvents() {
+
+	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(mdl.LastTxHash, mdl.Address, mdl.executeParams)
 	
-	for _, call := range calls {
+	for i, call := range calls {
+		params := mdl.executeParams[i]
+		// add account operation
 		accountOperation := &core.AccountOperation{
-			BlockNumber: int64(txLog.BlockNumber),
-			TxHash: txLog.TxHash.Hex(),
-			LogId: uint(call.LogId),
+			BlockNumber: params.BlockNumber,
+			TxHash: mdl.LastTxHash,
+			LogId: params.Index,
 			// owner/account data
-			Borrower: borrower.Hex(),
-			SessionId: sessionId,
+			Borrower: params.Borrower.Hex(),
+			SessionId: params.SessionId,
 			// dapp
-			Dapp: targetContract.Hex(),
+			Dapp: params.Protocol.Hex(),
 			// call/events data
 			Action: call.Name,
 			Args: call.Args,
@@ -234,9 +265,11 @@ func (mdl *CreditManager) onExecuteOrder(txLog *types.Log,
 		}
 		mdl.Repo.AddAccountOperation(accountOperation)
 		// create credit session snapshot
-		mdl.updateBalances(txLog, sessionId, nil, (map[string]*big.Int)(call.Balances), false)
+		mdl.updateBalances(&types.Log{
+			BlockNumber: uint64(params.BlockNumber),
+			Index: params.Index,
+			}, params.SessionId, nil, (map[string]*big.Int)(call.Balances), false)
 	}
-	return nil
 }
 
 func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, remainingFunds *big.Int, newStatus int) {
@@ -337,8 +370,10 @@ func (mdl *CreditManager) updateBalances(txLog *types.Log, sessionId string, bor
 	newCSS.LogId = lastCSS.LogId
 	newCSS.BlockNum = lastCSS.BlockNum
 	newCSS.SessionId = lastCSS.SessionId
-	newBorrowBI := *lastCSS.BorrowedAmountBI
-	newCSS.BorrowedAmountBI = &newBorrowBI
+	if lastCSS.BorrowedAmountBI != nil {
+		newBorrowBI := *lastCSS.BorrowedAmountBI
+		newCSS.BorrowedAmountBI = &newBorrowBI
+	}
 	newCSS.BorrowedAmount = lastCSS.BorrowedAmount
 	mdl.Repo.AddCreditSessionSnapshot(&newCSS)
 }

@@ -14,7 +14,7 @@ import (
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/Gearbox-protocol/gearscan/models"
 	"github.com/Gearbox-protocol/gearscan/repository"
-	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"go.uber.org/fx"
 
 	"context"
@@ -45,7 +45,7 @@ func main() {
 		ethclient.Module,
 		config.Module,
 		repository.Module,
-		utils.Module,
+		services.Module,
 		engine.Module,
 		models.Module,
 		fx.NopLogger,

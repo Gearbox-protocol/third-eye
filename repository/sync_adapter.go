@@ -34,6 +34,7 @@ func prepareSyncAdapter(adapter *core.SyncAdapter, repo core.RepositoryI) core.S
 		return acl.NewACLFromAdapter(repo, adapter)
 	case "AddressProvider":
 		ap := address_provider.NewAddressProviderFromAdapter(repo,adapter)
+		log.Info(ap.Details["dataCompressor"])
 		repo.AddDataCompressor(ap.Details["dataCompressor"])
 		return ap
 	case "AccountFactory":
