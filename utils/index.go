@@ -4,8 +4,12 @@ import (
 	"fmt"
 	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/Gearbox-protocol/gearscan/log"
 	"math/big"
 	"strings"
+	"context"
+	"time"
 )
 
 // maths
@@ -50,4 +54,22 @@ func Contains(s []string, e string) bool {
 		}
 	}
 	return false
+}
+
+
+func GetTimeoutCtx(sec int) (context.Context,context.CancelFunc) {
+		//https://blog.golang.org/context
+	timeout, err := time.ParseDuration(fmt.Sprintf("%ds",sec))
+	if err != nil {
+		log.Error(err)
+	}
+	ctx, cancel := context.WithTimeout(context.TODO(), timeout * time.Second)
+	return ctx,cancel
+}
+func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
+	ctx, cancel := GetTimeoutCtx(20)
+	return &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
+		Context: ctx,
+	}, cancel
 }

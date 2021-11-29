@@ -86,11 +86,12 @@ func (mdl *CreditManager) SetUToken() {
 	}
 }
 
-func (mdl *CreditManager) AfterSyncHook(_ int64) {
+func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	mdl.processExecuteEvents()
 	sort.Sort(mdl.eventBalances)
 	for _, eventBalance := range mdl.eventBalances {
 		mdl.updateBalance(eventBalance)
 	}
 	mdl.eventBalances = SortedEventbalances{}
+	mdl.SetLastSync(syncTill)
 }

@@ -9,12 +9,15 @@ import (
 
 type ExecuteFilter struct {
 	paramsList    []ExecuteParams
-	paramsIndex   int64
+	paramsIndex   int
 	creditManager common.Address
 }
 
 func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*KnownCall {
 	var calls []*KnownCall
+	if ef.paramsIndex >= len(ef.paramsList) {
+		return calls
+	}
 	ep := ef.paramsList[ef.paramsIndex]
 	if call.CallerOp == "CALL" || call.CallerOp == "DELEGATECALL" {
 		if ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x6ce4074a" {

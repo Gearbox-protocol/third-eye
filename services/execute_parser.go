@@ -7,6 +7,8 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"io/ioutil"
+	"time"
 
 	"github.com/Gearbox-protocol/gearscan/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/gearscan/artifacts/iSwapRouter"
@@ -71,15 +73,20 @@ type TxTrace struct {
 	Logs      []Log  `json:"logs"`
 }
 
-func (ep *ExecuteParser) GetTxTrace(txHash string) (*TxTrace, error) {
+func (ep *ExecuteParser) getTenderlyData(txHash string) (*TxTrace, error) {
 	link := fmt.Sprintf("https://api.tenderly.co/api/v1/public-contract/%d/trace/%s", ep.ChainId, txHash)
 	req, _ := http.NewRequest(http.MethodGet, link, nil)
 	resp, err := ep.Client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+	   log.Fatal(err)
+	}
+	// log.Infof("%s",body)
 	trace := &TxTrace{}
-	err = json.NewDecoder(resp.Body).Decode(trace)
+	err = json.Unmarshal(body, trace)
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
@@ -112,7 +119,6 @@ type KnownCall struct {
 	Name     string
 	Args     string
 	Balances Balances
-	LogId    int
 }
 
 func (call *Call) dappCall(dappAddr common.Address) *KnownCall {
@@ -133,24 +139,36 @@ func (call *Call) dappCall(dappAddr common.Address) *KnownCall {
 	}
 	return nil
 }
-
-func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall {
-	trace, err := ep.GetTxTrace(txHash)
+func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
+	trace, err := ep.getTenderlyData(txHash)
 	if err != nil {
 		log.Fatal(err)
 	}
+	if trace.CallTrace == nil {
+		log.Info("Call trace nil retrying in 30 sec")
+		time.Sleep(30 * time.Second)
+		trace, err = ep.getTenderlyData(txHash)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return trace
+	}
+	return trace
+}
+
+func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall {
+	trace := ep.GetTxTrace(txHash)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)
 	executeTransfers := filter.getExecuteTransfers(trace, ep.IgnoreCMEventIds)
 
 	// check if parsed execute Order currently
-	if len(calls) == len(executeTransfers) && len(calls) == len(paramsList) {
+	if len(calls) == len(executeTransfers) {
 		for i, call := range calls {
 			call.Balances = executeTransfers[i]
-			call.LogId = int(paramsList[i].Index)
 		}
 	} else {
-		log.Fatal("Calls ", len(calls), ", execute details ", len(executeTransfers), ", execute params", len(paramsList))
+		log.Fatal("Calls ", len(calls), ", execute details ", len(executeTransfers))
 	}
 	return calls
 }

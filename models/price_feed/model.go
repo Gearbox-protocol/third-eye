@@ -5,9 +5,8 @@ import (
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/Gearbox-protocol/gearscan/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type PriceFeed struct {
@@ -66,12 +65,11 @@ func (mdl *PriceFeed) AfterSyncHook(syncedTill int64) {
 }
 
 func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
+	opts, cancel := utils.GetTimeoutOpts(blockNum)
+	defer cancel()
 	phaseId, err := mdl.contractETH.PhaseId(opts)
 	if err != nil {
-		if err.Error() == "execution aborted (timeout = 10s)" {
+		if err.Error() == "execution aborted (timeout = 20s)" {
 			log.Fatal(err)
 		} else {
 			mdl.SetError(err)
@@ -80,6 +78,8 @@ func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
 			return oralceAddr
 		}
 	}
+	opts, cancel = utils.GetTimeoutOpts(blockNum)
+	defer cancel()
 	newPriceFeed, err := mdl.contractETH.PhaseAggregators(opts, phaseId)
 	if err != nil {
 		log.Fatal(mdl.Address, err)
