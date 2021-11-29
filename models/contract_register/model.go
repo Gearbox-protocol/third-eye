@@ -10,7 +10,6 @@ type ContractRegister struct {
 	*core.State
 }
 
-
 func NewContractRegister(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ContractRegister {
 	return NewContractRegisterFromAdapter(
 		repo,
@@ -21,7 +20,7 @@ func NewContractRegister(addr string, discoveredAt int64, client *ethclient.Clie
 func NewContractRegisterFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *ContractRegister {
 	obj := &ContractRegister{
 		SyncAdapter: adapter,
-		State: &core.State{Repo: repo},
+		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

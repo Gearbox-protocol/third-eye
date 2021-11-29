@@ -14,15 +14,14 @@ const MaxUint = ^int64(0)
 
 type SyncAdapter struct {
 	*Contract
-	LastSync int64 `gorm:"column:last_sync"`
-	Details Json `gorm:"column:details"`
-	Error string `gorm:"column:error"`
+	LastSync int64  `gorm:"column:last_sync"`
+	Details  Json   `gorm:"column:details"`
+	Error    string `gorm:"column:error"`
 }
 
 func (SyncAdapter) TableName() string {
 	return "sync_adapters"
 }
-
 
 type SyncAdapterI interface {
 	OnLog(txLog types.Log)
@@ -42,7 +41,7 @@ func (s *SyncAdapter) SetLastSync(lastSync int64) {
 }
 
 func (s *SyncAdapter) SetError(err error) {
-	s.Disabled = true 
+	s.Disabled = true
 	msg := err.Error()
 	msgLen := len(msg)
 	if msgLen > 200 {
@@ -59,11 +58,10 @@ func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
 }
 
-
-func NewSyncAdapter(addr, name string, discoveredAt int64,  client *ethclient.Client) *SyncAdapter {
+func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client) *SyncAdapter {
 	obj := &SyncAdapter{
-			Contract: NewContract(addr, name, discoveredAt, client),
-		}
+		Contract: NewContract(addr, name, discoveredAt, client),
+	}
 	obj.LastSync = obj.FirstLogAt
 	return obj
 }
@@ -73,7 +71,6 @@ func (s *SyncAdapter) GetAdapterState() *SyncAdapter {
 func (s *SyncAdapter) LoadState() {
 
 }
-
 
 // func (mdl *SyncAdapter) OnLog(txLog types.Log) {
 // 	log.Infof("%s\n", reflect.TypeOf(mdl))

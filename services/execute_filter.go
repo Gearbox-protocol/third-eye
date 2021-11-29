@@ -1,15 +1,15 @@
 package services
 
 import (
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
 type ExecuteFilter struct {
-	paramsList []ExecuteParams
-	paramsIndex int64
+	paramsList    []ExecuteParams
+	paramsIndex   int64
 	creditManager common.Address
 }
 
@@ -20,12 +20,12 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*KnownCall {
 		if ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x6ce4074a" {
 
 			dappcall := call.dappCall(ep.Protocol)
-			// this check is there as there are 2 executeOrder call in 
+			// this check is there as there are 2 executeOrder call in
 			// https://kovan.etherscan.io/tx/0x9aeb9ccfb3e100c3c9e6ed5a140784e910a962be36e15f244938645b21c48a96
 			// only first call to the dapp as the gearbox don't recursively call adapter/creditManager executeOrder
 			dappcall.Depth = call.Depth
 			calls = append(calls, dappcall)
-			ef.paramsIndex+=1
+			ef.paramsIndex += 1
 		} else {
 			for _, c := range call.Calls {
 				c.Depth = call.Depth + 1
@@ -35,7 +35,6 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*KnownCall {
 	}
 	return calls
 }
-
 
 func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) []Balances {
 	balances := make(Balances)
@@ -54,13 +53,13 @@ func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) 
 		}
 		// ExecuteOrder
 		if eventSig == "0xaed1eb34af6acd8c1e3911fb2ebb875a66324b03957886bd002227b17f52ab03" {
-			paramsIndex+=1
+			paramsIndex += 1
 			balances = make(Balances)
 			parsingTransfer = true
-		} 
+		}
 		// Transfer
-		if eventSig == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" && 
-				len(eventLog.Topics) == 3 && parsingTransfer {
+		if eventSig == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" &&
+			len(eventLog.Topics) == 3 && parsingTransfer {
 			src := common.HexToAddress(eventLog.Topics[1])
 			dest := common.HexToAddress(eventLog.Topics[2])
 			amt, b := new(big.Int).SetString(eventLog.Data[2:], 16)

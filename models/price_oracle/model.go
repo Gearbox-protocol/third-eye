@@ -1,10 +1,10 @@
 package price_oracle
 
 import (
+	"github.com/Gearbox-protocol/gearscan/artifacts/priceOracle"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/artifacts/priceOracle"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -28,9 +28,8 @@ func NewPriceOracleFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter)
 	}
 	obj := &PriceOracle{
 		SyncAdapter: adapter,
-		State: &core.State{Repo: repo},
-		contractETH:cmContract,
+		State:       &core.State{Repo: repo},
+		contractETH: cmContract,
 	}
 	return obj
 }
-

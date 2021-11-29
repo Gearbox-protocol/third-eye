@@ -7,11 +7,11 @@ import (
 	"github.com/Gearbox-protocol/gearscan/models/acl"
 	"github.com/Gearbox-protocol/gearscan/models/address_provider"
 	"github.com/Gearbox-protocol/gearscan/models/contract_register"
+	"github.com/Gearbox-protocol/gearscan/models/credit_filter"
 	"github.com/Gearbox-protocol/gearscan/models/credit_manager"
 	"github.com/Gearbox-protocol/gearscan/models/pool"
-	"github.com/Gearbox-protocol/gearscan/models/price_oracle"
 	"github.com/Gearbox-protocol/gearscan/models/price_feed"
-	"github.com/Gearbox-protocol/gearscan/models/credit_filter"
+	"github.com/Gearbox-protocol/gearscan/models/price_oracle"
 )
 
 func (repo *Repository) loadSyncAdapters() {
@@ -26,14 +26,12 @@ func (repo *Repository) loadSyncAdapters() {
 	}
 }
 
-
-
 func prepareSyncAdapter(adapter *core.SyncAdapter, repo core.RepositoryI) core.SyncAdapterI {
 	switch adapter.ContractName {
 	case "ACL":
 		return acl.NewACLFromAdapter(repo, adapter)
 	case "AddressProvider":
-		ap := address_provider.NewAddressProviderFromAdapter(repo,adapter)
+		ap := address_provider.NewAddressProviderFromAdapter(repo, adapter)
 		log.Info(ap.Details["dataCompressor"])
 		repo.AddDataCompressor(ap.Details["dataCompressor"])
 		return ap
@@ -70,7 +68,7 @@ func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 func (repo *Repository) DisableSyncAdapter(addr string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	for _, adapter:= range repo.syncAdapters {
+	for _, adapter := range repo.syncAdapters {
 		if adapter.GetAddress() == addr {
 			adapter.Disable()
 		}

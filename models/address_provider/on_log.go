@@ -37,7 +37,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			af := account_factory.NewAccountFactory(address, blockNum, mdl.SyncAdapter.Client, mdl.State.Repo)
 			mdl.State.Repo.AddSyncAdapter(af)
 		case "DATA_COMPRESSOR":
-			mdl.Details = core.Json(map[string]string{"dataCompressor":address})
+			mdl.Details = core.Json(map[string]string{"dataCompressor": address})
 			mdl.Repo.AddDataCompressor(address)
 		}
 	}

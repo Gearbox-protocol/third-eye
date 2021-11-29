@@ -1,17 +1,19 @@
 package core
 
 import (
-	"encoding/json"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 )
+
 type Json map[string]string
+
 func (j *Json) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
 func (z *Json) Scan(value interface{}) error {
-	out:=map[string]string{}
+	out := map[string]string{}
 	switch t := value.(type) {
 	case []byte:
 		err := json.Unmarshal(value.([]byte), &out)
@@ -22,9 +24,9 @@ func (z *Json) Scan(value interface{}) error {
 	}
 }
 
-type BalanceType struct{
-	BI *BigInt `json:"BI"` 
-	F float64 `json:"F"`
+type BalanceType struct {
+	BI *BigInt `json:"BI"`
+	F  float64 `json:"F"`
 }
 
 type JsonBalance map[string]*BalanceType
@@ -34,7 +36,7 @@ func (j *JsonBalance) Value() (driver.Value, error) {
 }
 
 func (z *JsonBalance) Scan(value interface{}) error {
-	out:=JsonBalance{}
+	out := JsonBalance{}
 	switch t := value.(type) {
 	case []byte:
 		err := json.Unmarshal(value.([]byte), &out)

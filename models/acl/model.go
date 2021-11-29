@@ -21,7 +21,7 @@ func NewACL(addr string, discoveredAt int64, client *ethclient.Client, repo core
 func NewACLFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *ACL {
 	obj := &ACL{
 		SyncAdapter: adapter,
-		State: &core.State{Repo: repo},
+		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

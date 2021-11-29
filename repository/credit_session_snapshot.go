@@ -23,7 +23,7 @@ func (repo *Repository) AddLastCSS(css *core.CreditSessionSnapshot) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.lastCSS[css.SessionId] == nil {
-		repo.lastCSS[css.SessionId] = css 
+		repo.lastCSS[css.SessionId] = css
 	} else {
 		log.Fatalf("Credit session snapshot already present %s", css.SessionId)
 	}

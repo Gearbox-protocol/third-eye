@@ -21,14 +21,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-
 type ExecuteParams struct {
-	SessionId string
-	Protocol common.Address
+	SessionId     string
+	Protocol      common.Address
 	CreditAccount common.Address
-	Borrower common.Address
-	Index uint
-	BlockNumber int64
+	Borrower      common.Address
+	Index         uint
+	BlockNumber   int64
 }
 
 type ExecuteParser struct {
@@ -67,7 +66,7 @@ type Log struct {
 }
 
 type TxTrace struct {
-	CallTrace *Call   `json:"call_trace"`
+	CallTrace *Call  `json:"call_trace"`
 	TxHash    string `json:"transaction_id"`
 	Logs      []Log  `json:"logs"`
 }
@@ -144,7 +143,6 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	calls := filter.getExecuteCalls(trace.CallTrace)
 	executeTransfers := filter.getExecuteTransfers(trace, ep.IgnoreCMEventIds)
 
-
 	// check if parsed execute Order currently
 	if len(calls) == len(executeTransfers) && len(calls) == len(paramsList) {
 		for i, call := range calls {
@@ -156,8 +154,6 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	}
 	return calls
 }
-
-
 
 var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
 	uniswapV2Adapter.UniswapV2AdapterABI, uniswapV3Adapter.UniswapV3AdapterABI,

@@ -4,8 +4,8 @@ import (
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/Gearbox-protocol/gearscan/services"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 func (mdl *CreditManager) processExecuteEvents() {
@@ -93,8 +93,8 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 			}
 			mdl.onTransferAccount(&txLog, transferAccount.OldOwner.Hex(), transferAccount.NewOwner.Hex())
 		} else {
-			oldOwner:=common.BytesToAddress(txLog.Data[:32])
-			newOwner:=common.BytesToAddress(txLog.Data[32:])
+			oldOwner := common.BytesToAddress(txLog.Data[:32])
+			newOwner := common.BytesToAddress(txLog.Data[32:])
 			mdl.onTransferAccount(&txLog, oldOwner.Hex(), newOwner.Hex())
 		}
 	}

@@ -1,10 +1,10 @@
 package price_oracle
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/Gearbox-protocol/gearscan/models/price_feed"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 func (mdl *PriceOracle) OnLog(txLog types.Log) {

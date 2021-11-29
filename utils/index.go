@@ -1,14 +1,14 @@
 package utils
 
 import (
-	"math/big"
 	"fmt"
-	"strings"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"math/big"
+	"strings"
 )
 
-// maths 
+// maths
 func GetExpFloat(decimals int64) *big.Float {
 	if decimals < 0 {
 		panic(fmt.Sprintf("GetExpFloat received pow:%d", decimals))

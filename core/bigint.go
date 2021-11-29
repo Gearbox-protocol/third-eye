@@ -4,39 +4,39 @@
  *
  */
 
- package core
+package core
 
- import (
+import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
- )
- 
- func Topic(topic string) common.Hash {
+)
+
+func Topic(topic string) common.Hash {
 	return crypto.Keccak256Hash([]byte(topic))
- }
- 
- type BigInt big.Int
- 
- func (z *BigInt) Convert() *big.Int {
+}
+
+type BigInt big.Int
+
+func (z *BigInt) Convert() *big.Int {
 	return (*big.Int)(z)
- }
- 
- func (z *BigInt) String() string {
+}
+
+func (z *BigInt) String() string {
 	return z.Convert().String()
- }
- 
- func (z *BigInt) Value() (driver.Value, error) {
+}
+
+func (z *BigInt) Value() (driver.Value, error) {
 	if z != nil {
 		return (*big.Int)(z).String(), nil
 	}
 	return nil, nil
- }
- 
- func (z *BigInt) Scan(value interface{}) error {
+}
+
+func (z *BigInt) Scan(value interface{}) error {
 	if value == nil {
 		z = nil
 	}
@@ -50,22 +50,21 @@
 	default:
 		return fmt.Errorf("Could not scan type %T into BigInt", t)
 	}
- 
+
 	return nil
- }
- 
- func (z *BigInt) MarshalJSON() ([]byte, error) {
+}
+
+func (z *BigInt) MarshalJSON() ([]byte, error) {
 	return []byte(z.String()), nil
- }
- 
- func (z *BigInt) UnmarshalJSON(b []byte) error {
+}
+
+func (z *BigInt) UnmarshalJSON(b []byte) error {
 	value, ok := new(big.Int).SetString(string(b), 10)
 	if !ok {
 		return errors.New("can unmarshap BigInt")
 	}
- 
+
 	*z = *(*BigInt)(value)
 	return nil
- 
- }
- 
+
+}

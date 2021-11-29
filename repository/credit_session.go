@@ -1,11 +1,11 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
@@ -28,11 +28,10 @@ func (repo *Repository) AddDataCompressor(addr string) {
 	repo.dc = dc
 }
 
-
 func (repo *Repository) AddCreditSession(session *core.CreditSession) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.sessions[session.ID] ==  nil {
+	if repo.sessions[session.ID] == nil {
 		repo.sessions[session.ID] = session
 	} else {
 		log.Fatalf("Credit session already present %s", session.ID)
@@ -55,6 +54,6 @@ func (repo *Repository) GetCreditSessionData(blockNum int64, sessionId string) d
 	return data
 }
 
-func (repo *Repository) GetCreditSession(sessionId string)*core.CreditSession {
+func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {
 	return repo.sessions[sessionId]
 }

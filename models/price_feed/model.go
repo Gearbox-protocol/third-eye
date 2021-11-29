@@ -1,12 +1,12 @@
 package price_feed
 
 import (
+	"github.com/Gearbox-protocol/gearscan/artifacts/priceFeed"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/artifacts/priceFeed"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/Gearbox-protocol/gearscan/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
@@ -18,17 +18,17 @@ type PriceFeed struct {
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on vm execution error.
-// if oracle and adress are same we try to get the pricefeed. 
+// if oracle and adress are same we try to get the pricefeed.
 func NewPriceFeed(oracle, token string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
-			Address: oracle,
+			Address:      oracle,
 			DiscoveredAt: discoveredAt,
-			FirstLogAt: discoveredAt,
+			FirstLogAt:   discoveredAt,
 			ContractName: "PriceFeed",
-			Client: client,
+			Client:       client,
 		},
-		Details: map[string]string{"oracle": oracle, "token":token},
+		Details:  map[string]string{"oracle": oracle, "token": token},
 		LastSync: discoveredAt,
 	}
 	return NewPriceFeedFromAdapter(
@@ -44,7 +44,7 @@ func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *
 	}
 	obj := &PriceFeed{
 		SyncAdapter: adapter,
-		State: &core.State{Repo: repo},
+		State:       &core.State{Repo: repo},
 		contractETH: pfContract,
 	}
 	if adapter.Address == oracleAddr {
@@ -54,12 +54,12 @@ func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *
 	return obj
 }
 
-func (mdl *PriceFeed) AfterSyncHook(syncedTill int64)  {
+func (mdl *PriceFeed) AfterSyncHook(syncedTill int64) {
 	newPriceFeed := mdl.GetPriceFeed(mdl.LastSync)
 	if newPriceFeed != mdl.Address {
 		mdl.Disable()
 		mdl.Repo.AddSyncAdapter(
-			NewPriceFeed(newPriceFeed, mdl.Details["token"], mdl.LastSync + 1, mdl.Client, mdl.Repo),
+			NewPriceFeed(newPriceFeed, mdl.Details["token"], mdl.LastSync+1, mdl.Client, mdl.Repo),
 		)
 	}
 	mdl.SetLastSync(syncedTill)
@@ -70,9 +70,9 @@ func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
 		BlockNumber: big.NewInt(blockNum),
 	}
 	phaseId, err := mdl.contractETH.PhaseId(opts)
-	if err != nil  {
+	if err != nil {
 		if err.Error() == "execution aborted (timeout = 10s)" {
-			log.Fatal(err)	
+			log.Fatal(err)
 		} else {
 			mdl.SetError(err)
 			oralceAddr := mdl.Details["oracle"]

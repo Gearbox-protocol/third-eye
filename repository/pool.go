@@ -5,7 +5,6 @@ import (
 	"github.com/Gearbox-protocol/gearscan/log"
 )
 
-
 func (repo *Repository) AddPool(pool *core.Pool) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()

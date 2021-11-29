@@ -3,11 +3,11 @@ package repository
 import (
 	"sync"
 
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/gearscan/ethclient"
+	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"gorm.io/gorm"
 
 	"context"
@@ -21,12 +21,12 @@ type Repository struct {
 	client         *ethclient.Client
 	blocks         map[int64]*core.Block
 	creditManagers map[string]*core.CreditManager
-	executeParser *services.ExecuteParser
-	tokens        map[string]*core.Token
-	allowedTokens []*core.AllowedToken
-	pools         map[string]*core.Pool
-	dc            *dataCompressor.DataCompressor
-	sessions            map[string]*core.CreditSession
+	executeParser  *services.ExecuteParser
+	tokens         map[string]*core.Token
+	allowedTokens  []*core.AllowedToken
+	pools          map[string]*core.Pool
+	dc             *dataCompressor.DataCompressor
+	sessions       map[string]*core.CreditSession
 	lastCSS        map[string]*core.CreditSessionSnapshot
 }
 
@@ -37,11 +37,11 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		client:         client,
 		blocks:         make(map[int64]*core.Block),
 		creditManagers: make(map[string]*core.CreditManager),
-		executeParser: ep,
-		tokens: make(map[string]*core.Token),
-		pools: make(map[string]*core.Pool),
-		sessions: make(map[string]*core.CreditSession),
-		lastCSS: make(map[string]*core.CreditSessionSnapshot),
+		executeParser:  ep,
+		tokens:         make(map[string]*core.Token),
+		pools:          make(map[string]*core.Pool),
+		sessions:       make(map[string]*core.CreditSession),
+		lastCSS:        make(map[string]*core.CreditSessionSnapshot),
 	}
 	r.init()
 	return r
@@ -60,8 +60,6 @@ func (repo *Repository) init() {
 	repo.loadLastCSS()
 	repo.loadSyncAdapters()
 }
-
-
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
 	repo.mu.Lock()

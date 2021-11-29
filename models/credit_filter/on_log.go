@@ -1,10 +1,9 @@
 package credit_filter
 
 import (
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/log"
-	
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 func (mdl *CreditFilter) OnLog(txLog types.Log) {
@@ -16,10 +15,10 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			log.Fatal("[CreditManagerModel]: Cant unpack contract allowed event", err)
 		}
 		mdl.Repo.AddAllowedProtocol(&core.Protocol{
-			BlockNumber: blockNum, 
+			BlockNumber:   blockNum,
 			CreditManager: mdl.Details["creditManager"],
-			Protocol: contractAllowedEvent.Protocol.Hex(),
-			Adapter: contractAllowedEvent.Adapter.Hex(),
+			Protocol:      contractAllowedEvent.Protocol.Hex(),
+			Adapter:       contractAllowedEvent.Adapter.Hex(),
 		})
 	case core.Topic("TokenAllowed(address,uint256)"):
 		tokenEvent, err := mdl.contractETH.ParseTokenAllowed(txLog)
@@ -27,8 +26,8 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			log.Fatal("[CreditManagerModel]: Cant unpack token allowed event", err)
 		}
 		mdl.Repo.AddAllowedToken(&core.AllowedToken{
-			CreditManager: mdl.Details["creditManager"],
-			Token: tokenEvent.Token.Hex(),
+			CreditManager:      mdl.Details["creditManager"],
+			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: tokenEvent.LiquidityThreshold.String(),
 		})
 		mdl.Repo.AddToken(tokenEvent.Token.Hex())

@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/gearscan/services"
 )
 
 type EngineI interface {
@@ -10,9 +10,9 @@ type EngineI interface {
 }
 
 type Protocol struct {
-	Protocol string `gorm:"column:protocol"`
-	Adapter string `gorm:"column:adapter"`
-	BlockNumber int64 `gorm:"primaryKey;column:block_num"`
+	Protocol      string `gorm:"column:protocol"`
+	Adapter       string `gorm:"column:adapter"`
+	BlockNumber   int64  `gorm:"primaryKey;column:block_num"`
 	CreditManager string `gorm:"primaryKey;column:credit_manager"`
 }
 
@@ -52,7 +52,7 @@ type RepositoryI interface {
 	GetToken(addr string) *Token
 	// credit session funcs
 	AddCreditSession(session *CreditSession)
-	GetCreditSession(sessionId string)*CreditSession
+	GetCreditSession(sessionId string) *CreditSession
 	GetCreditSessionData(blockNum int64, sessionId string) dataCompressor.DataTypesCreditAccountDataExtended
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)

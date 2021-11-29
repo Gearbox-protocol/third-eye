@@ -4,13 +4,13 @@ package core
 
 type (
 	Block struct {
-		BlockNumber       int64               `gorm:"primaryKey;column:id"` // Block Number
-		Timestamp         uint64              `gorm:"column:timestamp"`
-		AccountOperations []*AccountOperation `gorm:"foreignKey:block_num"`
-		TokenOracles      []*TokenOracle      `gorm:"foreignKey:block_num"`
-		PriceFeeds      []*PriceFeed          `gorm:"foreignKey:block_num"`
-		Protocols      []*Protocol          `gorm:"foreignKey:block_num"`
-		CSS    []*CreditSessionSnapshot   `gorm:"foreignKey:block_num"`
+		BlockNumber       int64                    `gorm:"primaryKey;column:id"` // Block Number
+		Timestamp         uint64                   `gorm:"column:timestamp"`
+		AccountOperations []*AccountOperation      `gorm:"foreignKey:block_num"`
+		TokenOracles      []*TokenOracle           `gorm:"foreignKey:block_num"`
+		PriceFeeds        []*PriceFeed             `gorm:"foreignKey:block_num"`
+		Protocols         []*Protocol              `gorm:"foreignKey:block_num"`
+		CSS               []*CreditSessionSnapshot `gorm:"foreignKey:block_num"`
 	}
 )
 

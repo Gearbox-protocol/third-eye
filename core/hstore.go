@@ -2,8 +2,8 @@ package core
 
 import (
 	"database/sql/driver"
-	"strings"
 	"log"
+	"strings"
 )
 
 type Hstore struct {
@@ -25,7 +25,7 @@ func (dst *Hstore) Scan(value interface{}) error {
 	valueStr, ok := value.(string)
 	if !ok {
 		log.Fatal("hstore scan failed")
-	} 
+	}
 	for bindex, b = range []byte(valueStr) {
 		if sawSlash {
 			pair[pi] = append(pair[pi], b)
@@ -73,7 +73,7 @@ func (dst *Hstore) Scan(value interface{}) error {
 	if bindex > 0 {
 		s := string(pair[1])
 		if !didQuote && len(s) == 4 && strings.ToLower(s) == "null" {
-			dst.store[string(pair[0])] =  ""
+			dst.store[string(pair[0])] = ""
 		} else {
 			dst.store[string(pair[0])] = string(pair[1])
 		}
@@ -88,7 +88,7 @@ func NewHstore() Hstore {
 }
 
 func HstoreFromMap(m map[string]string) Hstore {
-	return Hstore {
+	return Hstore{
 		store: m,
 	}
 }

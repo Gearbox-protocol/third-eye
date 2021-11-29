@@ -21,7 +21,7 @@ func NewAccountFactory(addr string, discoveredAt int64, client *ethclient.Client
 func NewAccountFactoryFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *AccountFactory {
 	obj := &AccountFactory{
 		SyncAdapter: adapter,
-		State: &core.State{Repo: repo},
+		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

@@ -1,9 +1,9 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/log"
-	"fmt"
 )
 
 func (repo *Repository) loadCreditManagers() {
@@ -32,7 +32,7 @@ func (repo *Repository) AddCreditOwnerSession(cmAddr, owner, sessionId string) {
 	if repo.creditManagers[cmAddr] == nil {
 		log.Fatal("credit manager not found ", cmAddr)
 	}
-	repo.creditManagers[cmAddr].Sessions.Set(owner,sessionId)
+	repo.creditManagers[cmAddr].Sessions.Set(owner, sessionId)
 }
 
 func (repo *Repository) RemoveCreditOwnerSession(cmAddr, owner string) {

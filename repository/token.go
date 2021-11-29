@@ -5,7 +5,6 @@ import (
 	"github.com/Gearbox-protocol/gearscan/log"
 )
 
-
 // For token with symbol/decimals
 func (repo *Repository) AddToken(addr string) {
 	repo.mu.Lock()

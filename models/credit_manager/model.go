@@ -1,14 +1,14 @@
 package credit_manager
 
 import (
+	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
 	"github.com/Gearbox-protocol/gearscan/core"
 	"github.com/Gearbox-protocol/gearscan/ethclient"
 	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/Gearbox-protocol/gearscan/models/credit_filter"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
+	"github.com/Gearbox-protocol/gearscan/services"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"sort"
 )
@@ -16,16 +16,16 @@ import (
 type CreditManager struct {
 	*core.SyncAdapter
 	*core.State
-	contractETH *creditManager.CreditManager
-	LastTxHash string
-	UToken string
-	UDecimals uint8
+	contractETH   *creditManager.CreditManager
+	LastTxHash    string
+	UToken        string
+	UDecimals     uint8
 	executeParams []services.ExecuteParams
 	eventBalances SortedEventbalances
 }
 
 func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
-	cmContract, err:=creditManager.NewCreditManager(common.HexToAddress(addr), client)
+	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(addr), client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(discoveredAt),
 	}
@@ -42,10 +42,10 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 	}
 	// create credit manager for db
 	repo.AddCreditManager(&core.CreditManager{
-		Address:addr, 
-		PoolAddress:poolAddr.Hex(), 
-		UnderlyingToken: underlyingToken.Hex(), 
-		Sessions: core.NewHstore(),
+		Address:         addr,
+		PoolAddress:     poolAddr.Hex(),
+		UnderlyingToken: underlyingToken.Hex(),
+		Sessions:        core.NewHstore(),
 	})
 
 	// create creditFilter syncadapter
@@ -65,13 +65,13 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 }
 
 func NewCreditManagerFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *CreditManager {
-	cmContract, err:=creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
+	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
 	}
 	obj := &CreditManager{
 		SyncAdapter: adapter,
-		State: &core.State{Repo: repo},
+		State:       &core.State{Repo: repo},
 		contractETH: cmContract,
 	}
 	obj.GetAbi()

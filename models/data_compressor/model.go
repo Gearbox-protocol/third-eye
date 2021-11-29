@@ -14,7 +14,7 @@ type DataCompressor struct {
 func NewDataCompressor(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *DataCompressor {
 	obj := &DataCompressor{
 		SyncAdapter: core.NewSyncAdapter(addr, "AddressProvider", discoveredAt, client),
-		State: &core.State{Repo: repo},
+		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

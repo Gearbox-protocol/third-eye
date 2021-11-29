@@ -27,9 +27,9 @@ import (
 	"github.com/Gearbox-protocol/gearscan/log"
 
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/big"
-	"encoding/json"
 )
 
 type Contract struct {
@@ -46,13 +46,13 @@ func (c *Contract) Disable() {
 	c.Disabled = true
 }
 
-func NewContract(address , contractName string,  discoveredAt int64,  client *ethclient.Client) *Contract {
+func NewContract(address, contractName string, discoveredAt int64, client *ethclient.Client) *Contract {
 
-	con:= &Contract{
+	con := &Contract{
 		ContractName: contractName,
 		DiscoveredAt: discoveredAt,
 		Address:      address,
-		Client: client,
+		Client:       client,
 	}
 	con.FirstLogAt = con.DiscoverFirstLog()
 	if discoveredAt == -1 {
@@ -106,10 +106,11 @@ func (c *Contract) GetAbi() {
 	c.ABI = abi
 }
 
-// setter 
+// setter
 func (c *Contract) SetAddress(addr string) {
 	c.Address = addr
 }
+
 // Getter
 
 func (c *Contract) GetAddress() string {
@@ -202,7 +203,6 @@ func (c *Contract) findFirstLogBound(fromBlock, toBlock int64) (int64, error) {
 	return FirstLogAt, nil
 }
 
-
 func (c *Contract) UnpackLogIntoMap(out map[string]interface{}, event string, txLog types.Log) error {
 	if txLog.Topics[0] != c.ABI.Events[event].ID {
 		return fmt.Errorf("event signature mismatch")
@@ -221,27 +221,27 @@ func (c *Contract) UnpackLogIntoMap(out map[string]interface{}, event string, tx
 	return abi.ParseTopicsIntoMap(out, indexed, txLog.Topics[1:])
 }
 
-func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string,string) {
+func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, string) {
 	data := map[string]interface{}{}
-	if eventName == "TransferAccount" && len(txLog.Data) >0 {
+	if eventName == "TransferAccount" && len(txLog.Data) > 0 {
 		data = map[string]interface{}{
 			"oldOwner": common.BytesToAddress(txLog.Data[:32]).Hex(),
 			"newOwner": common.BytesToAddress(txLog.Data[32:]).Hex(),
 		}
 	} else {
-		if err := c.UnpackLogIntoMap(data,eventName, *txLog) ; err != nil{
+		if err := c.UnpackLogIntoMap(data, eventName, *txLog); err != nil {
 			log.Fatal(err)
 		}
 	}
 	// add order
 	var argNames []interface{}
-	for _,input := range c.ABI.Events[eventName].Inputs {
+	for _, input := range c.ABI.Events[eventName].Inputs {
 		argNames = append(argNames, input.Name)
 	}
 	data["_order"] = argNames
 
-	args, err :=json.Marshal(data)
-	if err != nil{
+	args, err := json.Marshal(data)
+	if err != nil {
 		log.Fatal(err)
 	}
 

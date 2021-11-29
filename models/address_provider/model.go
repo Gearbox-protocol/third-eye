@@ -20,7 +20,7 @@ func NewAddressProvider(addr string, client *ethclient.Client, repo core.Reposit
 func NewAddressProviderFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *AddressProvider {
 	obj := &AddressProvider{
 		SyncAdapter: adapter,
-		State: &core.State{Repo: repo},
+		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

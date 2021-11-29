@@ -13,19 +13,19 @@ import (
 )
 
 type Engine struct {
-	config        *config.Config
-	client        *ethclient.Client
-	repo          core.RepositoryI
-	nextSyncStop  int64
+	config       *config.Config
+	client       *ethclient.Client
+	repo         core.RepositoryI
+	nextSyncStop int64
 }
 
 func NewEngine(config *config.Config,
 	ec *ethclient.Client,
 	repo core.RepositoryI) core.EngineI {
 	return &Engine{
-		config:        config,
-		client:        ec,
-		repo:          repo,
+		config: config,
+		client: ec,
+		repo:   repo,
 	}
 }
 
@@ -46,7 +46,7 @@ func (e *Engine) init() {
 func (e *Engine) Sync() {
 	e.init()
 	// for i := 0; i < 2; i++ {
-	for  {
+	for {
 		log.Info("Sync till", e.nextSyncStop)
 		for _, adapter := range e.repo.GetSyncAdapters() {
 			e.SyncModel(adapter, e.nextSyncStop)
