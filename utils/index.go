@@ -1,14 +1,14 @@
 package utils
 
 import (
+	"context"
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"math/big"
 	"strings"
-	"context"
 	"time"
 )
 
@@ -56,20 +56,19 @@ func Contains(s []string, e string) bool {
 	return false
 }
 
-
-func GetTimeoutCtx(sec int) (context.Context,context.CancelFunc) {
-		//https://blog.golang.org/context
-	timeout, err := time.ParseDuration(fmt.Sprintf("%ds",sec))
+func GetTimeoutCtx(sec int) (context.Context, context.CancelFunc) {
+	//https://blog.golang.org/context
+	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", sec))
 	if err != nil {
 		log.Error(err)
 	}
-	ctx, cancel := context.WithTimeout(context.TODO(), timeout * time.Second)
-	return ctx,cancel
+	ctx, cancel := context.WithTimeout(context.TODO(), timeout*time.Second)
+	return ctx, cancel
 }
 func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
 	ctx, cancel := GetTimeoutCtx(20)
 	return &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
-		Context: ctx,
+		Context:     ctx,
 	}, cancel
 }

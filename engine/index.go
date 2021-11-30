@@ -32,7 +32,6 @@ func NewEngine(config *config.Config,
 	}
 }
 
-
 func (e *Engine) init() {
 	e.blockPerSync = 1000 * 5
 	adapters := e.repo.GetSyncAdapters()
@@ -54,7 +53,7 @@ func (e *Engine) SyncHandler() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Info("Lastest blocknumber",latestBlockNum)
+		log.Info("Lastest blocknumber", latestBlockNum)
 		e.sync(int64(latestBlockNum))
 		log.Infof("Synced till %d sleeping for 5 mins", e.nextSyncStop)
 		time.Sleep(5 * time.Minute)
@@ -63,7 +62,7 @@ func (e *Engine) SyncHandler() {
 }
 func (e *Engine) sync(latestBlockNum int64) {
 	syncTill := e.nextSyncStop
-	for ;syncTill < latestBlockNum; {
+	for syncTill < latestBlockNum {
 		e.nextSyncStop = syncTill
 		log.Info("Sync till", syncTill)
 		for _, adapter := range e.repo.GetSyncAdapters() {

@@ -39,7 +39,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		blocks:         make(map[int64]*core.Block),
 		creditManagers: make(map[string]*core.CreditManager),
 		executeParser:  ep,
-		dc: make(map[int64]*dataCompressor.DataCompressor),
+		dc:             make(map[int64]*dataCompressor.DataCompressor),
 		tokens:         make(map[string]*core.Token),
 		pools:          make(map[string]*core.Pool),
 		sessions:       make(map[string]*core.CreditSession),

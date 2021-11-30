@@ -4,10 +4,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/big"
 	"net/http"
 	"strings"
-	"io/ioutil"
 	"time"
 
 	"github.com/Gearbox-protocol/third-eye/artifacts/curveV1Adapter"
@@ -82,7 +82,7 @@ func (ep *ExecuteParser) getTenderlyData(txHash string) (*TxTrace, error) {
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-	   log.Fatal(err)
+		log.Fatal(err)
 	}
 	// log.Infof("%s",body)
 	trace := &TxTrace{}

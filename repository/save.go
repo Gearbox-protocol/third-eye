@@ -24,7 +24,7 @@ func (repo *Repository) Flush() (err error) {
 	tx := repo.db.Begin()
 	for _, adapter := range repo.syncAdapters {
 		tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(adapter.GetAdapterState())
 		// if err.Error != nil {
@@ -33,7 +33,7 @@ func (repo *Repository) Flush() (err error) {
 	}
 	for _, token := range repo.tokens {
 		tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(token)
 		// if err.Error != nil {
@@ -42,7 +42,7 @@ func (repo *Repository) Flush() (err error) {
 	}
 	for _, pool := range repo.pools {
 		tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(pool)
 		// if err.Error != nil {
@@ -51,7 +51,7 @@ func (repo *Repository) Flush() (err error) {
 	}
 	for _, cm := range repo.creditManagers {
 		tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(cm)
 		// if err.Error != nil {
@@ -60,7 +60,7 @@ func (repo *Repository) Flush() (err error) {
 	}
 	for _, session := range repo.sessions {
 		tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(session)
 		// if err.Error != nil {
@@ -69,7 +69,7 @@ func (repo *Repository) Flush() (err error) {
 	}
 	for _, block := range repo.blocks {
 		tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(block)
 		// if err.Error != nil {
@@ -78,7 +78,7 @@ func (repo *Repository) Flush() (err error) {
 	}
 	if len(repo.allowedTokens) != 0 {
 		tx.Clauses(clause.OnConflict{
-		// err1 := repo.db.Clauses(clause.OnConflict{
+			// err1 := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(repo.allowedTokens)
 		// if err1.Error != nil {

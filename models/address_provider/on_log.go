@@ -12,8 +12,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	// "github.com/Gearbox-protocol/third-eye/models/data_compressor"
 
-	"strings"
 	"fmt"
+	"strings"
 )
 
 func (mdl *AddressProvider) OnLog(txLog types.Log) {

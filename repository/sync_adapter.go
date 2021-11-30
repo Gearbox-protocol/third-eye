@@ -33,7 +33,7 @@ func prepareSyncAdapter(adapter *core.SyncAdapter, repo core.RepositoryI) core.S
 		return acl.NewACLFromAdapter(repo, adapter)
 	case "AddressProvider":
 		ap := address_provider.NewAddressProviderFromAdapter(repo, adapter)
-		for k, dcAddr := range ap.Details  {
+		for k, dcAddr := range ap.Details {
 			blockNum, err := strconv.ParseInt(k, 10, 64)
 			if err != nil {
 				log.Fatal(err)
