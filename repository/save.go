@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"gorm.io/gorm/clause"
 )
 

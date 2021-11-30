@@ -1,12 +1,12 @@
 package contract_register
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/Gearbox-protocol/gearscan/models/credit_manager"
-	"github.com/Gearbox-protocol/gearscan/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
+	"github.com/Gearbox-protocol/third-eye/models/pool"
 )
 
 func (mdl *ContractRegister) OnLog(txLog types.Log) {

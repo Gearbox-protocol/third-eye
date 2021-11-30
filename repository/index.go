@@ -3,11 +3,11 @@ package repository
 import (
 	"sync"
 
-	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/services"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/services"
 	"gorm.io/gorm"
 
 	"context"

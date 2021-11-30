@@ -7,8 +7,8 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/gearscan/config"
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"

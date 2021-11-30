@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"

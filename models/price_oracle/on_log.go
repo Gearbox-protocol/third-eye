@@ -1,9 +1,9 @@
 package price_oracle
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/models/price_feed"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models/price_feed"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

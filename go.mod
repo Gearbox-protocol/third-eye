@@ -1,4 +1,4 @@
-module github.com/Gearbox-protocol/gearscan
+module github.com/Gearbox-protocol/third-eye
 
 go 1.17
 

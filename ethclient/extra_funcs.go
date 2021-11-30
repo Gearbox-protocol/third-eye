@@ -8,9 +8,9 @@ package ethclient
 
 import (
 	// 	"context"
-	"github.com/Gearbox-protocol/gearscan/config"
-	"github.com/Gearbox-protocol/gearscan/log"
-	// 	"github.com/Gearbox-protocol/gearscan/core"
+	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/log"
+	// 	"github.com/Gearbox-protocol/third-eye/core"
 	// 	"github.com/ethereum/go-ethereum"
 	// 	"github.com/ethereum/go-ethereum/common"
 	// 	"github.com/ethereum/go-ethereum/core/types"

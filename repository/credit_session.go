@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"

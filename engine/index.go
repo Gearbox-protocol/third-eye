@@ -5,11 +5,11 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/Gearbox-protocol/gearscan/config"
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 )

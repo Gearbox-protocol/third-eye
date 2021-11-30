@@ -1,8 +1,8 @@
 package address_provider
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
 )
 
 type AddressProvider struct {

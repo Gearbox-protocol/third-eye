@@ -2,7 +2,7 @@ package core
 
 import (
 	"context"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"

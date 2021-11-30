@@ -1,11 +1,11 @@
 package price_feed
 
 import (
-	"github.com/Gearbox-protocol/gearscan/artifacts/priceFeed"
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 

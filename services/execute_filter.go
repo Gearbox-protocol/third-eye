@@ -1,8 +1,8 @@
 package services
 
 import (
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )

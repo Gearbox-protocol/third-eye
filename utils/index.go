@@ -2,10 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"github.com/Gearbox-protocol/gearscan/artifacts/creditManager"
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"math/big"
 	"strings"
 	"context"

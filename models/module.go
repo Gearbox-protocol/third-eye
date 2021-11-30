@@ -7,7 +7,7 @@
 package models
 
 import (
-	"github.com/Gearbox-protocol/gearscan/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"go.uber.org/fx"
 )
 

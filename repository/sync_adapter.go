@@ -1,17 +1,17 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/models/account_factory"
-	"github.com/Gearbox-protocol/gearscan/models/acl"
-	"github.com/Gearbox-protocol/gearscan/models/address_provider"
-	"github.com/Gearbox-protocol/gearscan/models/contract_register"
-	"github.com/Gearbox-protocol/gearscan/models/credit_filter"
-	"github.com/Gearbox-protocol/gearscan/models/credit_manager"
-	"github.com/Gearbox-protocol/gearscan/models/pool"
-	"github.com/Gearbox-protocol/gearscan/models/price_feed"
-	"github.com/Gearbox-protocol/gearscan/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models/account_factory"
+	"github.com/Gearbox-protocol/third-eye/models/acl"
+	"github.com/Gearbox-protocol/third-eye/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/models/contract_register"
+	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
+	"github.com/Gearbox-protocol/third-eye/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"strconv"
 )
 

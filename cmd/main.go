@@ -7,14 +7,14 @@
 package main
 
 import (
-	"github.com/Gearbox-protocol/gearscan/config"
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/engine"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/models"
-	"github.com/Gearbox-protocol/gearscan/repository"
-	"github.com/Gearbox-protocol/gearscan/services"
+	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/engine"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models"
+	"github.com/Gearbox-protocol/third-eye/repository"
+	"github.com/Gearbox-protocol/third-eye/services"
 	"go.uber.org/fx"
 
 	"context"

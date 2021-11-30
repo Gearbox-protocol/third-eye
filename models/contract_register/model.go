@@ -1,8 +1,8 @@
 package contract_register
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
 )
 
 type ContractRegister struct {

@@ -2,9 +2,9 @@ package credit_manager
 
 import (
 	"fmt"
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/services"
-	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/services"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"

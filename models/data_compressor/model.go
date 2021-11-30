@@ -1,8 +1,8 @@
 package data_compressor
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

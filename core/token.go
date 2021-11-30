@@ -1,9 +1,9 @@
 package core
 
 import (
-	"github.com/Gearbox-protocol/gearscan/artifacts/eRC20"
-	"github.com/Gearbox-protocol/gearscan/ethclient"
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/third-eye/artifacts/eRC20"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )

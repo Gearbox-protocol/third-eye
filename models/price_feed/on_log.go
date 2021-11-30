@@ -1,13 +1,13 @@
 package price_feed
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/log"
-	"github.com/Gearbox-protocol/gearscan/utils"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strconv"
-	// "github.com/Gearbox-protocol/gearscan/models/price_feed"
+	// "github.com/Gearbox-protocol/third-eye/models/price_feed"
 )
 
 func (mdl *PriceFeed) OnLog(txLog types.Log) {

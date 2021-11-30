@@ -1,16 +1,16 @@
 package address_provider
 
 import (
-	"github.com/Gearbox-protocol/gearscan/core"
-	"github.com/Gearbox-protocol/gearscan/log"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/Gearbox-protocol/gearscan/models/account_factory"
-	"github.com/Gearbox-protocol/gearscan/models/acl"
-	"github.com/Gearbox-protocol/gearscan/models/contract_register"
-	"github.com/Gearbox-protocol/gearscan/models/price_oracle"
-	// "github.com/Gearbox-protocol/gearscan/models/data_compressor"
+	"github.com/Gearbox-protocol/third-eye/models/account_factory"
+	"github.com/Gearbox-protocol/third-eye/models/acl"
+	"github.com/Gearbox-protocol/third-eye/models/contract_register"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	// "github.com/Gearbox-protocol/third-eye/models/data_compressor"
 
 	"strings"
 	"fmt"

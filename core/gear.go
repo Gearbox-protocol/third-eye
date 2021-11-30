@@ -1,8 +1,8 @@
 package core
 
 import (
-	"github.com/Gearbox-protocol/gearscan/artifacts/dataCompressor"
-	"github.com/Gearbox-protocol/gearscan/services"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/third-eye/services"
 )
 
 type EngineI interface {
