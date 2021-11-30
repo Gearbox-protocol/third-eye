@@ -48,12 +48,12 @@ type RepositoryI interface {
 	AddAllowedToken(atoken *AllowedToken)
 	AddTokenObj(token *Token)
 	AddPool(pool *Pool)
-	AddDataCompressor(addr string)
+	AddDataCompressor(blockNum int64, addr string)
 	GetToken(addr string) *Token
 	// credit session funcs
 	AddCreditSession(session *CreditSession)
 	GetCreditSession(sessionId string) *CreditSession
-	GetCreditSessionData(blockNum int64, sessionId string) dataCompressor.DataTypesCreditAccountDataExtended
+	GetCreditSessionData(blockNum int64, sessionId string) *dataCompressor.DataTypesCreditAccountDataExtended
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
 	AddLastCSS(css *CreditSessionSnapshot)

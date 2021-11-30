@@ -25,7 +25,8 @@ type Repository struct {
 	tokens         map[string]*core.Token
 	allowedTokens  []*core.AllowedToken
 	pools          map[string]*core.Pool
-	dc             *dataCompressor.DataCompressor
+	dc             map[int64]*dataCompressor.DataCompressor
+	dcBlockNum     []int64
 	sessions       map[string]*core.CreditSession
 	lastCSS        map[string]*core.CreditSessionSnapshot
 }
@@ -38,6 +39,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		blocks:         make(map[int64]*core.Block),
 		creditManagers: make(map[string]*core.CreditManager),
 		executeParser:  ep,
+		dc: make(map[int64]*dataCompressor.DataCompressor),
 		tokens:         make(map[string]*core.Token),
 		pools:          make(map[string]*core.Pool),
 		sessions:       make(map[string]*core.CreditSession),

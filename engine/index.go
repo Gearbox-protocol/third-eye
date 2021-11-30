@@ -34,16 +34,16 @@ func NewEngine(config *config.Config,
 
 
 func (e *Engine) init() {
-	e.blockPerSync = 400 * 5
+	e.blockPerSync = 1000 * 5
 	adapters := e.repo.GetSyncAdapters()
 	log.Info("init sync adapters", adapters)
 	if len(adapters) == 0 {
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
 		obj := address_provider.NewAddressProvider(addr, e.client, e.repo)
 		e.repo.AddSyncAdapter(obj)
-		e.nextSyncStop = obj.GetLastSync() + e.blockPerSync
+		e.nextSyncStop = obj.GetLastSync()
 	} else {
-		e.nextSyncStop = adapters[0].GetLastSync() + e.blockPerSync
+		e.nextSyncStop = adapters[0].GetLastSync()
 	}
 }
 
@@ -56,19 +56,21 @@ func (e *Engine) SyncHandler() {
 		}
 		log.Info("Lastest blocknumber",latestBlockNum)
 		e.sync(int64(latestBlockNum))
-		log.Infof("Synced till %d sleeping for 5 mins", latestBlockNum)
+		log.Infof("Synced till %d sleeping for 5 mins", e.nextSyncStop)
 		time.Sleep(5 * time.Minute)
 		e.blockPerSync = 5 * 5 // on kovan 5 blocks in 1 min , sleep for 5 mins
 	}
 }
 func (e *Engine) sync(latestBlockNum int64) {
-	for ;e.nextSyncStop < latestBlockNum; {
-		log.Info("Sync till", e.nextSyncStop)
+	syncTill := e.nextSyncStop
+	for ;syncTill < latestBlockNum; {
+		e.nextSyncStop = syncTill
+		log.Info("Sync till", syncTill)
 		for _, adapter := range e.repo.GetSyncAdapters() {
-			e.SyncModel(adapter, e.nextSyncStop)
+			e.SyncModel(adapter, syncTill)
 		}
 		e.repo.Flush()
-		e.nextSyncStop += e.blockPerSync
+		syncTill += e.blockPerSync
 	}
 }
 

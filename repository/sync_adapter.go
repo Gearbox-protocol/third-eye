@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/gearscan/models/pool"
 	"github.com/Gearbox-protocol/gearscan/models/price_feed"
 	"github.com/Gearbox-protocol/gearscan/models/price_oracle"
+	"strconv"
 )
 
 func (repo *Repository) loadSyncAdapters() {
@@ -32,8 +33,13 @@ func prepareSyncAdapter(adapter *core.SyncAdapter, repo core.RepositoryI) core.S
 		return acl.NewACLFromAdapter(repo, adapter)
 	case "AddressProvider":
 		ap := address_provider.NewAddressProviderFromAdapter(repo, adapter)
-		log.Info(ap.Details["dataCompressor"])
-		repo.AddDataCompressor(ap.Details["dataCompressor"])
+		for k, dcAddr := range ap.Details  {
+			blockNum, err := strconv.ParseInt(k, 10, 64)
+			if err != nil {
+				log.Fatal(err)
+			}
+			repo.AddDataCompressor(blockNum, dcAddr)
+		}
 		return ap
 	case "AccountFactory":
 		return account_factory.NewAccountFactoryFromAdapter(repo, adapter)

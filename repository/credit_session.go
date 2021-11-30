@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
+	"sort"
 )
 
 func (repo *Repository) loadCreditSessions() {
@@ -20,12 +21,17 @@ func (repo *Repository) loadCreditSessions() {
 	}
 }
 
-func (repo *Repository) AddDataCompressor(addr string) {
+func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
 	dc, err := dataCompressor.NewDataCompressor(common.HexToAddress(addr), repo.client)
 	if err != nil {
-		log.Fatal()
+		log.Fatal(err)
 	}
-	repo.dc = dc
+	repo.dc[blockNum] = dc
+	repo.dcBlockNum = append(repo.dcBlockNum, blockNum)
+	arr := repo.dcBlockNum
+	sort.Slice(arr, func(i, j int) bool { return arr[i] < arr[j] })
+	log.Info(arr)
+	repo.dcBlockNum = arr
 }
 
 func (repo *Repository) AddCreditSession(session *core.CreditSession) {
@@ -39,19 +45,26 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession) {
 
 }
 
-func (repo *Repository) GetCreditSessionData(blockNum int64, sessionId string) dataCompressor.DataTypesCreditAccountDataExtended {
+func (repo *Repository) GetCreditSessionData(blockNum int64, sessionId string) *dataCompressor.DataTypesCreditAccountDataExtended {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
 	session := repo.GetCreditSession(sessionId)
-	data, err := repo.dc.GetCreditAccountDataExtended(opts,
+	var dc *dataCompressor.DataCompressor
+	for _, num := range repo.dcBlockNum {
+		// dc should be deployed before it is queried
+		if num < blockNum {
+			dc = repo.dc[num]
+		}
+	}
+	data, err := dc.GetCreditAccountDataExtended(opts,
 		common.HexToAddress(session.CreditManager),
 		common.HexToAddress(session.Borrower),
 	)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return data
+	return &data
 }
 
 func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {
