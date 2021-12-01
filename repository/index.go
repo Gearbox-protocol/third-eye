@@ -29,6 +29,7 @@ type Repository struct {
 	dcBlockNum     []int64
 	sessions       map[string]*core.CreditSession
 	lastCSS        map[string]*core.CreditSessionSnapshot
+	poolUniqueUsers map[string]map[string]bool
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecuteParser) core.RepositoryI {
@@ -44,6 +45,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		pools:          make(map[string]*core.Pool),
 		sessions:       make(map[string]*core.CreditSession),
 		lastCSS:        make(map[string]*core.CreditSessionSnapshot),
+		poolUniqueUsers: make(map[string]map[string]bool),
 	}
 	r.init()
 	return r

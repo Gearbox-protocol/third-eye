@@ -7,7 +7,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
 
@@ -15,6 +14,7 @@ type Pool struct {
 	*core.SyncAdapter
 	*core.State
 	contractETH *poolService.PoolService
+	lastEventBlock int64
 }
 
 func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
@@ -57,5 +57,8 @@ func NewPoolFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *Pool 
 	return obj
 }
 
-func (mdl *Pool) OnLog(txLog types.Log) {
+
+func (mdl *Pool) AfterSyncHook(syncTill int64) {
+	mdl.createPoolStat()
+	mdl.SetLastSync(syncTill)
 }

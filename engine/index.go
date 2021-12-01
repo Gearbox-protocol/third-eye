@@ -77,10 +77,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 	if mdl.IsDisabled() {
 		return
 	}
-	syncFrom := mdl.GetLastSync()
-	if !mdl.FirstSync() {
-		syncFrom += 1
-	}
+	syncFrom := mdl.GetLastSync() + 1
 	if syncFrom > syncTill {
 		return
 	}

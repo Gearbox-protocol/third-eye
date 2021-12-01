@@ -11,6 +11,8 @@ type (
 		PriceFeeds        []*PriceFeed             `gorm:"foreignKey:block_num"`
 		Protocols         []*Protocol              `gorm:"foreignKey:block_num"`
 		CSS               []*CreditSessionSnapshot `gorm:"foreignKey:block_num"`
+		PoolStats         []*PoolStat              `gorm:"foreignKey:block_num"`
+		PoolLedgers        []*PoolLedger              `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -33,4 +35,11 @@ func (b *Block) AddAllowedProtocol(p *Protocol) {
 
 func (b *Block) AddCreditSessionSnapshot(css *CreditSessionSnapshot) {
 	b.CSS = append(b.CSS, css)
+}
+
+func (b *Block) AddPoolStat(ps *PoolStat) {
+	b.PoolStats = append(b.PoolStats, ps)
+}
+func (b *Block) AddPoolLedger(pl *PoolLedger) {
+	b.PoolLedgers = append(b.PoolLedgers, pl)
 }

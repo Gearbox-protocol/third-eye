@@ -10,10 +10,11 @@ type EngineI interface {
 }
 
 type Protocol struct {
+	Id      string `gorm:"primaryKey;column:id;autoincrement:true"`
 	Protocol      string `gorm:"column:protocol"`
 	Adapter       string `gorm:"column:adapter"`
-	BlockNumber   int64  `gorm:"primaryKey;column:block_num"`
-	CreditManager string `gorm:"primaryKey;column:credit_manager"`
+	BlockNumber   int64  `gorm:"column:block_num"`
+	CreditManager string `gorm:"column:credit_manager"`
 }
 
 func (Protocol) TableName() string {
@@ -47,15 +48,20 @@ type RepositoryI interface {
 	AddToken(token string)
 	AddAllowedToken(atoken *AllowedToken)
 	AddTokenObj(token *Token)
-	AddPool(pool *Pool)
 	AddDataCompressor(blockNum int64, addr string)
 	GetToken(addr string) *Token
 	// credit session funcs
 	AddCreditSession(session *CreditSession)
 	GetCreditSession(sessionId string) *CreditSession
-	GetCreditSessionData(blockNum int64, sessionId string) *dataCompressor.DataTypesCreditAccountDataExtended
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
 	AddLastCSS(css *CreditSessionSnapshot)
 	GetLastCSS(sessionId string) *CreditSessionSnapshot
+	GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor
+	// pools
+	AddPoolStat(ps *PoolStat)
+	AddPoolLedger(pl *PoolLedger)
+	GetPool(poolAddr string) *Pool
+	AddPool(pool *Pool)
+	GetPoolUniqueUserLen(pool string) int
 }

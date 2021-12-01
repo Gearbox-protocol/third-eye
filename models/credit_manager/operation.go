@@ -314,7 +314,7 @@ func (mdl *CreditManager) handleExecuteEvents() {
 
 func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, remainingFunds *big.Int, newStatus int) {
 	// check the data before credit session was closed by minus 1.
-	data := mdl.Repo.GetCreditSessionData(blockNum-1, sessionId)
+	data := mdl.GetCreditSessionData(blockNum-1, sessionId)
 	session := mdl.Repo.GetCreditSession(sessionId)
 	session.ClosedAt = blockNum
 	session.TotalValue = (*core.BigInt)(data.TotalValue)
@@ -330,7 +330,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, remaini
 }
 
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
-	data := mdl.Repo.GetCreditSessionData(blockNum, sessionId)
+	data := mdl.GetCreditSessionData(blockNum, sessionId)
 	session := mdl.Repo.GetCreditSession(sessionId)
 	extraFunds := new(big.Int).Sub(data.TotalValue, data.BorrowedAmountPlusInterest)
 	session.TotalValue = (*core.BigInt)(data.TotalValue)

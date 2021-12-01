@@ -2,6 +2,7 @@ package credit_manager
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -94,4 +95,19 @@ func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	}
 	mdl.eventBalances = SortedEventbalances{}
 	mdl.SetLastSync(syncTill)
+}
+
+func (cm *CreditManager) GetCreditSessionData(blockNum int64, sessionId string) *dataCompressor.DataTypesCreditAccountDataExtended {
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
+	}
+	session := cm.Repo.GetCreditSession(sessionId)
+	data, err := cm.Repo.GetDataCompressor(blockNum).GetCreditAccountDataExtended(opts,
+		common.HexToAddress(session.CreditManager),
+		common.HexToAddress(session.Borrower),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &data
 }

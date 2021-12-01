@@ -29,7 +29,6 @@ type SyncAdapterI interface {
 	SetLastSync(int64)
 	GetAdapterState() *SyncAdapter
 	GetAddress() string
-	FirstSync() bool
 	GetName() string
 	AfterSyncHook(syncTill int64)
 	IsDisabled() bool
@@ -50,9 +49,6 @@ func (s *SyncAdapter) SetError(err error) {
 	s.Error = err.Error()[:msgLen]
 }
 
-func (s *SyncAdapter) FirstSync() bool {
-	return s.FirstLogAt == s.LastSync
-}
 
 func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
@@ -62,7 +58,7 @@ func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Cli
 	obj := &SyncAdapter{
 		Contract: NewContract(addr, name, discoveredAt, client),
 	}
-	obj.LastSync = obj.FirstLogAt
+	obj.LastSync = obj.FirstLogAt - 1
 	return obj
 }
 func (s *SyncAdapter) GetAdapterState() *SyncAdapter {

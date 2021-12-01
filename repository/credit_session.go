@@ -4,9 +4,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 	"sort"
 )
 
@@ -30,7 +28,6 @@ func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
 	repo.dcBlockNum = append(repo.dcBlockNum, blockNum)
 	arr := repo.dcBlockNum
 	sort.Slice(arr, func(i, j int) bool { return arr[i] < arr[j] })
-	log.Info(arr)
 	repo.dcBlockNum = arr
 }
 
@@ -45,11 +42,7 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession) {
 
 }
 
-func (repo *Repository) GetCreditSessionData(blockNum int64, sessionId string) *dataCompressor.DataTypesCreditAccountDataExtended {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-	session := repo.GetCreditSession(sessionId)
+func (repo *Repository) GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor {
 	var dc *dataCompressor.DataCompressor
 	for _, num := range repo.dcBlockNum {
 		// dc should be deployed before it is queried
@@ -57,14 +50,7 @@ func (repo *Repository) GetCreditSessionData(blockNum int64, sessionId string) *
 			dc = repo.dc[num]
 		}
 	}
-	data, err := dc.GetCreditAccountDataExtended(opts,
-		common.HexToAddress(session.CreditManager),
-		common.HexToAddress(session.Borrower),
-	)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &data
+	return dc
 }
 
 func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {
