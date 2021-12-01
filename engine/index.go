@@ -42,7 +42,10 @@ func (e *Engine) init() {
 		e.repo.AddSyncAdapter(obj)
 		e.nextSyncStop = obj.GetLastSync()
 	} else {
-		e.nextSyncStop = adapters[0].GetLastSync()
+		for addr, _ := range adapters {
+			e.nextSyncStop = adapters[addr].GetLastSync()
+			break
+		}
 	}
 }
 

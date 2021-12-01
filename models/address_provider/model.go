@@ -7,20 +7,17 @@ import (
 
 type AddressProvider struct {
 	*core.SyncAdapter
-	*core.State
 }
 
 func NewAddressProvider(addr string, client *ethclient.Client, repo core.RepositoryI) *AddressProvider {
 	return NewAddressProviderFromAdapter(
-		repo,
-		core.NewSyncAdapter(addr, "AddressProvider", -1, client),
+		core.NewSyncAdapter(addr, "AddressProvider", -1, client, repo),
 	)
 }
 
-func NewAddressProviderFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *AddressProvider {
+func NewAddressProviderFromAdapter(adapter *core.SyncAdapter) *AddressProvider {
 	obj := &AddressProvider{
 		SyncAdapter: adapter,
-		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

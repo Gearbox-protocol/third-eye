@@ -23,7 +23,7 @@ func (Protocol) TableName() string {
 
 type RepositoryI interface {
 	// getting all the adapters for syncing in the engine
-	GetSyncAdapters() []SyncAdapterI
+	GetSyncAdapters() map[string]SyncAdapterI
 	// adding the adapters for syncing
 	AddSyncAdapter(adapterI SyncAdapterI)
 	// saving to the db
@@ -32,12 +32,6 @@ type RepositoryI interface {
 	SetBlock(blockNum int64)
 	// credit account operations
 	AddAccountOperation(accountOperation *AccountOperation)
-	// credit manager funcs
-	AddCreditManager(cm *CreditManager)
-	AddCreditOwnerSession(cmAddr, owner, sessionId string)
-	RemoveCreditOwnerSession(cmAddr, owner string)
-	GetCreditOwnerSession(cmAddr, owner string) string
-	GetUnderlyingToken(cmAddr string) string
 	// for getting executeparser
 	GetExecuteParser() *services.ExecuteParser
 	// price feed/oracle funcs

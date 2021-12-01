@@ -12,15 +12,13 @@ import (
 
 type Pool struct {
 	*core.SyncAdapter
-	*core.State
 	contractETH *poolService.PoolService
 	lastEventBlock int64
 }
 
 func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
 	pool := NewPoolFromAdapter(
-		repo,
-		core.NewSyncAdapter(addr, "Pool", discoveredAt, client),
+		core.NewSyncAdapter(addr, "Pool", discoveredAt, client, repo),
 	)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(pool.DiscoveredAt),
@@ -44,14 +42,13 @@ func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, disco
 	return pool
 }
 
-func NewPoolFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *Pool {
+func NewPoolFromAdapter(adapter *core.SyncAdapter) *Pool {
 	cmContract, err := poolService.NewPoolService(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
 	}
 	obj := &Pool{
 		SyncAdapter: adapter,
-		State:       &core.State{Repo: repo},
 		contractETH: cmContract,
 	}
 	return obj

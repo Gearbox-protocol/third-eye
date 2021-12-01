@@ -23,16 +23,17 @@ func (repo *Repository) loadSyncAdapters() {
 	}
 	for _, adapter := range data {
 		adapter.Client = repo.client
-		repo.AddSyncAdapter(prepareSyncAdapter(adapter, repo))
+		adapter.Repo = repo
+		repo.AddSyncAdapter(repo.prepareSyncAdapter(adapter))
 	}
 }
 
-func prepareSyncAdapter(adapter *core.SyncAdapter, repo core.RepositoryI) core.SyncAdapterI {
+func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
 	switch adapter.ContractName {
 	case "ACL":
-		return acl.NewACLFromAdapter(repo, adapter)
+		return acl.NewACLFromAdapter(adapter)
 	case "AddressProvider":
-		ap := address_provider.NewAddressProviderFromAdapter(repo, adapter)
+		ap := address_provider.NewAddressProviderFromAdapter(adapter)
 		for k, dcAddr := range ap.Details {
 			blockNum, err := strconv.ParseInt(k, 10, 64)
 			if err != nil {
@@ -42,33 +43,31 @@ func prepareSyncAdapter(adapter *core.SyncAdapter, repo core.RepositoryI) core.S
 		}
 		return ap
 	case "AccountFactory":
-		return account_factory.NewAccountFactoryFromAdapter(repo, adapter)
+		return account_factory.NewAccountFactoryFromAdapter(adapter)
 	case "Pool":
-		return pool.NewPoolFromAdapter(repo, adapter)
+		return pool.NewPoolFromAdapter(adapter)
 	case "CreditManager":
-		return credit_manager.NewCreditManagerFromAdapter(repo, adapter)
+		return credit_manager.NewCreditManagerFromAdapter(adapter)
 	case "PriceOracle":
-		return price_oracle.NewPriceOracleFromAdapter(repo, adapter)
+		return price_oracle.NewPriceOracleFromAdapter(adapter)
 	case "PriceFeed":
-		return price_feed.NewPriceFeedFromAdapter(repo, adapter)
-	// case "DataCompressor":
-	// 	return data_compressor.NewDataCompressorFromAdapter(repo, adapter)
+		return price_feed.NewPriceFeedFromAdapter(adapter)
 	case "ContractRegister":
-		return contract_register.NewContractRegisterFromAdapter(repo, adapter)
+		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case "CreditFilter":
-		return credit_filter.NewCreditFilterFromAdapter(repo, adapter)
+		return credit_filter.NewCreditFilterFromAdapter(adapter)
 	}
 	return nil
 }
 
-func (repo *Repository) GetSyncAdapters() []core.SyncAdapterI {
+func (repo *Repository) GetSyncAdapters() map[string]core.SyncAdapterI {
 	return repo.syncAdapters
 }
 
 func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.syncAdapters = append(repo.syncAdapters, adapterI)
+	repo.syncAdapters[adapterI.GetAddress()] = adapterI
 }
 
 func (repo *Repository) DisableSyncAdapter(addr string) {

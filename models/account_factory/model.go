@@ -8,20 +8,17 @@ import (
 
 type AccountFactory struct {
 	*core.SyncAdapter
-	*core.State
 }
 
 func NewAccountFactory(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *AccountFactory {
 	return NewAccountFactoryFromAdapter(
-		repo,
-		core.NewSyncAdapter(addr, "AccountFactory", discoveredAt, client),
+		core.NewSyncAdapter(addr, "AccountFactory", discoveredAt, client, repo),
 	)
 }
 
-func NewAccountFactoryFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *AccountFactory {
+func NewAccountFactoryFromAdapter(adapter *core.SyncAdapter) *AccountFactory {
 	obj := &AccountFactory{
 		SyncAdapter: adapter,
-		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

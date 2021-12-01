@@ -26,17 +26,17 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		log.Infof("AddressSet: %s, %s", contract, address)
 		switch contract {
 		case "ACL":
-			obj := acl.NewACL(address, blockNum, mdl.SyncAdapter.Client, mdl.State.Repo)
-			mdl.State.Repo.AddSyncAdapter(obj)
+			obj := acl.NewACL(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.Repo.AddSyncAdapter(obj)
 		case "CONTRACTS_REGISTER":
-			cr := contract_register.NewContractRegister(address, blockNum, mdl.SyncAdapter.Client, mdl.State.Repo)
-			mdl.State.Repo.AddSyncAdapter(cr)
+			cr := contract_register.NewContractRegister(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.Repo.AddSyncAdapter(cr)
 		case "PRICE_ORACLE":
-			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.State.Repo)
-			mdl.State.Repo.AddSyncAdapter(po)
+			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.Repo.AddSyncAdapter(po)
 		case "ACCOUNT_FACTORY":
-			af := account_factory.NewAccountFactory(address, blockNum, mdl.SyncAdapter.Client, mdl.State.Repo)
-			mdl.State.Repo.AddSyncAdapter(af)
+			af := account_factory.NewAccountFactory(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.Repo.AddSyncAdapter(af)
 		case "DATA_COMPRESSOR":
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]string)

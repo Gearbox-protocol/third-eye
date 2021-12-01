@@ -8,13 +8,11 @@ import (
 
 type DataCompressor struct {
 	*core.SyncAdapter
-	*core.State
 }
 
 func NewDataCompressor(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *DataCompressor {
 	obj := &DataCompressor{
-		SyncAdapter: core.NewSyncAdapter(addr, "AddressProvider", discoveredAt, client),
-		State:       &core.State{Repo: repo},
+		SyncAdapter: core.NewSyncAdapter(addr, "AddressProvider", discoveredAt, client, repo),
 	}
 	return obj
 }

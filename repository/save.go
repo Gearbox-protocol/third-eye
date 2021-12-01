@@ -26,7 +26,7 @@ func (repo *Repository) Flush() (err error) {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(adapter.GetAdapterState())
+		}).Create(adapter.GetState())
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }
@@ -45,15 +45,6 @@ func (repo *Repository) Flush() (err error) {
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(pool)
-		// if err.Error != nil {
-		// 	log.Fatal(err.Error)
-		// }
-	}
-	for _, cm := range repo.creditManagers {
-		tx.Clauses(clause.OnConflict{
-			// err := repo.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(cm)
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }

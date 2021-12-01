@@ -16,11 +16,10 @@ import (
 
 type Repository struct {
 	db             *gorm.DB
-	syncAdapters   []core.SyncAdapterI
+	syncAdapters   map[string]core.SyncAdapterI
 	mu             *sync.Mutex
 	client         *ethclient.Client
 	blocks         map[int64]*core.Block
-	creditManagers map[string]*core.CreditManager
 	executeParser  *services.ExecuteParser
 	tokens         map[string]*core.Token
 	allowedTokens  []*core.AllowedToken
@@ -38,8 +37,8 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		mu:             &sync.Mutex{},
 		client:         client,
 		blocks:         make(map[int64]*core.Block),
-		creditManagers: make(map[string]*core.CreditManager),
 		executeParser:  ep,
+		syncAdapters: make(map[string]core.SyncAdapterI),
 		dc:             make(map[int64]*dataCompressor.DataCompressor),
 		tokens:         make(map[string]*core.Token),
 		pools:          make(map[string]*core.Pool),
@@ -58,11 +57,12 @@ func (repo *Repository) GetExecuteParser() *services.ExecuteParser {
 func (repo *Repository) init() {
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
 	repo.loadToken()
+	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
+	repo.loadSyncAdapters()
 	repo.loadPool()
 	repo.loadCreditManagers()
 	repo.loadCreditSessions()
 	repo.loadLastCSS()
-	repo.loadSyncAdapters()
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {

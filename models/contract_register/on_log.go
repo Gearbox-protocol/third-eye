@@ -14,11 +14,11 @@ func (mdl *ContractRegister) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("NewPoolAdded(address)"):
 		address := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
-		obj := pool.NewPool(address, mdl.SyncAdapter.Client, mdl.State.Repo, blockNum)
-		mdl.State.Repo.AddSyncAdapter(obj)
+		obj := pool.NewPool(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
+		mdl.Repo.AddSyncAdapter(obj)
 	case core.Topic("NewCreditManagerAdded(address)"):
 		address := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
-		cm := credit_manager.NewCreditManager(address, mdl.SyncAdapter.Client, mdl.State.Repo, blockNum)
-		mdl.State.Repo.AddSyncAdapter(cm)
+		cm := credit_manager.NewCreditManager(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
+		mdl.Repo.AddSyncAdapter(cm)
 	}
 }

@@ -10,25 +10,22 @@ import (
 
 type PriceOracle struct {
 	*core.SyncAdapter
-	*core.State
 	contractETH *priceOracle.PriceOracle
 }
 
 func NewPriceOracle(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceOracle {
 	return NewPriceOracleFromAdapter(
-		repo,
-		core.NewSyncAdapter(addr, "PriceOracle", discoveredAt, client),
+		core.NewSyncAdapter(addr, "PriceOracle", discoveredAt, client, repo),
 	)
 }
 
-func NewPriceOracleFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *PriceOracle {
+func NewPriceOracleFromAdapter(adapter *core.SyncAdapter) *PriceOracle {
 	cmContract, err := priceOracle.NewPriceOracle(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
 	}
 	obj := &PriceOracle{
 		SyncAdapter: adapter,
-		State:       &core.State{Repo: repo},
 		contractETH: cmContract,
 	}
 	return obj

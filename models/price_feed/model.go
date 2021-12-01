@@ -11,7 +11,6 @@ import (
 
 type PriceFeed struct {
 	*core.SyncAdapter
-	*core.State
 	contractETH *priceFeed.PriceFeed
 }
 
@@ -29,13 +28,14 @@ func NewPriceFeed(oracle, token string, discoveredAt int64, client *ethclient.Cl
 		},
 		Details:  map[string]string{"oracle": oracle, "token": token},
 		LastSync: discoveredAt - 1,
+		Repo: repo,
 	}
 	return NewPriceFeedFromAdapter(
-		repo, syncAdapter,
+		syncAdapter,
 	)
 }
 
-func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *PriceFeed {
+func NewPriceFeedFromAdapter(adapter *core.SyncAdapter) *PriceFeed {
 	oracleAddr := adapter.Details["oracle"]
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracleAddr), adapter.Client)
 	if err != nil {
@@ -43,7 +43,6 @@ func NewPriceFeedFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *
 	}
 	obj := &PriceFeed{
 		SyncAdapter: adapter,
-		State:       &core.State{Repo: repo},
 		contractETH: pfContract,
 	}
 	if adapter.Address == oracleAddr {

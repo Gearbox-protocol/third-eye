@@ -17,6 +17,7 @@ type SyncAdapter struct {
 	LastSync int64  `gorm:"column:last_sync"`
 	Details  Json   `gorm:"column:details"`
 	Error    string `gorm:"column:error"`
+	Repo RepositoryI `gorm:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -27,12 +28,13 @@ type SyncAdapterI interface {
 	OnLog(txLog types.Log)
 	GetLastSync() int64
 	SetLastSync(int64)
-	GetAdapterState() *SyncAdapter
+	GetState() interface{}
 	GetAddress() string
 	GetName() string
 	AfterSyncHook(syncTill int64)
 	IsDisabled() bool
 	Disable()
+	SetState(obj interface{})
 }
 
 func (s *SyncAdapter) SetLastSync(lastSync int64) {
@@ -54,14 +56,20 @@ func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
 }
 
-func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client) *SyncAdapter {
+func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client, repo RepositoryI) *SyncAdapter {
 	obj := &SyncAdapter{
 		Contract: NewContract(addr, name, discoveredAt, client),
+		Repo: repo,
 	}
 	obj.LastSync = obj.FirstLogAt - 1
 	return obj
 }
-func (s *SyncAdapter) GetAdapterState() *SyncAdapter {
+
+func (s *SyncAdapter) SetState(obj interface{}) {
+
+}
+
+func (s *SyncAdapter) GetState() interface{} {
 	return s
 }
 func (s *SyncAdapter) LoadState() {

@@ -8,20 +8,17 @@ import (
 
 type ACL struct {
 	*core.SyncAdapter
-	*core.State
 }
 
 func NewACL(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ACL {
 	return NewACLFromAdapter(
-		repo,
-		core.NewSyncAdapter(addr, "ACL", discoveredAt, client),
+		core.NewSyncAdapter(addr, "ACL", discoveredAt, client, repo),
 	)
 }
 
-func NewACLFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *ACL {
+func NewACLFromAdapter(adapter *core.SyncAdapter) *ACL {
 	obj := &ACL{
 		SyncAdapter: adapter,
-		State:       &core.State{Repo: repo},
 	}
 	return obj
 }

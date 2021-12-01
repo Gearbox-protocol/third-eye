@@ -16,13 +16,15 @@ import (
 
 type CreditManager struct {
 	*core.SyncAdapter
-	*core.State
-	contractETH   *creditManager.CreditManager
-	LastTxHash    string
-	UToken        string
-	UDecimals     uint8
-	executeParams []services.ExecuteParams
-	eventBalances SortedEventbalances
+	contractETH   *creditManager.CreditManager `gorm:"-"`
+	LastTxHash    string `gorm:"-"`
+	executeParams []services.ExecuteParams `gorm:"-"`
+	eventBalances SortedEventbalances `gorm:"-"`
+	State *core.CreditManager `gorm:"foreignKey:address"`
+}
+
+func (CreditManager) TableName() string {
+	return "sync_adapters"
 }
 
 func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
@@ -41,13 +43,6 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 	if err != nil {
 		log.Fatal(err)
 	}
-	// create credit manager for db
-	repo.AddCreditManager(&core.CreditManager{
-		Address:         addr,
-		PoolAddress:     poolAddr.Hex(),
-		UnderlyingToken: underlyingToken.Hex(),
-		Sessions:        core.NewHstore(),
-	})
 
 	// create creditFilter syncadapter
 	creditFilter, err := cmContract.CreditFilter(&bind.CallOpts{})
@@ -59,32 +54,35 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 	//
 
 	cm := NewCreditManagerFromAdapter(
-		repo,
-		core.NewSyncAdapter(addr, "CreditManager", discoveredAt, client),
+		core.NewSyncAdapter(addr, "CreditManager", discoveredAt, client, repo),
 	)
+	// create credit manager state
+	cm.State = &core.CreditManager{
+		Address:         addr,
+		PoolAddress:     poolAddr.Hex(),
+		UnderlyingToken: underlyingToken.Hex(),
+		Sessions:        core.NewHstore(),
+	}
 	return cm
 }
 
-func NewCreditManagerFromAdapter(repo core.RepositoryI, adapter *core.SyncAdapter) *CreditManager {
+func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
 	}
 	obj := &CreditManager{
 		SyncAdapter: adapter,
-		State:       &core.State{Repo: repo},
 		contractETH: cmContract,
 	}
 	obj.GetAbi()
-	obj.SetUToken()
+	log.Info("credit amanger")
 	return obj
 }
 
-func (mdl *CreditManager) SetUToken() {
-	if mdl.UToken == "" {
-		mdl.UToken = mdl.Repo.GetUnderlyingToken(mdl.Address)
-		mdl.UDecimals = mdl.Repo.GetToken(mdl.UToken).Decimals
-	}
+func (mdl *CreditManager) GetUnderlyingDecimal() uint8 {
+	decimals := mdl.Repo.GetToken(mdl.GetUnderlyingToken()).Decimals
+	return decimals
 }
 
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
@@ -110,4 +108,8 @@ func (cm *CreditManager) GetCreditSessionData(blockNum int64, sessionId string) 
 		log.Fatal(err)
 	}
 	return &data
+}
+
+func (mdl *CreditManager) GetState() interface{} {
+	return mdl
 }
