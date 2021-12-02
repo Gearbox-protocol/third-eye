@@ -7,7 +7,7 @@ import (
 )
 
 func Verbosef(msg string, args ...interface{}) {
-	// log.Printf(msg, args...)
+	log.Printf(msg, args...)
 }
 func Verbose(v ...interface{}) {
 	// log.Println(v...)

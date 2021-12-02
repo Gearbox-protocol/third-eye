@@ -12,7 +12,7 @@ func (repo *Repository) loadPool() {
 		log.Fatal(err)
 	}
 	for _, pool := range data {
-		adapter := repo.syncAdapters[pool.Address]
+		adapter := repo.kit.GetAdapter(pool.Address)
 		adapter.SetState(pool)
 	}
 }
@@ -46,8 +46,5 @@ func (repo *Repository) AddPoolLedger(pl *core.PoolLedger) {
 }
 
 func (repo *Repository) GetPoolUniqueUserLen(pool string) int {
-	if repo.poolUniqueUsers[pool] == nil {
-		log.Fatal("pool unique user map is nil")
-	}
 	return len(repo.poolUniqueUsers[pool])
 }

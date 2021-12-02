@@ -16,7 +16,9 @@ func (mdl *CreditManager) processExecuteEvents() {
 }
 
 func (mdl *CreditManager) createCMStat() {
-	if mdl.lastEventBlock != 0 {
+	// datacompressor works for cm address only after the address is registered with contractregister
+	// i.e. discoveredAt
+	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
 		mdl.calculateCMStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
 	}

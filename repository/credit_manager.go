@@ -12,7 +12,7 @@ func (repo *Repository) loadCreditManagers() {
 		log.Fatal(err)
 	}
 	for _, cm := range data {
-		adapter := repo.syncAdapters[cm.Address]
+		adapter := repo.kit.GetAdapter(cm.Address)
 		if adapter != nil && adapter.GetName() == "CreditManager" {
 			adapter.SetState(cm)
 		}

@@ -1,12 +1,6 @@
 package core
 
 import (
-	"github.com/ethereum/go-ethereum"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/Gearbox-protocol/third-eye/artifacts/aCL"
 	"github.com/Gearbox-protocol/third-eye/artifacts/aCLTrait"
 	"github.com/Gearbox-protocol/third-eye/artifacts/accountFactory"
@@ -22,6 +16,11 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/priceOracle"
 	"github.com/Gearbox-protocol/third-eye/artifacts/tokenMock"
 	"github.com/Gearbox-protocol/third-eye/artifacts/wETHGateway"
+	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -30,6 +29,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"strings"
 )
 
 type Contract struct {
@@ -123,6 +123,9 @@ func (c *Contract) GetName() string {
 func (c *Contract) IsDisabled() bool {
 	return c.Disabled
 }
+func (c *Contract) GetFirstLog() int64 {
+	return c.FirstLogAt
+}
 
 // Extras
 
@@ -156,7 +159,7 @@ func (c *Contract) findFirstLogBound(fromBlock, toBlock int64) (int64, error) {
 	logs, err := c.Client.FilterLogs(context.Background(), query)
 	if err != nil {
 		if err.Error() == "query returned more than 10000 results" ||
-			err.Error() == "Log response size exceeded. You can make eth_getLogs requests with up to a 2K block range and no limit on the response size, or you can request any block range with a cap of 10K logs in the response." {
+			strings.Contains(err.Error(), "Log response size exceeded. You can make eth_getLogs requests with up to a 2K block range and no limit on the response size, or you can request any block range with a cap of 10K logs in the response.") {
 			middle := (fromBlock + toBlock) / 2
 
 			log.Verbosef("Run in range %d %d", fromBlock, middle-1)

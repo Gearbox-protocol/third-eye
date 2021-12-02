@@ -16,7 +16,7 @@ import (
 
 type Repository struct {
 	db              *gorm.DB
-	syncAdapters    map[string]core.SyncAdapterI
+	kit             *core.AdapterKit
 	mu              *sync.Mutex
 	client          *ethclient.Client
 	blocks          map[int64]*core.Block
@@ -37,7 +37,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		client:          client,
 		blocks:          make(map[int64]*core.Block),
 		executeParser:   ep,
-		syncAdapters:    make(map[string]core.SyncAdapterI),
+		kit:             core.NewAdapterKit([]string{"AddressProvider", "Pool", "CreditManager"}),
 		dc:              make(map[int64]*dataCompressor.DataCompressor),
 		tokens:          make(map[string]*core.Token),
 		sessions:        make(map[string]*core.CreditSession),
@@ -83,4 +83,8 @@ func (repo *Repository) SetBlock(blockNum int64) {
 
 func (repo *Repository) AddCreditManagerStats(cms *core.CreditManagerStat) {
 	repo.blocks[cms.BlockNum].AddCreditManagerStats(cms)
+}
+
+func (repo *Repository) GetKit() *core.AdapterKit {
+	return repo.kit
 }

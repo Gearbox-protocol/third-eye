@@ -8,7 +8,9 @@ import (
 )
 
 func (mdl *Pool) createPoolStat() {
-	if mdl.lastEventBlock != 0 {
+	// datacompressor works for pool address only after the address is registered with contractregister
+	// i.e. discoveredAt
+	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
 		mdl.calculatePoolStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
 	}

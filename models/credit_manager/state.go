@@ -65,6 +65,7 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	mdl.State.AvailableLiquidity = utils.GetFloat64Decimal(state.AvailableLiquidity, mdl.GetUnderlyingDecimal())
 
 	stats := &core.CreditManagerStat{
+		Address:  mdl.Address,
 		BlockNum: blockNum,
 		CreditManagerData: &core.CreditManagerData{
 			// fetched from data compressor

@@ -60,22 +60,8 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	return nil
 }
 
-func (repo *Repository) GetSyncAdapters() map[string]core.SyncAdapterI {
-	return repo.syncAdapters
-}
-
 func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.syncAdapters[adapterI.GetAddress()] = adapterI
-}
-
-func (repo *Repository) DisableSyncAdapter(addr string) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	for _, adapter := range repo.syncAdapters {
-		if adapter.GetAddress() == addr {
-			adapter.Disable()
-		}
-	}
+	repo.kit.Add(adapterI)
 }

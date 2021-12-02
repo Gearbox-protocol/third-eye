@@ -10,7 +10,6 @@ import (
 )
 
 func (p *Pool) calculatePoolStat(blockNum int64) {
-
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}

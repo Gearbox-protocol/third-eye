@@ -22,15 +22,16 @@ func (repo *Repository) Flush() (err error) {
 	// block->AccountOperation on session
 
 	tx := repo.db.Begin()
-	for _, adapter := range repo.syncAdapters {
+	for repo.kit.Next() {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(adapter.GetState())
+		}).Create(repo.kit.Get().GetState())
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }
 	}
+	repo.kit.Reset()
 	for _, token := range repo.tokens {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{

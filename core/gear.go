@@ -22,9 +22,8 @@ func (Protocol) TableName() string {
 }
 
 type RepositoryI interface {
-	// getting all the adapters for syncing in the engine
-	GetSyncAdapters() map[string]SyncAdapterI
-	// adding the adapters for syncing
+	// sync adapters
+	GetKit() *AdapterKit
 	AddSyncAdapter(adapterI SyncAdapterI)
 	// saving to the db
 	Flush() error

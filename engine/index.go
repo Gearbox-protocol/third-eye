@@ -34,18 +34,15 @@ func NewEngine(config *config.Config,
 
 func (e *Engine) init() {
 	e.blockPerSync = 1000 * 5
-	adapters := e.repo.GetSyncAdapters()
-	log.Info("init sync adapters", adapters)
-	if len(adapters) == 0 {
+	kit := e.repo.GetKit()
+	log.Info("init sync adapters", kit.Details())
+	if kit.Len() == 0 {
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
 		obj := address_provider.NewAddressProvider(addr, e.client, e.repo)
 		e.repo.AddSyncAdapter(obj)
 		e.nextSyncStop = obj.GetLastSync()
 	} else {
-		for addr, _ := range adapters {
-			e.nextSyncStop = adapters[addr].GetLastSync()
-			break
-		}
+		e.nextSyncStop = kit.First().GetLastSync()
 	}
 }
 
@@ -65,12 +62,14 @@ func (e *Engine) SyncHandler() {
 }
 func (e *Engine) sync(latestBlockNum int64) {
 	syncTill := e.nextSyncStop
+	kit := e.repo.GetKit()
 	for syncTill < latestBlockNum {
 		e.nextSyncStop = syncTill
 		log.Info("Sync till", syncTill)
-		for _, adapter := range e.repo.GetSyncAdapters() {
-			e.SyncModel(adapter, syncTill)
+		for kit.Next() {
+			e.SyncModel(kit.Get(), syncTill)
 		}
+		kit.Reset()
 		e.repo.Flush()
 		syncTill += e.blockPerSync
 	}

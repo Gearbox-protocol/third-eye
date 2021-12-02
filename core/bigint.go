@@ -37,6 +37,9 @@ func (z *BigInt) Value() (driver.Value, error) {
 	return nil, nil
 }
 func NewBigInt(bi *BigInt) *BigInt {
+	if bi == nil {
+		return (*BigInt)(big.NewInt(0))
+	}
 	obj, ok := new(big.Int).SetString(bi.String(), 10)
 	if !ok {
 		log.Fatal("Failed parsing int", bi)

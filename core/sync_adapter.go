@@ -35,6 +35,7 @@ type SyncAdapterI interface {
 	IsDisabled() bool
 	Disable()
 	SetState(obj interface{})
+	GetFirstLog() int64
 }
 
 func (s *SyncAdapter) SetLastSync(lastSync int64) {
