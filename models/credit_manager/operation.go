@@ -15,6 +15,12 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 	amount,
 	borrowAmount,
 	referralCode *big.Int) error {
+	// manager state
+	mdl.State.TotalOpenedAccounts++
+	mdl.State.OpenedAccountsCount++
+	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, borrowAmount)
+	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
+	// other operations
 	cmAddr := txLog.Address.Hex()
 	sessionId := fmt.Sprintf("%s_%d_%d", account, txLog.BlockNumber, txLog.Index)
 	action, args := mdl.ParseEvent("OpenCreditAccount", txLog)
@@ -64,6 +70,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 
 // onCloseCreditAccount handles CloseCreditAccount Event
 func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to string, remainingFunds *big.Int) error {
+	mdl.State.TotalClosedAccounts++
 	cmAddr := txLog.Address.Hex()
 	sessionId := mdl.GetCreditOwnerSession(owner)
 	blockNum := int64(txLog.BlockNumber)
@@ -101,6 +108,7 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 }
 
 func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liquidator string, remainingFunds *big.Int) error {
+	mdl.State.TotalLiquidatedAccounts++
 	sessionId := mdl.GetCreditOwnerSession(owner)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("LiquidateCreditAccount", txLog)
@@ -137,6 +145,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 }
 
 func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to string) error {
+	mdl.State.TotalRepaidAccounts++
 	cmAddr := txLog.Address.Hex()
 	sessionId := mdl.GetCreditOwnerSession(owner)
 	blockNum := int64(txLog.BlockNumber)
@@ -197,6 +206,10 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 }
 
 func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower string, amount *big.Int) error {
+	// manager state
+	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, amount)
+	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
+	// other operations
 	sessionId := mdl.GetCreditOwnerSession(borrower)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("IncreaseBorrowedAmount", txLog)
@@ -308,6 +321,7 @@ func (mdl *CreditManager) handleExecuteEvents() {
 }
 
 func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, remainingFunds *big.Int, newStatus int) {
+	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
 	data := mdl.GetCreditSessionData(blockNum-1, sessionId)
 	session := mdl.Repo.GetCreditSession(sessionId)
@@ -317,10 +331,23 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, remaini
 	if remainingFunds == nil && newStatus == core.Repaid {
 		remainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
 	}
-	session.Profit = (*core.BigInt)(new(big.Int).Sub(remainingFunds, (*big.Int)(session.InitialAmount)))
+	profit := new(big.Int).Sub(remainingFunds, (*big.Int)(session.InitialAmount))
+	session.Profit = (*core.BigInt)(profit)
+	// credit manager state
+	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, profit)
+	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
+	if profit.Sign() < 0 {
+		mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, profit)
+		mdl.State.TotalLosses = utils.GetFloat64Decimal(mdl.State.TotalLossesBI.Convert(), mdl.GetUnderlyingDecimal())
+	} else {
+		mdl.State.TotalProfitBI = core.AddCoreAndInt(mdl.State.TotalProfitBI, profit)
+		mdl.State.TotalProfit = utils.GetFloat64Decimal(mdl.State.TotalProfitBI.Convert(), mdl.GetUnderlyingDecimal())
+	}
+	//-- credit manager state
+
 	// ToDo: Change to calculate correct values
 	session.ProfitPercentage = float64(new(big.Int).Div(new(big.Int).
-		Mul((*big.Int)(session.Profit), big.NewInt(100000)), (*big.Int)(session.InitialAmount)).Int64()) / 1000
+		Mul(profit, big.NewInt(100000)), (*big.Int)(session.InitialAmount)).Int64()) / 1000
 	session.Status = newStatus
 }
 

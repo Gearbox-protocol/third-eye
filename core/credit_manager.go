@@ -37,7 +37,7 @@ type CreditManagerData struct {
 
 type CreditManagerStat struct {
 	*CreditManagerData
-	ID                      int64   `gorm:"primaryKey"`
-	BlockNum                int64   `gorm:"column:block_num"`
-	Address                 string  `gorm:"column:credit_manager"`
+	ID       int64  `gorm:"primaryKey"`
+	BlockNum int64  `gorm:"column:block_num"`
+	Address  string `gorm:"column:credit_manager"`
 }

@@ -32,13 +32,13 @@ type PoolStat struct {
 }
 
 type PoolLedger struct {
-	Id int64 `gorm:"primaryKey;autoincrement:true"`
-	BlockNumber int64 `gorm:"column:block_num"`
-	Pool string `gorm:"column:pool"`
-	User string `gorm:"column:address"`
-	LogId int64 `gorm:"column:log_id"`
-	Event string `gorm:"column:event"`
-	Liquidity *BigInt `gorm:"column:liquidity"`
+	Id          int64   `gorm:"primaryKey;autoincrement:true"`
+	BlockNumber int64   `gorm:"column:block_num"`
+	Pool        string  `gorm:"column:pool"`
+	User        string  `gorm:"column:address"`
+	LogId       int64   `gorm:"column:log_id"`
+	Event       string  `gorm:"column:event"`
+	Liquidity   *BigInt `gorm:"column:liquidity"`
 }
 
 func (PoolLedger) TableName() string {

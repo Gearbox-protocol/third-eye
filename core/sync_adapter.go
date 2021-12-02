@@ -14,10 +14,10 @@ const MaxUint = ^int64(0)
 
 type SyncAdapter struct {
 	*Contract
-	LastSync int64  `gorm:"column:last_sync"`
-	Details  Json   `gorm:"column:details"`
-	Error    string `gorm:"column:error"`
-	Repo RepositoryI `gorm:"-"`
+	LastSync int64       `gorm:"column:last_sync"`
+	Details  Json        `gorm:"column:details"`
+	Error    string      `gorm:"column:error"`
+	Repo     RepositoryI `gorm:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -51,7 +51,6 @@ func (s *SyncAdapter) SetError(err error) {
 	s.Error = err.Error()[:msgLen]
 }
 
-
 func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
 }
@@ -59,7 +58,7 @@ func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client, repo RepositoryI) *SyncAdapter {
 	obj := &SyncAdapter{
 		Contract: NewContract(addr, name, discoveredAt, client),
-		Repo: repo,
+		Repo:     repo,
 	}
 	obj.LastSync = obj.FirstLogAt - 1
 	return obj

@@ -10,7 +10,7 @@ type EngineI interface {
 }
 
 type Protocol struct {
-	Id      string `gorm:"primaryKey;column:id;autoincrement:true"`
+	Id            string `gorm:"primaryKey;column:id;autoincrement:true"`
 	Protocol      string `gorm:"column:protocol"`
 	Adapter       string `gorm:"column:adapter"`
 	BlockNumber   int64  `gorm:"column:block_num"`
@@ -55,7 +55,7 @@ type RepositoryI interface {
 	// pools
 	AddPoolStat(ps *PoolStat)
 	AddPoolLedger(pl *PoolLedger)
-	GetPool(poolAddr string) *Pool
-	AddPool(pool *Pool)
 	GetPoolUniqueUserLen(pool string) int
+	// credit manager
+	AddCreditManagerStats(cms *CreditManagerStat)
 }

@@ -12,8 +12,13 @@ import (
 
 type Pool struct {
 	*core.SyncAdapter
-	contractETH *poolService.PoolService
-	lastEventBlock int64
+	contractETH    *poolService.PoolService
+	lastEventBlock int64      `gorm:"-"`
+	State          *core.Pool `gorm:"foreignKey:address"`
+}
+
+func (Pool) TableName() string {
+	return "sync_adapters"
 }
 
 func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
@@ -33,7 +38,7 @@ func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, disco
 		log.Fatal(err)
 	}
 	repo.AddToken(dieselToken.Hex())
-	repo.AddPool(&core.Pool{
+	pool.SetState(&core.Pool{
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
@@ -54,8 +59,11 @@ func NewPoolFromAdapter(adapter *core.SyncAdapter) *Pool {
 	return obj
 }
 
-
 func (mdl *Pool) AfterSyncHook(syncTill int64) {
 	mdl.createPoolStat()
 	mdl.SetLastSync(syncTill)
+}
+
+func (mdl *Pool) GetState() interface{} {
+	return mdl
 }

@@ -10,6 +10,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
@@ -34,6 +35,20 @@ func (z *BigInt) Value() (driver.Value, error) {
 		return (*big.Int)(z).String(), nil
 	}
 	return nil, nil
+}
+func NewBigInt(bi *BigInt) *BigInt {
+	obj, ok := new(big.Int).SetString(bi.String(), 10)
+	if !ok {
+		log.Fatal("Failed parsing int", bi)
+	}
+	return (*BigInt)(obj)
+}
+
+func AddCoreAndInt(a *BigInt, b *big.Int) *BigInt {
+	if a != nil {
+		return (*BigInt)(new(big.Int).Add(a.Convert(), b))
+	}
+	return NewBigInt((*BigInt)(b))
 }
 
 func (z *BigInt) Scan(value interface{}) error {

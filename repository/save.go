@@ -40,15 +40,6 @@ func (repo *Repository) Flush() (err error) {
 		// 	log.Fatal(err.Error)
 		// }
 	}
-	for _, pool := range repo.pools {
-		tx.Clauses(clause.OnConflict{
-			// err := repo.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(pool)
-		// if err.Error != nil {
-		// 	log.Fatal(err.Error)
-		// }
-	}
 	for _, session := range repo.sessions {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{

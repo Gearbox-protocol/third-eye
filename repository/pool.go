@@ -5,22 +5,15 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 )
 
-func (repo *Repository) AddPool(pool *core.Pool) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	if repo.pools[pool.Address] == nil {
-		repo.pools[pool.Address] = pool
-	}
-}
-
 func (repo *Repository) loadPool() {
 	data := []*core.Pool{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, cm := range data {
-		repo.AddPool(cm)
+	for _, pool := range data {
+		adapter := repo.syncAdapters[pool.Address]
+		adapter.SetState(pool)
 	}
 }
 
@@ -43,18 +36,13 @@ func (repo *Repository) AddPoolUniqueUser(pool, user string) {
 	repo.poolUniqueUsers[pool][user] = true
 }
 
-
 func (repo *Repository) AddPoolStat(ps *core.PoolStat) {
-	repo.blocks[ps.BlockNum].AddPoolStat(ps) 
-}
-
-func (repo *Repository) GetPool(poolAddr string) *core.Pool {
-	return repo.pools[poolAddr]
+	repo.blocks[ps.BlockNum].AddPoolStat(ps)
 }
 
 func (repo *Repository) AddPoolLedger(pl *core.PoolLedger) {
 	repo.AddPoolUniqueUser(pl.Pool, pl.User)
-	repo.blocks[pl.BlockNumber].AddPoolLedger(pl) 
+	repo.blocks[pl.BlockNumber].AddPoolLedger(pl)
 }
 
 func (repo *Repository) GetPoolUniqueUserLen(pool string) int {

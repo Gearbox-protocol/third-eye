@@ -28,7 +28,7 @@ func NewPriceFeed(oracle, token string, discoveredAt int64, client *ethclient.Cl
 		},
 		Details:  map[string]string{"oracle": oracle, "token": token},
 		LastSync: discoveredAt - 1,
-		Repo: repo,
+		Repo:     repo,
 	}
 	return NewPriceFeedFromAdapter(
 		syncAdapter,

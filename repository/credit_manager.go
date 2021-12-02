@@ -1,4 +1,3 @@
-
 package repository
 
 import (
@@ -14,8 +13,8 @@ func (repo *Repository) loadCreditManagers() {
 	}
 	for _, cm := range data {
 		adapter := repo.syncAdapters[cm.Address]
-		if adapter !=  nil && adapter.GetName() == "CreditManager" {
-			adapter.SetState(cm) 
+		if adapter != nil && adapter.GetName() == "CreditManager" {
+			adapter.SetState(cm)
 		}
 	}
 }

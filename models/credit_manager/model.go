@@ -16,11 +16,12 @@ import (
 
 type CreditManager struct {
 	*core.SyncAdapter
-	contractETH   *creditManager.CreditManager `gorm:"-"`
-	LastTxHash    string `gorm:"-"`
-	executeParams []services.ExecuteParams `gorm:"-"`
-	eventBalances SortedEventbalances `gorm:"-"`
-	State *core.CreditManager `gorm:"foreignKey:address"`
+	contractETH    *creditManager.CreditManager `gorm:"-"`
+	LastTxHash     string                       `gorm:"-"`
+	executeParams  []services.ExecuteParams     `gorm:"-"`
+	eventBalances  SortedEventbalances          `gorm:"-"`
+	State          *core.CreditManager          `gorm:"foreignKey:address"`
+	lastEventBlock int64                        `gorm:"-"`
 }
 
 func (CreditManager) TableName() string {
@@ -76,7 +77,6 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		contractETH: cmContract,
 	}
 	obj.GetAbi()
-	log.Info("credit amanger")
 	return obj
 }
 
@@ -86,6 +86,7 @@ func (mdl *CreditManager) GetUnderlyingDecimal() uint8 {
 }
 
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
+	mdl.createCMStat()
 	mdl.processExecuteEvents()
 	sort.Sort(mdl.eventBalances)
 	for _, eventBalance := range mdl.eventBalances {

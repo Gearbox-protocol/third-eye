@@ -14,12 +14,28 @@ func (mdl *CreditManager) processExecuteEvents() {
 		mdl.executeParams = []services.ExecuteParams{}
 	}
 }
+
+func (mdl *CreditManager) createCMStat() {
+	if mdl.lastEventBlock != 0 {
+		mdl.calculateCMStat(mdl.lastEventBlock)
+		mdl.lastEventBlock = 0
+	}
+}
+
 func (mdl *CreditManager) OnLog(txLog types.Log) {
 	// storing execute order in a single tx and processing them  single go on next tx
+	// for credit session stats
 	if mdl.LastTxHash != txLog.TxHash.Hex() {
 		mdl.processExecuteEvents()
 		mdl.LastTxHash = txLog.TxHash.Hex()
 	}
+	// for credit manager stats
+	blockNum := int64(txLog.BlockNumber)
+	if mdl.lastEventBlock != blockNum {
+		mdl.createCMStat()
+	}
+	mdl.lastEventBlock = blockNum
+	//-- for credit manager stats
 	switch txLog.Topics[0] {
 	case core.Topic("OpenCreditAccount(address,address,address,uint256,uint256,uint256)"):
 		openCreditAccountEvent, err := mdl.contractETH.ParseOpenCreditAccount(txLog)

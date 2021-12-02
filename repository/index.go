@@ -15,35 +15,33 @@ import (
 )
 
 type Repository struct {
-	db             *gorm.DB
-	syncAdapters   map[string]core.SyncAdapterI
-	mu             *sync.Mutex
-	client         *ethclient.Client
-	blocks         map[int64]*core.Block
-	executeParser  *services.ExecuteParser
-	tokens         map[string]*core.Token
-	allowedTokens  []*core.AllowedToken
-	pools          map[string]*core.Pool
-	dc             map[int64]*dataCompressor.DataCompressor
-	dcBlockNum     []int64
-	sessions       map[string]*core.CreditSession
-	lastCSS        map[string]*core.CreditSessionSnapshot
+	db              *gorm.DB
+	syncAdapters    map[string]core.SyncAdapterI
+	mu              *sync.Mutex
+	client          *ethclient.Client
+	blocks          map[int64]*core.Block
+	executeParser   *services.ExecuteParser
+	tokens          map[string]*core.Token
+	allowedTokens   []*core.AllowedToken
+	dc              map[int64]*dataCompressor.DataCompressor
+	dcBlockNum      []int64
+	sessions        map[string]*core.CreditSession
+	lastCSS         map[string]*core.CreditSessionSnapshot
 	poolUniqueUsers map[string]map[string]bool
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecuteParser) core.RepositoryI {
 	r := &Repository{
-		db:             db,
-		mu:             &sync.Mutex{},
-		client:         client,
-		blocks:         make(map[int64]*core.Block),
-		executeParser:  ep,
-		syncAdapters: make(map[string]core.SyncAdapterI),
-		dc:             make(map[int64]*dataCompressor.DataCompressor),
-		tokens:         make(map[string]*core.Token),
-		pools:          make(map[string]*core.Pool),
-		sessions:       make(map[string]*core.CreditSession),
-		lastCSS:        make(map[string]*core.CreditSessionSnapshot),
+		db:              db,
+		mu:              &sync.Mutex{},
+		client:          client,
+		blocks:          make(map[int64]*core.Block),
+		executeParser:   ep,
+		syncAdapters:    make(map[string]core.SyncAdapterI),
+		dc:              make(map[int64]*dataCompressor.DataCompressor),
+		tokens:          make(map[string]*core.Token),
+		sessions:        make(map[string]*core.CreditSession),
+		lastCSS:         make(map[string]*core.CreditSessionSnapshot),
 		poolUniqueUsers: make(map[string]map[string]bool),
 	}
 	r.init()
@@ -81,4 +79,8 @@ func (repo *Repository) SetBlock(blockNum int64) {
 		}
 		repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum, Timestamp: b.Time()}
 	}
+}
+
+func (repo *Repository) AddCreditManagerStats(cms *core.CreditManagerStat) {
+	repo.blocks[cms.BlockNum].AddCreditManagerStats(cms)
 }
