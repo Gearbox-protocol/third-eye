@@ -13,8 +13,8 @@ import (
 type Pool struct {
 	*core.SyncAdapter
 	contractETH    *poolService.PoolService
-	lastEventBlock int64      `gorm:"-"`
-	State          *core.Pool `gorm:"foreignKey:address"`
+	lastEventBlock int64
+	State          *core.Pool
 }
 
 func (Pool) TableName() string {
@@ -38,7 +38,7 @@ func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, disco
 		log.Fatal(err)
 	}
 	repo.AddToken(dieselToken.Hex())
-	pool.SetState(&core.Pool{
+	pool.SetUnderlyingState(&core.Pool{
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),

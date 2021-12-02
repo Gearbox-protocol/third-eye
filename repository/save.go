@@ -23,13 +23,20 @@ func (repo *Repository) Flush() (err error) {
 
 	tx := repo.db.Begin()
 	for repo.kit.Next() {
+		adapter := repo.kit.Get()
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(repo.kit.Get().GetState())
+		}).Create(adapter.GetAdapterState())
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }
+		if adapter.HasUnderlyingState() {
+			tx.Clauses(clause.OnConflict{
+				// err := repo.db.Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).Create(adapter.GetUnderlyingState())
+		}
 	}
 	repo.kit.Reset()
 	for _, token := range repo.tokens {

@@ -5,10 +5,15 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 )
 
-func (mdl *Pool) SetState(obj interface{}) {
+func (mdl *Pool) SetUnderlyingState(obj interface{}) {
+	mdl.UnderlyingStatePresent = true
 	state, ok := obj.(*core.Pool)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")
 	}
 	mdl.State = state
+}
+
+func (mdl *Pool) GetUnderlyingState() interface{} {
+	return mdl.State
 }

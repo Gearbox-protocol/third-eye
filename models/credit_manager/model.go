@@ -16,12 +16,12 @@ import (
 
 type CreditManager struct {
 	*core.SyncAdapter
-	contractETH    *creditManager.CreditManager `gorm:"-"`
-	LastTxHash     string                       `gorm:"-"`
-	executeParams  []services.ExecuteParams     `gorm:"-"`
-	eventBalances  SortedEventbalances          `gorm:"-"`
-	State          *core.CreditManager          `gorm:"foreignKey:address"`
-	lastEventBlock int64                        `gorm:"-"`
+	contractETH    *creditManager.CreditManager
+	LastTxHash     string
+	executeParams  []services.ExecuteParams
+	eventBalances  SortedEventbalances
+	State          *core.CreditManager
+	lastEventBlock int64
 }
 
 func (CreditManager) TableName() string {
@@ -58,12 +58,12 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 		core.NewSyncAdapter(addr, "CreditManager", discoveredAt, client, repo),
 	)
 	// create credit manager state
-	cm.State = &core.CreditManager{
+	cm.SetUnderlyingState(&core.CreditManager{
 		Address:         addr,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
 		Sessions:        core.NewHstore(),
-	}
+	})
 	return cm
 }
 
@@ -109,8 +109,4 @@ func (cm *CreditManager) GetCreditSessionData(blockNum int64, sessionId string) 
 		log.Fatal(err)
 	}
 	return &data
-}
-
-func (mdl *CreditManager) GetState() interface{} {
-	return mdl
 }

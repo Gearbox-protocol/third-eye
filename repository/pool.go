@@ -13,7 +13,7 @@ func (repo *Repository) loadPool() {
 	}
 	for _, pool := range data {
 		adapter := repo.kit.GetAdapter(pool.Address)
-		adapter.SetState(pool)
+		adapter.SetUnderlyingState(pool)
 	}
 }
 

@@ -11,12 +11,17 @@ import (
 	"math/big"
 )
 
-func (mdl *CreditManager) SetState(obj interface{}) {
+func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
+	mdl.UnderlyingStatePresent = true
 	state, ok := obj.(*core.CreditManager)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")
 	}
 	mdl.State = state
+}
+
+func (mdl *CreditManager) GetUnderlyingState() interface{} {
+	return mdl.State
 }
 
 func (mdl *CreditManager) AddCreditOwnerSession(owner, sessionId string) {
@@ -69,12 +74,17 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 		BlockNum: blockNum,
 		CreditManagerData: &core.CreditManagerData{
 			// fetched from data compressor
-			MinAmount:            core.NewBigInt(mdl.State.MinAmount),
-			MaxAmount:            core.NewBigInt(mdl.State.MaxAmount),
-			BorrowRateBI:         core.NewBigInt(mdl.State.BorrowRateBI),
-			BorrowRate:           mdl.State.BorrowRate,
-			AvailableLiquidityBI: core.NewBigInt(mdl.State.AvailableLiquidityBI),
-			AvailableLiquidity:   mdl.State.AvailableLiquidity,
+			OpenedAccountsCount:     mdl.State.OpenedAccountsCount,
+			TotalOpenedAccounts:     mdl.State.TotalOpenedAccounts,
+			TotalClosedAccounts:     mdl.State.TotalClosedAccounts,
+			TotalRepaidAccounts:     mdl.State.TotalRepaidAccounts,
+			TotalLiquidatedAccounts: mdl.State.TotalLiquidatedAccounts,
+			MinAmount:               core.NewBigInt(mdl.State.MinAmount),
+			MaxAmount:               core.NewBigInt(mdl.State.MaxAmount),
+			BorrowRateBI:            core.NewBigInt(mdl.State.BorrowRateBI),
+			BorrowRate:              mdl.State.BorrowRate,
+			AvailableLiquidityBI:    core.NewBigInt(mdl.State.AvailableLiquidityBI),
+			AvailableLiquidity:      mdl.State.AvailableLiquidity,
 			// calculated in this application
 			TotalBorrowed:   mdl.State.TotalBorrowed,
 			TotalBorrowedBI: core.NewBigInt(mdl.State.TotalBorrowedBI),

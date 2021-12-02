@@ -14,10 +14,11 @@ const MaxUint = ^int64(0)
 
 type SyncAdapter struct {
 	*Contract
-	LastSync int64       `gorm:"column:last_sync"`
-	Details  Json        `gorm:"column:details"`
-	Error    string      `gorm:"column:error"`
-	Repo     RepositoryI `gorm:"-"`
+	LastSync               int64       `gorm:"column:last_sync"`
+	Details                Json        `gorm:"column:details"`
+	UnderlyingStatePresent bool        `gorm:"-"`
+	Error                  string      `gorm:"column:error"`
+	Repo                   RepositoryI `gorm:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -28,14 +29,16 @@ type SyncAdapterI interface {
 	OnLog(txLog types.Log)
 	GetLastSync() int64
 	SetLastSync(int64)
-	GetState() interface{}
 	GetAddress() string
 	GetName() string
 	AfterSyncHook(syncTill int64)
 	IsDisabled() bool
 	Disable()
-	SetState(obj interface{})
 	GetFirstLog() int64
+	HasUnderlyingState() bool
+	GetUnderlyingState() interface{}
+	SetUnderlyingState(obj interface{})
+	GetAdapterState() *SyncAdapter
 }
 
 func (s *SyncAdapter) SetLastSync(lastSync int64) {
@@ -65,15 +68,19 @@ func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Cli
 	return obj
 }
 
-func (s *SyncAdapter) SetState(obj interface{}) {
-
+func (s *SyncAdapter) SetUnderlyingState(obj interface{}) {
 }
 
-func (s *SyncAdapter) GetState() interface{} {
+func (s *SyncAdapter) GetUnderlyingState() interface{} {
+	return nil
+}
+
+func (s *SyncAdapter) HasUnderlyingState() bool {
+	return s.UnderlyingStatePresent
+}
+
+func (s *SyncAdapter) GetAdapterState() *SyncAdapter {
 	return s
-}
-func (s *SyncAdapter) LoadState() {
-
 }
 
 // func (mdl *SyncAdapter) OnLog(txLog types.Log) {
