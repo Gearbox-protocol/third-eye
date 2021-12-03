@@ -2,13 +2,13 @@ package credit_manager
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {

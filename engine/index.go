@@ -15,11 +15,11 @@ import (
 )
 
 type Engine struct {
-	config       *config.Config
-	client       *ethclient.Client
-	repo         core.RepositoryI
-	blockPerSync int64
-	nextSyncStop int64
+	config              *config.Config
+	client              *ethclient.Client
+	repo                core.RepositoryI
+	syncBlockBatchSize  int64
+	currentlySyncedTill int64
 }
 
 func NewEngine(config *config.Config,
@@ -33,46 +33,55 @@ func NewEngine(config *config.Config,
 }
 
 func (e *Engine) init() {
-	e.blockPerSync = 1000 * 5
+	e.syncBlockBatchSize = 1000 * 5
 	kit := e.repo.GetKit()
 	log.Info("init sync adapters", kit.Details())
 	if kit.Len() == 0 {
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
 		obj := address_provider.NewAddressProvider(addr, e.client, e.repo)
 		e.repo.AddSyncAdapter(obj)
-		e.nextSyncStop = obj.GetLastSync()
+		e.currentlySyncedTill = obj.GetLastSync()
 	} else {
-		e.nextSyncStop = kit.First().GetLastSync()
+		e.currentlySyncedTill = kit.First().GetLastSync()
+	}
+}
+func (e *Engine) getLatestBlockNumber() int64 {
+	latestBlockNum, err := e.client.BlockNumber(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info("Lastest blocknumber", latestBlockNum)
+	return int64(latestBlockNum)
+}
+func (e *Engine) SyncHandler() {
+	e.init()
+	latestBlockNum := e.getLatestBlockNumber()
+	e.syncLoop(latestBlockNum)
+	for {
+		log.Infof("Synced till %d sleeping for 5 mins", e.currentlySyncedTill)
+		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
+		latestBlockNum = e.getLatestBlockNumber()
+		e.sync(latestBlockNum)
 	}
 }
 
-func (e *Engine) SyncHandler() {
-	e.init()
-	for {
-		latestBlockNum, err := e.client.BlockNumber(context.TODO())
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Info("Lastest blocknumber", latestBlockNum)
-		e.sync(int64(latestBlockNum))
-		log.Infof("Synced till %d sleeping for 5 mins", e.nextSyncStop)
-		time.Sleep(5 * time.Minute)
-		e.blockPerSync = 5 * 5 // on kovan 5 blocks in 1 min , sleep for 5 mins
+func (e *Engine) syncLoop(latestBlockNum int64) {
+	syncTill := e.currentlySyncedTill
+	for syncTill <= latestBlockNum {
+		e.sync(syncTill)
+		syncTill += e.syncBlockBatchSize
 	}
 }
-func (e *Engine) sync(latestBlockNum int64) {
-	syncTill := e.nextSyncStop
+
+func (e *Engine) sync(syncTill int64) {
 	kit := e.repo.GetKit()
-	for syncTill < latestBlockNum {
-		e.nextSyncStop = syncTill
-		log.Info("Sync till", syncTill)
-		for kit.Next() {
-			e.SyncModel(kit.Get(), syncTill)
-		}
-		kit.Reset()
-		e.repo.Flush()
-		syncTill += e.blockPerSync
+	log.Info("Sync till", syncTill)
+	for kit.Next() {
+		e.SyncModel(kit.Get(), syncTill)
 	}
+	kit.Reset()
+	e.repo.Flush()
+	e.currentlySyncedTill = syncTill
 }
 
 func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {

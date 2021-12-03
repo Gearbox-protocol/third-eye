@@ -38,7 +38,7 @@ type RepositoryI interface {
 	AddPriceFeed(blockNum int64, pf *PriceFeed)
 	// token funcs
 	AddAllowedProtocol(p *Protocol)
-	AddToken(token string)
+	AddToken(token string) *Token
 	AddAllowedToken(atoken *AllowedToken)
 	AddTokenObj(token *Token)
 	AddDataCompressor(blockNum int64, addr string)

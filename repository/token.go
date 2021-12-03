@@ -6,20 +6,20 @@ import (
 )
 
 // For token with symbol/decimals
-func (repo *Repository) AddToken(addr string) {
+func (repo *Repository) AddToken(addr string) *core.Token {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.tokens[addr] == nil {
 		repo.tokens[addr] = core.NewToken(addr, repo.client)
 	}
+	return repo.tokens[addr]
 }
 
 func (repo *Repository) GetToken(addr string) *core.Token {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 	token := repo.tokens[addr]
 	if token == nil {
-		log.Fatal("token not found for address", addr)
+		log.Info("token not found for address", addr)
+		return repo.AddToken(addr)
 	}
 	return token
 }
