@@ -22,7 +22,8 @@ func NewAdapterKit(order []string) *AdapterKit {
 		"Pool",
 		"CreditManager",
 		"PriceOracle",
-		"PriceFeed",
+		"ChainlinkPriceFeed",
+		"YearnPriceFeed",
 		"ContractRegister",
 		"CreditFilter",
 	}

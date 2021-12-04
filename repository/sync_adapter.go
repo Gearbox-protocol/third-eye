@@ -6,12 +6,13 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/account_factory"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
-	"github.com/Gearbox-protocol/third-eye/models/price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
 	"strconv"
 )
 
@@ -50,8 +51,10 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		return credit_manager.NewCreditManagerFromAdapter(adapter)
 	case "PriceOracle":
 		return price_oracle.NewPriceOracleFromAdapter(adapter)
-	case "PriceFeed":
-		return price_feed.NewPriceFeedFromAdapter(adapter)
+	case "ChainlinkPriceFeed":
+		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter)
+	case "YearnPriceFeed":
+		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
 	case "ContractRegister":
 		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case "CreditFilter":

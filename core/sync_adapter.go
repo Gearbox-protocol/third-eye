@@ -19,6 +19,7 @@ type SyncAdapter struct {
 	UnderlyingStatePresent bool        `gorm:"-"`
 	Error                  string      `gorm:"column:error"`
 	Repo                   RepositoryI `gorm:"-"`
+	OnlyQuery              bool        `gorm:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -39,6 +40,12 @@ type SyncAdapterI interface {
 	GetUnderlyingState() interface{}
 	SetUnderlyingState(obj interface{})
 	GetAdapterState() *SyncAdapter
+	OnlyQueryAllowed() bool
+	Query(queryTill int64)
+}
+
+func (s *SyncAdapter) OnlyQueryAllowed() bool {
+	return s.OnlyQuery
 }
 
 func (s *SyncAdapter) SetLastSync(lastSync int64) {
@@ -57,6 +64,8 @@ func (s *SyncAdapter) SetError(err error) {
 
 func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
+}
+func (s *SyncAdapter) Query(queryTill int64) {
 }
 
 func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client, repo RepositoryI) *SyncAdapter {

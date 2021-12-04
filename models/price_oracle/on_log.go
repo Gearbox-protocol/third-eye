@@ -1,10 +1,23 @@
 package price_oracle
 
 import (
+	"fmt"
+	"math/big"
+
+	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
+	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/models/price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+)
+
+const (
+	ChainlinkPriceFeed = iota
+	YearnPriceFeed
 )
 
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
@@ -21,7 +34,45 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		oracle := newPriceFeedEvent.PriceFeed.Hex()
 		mdl.Repo.AddTokenOracle(token, oracle, blockNum)
 		log.Info(token, oracle)
-		obj := price_feed.NewPriceFeed(oracle, token, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
-		mdl.Repo.AddSyncAdapter(obj)
+		priceFeedType, err := mdl.checkPriceFeedContract(blockNum, oracle)
+		if err != nil {
+			log.Fatal(err)
+		}
+		if priceFeedType == ChainlinkPriceFeed {
+			obj := chainlink_price_feed.NewChainlinkPriceFeed(oracle, token, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.Repo.AddSyncAdapter(obj)
+		} else if priceFeedType == YearnPriceFeed {
+			obj := yearn_price_feed.NewYearnPriceFeed(oracle, token, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.Repo.AddSyncAdapter(obj)
+		} else {
+			log.Fatal("Unknown PriceFeed type", priceFeedType)
+		}
 	}
+}
+
+func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string) (int, error) {
+	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracle), mdl.Client)
+	if err != nil {
+		return -1, err
+	}
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(discoveredAt),
+	}
+	_, err = pfContract.PhaseId(opts)
+	if err != nil {
+		if err.Error() != "VM execution error." {
+			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
+			if err != nil {
+				return -1, err
+			}
+			_, err = yearnContract.YVault(opts)
+			if err != nil {
+				return -1, fmt.Errorf("Neither chainlink nor yearn price feed %s", err)
+			}
+			return YearnPriceFeed, nil
+		}
+	} else {
+		return ChainlinkPriceFeed, nil
+	}
+	return -1, fmt.Errorf("PriceFeed type not found")
 }

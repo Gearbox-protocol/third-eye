@@ -1,4 +1,4 @@
-package price_feed
+package chainlink_price_feed
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type PriceFeed struct {
+type ChainlinkPriceFeed struct {
 	*core.SyncAdapter
 	contractETH *priceFeed.PriceFeed
 }
@@ -17,53 +17,53 @@ type PriceFeed struct {
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on vm execution error.
 // if oracle and adress are same we try to get the pricefeed.
-func NewPriceFeed(oracle, token string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceFeed {
+func NewChainlinkPriceFeed(oracle, token string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ChainlinkPriceFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address:      oracle,
 			DiscoveredAt: discoveredAt,
 			FirstLogAt:   discoveredAt,
-			ContractName: "PriceFeed",
+			ContractName: "ChainlinkPriceFeed",
 			Client:       client,
 		},
 		Details:  map[string]string{"oracle": oracle, "token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
 	}
-	return NewPriceFeedFromAdapter(
+	return NewChainlinkPriceFeedFromAdapter(
 		syncAdapter,
 	)
 }
 
-func NewPriceFeedFromAdapter(adapter *core.SyncAdapter) *PriceFeed {
+func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter) *ChainlinkPriceFeed {
 	oracleAddr := adapter.Details["oracle"]
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracleAddr), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
 	}
-	obj := &PriceFeed{
+	obj := &ChainlinkPriceFeed{
 		SyncAdapter: adapter,
 		contractETH: pfContract,
 	}
 	if adapter.Address == oracleAddr {
-		pfAddr := obj.GetPriceFeed(adapter.DiscoveredAt)
+		pfAddr := obj.GetPriceFeedAddr(adapter.DiscoveredAt)
 		obj.SetAddress(pfAddr)
 	}
 	return obj
 }
 
-func (mdl *PriceFeed) AfterSyncHook(syncedTill int64) {
-	newPriceFeed := mdl.GetPriceFeed(mdl.LastSync)
+func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
+	newPriceFeed := mdl.GetPriceFeedAddr(mdl.LastSync)
 	if newPriceFeed != mdl.Address {
 		mdl.Disable()
 		mdl.Repo.AddSyncAdapter(
-			NewPriceFeed(newPriceFeed, mdl.Details["token"], mdl.LastSync+1, mdl.Client, mdl.Repo),
+			NewChainlinkPriceFeed(newPriceFeed, mdl.Details["token"], mdl.LastSync+1, mdl.Client, mdl.Repo),
 		)
 	}
 	mdl.SetLastSync(syncedTill)
 }
 
-func (mdl *PriceFeed) GetPriceFeed(blockNum int64) string {
+func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) string {
 	opts, cancel := utils.GetTimeoutOpts(blockNum)
 	defer cancel()
 	phaseId, err := mdl.contractETH.PhaseId(opts)

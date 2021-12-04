@@ -1,4 +1,4 @@
-package price_feed
+package chainlink_price_feed
 
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
@@ -10,7 +10,7 @@ import (
 	// "github.com/Gearbox-protocol/third-eye/models/price_feed"
 )
 
-func (mdl *PriceFeed) OnLog(txLog types.Log) {
+func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
 		roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[2:], 16, 64)

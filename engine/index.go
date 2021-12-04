@@ -77,7 +77,12 @@ func (e *Engine) sync(syncTill int64) {
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
 	for kit.Next() {
-		e.SyncModel(kit.Get(), syncTill)
+		adapter := kit.Get()
+		if adapter.OnlyQueryAllowed() {
+			adapter.Query(syncTill)
+		} else {
+			e.SyncModel(adapter, syncTill)
+		}
 	}
 	kit.Reset()
 	e.repo.Flush()
