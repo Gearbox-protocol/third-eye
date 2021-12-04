@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -74,17 +75,21 @@ func (e *Engine) syncLoop(latestBlockNum int64) {
 }
 
 func (e *Engine) sync(syncTill int64) {
+	wg := &sync.WaitGroup{}
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
 	for kit.Next() {
-		e.SyncModel(kit.Get(), syncTill)
+		wg.Add(1)
+		go e.SyncModel(wg, kit.Get(), syncTill)
 	}
+	wg.Wait()
 	kit.Reset()
 	e.repo.Flush()
 	e.currentlySyncedTill = syncTill
 }
 
-func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
+func (e *Engine) SyncModel(wg *sync.WaitGroup, mdl core.SyncAdapterI, syncTill int64) {
+	defer wg.Done()
 	if mdl.IsDisabled() {
 		return
 	}
@@ -93,7 +98,6 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 		return
 	}
 
-	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
 	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetInt64(syncFrom),
 		ToBlock:   new(big.Int).SetInt64(syncTill),
@@ -109,4 +113,5 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 	}
 	// after sync
 	mdl.AfterSyncHook(syncTill)
+	log.Infof("Synced %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
 }
