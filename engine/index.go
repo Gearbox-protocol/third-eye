@@ -81,15 +81,13 @@ func (e *Engine) sync(syncTill int64) {
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
 		for kit.Next(lvlIndex) {
 			adapter := kit.Get(lvlIndex)
-			// if disable block is set disable after that.
-			validSyncTill := utils.Min(adapter.GetBlockToDisableOn(), syncTill)
 			if adapter.OnlyQueryAllowed() {
-				adapter.Query(validSyncTill)
+				adapter.Query(syncTill)
 			} else {
-				e.SyncModel(adapter, validSyncTill)
+				e.SyncModel(adapter, syncTill)
 			}
 			// after sync
-			adapter.AfterSyncHook(validSyncTill)
+			adapter.AfterSyncHook(syncTill)
 		}
 		kit.Reset(lvlIndex)
 	}
@@ -117,7 +115,11 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 		log.Fatal(err)
 	}
 	for _, log := range logs {
-		e.repo.SetBlock(int64(log.BlockNumber))
+		blockNum := int64(log.BlockNumber)
+		if mdl.GetBlockToDisableOn() < blockNum {
+			break
+		}
+		e.repo.SetBlock(blockNum)
 		mdl.OnLog(log)
 	}
 
