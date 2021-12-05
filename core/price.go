@@ -4,6 +4,7 @@ type TokenOracle struct {
 	BlockNumber int64  `gorm:"primaryKey;column:block_num"`
 	Token       string `gorm:"primaryKey;column:token"`
 	Oracle      string `gorm:"column:oracle"`
+	Feed        string `gorm:"column:feed"`
 }
 
 func (TokenOracle) TableName() string {

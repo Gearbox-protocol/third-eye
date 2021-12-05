@@ -13,7 +13,7 @@ import (
 
 func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStatePresent = true
-	state, ok := obj.(*core.CreditManager)
+	state, ok := obj.(*core.CreditManagerState)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")
 	}

@@ -15,34 +15,36 @@ import (
 )
 
 type Repository struct {
-	db              *gorm.DB
-	kit             *core.AdapterKit
-	mu              *sync.Mutex
-	client          *ethclient.Client
-	blocks          map[int64]*core.Block
-	executeParser   *services.ExecuteParser
-	tokens          map[string]*core.Token
-	allowedTokens   []*core.AllowedToken
-	dc              map[int64]*dataCompressor.DataCompressor
-	dcBlockNum      []int64
-	sessions        map[string]*core.CreditSession
-	lastCSS         map[string]*core.CreditSessionSnapshot
-	poolUniqueUsers map[string]map[string]bool
+	db                  *gorm.DB
+	kit                 *core.AdapterKit
+	mu                  *sync.Mutex
+	client              *ethclient.Client
+	blocks              map[int64]*core.Block
+	executeParser       *services.ExecuteParser
+	tokens              map[string]*core.Token
+	allowedTokens       []*core.AllowedToken
+	dc                  map[int64]*dataCompressor.DataCompressor
+	dcBlockNum          []int64
+	sessions            map[string]*core.CreditSession
+	lastCSS             map[string]*core.CreditSessionSnapshot
+	poolUniqueUsers     map[string]map[string]bool
+	tokensCurrentOracle map[string]*core.TokenOracle
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecuteParser) core.RepositoryI {
 	r := &Repository{
-		db:              db,
-		mu:              &sync.Mutex{},
-		client:          client,
-		blocks:          make(map[int64]*core.Block),
-		executeParser:   ep,
-		kit:             core.NewAdapterKit([]string{"AddressProvider", "Pool", "CreditManager"}),
-		dc:              make(map[int64]*dataCompressor.DataCompressor),
-		tokens:          make(map[string]*core.Token),
-		sessions:        make(map[string]*core.CreditSession),
-		lastCSS:         make(map[string]*core.CreditSessionSnapshot),
-		poolUniqueUsers: make(map[string]map[string]bool),
+		db:                  db,
+		mu:                  &sync.Mutex{},
+		client:              client,
+		blocks:              make(map[int64]*core.Block),
+		executeParser:       ep,
+		kit:                 core.NewAdapterKit(),
+		dc:                  make(map[int64]*dataCompressor.DataCompressor),
+		tokens:              make(map[string]*core.Token),
+		sessions:            make(map[string]*core.CreditSession),
+		lastCSS:             make(map[string]*core.CreditSessionSnapshot),
+		poolUniqueUsers:     make(map[string]map[string]bool),
+		tokensCurrentOracle: make(map[string]*core.TokenOracle),
 	}
 	r.init()
 	return r
@@ -61,6 +63,7 @@ func (repo *Repository) init() {
 	repo.loadCreditManagers()
 	repo.loadCreditSessions()
 	repo.loadLastCSS()
+	repo.loadCurrentTokenOracle()
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {

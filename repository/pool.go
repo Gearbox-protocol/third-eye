@@ -6,7 +6,7 @@ import (
 )
 
 func (repo *Repository) loadPool() {
-	data := []*core.Pool{}
+	data := []*core.PoolState{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
 		log.Fatal(err)

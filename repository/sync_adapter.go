@@ -31,9 +31,9 @@ func (repo *Repository) loadSyncAdapters() {
 
 func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
 	switch adapter.ContractName {
-	case "ACL":
+	case core.ACL:
 		return acl.NewACLFromAdapter(adapter)
-	case "AddressProvider":
+	case core.AddressProvider:
 		ap := address_provider.NewAddressProviderFromAdapter(adapter)
 		for k, dcAddr := range ap.Details {
 			blockNum, err := strconv.ParseInt(k, 10, 64)
@@ -43,21 +43,21 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 			repo.AddDataCompressor(blockNum, dcAddr)
 		}
 		return ap
-	case "AccountFactory":
+	case core.AccountFactory:
 		return account_factory.NewAccountFactoryFromAdapter(adapter)
-	case "Pool":
+	case core.Pool:
 		return pool.NewPoolFromAdapter(adapter)
-	case "CreditManager":
+	case core.CreditManager:
 		return credit_manager.NewCreditManagerFromAdapter(adapter)
-	case "PriceOracle":
+	case core.PriceOracle:
 		return price_oracle.NewPriceOracleFromAdapter(adapter)
-	case "ChainlinkPriceFeed":
+	case core.ChainlinkPriceFeed:
 		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter)
-	case "YearnPriceFeed":
+	case core.YearnPriceFeed:
 		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
-	case "ContractRegister":
+	case core.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
-	case "CreditFilter":
+	case core.CreditFilter:
 		return credit_filter.NewCreditFilterFromAdapter(adapter)
 	}
 	return nil

@@ -21,6 +21,16 @@ func Debug(v ...interface{}) {
 	log.Println(v...)
 }
 
+func Warnf(msg string, args ...interface{}) {
+	log.Printf("[Warn] "+detectFunc()+msg, args...)
+}
+
+func Warn(v ...interface{}) {
+	args := []interface{}{"[Warn]: " + detectFunc()}
+	args = append(args, v...)
+	log.Println(args...)
+}
+
 func Infof(msg string, args ...interface{}) {
 	log.Printf("[Info]: "+detectFunc()+msg, args...)
 }

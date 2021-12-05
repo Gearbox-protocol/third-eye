@@ -11,7 +11,7 @@ type AddressProvider struct {
 
 func NewAddressProvider(addr string, client *ethclient.Client, repo core.RepositoryI) *AddressProvider {
 	return NewAddressProviderFromAdapter(
-		core.NewSyncAdapter(addr, "AddressProvider", -1, client, repo),
+		core.NewSyncAdapter(addr, core.AddressProvider, -1, client, repo),
 	)
 }
 
