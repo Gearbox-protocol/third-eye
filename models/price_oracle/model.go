@@ -15,7 +15,7 @@ type PriceOracle struct {
 
 func NewPriceOracle(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceOracle {
 	return NewPriceOracleFromAdapter(
-		core.NewSyncAdapter(addr, "PriceOracle", discoveredAt, client, repo),
+		core.NewSyncAdapter(addr, core.PriceOracle, discoveredAt, client, repo),
 	)
 }
 

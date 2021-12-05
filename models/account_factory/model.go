@@ -12,7 +12,7 @@ type AccountFactory struct {
 
 func NewAccountFactory(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *AccountFactory {
 	return NewAccountFactoryFromAdapter(
-		core.NewSyncAdapter(addr, "AccountFactory", discoveredAt, client, repo),
+		core.NewSyncAdapter(addr, core.AccountFactory, discoveredAt, client, repo),
 	)
 }
 

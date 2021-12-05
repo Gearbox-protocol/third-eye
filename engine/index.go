@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -35,16 +36,17 @@ func NewEngine(config *config.Config,
 func (e *Engine) init() {
 	e.syncBlockBatchSize = 1000 * 5
 	kit := e.repo.GetKit()
-	log.Info("init sync adapters", kit.Details())
-	if kit.Len() == 0 {
+	kit.Details()
+	if kit.LenOfLevel(0) == 0 {
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
 		obj := address_provider.NewAddressProvider(addr, e.client, e.repo)
 		e.repo.AddSyncAdapter(obj)
 		e.currentlySyncedTill = obj.GetLastSync()
 	} else {
-		e.currentlySyncedTill = kit.First().GetLastSync()
+		e.currentlySyncedTill = kit.First(0).GetLastSync()
 	}
 }
+
 func (e *Engine) getLatestBlockNumber() int64 {
 	latestBlockNum, err := e.client.BlockNumber(context.TODO())
 	if err != nil {
@@ -76,15 +78,21 @@ func (e *Engine) syncLoop(latestBlockNum int64) {
 func (e *Engine) sync(syncTill int64) {
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
-	for kit.Next() {
-		adapter := kit.Get()
-		if adapter.OnlyQueryAllowed() {
-			adapter.Query(syncTill)
-		} else {
-			e.SyncModel(adapter, syncTill)
+	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
+		for kit.Next(lvlIndex) {
+			adapter := kit.Get(lvlIndex)
+			// if disable block is set disable after that.
+			validSyncTill := utils.Min(adapter.GetBlockToDisableOn(), syncTill)
+			if adapter.OnlyQueryAllowed() {
+				adapter.Query(validSyncTill)
+			} else {
+				e.SyncModel(adapter, validSyncTill)
+			}
+			// after sync
+			adapter.AfterSyncHook(validSyncTill)
 		}
+		kit.Reset(lvlIndex)
 	}
-	kit.Reset()
 	e.repo.Flush()
 	e.currentlySyncedTill = syncTill
 }
@@ -112,6 +120,5 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 		e.repo.SetBlock(int64(log.BlockNumber))
 		mdl.OnLog(log)
 	}
-	// after sync
-	mdl.AfterSyncHook(syncTill)
+
 }

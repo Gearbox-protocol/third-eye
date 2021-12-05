@@ -1,6 +1,10 @@
 package core
 
-type CreditManager struct {
+func (CreditManagerState) TableName() string {
+	return "credit_managers"
+}
+
+type CreditManagerState struct {
 	CreditManagerData
 	Address           string `gorm:"primaryKey"`
 	PoolAddress       string `gorm:"column:pool_address"`

@@ -6,7 +6,7 @@ import (
 )
 
 func (repo *Repository) loadCreditManagers() {
-	data := []*core.CreditManager{}
+	data := []*core.CreditManagerState{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
 		log.Fatal(err)

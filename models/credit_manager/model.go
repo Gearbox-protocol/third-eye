@@ -20,7 +20,7 @@ type CreditManager struct {
 	LastTxHash     string
 	executeParams  []services.ExecuteParams
 	eventBalances  SortedEventbalances
-	State          *core.CreditManager
+	State          *core.CreditManagerState
 	lastEventBlock int64
 }
 
@@ -55,10 +55,10 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 	//
 
 	cm := NewCreditManagerFromAdapter(
-		core.NewSyncAdapter(addr, "CreditManager", discoveredAt, client, repo),
+		core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo),
 	)
 	// create credit manager state
-	cm.SetUnderlyingState(&core.CreditManager{
+	cm.SetUnderlyingState(&core.CreditManagerState{
 		Address:         addr,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),

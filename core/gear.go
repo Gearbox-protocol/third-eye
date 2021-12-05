@@ -34,7 +34,7 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() *services.ExecuteParser
 	// price feed/oracle funcs
-	AddTokenOracle(token, oracle string, blockNum int64)
+	AddTokenOracle(token, oracle, feed string, blockNum int64)
 	AddPriceFeed(blockNum int64, pf *PriceFeed)
 	// token funcs
 	AddAllowedProtocol(p *Protocol)
