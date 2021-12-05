@@ -63,9 +63,9 @@ func (s *SyncAdapter) SetBlockToDisableOn(blockNum int64) {
 	if s.Details == nil {
 		s.Details = make(map[string]string)
 	}
-	log.Warnf("Block to disable on set for %s(%s) at %d", s.GetName(), s.GetAddress(), s.blockToDisableOn)
-	s.Details["blockToDisableOn"] = fmt.Sprintf("%d", blockNum)
 	s.blockToDisableOn = blockNum
+	s.Details["blockToDisableOn"] = fmt.Sprintf("%d", blockNum)
+	log.Warnf("Block to disable on set for %s(%s) at %d", s.GetName(), s.GetAddress(), blockNum)
 }
 
 func (s *SyncAdapter) GetBlockToDisableOn() int64 {

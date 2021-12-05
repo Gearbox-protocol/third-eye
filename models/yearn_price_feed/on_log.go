@@ -25,8 +25,9 @@ func (mdl *YearnPriceFeed) Query(queryTill int64) {
 	rounds := 0
 	loopStartTime := time.Now()
 	roundStartTime := time.Now()
+	queryTill = utils.Min(mdl.GetBlockToDisableOn(), queryTill)
 	// if disable block is set disable after that.
-	for blockNum := queryFrom; blockNum <= utils.Min(mdl.GetBlockToDisableOn(), queryTill); blockNum += interval {
+	for blockNum := queryFrom; blockNum <= queryTill; blockNum += interval {
 		mdl.Repo.SetBlock(blockNum)
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(blockNum),
