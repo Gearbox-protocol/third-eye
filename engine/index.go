@@ -81,13 +81,15 @@ func (e *Engine) sync(syncTill int64) {
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
 		for kit.Next(lvlIndex) {
 			adapter := kit.Get(lvlIndex)
-			if adapter.OnlyQueryAllowed() {
-				adapter.Query(syncTill)
-			} else {
-				e.SyncModel(adapter, syncTill)
+			if !adapter.IsDisabled() {
+				if adapter.OnlyQueryAllowed() {
+					adapter.Query(syncTill)
+				} else {
+					e.SyncModel(adapter, syncTill)
+				}
+				// after sync
+				adapter.AfterSyncHook(utils.Min(adapter.GetBlockToDisableOn(), syncTill))
 			}
-			// after sync
-			adapter.AfterSyncHook(syncTill)
 		}
 		kit.Reset(lvlIndex)
 	}
@@ -96,9 +98,6 @@ func (e *Engine) sync(syncTill int64) {
 }
 
 func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
-	if mdl.IsDisabled() {
-		return
-	}
 	syncFrom := mdl.GetLastSync() + 1
 	if syncFrom > syncTill {
 		return
@@ -122,5 +121,4 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 		e.repo.SetBlock(blockNum)
 		mdl.OnLog(log)
 	}
-
 }
