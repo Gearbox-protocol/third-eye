@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/event"
 	"math"
 	"math/big"
+	"sync"
 )
 
 const MaxUint = ^int64(0)
@@ -45,7 +46,7 @@ type SyncAdapterI interface {
 	SetUnderlyingState(obj interface{})
 	GetAdapterState() *SyncAdapter
 	OnlyQueryAllowed() bool
-	Query(queryTill int64)
+	Query(queryTill int64, wg *sync.WaitGroup)
 	DisableOnBlock(currentBlock int64)
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
@@ -97,7 +98,7 @@ func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
 	s.DisableOnBlock(syncTill)
 }
-func (s *SyncAdapter) Query(queryTill int64) {
+func (s *SyncAdapter) Query(queryTill int64, wg *sync.WaitGroup) {
 }
 
 func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client, repo RepositoryI) *SyncAdapter {

@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -79,25 +80,27 @@ func (e *Engine) sync(syncTill int64) {
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
+		wg := &sync.WaitGroup{}
 		for kit.Next(lvlIndex) {
 			adapter := kit.Get(lvlIndex)
 			if !adapter.IsDisabled() {
+				wg.Add(1)
 				if adapter.OnlyQueryAllowed() {
-					adapter.Query(syncTill)
+					go adapter.Query(syncTill, wg)
 				} else {
-					e.SyncModel(adapter, syncTill)
+					go e.SyncModel(adapter, syncTill, wg)
 				}
-				// after sync
-				adapter.AfterSyncHook(utils.Min(adapter.GetBlockToDisableOn(), syncTill))
 			}
 		}
 		kit.Reset(lvlIndex)
+		wg.Wait()
 	}
 	e.repo.Flush()
 	e.currentlySyncedTill = syncTill
 }
 
-func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
+func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {
+	defer wg.Done()
 	syncFrom := mdl.GetLastSync() + 1
 	if syncFrom > syncTill {
 		return
@@ -121,4 +124,6 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64) {
 		e.repo.SetBlock(blockNum)
 		mdl.OnLog(log)
 	}
+	// after sync
+	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
 }
