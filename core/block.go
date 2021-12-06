@@ -1,6 +1,8 @@
 package core
 
-// import "github.com/ethereum/go-ethereum/core/types"
+import (
+	"sort"
+)
 
 type (
 	Block struct {
@@ -15,6 +17,8 @@ type (
 		PoolLedgers       []*PoolLedger            `gorm:"foreignKey:block_num"`
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
 		allowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
+		eventBalances     SortedEventbalances      `gorm:"-"`
+		debts             []*Debt                  `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -52,4 +56,25 @@ func (b *Block) AddPoolLedger(pl *PoolLedger) {
 
 func (b *Block) AddCreditManagerStats(cms *CreditManagerStat) {
 	b.CMStats = append(b.CMStats, cms)
+}
+
+func (b *Block) GetAllowedTokens() []*AllowedToken {
+	return b.allowedTokens
+}
+
+func (b *Block) GetPriceFeeds() []*PriceFeed {
+	return b.PriceFeeds
+}
+
+func (b *Block) AddEventBalance(eb *EventBalance) {
+	b.eventBalances = append(b.eventBalances, eb)
+}
+
+func (b *Block) GetEventBalances() []*EventBalance {
+	sort.Sort(b.eventBalances)
+	return b.eventBalances
+}
+
+func (b *Block) AddDebt(debt *Debt) {
+	b.debts = append(b.debts, debt)
 }

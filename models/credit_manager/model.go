@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
-	"sort"
 )
 
 type CreditManager struct {
@@ -19,7 +18,6 @@ type CreditManager struct {
 	contractETH    *creditManager.CreditManager
 	LastTxHash     string
 	executeParams  []services.ExecuteParams
-	eventBalances  SortedEventbalances
 	State          *core.CreditManagerState
 	lastEventBlock int64
 }
@@ -88,11 +86,6 @@ func (mdl *CreditManager) GetUnderlyingDecimal() uint8 {
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	mdl.createCMStat()
 	mdl.processExecuteEvents()
-	sort.Sort(mdl.eventBalances)
-	for _, eventBalance := range mdl.eventBalances {
-		mdl.updateBalance(eventBalance)
-	}
-	mdl.eventBalances = SortedEventbalances{}
 	mdl.SetLastSync(syncTill)
 }
 

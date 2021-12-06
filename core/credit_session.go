@@ -62,5 +62,6 @@ type (
 		TotalValueBI     *BigInt     `gorm:"column:total_value_bi"`
 		TotalValue       float64     `gorm:"column:total_value"`
 		Balances         JsonBalance `gorm:"column:balances"`
+		Borrower         string      `gorm:"<-:false;column:borrower"`
 	}
 )

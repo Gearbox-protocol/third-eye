@@ -51,11 +51,14 @@ func (repo *Repository) Flush() (err error) {
 		// 	log.Fatal(err.Error)
 		// }
 	}
-	for _, session := range repo.sessions {
+	for key, session := range repo.sessions {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(session)
+		if session.ClosedAt != 0 {
+			delete(repo.sessions, key)
+		}
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }

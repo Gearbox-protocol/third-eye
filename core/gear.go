@@ -51,6 +51,8 @@ type RepositoryI interface {
 	AddLastCSS(css *CreditSessionSnapshot)
 	GetLastCSS(sessionId string) *CreditSessionSnapshot
 	GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor
+	AddEventBalance(eb EventBalance)
+	CalculateDebt()
 	// pools
 	AddPoolStat(ps *PoolStat)
 	AddPoolLedger(pl *PoolLedger)

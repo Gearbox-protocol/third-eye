@@ -39,7 +39,6 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession) {
 	} else {
 		log.Fatalf("Credit session already present %s", session.ID)
 	}
-
 }
 
 func (repo *Repository) GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor {
