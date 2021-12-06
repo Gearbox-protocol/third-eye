@@ -30,6 +30,8 @@ func (repo *Repository) loadPoolUniqueUsers() {
 }
 
 func (repo *Repository) AddPoolUniqueUser(pool, user string) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	if repo.poolUniqueUsers[pool] == nil {
 		repo.poolUniqueUsers[pool] = make(map[string]bool)
 	}
@@ -37,6 +39,8 @@ func (repo *Repository) AddPoolUniqueUser(pool, user string) {
 }
 
 func (repo *Repository) AddPoolStat(ps *core.PoolStat) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	repo.blocks[ps.BlockNum].AddPoolStat(ps)
 }
 

@@ -14,6 +14,7 @@ type (
 		PoolStats         []*PoolStat              `gorm:"foreignKey:block_num"`
 		PoolLedgers       []*PoolLedger            `gorm:"foreignKey:block_num"`
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
+		allowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -32,6 +33,10 @@ func (b *Block) AddPriceFeed(pf *PriceFeed) {
 }
 func (b *Block) AddAllowedProtocol(p *Protocol) {
 	b.Protocols = append(b.Protocols, p)
+}
+
+func (b *Block) AddAllowedToken(atoken *AllowedToken) {
+	b.allowedTokens = append(b.allowedTokens, atoken)
 }
 
 func (b *Block) AddCreditSessionSnapshot(css *CreditSessionSnapshot) {

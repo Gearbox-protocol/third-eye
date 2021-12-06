@@ -35,64 +35,28 @@ func (repo *Repository) loadToken() {
 	}
 }
 
+func (repo *Repository) loadTokenLastPrice() {
+	data := []*core.PriceFeed{}
+	query := `SELECT price_feeds.* FROM price_feeds
+	JOIN (SELECT max(block_num) AS bn, token FROM price_feeds GROUP BY token) AS max_pf
+	ON max_pf.bn = price_feeds.block_num AND max_pf.token = price_feeds.token`
+	err := repo.db.Raw(query).Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, tokenPrice := range data {
+		repo.AddTokenLastPrice(tokenPrice)
+	}
+}
+
+func (repo *Repository) AddTokenLastPrice(pf *core.PriceFeed) {
+	repo.tokenLastPrice[pf.Token] = pf
+}
+
 func (repo *Repository) AddTokenObj(t *core.Token) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.tokens[t.Address] == nil {
 		repo.tokens[t.Address] = t
 	}
-}
-
-// for credit filter
-func (repo *Repository) AddAllowedProtocol(p *core.Protocol) {
-	repo.blocks[p.BlockNumber].AddAllowedProtocol(p)
-}
-
-func (repo *Repository) AddAllowedToken(atoken *core.AllowedToken) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.allowedTokens = append(repo.allowedTokens, atoken)
-}
-
-// for price oracle/feeds
-func (repo *Repository) loadCurrentTokenOracle() {
-	data := []*core.TokenOracle{}
-	query := `SELECT token_oracle.* FROM token_oracle
-	JOIN (SELECT max(block_num) AS bn, token FROM token_oracle GROUP BY token) AS max_to
-	ON max_to.bn = token_oracle.block_num AND max_to.token = token_oracle.token`
-	err := repo.db.Raw(query).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, oracle := range data {
-		repo.AddTokenCurrentOracle(oracle)
-	}
-}
-
-func (repo *Repository) AddTokenCurrentOracle(oracle *core.TokenOracle) {
-	repo.tokensCurrentOracle[oracle.Token] = oracle
-}
-
-func (repo *Repository) AddTokenOracle(token, oracle, feed string, blockNum int64) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	if repo.tokensCurrentOracle[token] != nil {
-		currentFeed := repo.tokensCurrentOracle[token].Feed
-		log.Warnf("New feed(%s) discovered at %d for token(%s) old feed: %s", feed, blockNum, token, currentFeed)
-		repo.kit.GetAdapter(currentFeed).SetBlockToDisableOn(blockNum)
-	}
-	// set current state of oracle for token.
-	repo.AddTokenCurrentOracle(
-		&core.TokenOracle{Token: token, Oracle: oracle, Feed: feed, BlockNumber: blockNum},
-	)
-	// token oracle
-	repo.blocks[blockNum].AddTokenOracle(
-		&core.TokenOracle{Token: token, Oracle: oracle, Feed: feed, BlockNumber: blockNum},
-	)
-}
-
-func (repo *Repository) AddPriceFeed(blockNum int64, pf *core.PriceFeed) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.blocks[blockNum].AddPriceFeed(pf)
 }

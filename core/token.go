@@ -47,6 +47,7 @@ func (t *Token) init() {
 
 type AllowedToken struct {
 	Id                 int64  `gorm:"primaryKey;column:id;autoIncrement:true"`
+	BlockNumber        int64  `gorm:"column:block_num"`
 	CreditManager      string `gorm:"column:credit_manager"`
 	Token              string `gorm:"column:token"`
 	LiquidityThreshold string `gorm:"column:liquiditythreshold"`

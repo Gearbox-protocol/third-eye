@@ -22,13 +22,13 @@ type Repository struct {
 	blocks              map[int64]*core.Block
 	executeParser       *services.ExecuteParser
 	tokens              map[string]*core.Token
-	allowedTokens       []*core.AllowedToken
 	dc                  map[int64]*dataCompressor.DataCompressor
 	dcBlockNum          []int64
 	sessions            map[string]*core.CreditSession
 	lastCSS             map[string]*core.CreditSessionSnapshot
 	poolUniqueUsers     map[string]map[string]bool
 	tokensCurrentOracle map[string]*core.TokenOracle
+	tokenLastPrice      map[string]*core.PriceFeed
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecuteParser) core.RepositoryI {
@@ -45,6 +45,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		lastCSS:             make(map[string]*core.CreditSessionSnapshot),
 		poolUniqueUsers:     make(map[string]map[string]bool),
 		tokensCurrentOracle: make(map[string]*core.TokenOracle),
+		tokenLastPrice:      make(map[string]*core.PriceFeed),
 	}
 	r.init()
 	return r
@@ -64,6 +65,7 @@ func (repo *Repository) init() {
 	repo.loadCreditSessions()
 	repo.loadLastCSS()
 	repo.loadCurrentTokenOracle()
+	repo.loadTokenLastPrice()
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
