@@ -77,6 +77,11 @@ func (kit *AdapterKit) DisableSyncAdapter(addr string) {
 	}
 }
 
+func (kit *AdapterKit) GetAdapterAddressByName(name string) []string {
+	lvlIndex := kit.adapterNameToLevel[name]
+	return kit.levels[lvlIndex].GetAddressByName(name)
+}
+
 func (kit *AdapterKit) Details() {
 	for _, lvl := range kit.levels {
 		lvl.Details()

@@ -5,26 +5,28 @@ import (
 )
 
 type EventBalance struct {
-	BorrowedAmount *big.Int
-	Transfers      map[string]*big.Int
-	SessionId      string
-	BlockNumber    int64
-	Index          int64
-	Clear          bool
-	CreditManager  string
-	Borrower       string
+	BorrowedAmount        *big.Int
+	Transfers             map[string]*big.Int
+	SessionId             string
+	BlockNumber           int64
+	Index                 int64
+	Clear                 bool
+	CreditManager         string
+	Borrower              string
+	СumulativeIndexAtOpen *big.Int
 }
 
-func NewEventBalance(blockNum uint64, index uint, sessionId string, borrowedAmount *big.Int, transfers map[string]*big.Int, clear bool, cm, borrower string) EventBalance {
+func NewEventBalance(blockNum uint64, index uint, sessionId string, borrowedAmount *big.Int, transfers map[string]*big.Int, clear bool, cm, borrower string, cumulativeIndex *big.Int) EventBalance {
 	return EventBalance{
-		BorrowedAmount: borrowedAmount,
-		Transfers:      transfers,
-		SessionId:      sessionId,
-		BlockNumber:    int64(blockNum),
-		Index:          int64(index),
-		Clear:          clear,
-		CreditManager:  cm,
-		Borrower:       borrower,
+		BorrowedAmount:        borrowedAmount,
+		Transfers:             transfers,
+		SessionId:             sessionId,
+		BlockNumber:           int64(blockNum),
+		Index:                 int64(index),
+		Clear:                 clear,
+		CreditManager:         cm,
+		Borrower:              borrower,
+		СumulativeIndexAtOpen: cumulativeIndex,
 	}
 }
 

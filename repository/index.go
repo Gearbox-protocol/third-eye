@@ -37,6 +37,7 @@ type Repository struct {
 	tokenLastPrice map[string]*core.PriceFeed
 	//// token -> credit_manager -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
+	poolLastInterestData   map[string]*core.PoolInterestData
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecuteParser) core.RepositoryI {
@@ -55,6 +56,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 		tokensCurrentOracle:    make(map[string]*core.TokenOracle),
 		tokenLastPrice:         make(map[string]*core.PriceFeed),
 		allowedTokensThreshold: make(map[string]map[string]*core.BigInt),
+		poolLastInterestData:   make(map[string]*core.PoolInterestData),
 	}
 	r.init()
 	return r

@@ -74,6 +74,9 @@ func (b *Block) GetEventBalances() []*EventBalance {
 	sort.Sort(b.eventBalances)
 	return b.eventBalances
 }
+func (b *Block) GetPoolStats() []*PoolStat {
+	return b.PoolStats
+}
 
 func (b *Block) AddDebt(debt *Debt) {
 	b.debts = append(b.debts, debt)

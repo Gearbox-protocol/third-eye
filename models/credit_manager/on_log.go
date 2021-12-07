@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/services"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
 )
 
 func (mdl *CreditManager) processExecuteEvents() {
@@ -102,7 +103,21 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack ExecuteOrder event", err)
 		}
-		mdl.AddParams(&txLog, execute.Borrower, execute.Target)
+		mdl.AddExecuteParams(&txLog, execute.Borrower, execute.Target)
+	case core.Topic("NewParameters(uint256,uint256,uint256,uint256,uint256,uint256)"):
+		params, err := mdl.contractETH.ParseNewParameters(txLog)
+		if err != nil {
+			log.Fatal("[CreditManagerModel]: Cant unpack NewParameters event", err)
+		}
+		mdl.State.MinAmount = (*core.BigInt)(params.MinAmount)
+		mdl.State.MaxAmount = (*core.BigInt)(params.MaxAmount)
+		mdl.State.MaxLeverageFactor = params.MaxLeverage.Int64()
+		mdl.State.FeeInterest = params.FeeInterest.Int64()
+		mdl.Repo.AddAllowedToken(&core.AllowedToken{
+			Token:              mdl.GetUnderlyingToken(),
+			CreditManager:      mdl.GetAddress(),
+			LiquidityThreshold: new(big.Int).Sub(params.LiquidationDiscount, params.FeeLiquidation).String(),
+		})
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.contractETH.ParseTransferAccount(txLog)

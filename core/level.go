@@ -75,3 +75,7 @@ func (lvl *Level) Details() {
 		log.Info(name, len(lvl.adapters[name]))
 	}
 }
+
+func (lvl *Level) GetAddressByName(name string) []string {
+	return lvl.adapters[name]
+}

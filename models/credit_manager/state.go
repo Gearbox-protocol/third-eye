@@ -79,8 +79,6 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 			TotalClosedAccounts:     mdl.State.TotalClosedAccounts,
 			TotalRepaidAccounts:     mdl.State.TotalRepaidAccounts,
 			TotalLiquidatedAccounts: mdl.State.TotalLiquidatedAccounts,
-			MinAmount:               core.NewBigInt(mdl.State.MinAmount),
-			MaxAmount:               core.NewBigInt(mdl.State.MaxAmount),
 			BorrowRateBI:            core.NewBigInt(mdl.State.BorrowRateBI),
 			BorrowRate:              mdl.State.BorrowRate,
 			AvailableLiquidityBI:    core.NewBigInt(mdl.State.AvailableLiquidityBI),
