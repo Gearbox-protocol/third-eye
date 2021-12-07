@@ -57,7 +57,6 @@ func (rc *Client) setInUseAndGetClient() int {
 	for i, v := range rc.indexInUse {
 		if !v {
 			rc.indexInUse[i] = true
-			fmt.Println(i)
 			return i
 		}
 	}
