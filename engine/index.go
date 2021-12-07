@@ -5,10 +5,11 @@ import (
 	"math/big"
 	"sync"
 	"time"
-
+	"strings"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/Gearbox-protocol/third-eye/utils"
@@ -70,8 +71,15 @@ func (e *Engine) SyncHandler() {
 
 func (e *Engine) syncLoop(latestBlockNum int64) {
 	syncTill := e.currentlySyncedTill
+	syncStart := syncTill
 	for syncTill <= latestBlockNum {
+		roundStartTime := time.Now()
 		e.sync(syncTill)
+		roundSyncDur := (time.Now().Sub(roundStartTime).Minutes())
+		syncTimePerBlock := roundSyncDur/float64(syncTill - syncStart)
+		remainingTime := (syncTimePerBlock*float64(latestBlockNum-syncTill))/(60)
+		log.Infof("Synced till %d in %f .Remaining time %f hrs ", e.currentlySyncedTill, roundSyncDur, remainingTime)
+		// new sync target
 		syncTill += e.syncBlockBatchSize
 	}
 }
@@ -108,12 +116,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
-	query := ethereum.FilterQuery{
-		FromBlock: new(big.Int).SetInt64(syncFrom),
-		ToBlock:   new(big.Int).SetInt64(syncTill),
-		Addresses: []common.Address{common.HexToAddress(mdl.GetAddress())},
-	}
-	logs, err := e.client.FilterLogs(context.Background(), query)
+	logs, err := e.GetLogs(syncFrom, syncTill, mdl.GetAddress())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,4 +130,35 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 	// after sync
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
+}
+
+func (e *Engine) GetLogs(fromBlock, toBlock int64, addr string) ([]types.Log, error) {
+	query := ethereum.FilterQuery{
+		FromBlock: new(big.Int).SetInt64(fromBlock),
+		ToBlock:   new(big.Int).SetInt64(toBlock),
+		Addresses: []common.Address{common.HexToAddress(addr)},
+	}
+	var logs []types.Log
+	var err error
+	logs, err = e.client.FilterLogs(context.Background(), query)
+	if err != nil {
+		if err.Error() == "query returned more than 10000 results" ||
+			strings.Contains(err.Error(), "Log response size exceeded. You can make eth_getLogs requests with up to a 2K block range and no limit on the response size, or you can request any block range with a cap of 10K logs in the response.") {
+			middle := (fromBlock + toBlock) / 2
+			log.Info(fromBlock, middle, toBlock)
+			bottomHalfLogs, err := e.GetLogs(fromBlock, middle-1, addr)
+			if err != nil {
+				return []types.Log{}, err
+			}
+			logs = append(logs, bottomHalfLogs...)
+
+			topHalfLogs, err := e.GetLogs(middle, toBlock, addr)
+			if err != nil {
+				return []types.Log{}, err
+			}
+			logs = append(logs, topHalfLogs...)
+			return logs, nil
+		}
+	}
+	return logs, err
 }

@@ -121,6 +121,7 @@ func (rc *Client) BlockByHash(ctx context.Context, hash common.Hash) (*types.Blo
 }
 
 func (rc *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
+	log.Info("BlockByNumber", number.Int64())
 	rc.sem.Acquire(context.TODO(), 1)
 	ind := rc.setInUseAndGetClient()
 	client := rc.clients[ind]
@@ -131,6 +132,7 @@ func (rc *Client) BlockByNumber(ctx context.Context, number *big.Int) (*types.Bl
 	if rc.errorHandler(err) {
 		v, err = client.BlockByNumber(ctx, number)
 	}
+	log.Info("BlockByNumber returned ", number.Int64())
 	return v, err
 }
 
