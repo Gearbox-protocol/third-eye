@@ -9,7 +9,7 @@ func (repo *Repository) loadLastCSS() {
 	data := []*core.CreditSessionSnapshot{}
 	query := `select distinct on (session_id) session_id , status, balances, cs.borrowed_amount from
 		credit_sessions as cs inner join credit_session_snapshots as css on css.session_id = cs.id
-		where status=0 order by session_id,block_num,log_id`
+		where status=0 order by session_id,block_num desc ,log_id desc`
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
