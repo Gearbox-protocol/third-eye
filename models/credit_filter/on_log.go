@@ -26,9 +26,10 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			log.Fatal("[CreditManagerModel]: Cant unpack token allowed event", err)
 		}
 		mdl.Repo.AddAllowedToken(&core.AllowedToken{
+			BlockNumber:        int64(txLog.BlockNumber),
 			CreditManager:      mdl.Details["creditManager"],
 			Token:              tokenEvent.Token.Hex(),
-			LiquidityThreshold: tokenEvent.LiquidityThreshold.String(),
+			LiquidityThreshold: (*core.BigInt)(tokenEvent.LiquidityThreshold),
 		})
 		mdl.Repo.AddToken(tokenEvent.Token.Hex())
 	}

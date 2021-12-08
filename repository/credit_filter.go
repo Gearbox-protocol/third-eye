@@ -3,7 +3,6 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"math/big"
 )
 
 // for credit filter
@@ -39,9 +38,5 @@ func (repo *Repository) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
 	if repo.allowedTokensThreshold[atoken.Token] == nil {
 		repo.allowedTokensThreshold[atoken.Token] = make(map[string]*core.BigInt)
 	}
-	value, err := big.NewInt(0).SetString(atoken.LiquidityThreshold, 10)
-	if !err {
-		log.Fatal("Parsing liquidity threshold failed")
-	}
-	repo.allowedTokensThreshold[atoken.Token][atoken.CreditManager] = (*core.BigInt)(value)
+	repo.allowedTokensThreshold[atoken.Token][atoken.CreditManager] = atoken.LiquidityThreshold
 }

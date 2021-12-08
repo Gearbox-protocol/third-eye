@@ -113,10 +113,12 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		mdl.State.MaxAmount = (*core.BigInt)(params.MaxAmount)
 		mdl.State.MaxLeverageFactor = params.MaxLeverage.Int64()
 		mdl.State.FeeInterest = params.FeeInterest.Int64()
+		liquidityThreshold := new(big.Int).Sub(params.LiquidationDiscount, params.FeeLiquidation)
 		mdl.Repo.AddAllowedToken(&core.AllowedToken{
+			BlockNumber:        int64(txLog.BlockNumber),
 			Token:              mdl.GetUnderlyingToken(),
 			CreditManager:      mdl.GetAddress(),
-			LiquidityThreshold: new(big.Int).Sub(params.LiquidationDiscount, params.FeeLiquidation).String(),
+			LiquidityThreshold: (*core.BigInt)(liquidityThreshold),
 		})
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed

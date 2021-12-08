@@ -162,19 +162,16 @@ func (c *Contract) findFirstLogBound(fromBlock, toBlock int64) (int64, error) {
 			strings.Contains(err.Error(), "Log response size exceeded. You can make eth_getLogs requests with up to a 2K block range and no limit on the response size, or you can request any block range with a cap of 10K logs in the response.") {
 			middle := (fromBlock + toBlock) / 2
 
-			log.Verbosef("Run in range %d %d", fromBlock, middle-1)
+			log.Verbosef("FirstLog %d %d %d", fromBlock, middle-1, toBlock)
 			foundLow, err := c.findFirstLogBound(fromBlock, middle-1)
 			if err != nil && err.Error() != "no events found" {
 				return 0, err
 			}
 
-			log.Verbosef("Run in range %d %d", middle, toBlock)
 			foundHigh, err := c.findFirstLogBound(middle, toBlock)
 			if err != nil && err.Error() != "no events found" && err.Error() != "Cant find any events" {
 				return 0, err
 			}
-
-			log.Verbosef("%d %d", foundLow, foundHigh)
 
 			if foundLow == 0 && foundHigh == 0 {
 				return 0, fmt.Errorf("No events was found for the contract")

@@ -2,19 +2,19 @@ package engine
 
 import (
 	"context"
-	"math/big"
-	"sync"
-	"time"
-	"strings"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
+	"strings"
+	"sync"
+	"time"
 )
 
 type Engine struct {
@@ -76,8 +76,8 @@ func (e *Engine) syncLoop(latestBlockNum int64) {
 		roundStartTime := time.Now()
 		e.sync(syncTill)
 		roundSyncDur := (time.Now().Sub(roundStartTime).Minutes())
-		syncTimePerBlock := roundSyncDur/float64(syncTill - syncStart)
-		remainingTime := (syncTimePerBlock*float64(latestBlockNum-syncTill))/(60)
+		syncTimePerBlock := roundSyncDur / float64(syncTill-syncStart)
+		remainingTime := (syncTimePerBlock * float64(latestBlockNum-syncTill)) / (60)
 		log.Infof("Synced till %d in %f .Remaining time %f hrs ", e.currentlySyncedTill, roundSyncDur, remainingTime)
 		// new sync target
 		syncTill += e.syncBlockBatchSize

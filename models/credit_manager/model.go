@@ -99,7 +99,7 @@ func (cm *CreditManager) GetCreditSessionData(blockNum int64, sessionId string) 
 		common.HexToAddress(session.Borrower),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("CM:%s Borrower:%s %s", session.CreditManager, session.Borrower, err)
 	}
 	return &data
 }

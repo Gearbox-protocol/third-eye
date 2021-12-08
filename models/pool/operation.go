@@ -43,7 +43,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		DieselRateBI:       (*core.BigInt)(state.DieselRateRAY),
 		DieselRate:         utils.GetFloat64Decimal(state.DieselRateRAY, 27),
 		WithdrawFee:        int(state.WithdrawFee.Int64()),
-		CumulativeIndexRAY: (*core.BigInt)(state.CumulativeIndexRAY),
+		CumulativeIndexRAY: (*core.BigInt)(state.LinearCumulativeIndex),
 		ID:                 0,
 	})
 }
