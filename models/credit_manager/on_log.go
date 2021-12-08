@@ -3,7 +3,6 @@ package credit_manager
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/services"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -12,7 +11,7 @@ import (
 func (mdl *CreditManager) processExecuteEvents() {
 	if len(mdl.executeParams) > 0 {
 		mdl.handleExecuteEvents()
-		mdl.executeParams = []services.ExecuteParams{}
+		mdl.executeParams = []core.ExecuteParams{}
 	}
 }
 

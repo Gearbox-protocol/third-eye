@@ -3,7 +3,6 @@ package credit_manager
 import (
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/services"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -23,9 +22,9 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 	// other operations
 	cmAddr := txLog.Address.Hex()
 	sessionId := fmt.Sprintf("%s_%d_%d", account, txLog.BlockNumber, txLog.Index)
-	action, args := mdl.ParseEvent("OpenCreditAccount", txLog)
 	blockNum := int64(txLog.BlockNumber)
 	// add account operation
+	action, args := mdl.ParseEvent("OpenCreditAccount", txLog)
 	accountOperation := &core.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
@@ -35,10 +34,15 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   "",
-		Dapp:        cmAddr,
+		Transfers: core.Transfers{
+			mdl.GetUnderlyingToken(): new(big.Int).Add(borrowAmount, amount),
+		},
+		Dapp: cmAddr,
 	}
-	mdl.Repo.AddAccountOperation(accountOperation)
+	mdl.AddEventBasedAccountOperationAndState(accountOperation,
+		borrowAmount,
+		false,
+		cmAddr)
 	// add session to manager object
 	mdl.AddCreditOwnerSession(onBehalfOf, sessionId)
 	// create credit session
@@ -54,22 +58,8 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		Profit:         (*core.BigInt)(big.NewInt(0)),
 	}
 	mdl.Repo.AddCreditSession(newSession)
-	cumulativeIndex := mdl.updateSession(sessionId, blockNum)
-	// create CSS
-	mdl.Repo.AddEventBalance(core.NewEventBalance(
-		txLog.BlockNumber,
-		txLog.Index,
-		sessionId,
-		borrowAmount,
-		map[string]*big.Int{
-			mdl.GetUnderlyingToken(): new(big.Int).Add(borrowAmount, amount),
-		},
-		false,
-		cmAddr,
-		onBehalfOf,
-		cumulativeIndex,
-	))
-
+	// update credit session
+	mdl.updateSession(sessionId, blockNum)
 	return nil
 }
 
@@ -90,28 +80,19 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   "",
-		Dapp:        cmAddr,
+		Transfers: core.Transfers{
+			mdl.GetUnderlyingToken(): remainingFunds,
+		},
+		Dapp: cmAddr,
 	}
-	mdl.Repo.AddAccountOperation(accountOperation)
+	mdl.AddEventBasedAccountOperationAndState(accountOperation,
+		nil,
+		true,
+		cmAddr)
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
 	// close credit session
-	cumulativeIndex, _ := mdl.closeSession(sessionId, blockNum, remainingFunds, core.Closed)
-	// create CSS
-	mdl.Repo.AddEventBalance(core.NewEventBalance(
-		txLog.BlockNumber,
-		txLog.Index,
-		sessionId,
-		nil,
-		map[string]*big.Int{
-			mdl.GetUnderlyingToken(): remainingFunds,
-		},
-		true,
-		cmAddr,
-		owner,
-		cumulativeIndex,
-	))
+	mdl.closeSession(sessionId, blockNum, remainingFunds, core.Closed)
 	return nil
 }
 
@@ -130,28 +111,19 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   "",
-		Dapp:        txLog.Address.Hex(),
+		Transfers: core.Transfers{
+			mdl.GetUnderlyingToken(): remainingFunds,
+		},
+		Dapp: txLog.Address.Hex(),
 	}
-	mdl.Repo.AddAccountOperation(accountOperation)
+	mdl.AddEventBasedAccountOperationAndState(accountOperation,
+		nil,
+		true,
+		mdl.GetAddress())
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
 	// close credit session
-	cumulativeIndex, _ := mdl.closeSession(sessionId, blockNum, remainingFunds, core.Liquidated)
-	// create credit session snapshot
-	mdl.Repo.AddEventBalance(core.NewEventBalance(
-		txLog.BlockNumber,
-		txLog.Index,
-		sessionId,
-		nil,
-		map[string]*big.Int{
-			mdl.GetUnderlyingToken(): remainingFunds,
-		},
-		true,
-		mdl.GetAddress(),
-		owner,
-		cumulativeIndex,
-	))
+	mdl.closeSession(sessionId, blockNum, remainingFunds, core.Liquidated)
 	return nil
 }
 
@@ -161,6 +133,8 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 	sessionId := mdl.GetCreditOwnerSession(owner)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("RepayCreditAccount", txLog)
+	// close credit session
+	_, remainingFunds := mdl.closeSession(sessionId, blockNum, nil, core.Repaid)
 	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
@@ -171,28 +145,17 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   "",
-		Dapp:        cmAddr,
-	}
-	mdl.Repo.AddAccountOperation(accountOperation)
-	// remove session to manager object
-	mdl.RemoveCreditOwnerSession(owner)
-	// close credit session
-	cumulativeIndex, remainingFunds := mdl.closeSession(sessionId, blockNum, nil, core.Repaid)
-	// create credit session snapshot
-	mdl.Repo.AddEventBalance(core.NewEventBalance(
-		txLog.BlockNumber,
-		txLog.Index,
-		sessionId,
-		nil,
-		map[string]*big.Int{
+		Transfers: core.Transfers{
 			mdl.GetUnderlyingToken(): remainingFunds,
 		},
+		Dapp: cmAddr,
+	}
+	mdl.AddEventBasedAccountOperationAndState(accountOperation,
+		nil,
 		true,
-		mdl.GetAddress(),
-		owner,
-		cumulativeIndex,
-	))
+		mdl.GetAddress())
+	// remove session to manager object
+	mdl.RemoveCreditOwnerSession(owner)
 	return nil
 }
 
@@ -210,26 +173,20 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   "",
-		Dapp:        txLog.Address.Hex(),
+		Transfers: core.Transfers{
+			token: value,
+		},
+		Dapp: txLog.Address.Hex(),
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
 	// update credit session
-	cumulativeIndex := mdl.updateSession(sessionId, blockNum)
+	mdl.updateSession(sessionId, blockNum)
 	// create credit session snapshot
-	mdl.Repo.AddEventBalance(core.NewEventBalance(
-		txLog.BlockNumber,
-		txLog.Index,
-		sessionId,
+	mdl.AddEventBasedAccountOperationAndState(accountOperation,
 		nil,
-		map[string]*big.Int{
-			token: value,
-		},
 		false,
 		mdl.GetAddress(),
-		onBehalfOf,
-		cumulativeIndex,
-	))
+	)
 	return nil
 }
 
@@ -251,26 +208,19 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   "",
-		Dapp:        txLog.Address.Hex(),
+		Transfers: core.Transfers{
+			mdl.GetUnderlyingToken(): amount,
+		},
+		Dapp: txLog.Address.Hex(),
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
 	// update credit session
-	cumulativeIndex := mdl.updateSession(sessionId, blockNum)
+	mdl.updateSession(sessionId, blockNum)
 	// create credit session snapshot
-	mdl.Repo.AddEventBalance(core.NewEventBalance(
-		txLog.BlockNumber,
-		txLog.Index,
-		sessionId,
+	mdl.AddEventBasedAccountOperationAndState(accountOperation,
 		amount,
-		map[string]*big.Int{
-			mdl.GetUnderlyingToken(): amount,
-		},
 		false,
-		mdl.GetAddress(),
-		borrower,
-		cumulativeIndex,
-	))
+		mdl.GetAddress())
 	return nil
 }
 
@@ -287,7 +237,7 @@ func (mdl *CreditManager) onTransferAccount(txLog *types.Log, owner, newOwner st
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   "",
+		Transfers:   nil,
 		Dapp:        txLog.Address.Hex(),
 	}
 	mdl.Repo.AddAccountOperation(accountOperation)
@@ -305,7 +255,7 @@ func (mdl *CreditManager) AddExecuteParams(txLog *types.Log,
 	sessionId := mdl.GetCreditOwnerSession(borrower.Hex())
 	blockNum := int64(txLog.BlockNumber)
 	cumulativeIndex := mdl.updateSession(sessionId, blockNum)
-	mdl.executeParams = append(mdl.executeParams, services.ExecuteParams{
+	mdl.executeParams = append(mdl.executeParams, core.ExecuteParams{
 		SessionId:             sessionId,
 		CreditAccount:         common.HexToAddress(strings.Split(sessionId, "_")[0]),
 		Protocol:              targetContract,
@@ -337,23 +287,14 @@ func (mdl *CreditManager) handleExecuteEvents() {
 			Action:      call.Name,
 			Args:        call.Args,
 			AdapterCall: true,
-			Transfers:   call.Balances.String(),
+			Transfers:   call.Transfers,
 			// extras
 			Depth: call.Depth,
 		}
-		mdl.Repo.AddAccountOperation(accountOperation)
-		// create credit session snapshot
-		mdl.Repo.AddEventBalance(core.NewEventBalance(
-			uint64(params.BlockNumber),
-			params.Index,
-			params.SessionId,
+		mdl.AddEventBasedAccountOperationAndState(accountOperation,
 			nil,
-			(map[string]*big.Int)(call.Balances),
 			false,
-			mdl.GetAddress(),
-			params.Borrower.Hex(),
-			params.CumulativeIndexAtOpen,
-		))
+			mdl.GetAddress())
 	}
 }
 
@@ -404,4 +345,22 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) *big.I
 	session.ProfitPercentage = float64(new(big.Int).Div(new(big.Int).
 		Mul((*big.Int)(session.Profit), big.NewInt(100000)), (*big.Int)(session.InitialAmount)).Int64()) / 1000
 	return data.CumulativeIndexAtOpen
+}
+
+func (mdl *CreditManager) AddEventBasedAccountOperationAndState(
+	accountOperation *core.AccountOperation,
+	borrowAmount *big.Int,
+	clear bool,
+	cmAddr string) {
+	mdl.Repo.AddEventBalance(core.NewEventBalance(
+		accountOperation.BlockNumber,
+		accountOperation.LogId,
+		accountOperation.SessionId,
+		borrowAmount,
+		accountOperation.Transfers,
+		false,
+		cmAddr,
+	))
+	accountOperation.Transfers = accountOperation.Transfers
+	mdl.Repo.AddAccountOperation(accountOperation)
 }

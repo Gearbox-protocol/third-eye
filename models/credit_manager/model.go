@@ -17,7 +17,7 @@ type CreditManager struct {
 	*core.SyncAdapter
 	contractETH    *creditManager.CreditManager
 	LastTxHash     string
-	executeParams  []services.ExecuteParams
+	executeParams  []core.ExecuteParams
 	State          *core.CreditManagerState
 	lastEventBlock int64
 }

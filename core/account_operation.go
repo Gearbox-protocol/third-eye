@@ -13,10 +13,10 @@ type AccountOperation struct {
 	// application
 	Dapp string `gorm:"column:dapp"`
 	// call/events data
-	AdapterCall bool   `gorm:"column:adapter_call"`
-	Action      string `gorm:"column:action"`
-	Args        string `gorm:"column:args"`
-	Transfers   string `gorm:"column:transfers"`
+	AdapterCall bool      `gorm:"column:adapter_call"`
+	Action      string    `gorm:"column:action"`
+	Args        string    `gorm:"column:args"`
+	Transfers   Transfers `gorm:"column:transfers"`
 	// extras
 	Depth uint8 `gorm:"column:depth"`
 }
