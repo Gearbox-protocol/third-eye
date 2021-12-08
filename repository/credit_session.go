@@ -35,6 +35,7 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.sessions[session.ID] == nil {
+		log.Info("Add creditSession(%s) with id %s", session.Account, session.ID)
 		repo.sessions[session.ID] = session
 	} else {
 		log.Fatalf("Credit session already present %s", session.ID)

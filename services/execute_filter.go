@@ -9,7 +9,7 @@ import (
 )
 
 type ExecuteFilter struct {
-	paramsList    []ExecuteParams
+	paramsList    []core.ExecuteParams
 	paramsIndex   int
 	creditManager common.Address
 }

@@ -47,7 +47,6 @@ type RepositoryI interface {
 	GetCreditSession(sessionId string) *CreditSession
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
-	AddLastCSS(css *CreditSessionSnapshot)
 	GetLastCSS(sessionId string) *CreditSessionSnapshot
 	GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor
 	AddEventBalance(eb EventBalance)

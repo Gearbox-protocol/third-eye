@@ -50,6 +50,7 @@ type SyncAdapterI interface {
 	DisableOnBlock(currentBlock int64)
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
+	GetDiscoveredAt() int64
 }
 
 func (s *SyncAdapter) DisableOnBlock(currentBlock int64) {

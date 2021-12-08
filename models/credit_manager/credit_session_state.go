@@ -8,18 +8,18 @@ import (
 	"math/big"
 )
 
-func (mdl *CreditManager) FetchFromDCForChangedSessions() {
+func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 	for sessionId, _ := range mdl.UpdatedSessions {
 		if mdl.ClosedSessions[sessionId] == nil {
-			mdl.updateSession(sessionId, mdl.lastEventBlock)
+			mdl.updateSession(sessionId, blockNum)
 		}
 	}
 	for sessionId, closeDetails := range mdl.ClosedSessions {
 		updates := mdl.UpdatedSessions[sessionId]
 		if updates != 0 {
-			log.Fatal("Session: %s updated %d before close %+v in block %d\n", sessionId, updates, closeDetails, mdl.lastEventBlock)
+			log.Fatal("Session: %s updated %d before close %+v in block %d\n", sessionId, updates, closeDetails, blockNum)
 		}
-		mdl.closeSession(sessionId, mdl.lastEventBlock, closeDetails)
+		mdl.closeSession(sessionId, blockNum, closeDetails)
 	}
 	mdl.UpdatedSessions = make(map[string]int)
 	mdl.ClosedSessions = make(map[string]*SessionCloseDetails)
@@ -29,9 +29,14 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
 	session := mdl.Repo.GetCreditSession(sessionId)
-	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	// set session fields
 	session.ClosedAt = blockNum
+	// this checks prevent getting data for credit session that exist only within a block
+	// datacompressor query will fail
+	if session.Since == session.ClosedAt {
+		return
+	}
+	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.Status = closeDetails.Status
 	session.HealthFactor = data.HealthFactor.Int64()
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
@@ -66,7 +71,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 
 	// create session snapshot
 	css := core.CreditSessionSnapshot{}
-	css.BlockNum = blockNum
+	css.BlockNum = blockNum - 1
 	css.SessionId = sessionId
 	css.Borrower = session.Borrower
 	css.HealthFactor = session.HealthFactor

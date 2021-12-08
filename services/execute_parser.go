@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"net/http"
 	"strings"
 	"time"
@@ -25,13 +24,12 @@ import (
 )
 
 type ExecuteParams struct {
-	SessionId             string
-	Protocol              common.Address
-	CreditAccount         common.Address
-	Borrower              common.Address
-	Index                 uint
-	BlockNumber           int64
-	CumulativeIndexAtOpen *big.Int
+	SessionId     string
+	Protocol      common.Address
+	CreditAccount common.Address
+	Borrower      common.Address
+	Index         uint
+	BlockNumber   int64
 }
 
 type ExecuteParser struct {
@@ -41,7 +39,7 @@ type ExecuteParser struct {
 	ChainId             uint
 }
 
-func NewExecuteParser(config *config.Config) *ExecuteParser {
+func NewExecuteParser(config *config.Config) core.ExecuteParserI {
 	return &ExecuteParser{
 		Client:              http.Client{},
 		IgnoreCMEventIds:    utils.GetCreditManagerEventIds(),
@@ -133,7 +131,7 @@ func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
 	return trace
 }
 
-func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*core.KnownCall {
+func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []core.ExecuteParams) []*core.KnownCall {
 	trace := ep.GetTxTrace(txHash)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)

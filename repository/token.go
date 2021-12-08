@@ -18,7 +18,6 @@ func (repo *Repository) AddToken(addr string) *core.Token {
 func (repo *Repository) GetToken(addr string) *core.Token {
 	token := repo.tokens[addr]
 	if token == nil {
-		log.Info("token not found for address", addr)
 		return repo.AddToken(addr)
 	}
 	return token

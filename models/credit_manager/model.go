@@ -94,8 +94,7 @@ func (mdl *CreditManager) GetUnderlyingDecimal() uint8 {
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
-	mdl.createCMStat()
-	mdl.FetchFromDCForChangedSessions()
+	mdl.onBlockChange()
 	mdl.SetLastSync(syncTill)
 }
 

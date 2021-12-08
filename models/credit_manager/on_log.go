@@ -15,11 +15,12 @@ func (mdl *CreditManager) processExecuteEvents() {
 	}
 }
 
-func (mdl *CreditManager) createCMStat() {
+func (mdl *CreditManager) onBlockChange() {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
 		mdl.calculateCMStat(mdl.lastEventBlock)
+		mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
 	}
 }
@@ -34,8 +35,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	// for credit manager stats
 	blockNum := int64(txLog.BlockNumber)
 	if mdl.lastEventBlock != blockNum {
-		mdl.createCMStat()
-		mdl.FetchFromDCForChangedSessions()
+		mdl.onBlockChange()
 	}
 	mdl.lastEventBlock = blockNum
 	//-- for credit manager stats

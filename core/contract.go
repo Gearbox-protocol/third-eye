@@ -126,6 +126,9 @@ func (c *Contract) IsDisabled() bool {
 func (c *Contract) GetFirstLog() int64 {
 	return c.FirstLogAt
 }
+func (c *Contract) GetDiscoveredAt() int64 {
+	return c.DiscoveredAt
+}
 
 // Extras
 
