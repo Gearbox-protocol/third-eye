@@ -6,7 +6,7 @@ import (
 )
 
 func (repo *Repository) loadPool() {
-	data := []*core.Pool{}
+	data := []*core.PoolState{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -30,6 +30,8 @@ func (repo *Repository) loadPoolUniqueUsers() {
 }
 
 func (repo *Repository) AddPoolUniqueUser(pool, user string) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	if repo.poolUniqueUsers[pool] == nil {
 		repo.poolUniqueUsers[pool] = make(map[string]bool)
 	}
@@ -37,6 +39,8 @@ func (repo *Repository) AddPoolUniqueUser(pool, user string) {
 }
 
 func (repo *Repository) AddPoolStat(ps *core.PoolStat) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	repo.blocks[ps.BlockNum].AddPoolStat(ps)
 }
 
@@ -47,4 +51,27 @@ func (repo *Repository) AddPoolLedger(pl *core.PoolLedger) {
 
 func (repo *Repository) GetPoolUniqueUserLen(pool string) int {
 	return len(repo.poolUniqueUsers[pool])
+}
+
+// pool interest state fetch
+func (repo *Repository) loadPoolLastInterestData() {
+	data := []*core.PoolInterestData{}
+	query := `SELECT * FROM pool_stats 
+	JOIN (SELECT max(block_num) as bn, pool FROM pool_stats group by pool) as p
+	JOIN blocks ON p.block_num = blocks.id
+	ON p.bn = pool_stats.block_num
+	AND p.pool = pool_stats.pool;`
+	err := repo.db.Raw(query).Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, pd := range data {
+		repo.AddPoolLastInterestData(pd)
+	}
+}
+
+func (repo *Repository) AddPoolLastInterestData(pd *core.PoolInterestData) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.poolLastInterestData[pd.Address] = pd
 }

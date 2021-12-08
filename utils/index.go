@@ -20,16 +20,58 @@ func GetExpFloat(decimals int64) *big.Float {
 	bigIntDecimal := new(big.Int).Exp(big.NewInt(10), new(big.Int).SetInt64(decimals), big.NewInt(0))
 	return new(big.Float).SetInt(bigIntDecimal)
 }
+
+func GetExpInt(decimals int64) *big.Int {
+	if decimals < 0 {
+		panic(fmt.Sprintf("GetInt received pow:%d", decimals))
+	}
+	return new(big.Int).Exp(big.NewInt(10), new(big.Int).SetInt64(decimals), big.NewInt(0))
+}
+
 func IntToFloat(amt *big.Int) *big.Float {
 	return new(big.Float).SetInt(amt)
 }
 
 func GetFloat64Decimal(num *big.Int, decimals uint8) float64 {
-	floatBorrowedAmount, _ := new(big.Float).Quo(
+	floatBorrowedAmount, _ := GetFloat64(num, decimals).Float64()
+	return floatBorrowedAmount
+}
+
+func GetInt64Decimal(num *big.Int, decimals uint8) *big.Int {
+	return new(big.Int).Quo(
+		num,
+		GetExpInt(int64(decimals)),
+	)
+}
+
+func StringToInt(v string) *big.Int {
+	value, ok := new(big.Int).SetString(v, 10)
+	if !ok {
+		panic("Parsing string to big.int failed")
+	}
+	return value
+}
+
+func GetFloat64(num *big.Int, decimals uint8) *big.Float {
+	floatBorrowedAmount := new(big.Float).Quo(
 		IntToFloat(num),
 		GetExpFloat(int64(decimals)),
-	).Float64()
+	)
 	return floatBorrowedAmount
+}
+
+func Min(a, b int64) int64 {
+	if a < b {
+		return a
+	}
+	return b
+}
+
+func Max(a, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 // others

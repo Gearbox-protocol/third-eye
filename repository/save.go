@@ -20,25 +20,28 @@ func (repo *Repository) Flush() (err error) {
 	// block->pricefeed on token
 	// block->protocols on creditManager
 	// block->AccountOperation on session
+	// block->AllowedTOken on session
 
 	tx := repo.db.Begin()
-	for repo.kit.Next() {
-		adapter := repo.kit.Get()
-		tx.Clauses(clause.OnConflict{
-			// err := repo.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(adapter.GetAdapterState())
-		// if err.Error != nil {
-		// 	log.Fatal(err.Error)
-		// }
-		if adapter.HasUnderlyingState() {
+	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
+		for repo.kit.Next(lvlIndex) {
+			adapter := repo.kit.Get(lvlIndex)
 			tx.Clauses(clause.OnConflict{
 				// err := repo.db.Clauses(clause.OnConflict{
 				UpdateAll: true,
-			}).Create(adapter.GetUnderlyingState())
+			}).Create(adapter.GetAdapterState())
+			// if err.Error != nil {
+			// 	log.Fatal(err.Error)
+			// }
+			if adapter.HasUnderlyingState() {
+				tx.Clauses(clause.OnConflict{
+					// err := repo.db.Clauses(clause.OnConflict{
+					UpdateAll: true,
+				}).Create(adapter.GetUnderlyingState())
+			}
 		}
+		repo.kit.Reset(lvlIndex)
 	}
-	repo.kit.Reset()
 	for _, token := range repo.tokens {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
@@ -48,11 +51,14 @@ func (repo *Repository) Flush() (err error) {
 		// 	log.Fatal(err.Error)
 		// }
 	}
-	for _, session := range repo.sessions {
+	for key, session := range repo.sessions {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(session)
+		if session.ClosedAt != 0 {
+			delete(repo.sessions, key)
+		}
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }
@@ -66,21 +72,11 @@ func (repo *Repository) Flush() (err error) {
 		// 	log.Fatal(err.Error)
 		// }
 	}
-	if len(repo.allowedTokens) != 0 {
-		tx.Clauses(clause.OnConflict{
-			// err1 := repo.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(repo.allowedTokens)
-		// if err1.Error != nil {
-		// 	log.Fatal(err1.Error)
-		// }
-	}
 
 	info := tx.Commit()
 	if info.Error != nil {
 		log.Fatal(info.Error, *info.Statement)
 	}
-	repo.allowedTokens = []*core.AllowedToken{}
 	repo.blocks = map[int64]*core.Block{}
 	return nil
 }

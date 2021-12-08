@@ -2,12 +2,16 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/event"
+	"math"
 	"math/big"
+	"sync"
 )
 
 const MaxUint = ^int64(0)
@@ -20,6 +24,7 @@ type SyncAdapter struct {
 	Error                  string      `gorm:"column:error"`
 	Repo                   RepositoryI `gorm:"-"`
 	OnlyQuery              bool        `gorm:"-"`
+	blockToDisableOn       int64       `gorm:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -41,7 +46,35 @@ type SyncAdapterI interface {
 	SetUnderlyingState(obj interface{})
 	GetAdapterState() *SyncAdapter
 	OnlyQueryAllowed() bool
-	Query(queryTill int64)
+	Query(queryTill int64, wg *sync.WaitGroup)
+	DisableOnBlock(currentBlock int64)
+	SetBlockToDisableOn(blockNum int64)
+	GetBlockToDisableOn() int64
+	GetDiscoveredAt() int64
+}
+
+func (s *SyncAdapter) DisableOnBlock(currentBlock int64) {
+	if s.blockToDisableOn != 0 && currentBlock >= s.blockToDisableOn {
+		log.Warnf("DisableOnBlock at currentBlock(%d) and s.blockToDisableOn(%d) for %s(%s)",
+			currentBlock, s.blockToDisableOn, s.ContractName, s.Address)
+		s.Disable()
+	}
+}
+
+func (s *SyncAdapter) SetBlockToDisableOn(blockNum int64) {
+	if s.Details == nil {
+		s.Details = make(map[string]string)
+	}
+	s.blockToDisableOn = blockNum
+	s.Details["blockToDisableOn"] = fmt.Sprintf("%d", blockNum)
+	log.Warnf("Block to disable on set for %s(%s) at %d", s.GetName(), s.GetAddress(), blockNum)
+}
+
+func (s *SyncAdapter) GetBlockToDisableOn() int64 {
+	if s.blockToDisableOn == 0 {
+		return math.MaxInt64
+	}
+	return s.blockToDisableOn
 }
 
 func (s *SyncAdapter) OnlyQueryAllowed() bool {
@@ -64,8 +97,9 @@ func (s *SyncAdapter) SetError(err error) {
 
 func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
+	s.DisableOnBlock(syncTill)
 }
-func (s *SyncAdapter) Query(queryTill int64) {
+func (s *SyncAdapter) Query(queryTill int64, wg *sync.WaitGroup) {
 }
 
 func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client, repo RepositoryI) *SyncAdapter {

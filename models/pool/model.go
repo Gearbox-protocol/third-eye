@@ -14,7 +14,7 @@ type Pool struct {
 	*core.SyncAdapter
 	contractETH    *poolService.PoolService
 	lastEventBlock int64
-	State          *core.Pool
+	State          *core.PoolState
 }
 
 func (Pool) TableName() string {
@@ -23,7 +23,7 @@ func (Pool) TableName() string {
 
 func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
 	pool := NewPoolFromAdapter(
-		core.NewSyncAdapter(addr, "Pool", discoveredAt, client, repo),
+		core.NewSyncAdapter(addr, core.Pool, discoveredAt, client, repo),
 	)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(pool.DiscoveredAt),
@@ -38,7 +38,7 @@ func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, disco
 		log.Fatal(err)
 	}
 	repo.AddToken(dieselToken.Hex())
-	pool.SetUnderlyingState(&core.Pool{
+	pool.SetUnderlyingState(&core.PoolState{
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),

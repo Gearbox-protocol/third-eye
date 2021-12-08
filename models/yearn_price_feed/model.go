@@ -13,19 +13,23 @@ type YearnPriceFeed struct {
 	contractETH *yearnPriceFeed.YearnPriceFeed
 }
 
-func NewYearnPriceFeed(oracle, token string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *YearnPriceFeed {
+func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *YearnPriceFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address:      oracle,
 			DiscoveredAt: discoveredAt,
 			FirstLogAt:   discoveredAt,
-			ContractName: "YearnPriceFeed",
+			ContractName: core.YearnPriceFeed,
 			Client:       client,
 		},
 		Details:  map[string]string{"token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
 	}
+	// add token oracle for db
+	// feed is also oracle address for yearn address
+	// we don't relie on underlying feed
+	repo.AddTokenOracle(token, oracle, oracle, discoveredAt)
 	return NewYearnPriceFeedFromAdapter(
 		syncAdapter,
 	)

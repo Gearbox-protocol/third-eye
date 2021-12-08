@@ -12,7 +12,7 @@ type ACL struct {
 
 func NewACL(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ACL {
 	return NewACLFromAdapter(
-		core.NewSyncAdapter(addr, "ACL", discoveredAt, client, repo),
+		core.NewSyncAdapter(addr, core.ACL, discoveredAt, client, repo),
 	)
 }
 

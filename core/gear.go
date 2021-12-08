@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
-	"github.com/Gearbox-protocol/third-eye/services"
 )
 
 type EngineI interface {
@@ -32,9 +31,9 @@ type RepositoryI interface {
 	// credit account operations
 	AddAccountOperation(accountOperation *AccountOperation)
 	// for getting executeparser
-	GetExecuteParser() *services.ExecuteParser
+	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	AddTokenOracle(token, oracle string, blockNum int64)
+	AddTokenOracle(token, oracle, feed string, blockNum int64)
 	AddPriceFeed(blockNum int64, pf *PriceFeed)
 	// token funcs
 	AddAllowedProtocol(p *Protocol)
@@ -48,9 +47,10 @@ type RepositoryI interface {
 	GetCreditSession(sessionId string) *CreditSession
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
-	AddLastCSS(css *CreditSessionSnapshot)
 	GetLastCSS(sessionId string) *CreditSessionSnapshot
 	GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor
+	AddEventBalance(eb EventBalance)
+	CalculateDebt()
 	// pools
 	AddPoolStat(ps *PoolStat)
 	AddPoolLedger(pl *PoolLedger)

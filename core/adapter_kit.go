@@ -1,96 +1,73 @@
 package core
 
-import (
-	"fmt"
-	"github.com/Gearbox-protocol/third-eye/utils"
-)
-
 type AdapterKit struct {
-	addressMap       map[string]SyncAdapterI
-	order            []string
-	adapters         map[string][]SyncAdapterI
-	adapterTypeIndex int
-	index            int
-	len              int
+	addressMap         map[string]SyncAdapterI
+	levels             []Level
+	adapterNameToLevel map[string]int
+	len                int
 }
 
-func NewAdapterKit(order []string) *AdapterKit {
-	adapterTypes := []string{
-		"ACL",
-		"AddressProvider",
-		"AccountFactory",
-		"Pool",
-		"CreditManager",
-		"PriceOracle",
-		"ChainlinkPriceFeed",
-		"YearnPriceFeed",
-		"ContractRegister",
-		"CreditFilter",
-	}
-	otherAdapters := []string{}
-	for _, name := range adapterTypes {
-		if !utils.Contains(order, name) {
-			otherAdapters = append(otherAdapters, name)
-		}
-	}
-	return &AdapterKit{
-		addressMap: make(map[string]SyncAdapterI),
-		adapters:   make(map[string][]SyncAdapterI),
-		order:      append(order, otherAdapters...),
-		index:      -1,
-	}
+func (kit *AdapterKit) init() {
+	kit.AddLevel([]string{AddressProvider})
+	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory})
+	kit.AddLevel([]string{CreditManager, Pool, ChainlinkPriceFeed, YearnPriceFeed})
+	kit.AddLevel([]string{CreditFilter})
 }
 
-func (kit *AdapterKit) Add(adapter SyncAdapterI) {
-	kit.addressMap[adapter.GetAddress()] = adapter
-	kit.adapters[adapter.GetName()] = append(kit.adapters[adapter.GetName()], adapter)
+func (kit *AdapterKit) AddLevel(lvl []string) {
+	lvlIndex := len(kit.levels)
+	kit.levels = append(kit.levels, NewLevel(lvl))
+	for _, adapterName := range lvl {
+		kit.adapterNameToLevel[adapterName] = lvlIndex
+	}
 	kit.len++
 }
 
-func (kit *AdapterKit) Next() bool {
-	if len(kit.order) == kit.adapterTypeIndex {
-		return false
+func NewAdapterKit() *AdapterKit {
+	kit := &AdapterKit{
+		addressMap:         make(map[string]SyncAdapterI),
+		adapterNameToLevel: make(map[string]int),
 	}
-	name := kit.order[kit.adapterTypeIndex]
-	kit.index++
-	if kit.index < len(kit.adapters[name]) {
-		return true
-	}
-	for len(kit.order) > kit.adapterTypeIndex && len(kit.adapters[name]) == kit.index {
-		kit.adapterTypeIndex++
-		if len(kit.order) > kit.adapterTypeIndex {
-			name = kit.order[kit.adapterTypeIndex]
-			kit.index = 0
-		}
-	}
-	if len(kit.order) == kit.adapterTypeIndex {
-		return false
-	}
-	return true
+	kit.init()
+	return kit
 }
 
-func (kit *AdapterKit) First() SyncAdapterI {
-	if kit.Next() {
-		v := kit.Get()
-		kit.Reset()
-		return v
-	}
-	kit.Reset()
-	return nil
+func (kit *AdapterKit) Add(adapter SyncAdapterI) {
+	adapterName := adapter.GetName()
+	adapterAddress := adapter.GetAddress()
+	kit.addressMap[adapterAddress] = adapter
+	lvlIndex := kit.adapterNameToLevel[adapterName]
+	kit.levels[lvlIndex].Add(adapterName, adapterAddress)
 }
 
-func (kit *AdapterKit) Get() SyncAdapterI {
-	name := kit.order[kit.adapterTypeIndex]
-	return kit.adapters[name][kit.index]
+func (kit *AdapterKit) Get(lvl int) SyncAdapterI {
+	adapterAddr := kit.levels[lvl].Get()
+	return kit.addressMap[adapterAddr]
+}
+
+func (kit *AdapterKit) Next(lvl int) bool {
+	return kit.levels[lvl].Next()
+}
+
+func (kit *AdapterKit) Len() int {
+	return kit.len
+}
+
+func (kit *AdapterKit) Reset(lvl int) {
+	kit.levels[lvl].Reset()
+}
+
+func (kit *AdapterKit) LenOfLevel(lvl int) int {
+	return kit.levels[lvl].Len()
+}
+
+func (kit *AdapterKit) First(lvl int) SyncAdapterI {
+	adapterAddr := kit.levels[lvl].First()
+	return kit.addressMap[adapterAddr]
 }
 
 func (kit *AdapterKit) GetAdapter(addr string) SyncAdapterI {
 	return kit.addressMap[addr]
-}
-
-func (kit *AdapterKit) Reset() {
-	kit.adapterTypeIndex = 0
-	kit.index = -1
 }
 
 func (kit *AdapterKit) DisableSyncAdapter(addr string) {
@@ -100,14 +77,13 @@ func (kit *AdapterKit) DisableSyncAdapter(addr string) {
 	}
 }
 
-func (kit *AdapterKit) Len() int {
-	return kit.len
+func (kit *AdapterKit) GetAdapterAddressByName(name string) []string {
+	lvlIndex := kit.adapterNameToLevel[name]
+	return kit.levels[lvlIndex].GetAddressByName(name)
 }
 
-func (kit *AdapterKit) Details() string {
-	str := ""
-	for _, name := range kit.order {
-		str += fmt.Sprintf("%s: %d\n", name, len(kit.adapters[name]))
+func (kit *AdapterKit) Details() {
+	for _, lvl := range kit.levels {
+		lvl.Details()
 	}
-	return str
 }

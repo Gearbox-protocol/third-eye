@@ -20,6 +20,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		return
 	}
 	token := p.Repo.GetToken(p.State.UnderlyingToken)
+	log.Infof("ciRAY: %s and linearCI: %s\n", state.CumulativeIndexRAY.String(), state.LinearCumulativeIndex.String())
 	p.Repo.AddPoolStat(&core.PoolStat{
 		BlockNum:        blockNum,
 		Address:         p.Address,
@@ -34,14 +35,15 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		AvailableLiquidity:   utils.GetFloat64Decimal(state.AvailableLiquidity, token.Decimals),
 
 		DepositAPYBI: (*core.BigInt)(state.DepositAPYRAY),
-		DepositAPY:   utils.GetFloat64Decimal(state.DepositAPYRAY, 25),
+		DepositAPY:   utils.GetFloat64Decimal(state.DepositAPYRAY, 27),
 
 		BorrowAPYBI: (*core.BigInt)(state.BorrowAPYRAY),
-		BorrowAPY:   utils.GetFloat64Decimal(state.BorrowAPYRAY, 25),
+		BorrowAPY:   utils.GetFloat64Decimal(state.BorrowAPYRAY, 27),
 
-		DieselRateBI: (*core.BigInt)(state.DieselRateRAY),
-		DieselRate:   utils.GetFloat64Decimal(state.DieselRateRAY, 25),
-		WithdrawFee:  int(state.WithdrawFee.Int64()),
-		ID:           0,
+		DieselRateBI:       (*core.BigInt)(state.DieselRateRAY),
+		DieselRate:         utils.GetFloat64Decimal(state.DieselRateRAY, 27),
+		WithdrawFee:        int(state.WithdrawFee.Int64()),
+		CumulativeIndexRAY: (*core.BigInt)(state.LinearCumulativeIndex),
+		ID:                 0,
 	})
 }

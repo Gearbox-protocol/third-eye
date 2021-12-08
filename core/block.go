@@ -1,6 +1,8 @@
 package core
 
-// import "github.com/ethereum/go-ethereum/core/types"
+import (
+	"sort"
+)
 
 type (
 	Block struct {
@@ -14,6 +16,9 @@ type (
 		PoolStats         []*PoolStat              `gorm:"foreignKey:block_num"`
 		PoolLedgers       []*PoolLedger            `gorm:"foreignKey:block_num"`
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
+		allowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
+		eventBalances     SortedEventbalances      `gorm:"-"`
+		debts             []*Debt                  `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -34,6 +39,10 @@ func (b *Block) AddAllowedProtocol(p *Protocol) {
 	b.Protocols = append(b.Protocols, p)
 }
 
+func (b *Block) AddAllowedToken(atoken *AllowedToken) {
+	b.allowedTokens = append(b.allowedTokens, atoken)
+}
+
 func (b *Block) AddCreditSessionSnapshot(css *CreditSessionSnapshot) {
 	b.CSS = append(b.CSS, css)
 }
@@ -47,4 +56,33 @@ func (b *Block) AddPoolLedger(pl *PoolLedger) {
 
 func (b *Block) AddCreditManagerStats(cms *CreditManagerStat) {
 	b.CMStats = append(b.CMStats, cms)
+}
+
+func (b *Block) GetAllowedTokens() []*AllowedToken {
+	return b.allowedTokens
+}
+
+func (b *Block) GetPriceFeeds() []*PriceFeed {
+	return b.PriceFeeds
+}
+
+func (b *Block) AddEventBalance(eb *EventBalance) {
+	b.eventBalances = append(b.eventBalances, eb)
+}
+
+func (b *Block) GetEventBalances() []*EventBalance {
+	sort.Sort(b.eventBalances)
+	return b.eventBalances
+}
+
+func (b *Block) GetCSS() []*CreditSessionSnapshot {
+	return b.CSS
+}
+
+func (b *Block) GetPoolStats() []*PoolStat {
+	return b.PoolStats
+}
+
+func (b *Block) AddDebt(debt *Debt) {
+	b.debts = append(b.debts, debt)
 }

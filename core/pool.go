@@ -1,10 +1,14 @@
 package core
 
-type Pool struct {
+type PoolState struct {
 	Address         string `gorm:"primaryKey"`
 	UnderlyingToken string `gorm:"column:underlying_token"`
 	DieselToken     string `gorm:"column:diesel_token"`
 	IsWETH          bool   `gorm:"column:is_weth"`
+}
+
+func (PoolState) TableName() string {
+	return "pools"
 }
 
 type PoolStat struct {
@@ -29,6 +33,15 @@ type PoolStat struct {
 	DieselRate           float64 `gorm:"column:diesel_rate"`
 	DieselRateBI         *BigInt `gorm:"column:diesel_rate_bi"`
 	WithdrawFee          int     `gorm:"column:withdraw_fee"`
+	CumulativeIndexRAY   *BigInt `gorm:"column:cumulative_index_ray"`
+}
+
+type PoolInterestData struct {
+	BorrowAPYBI        *BigInt `gorm:"column:borrow_apy_bi"`
+	CumulativeIndexRAY *BigInt `gorm:"column:cumulative_index_ray"`
+	BlockNum           int64   `gorm:"column:block_num"`
+	Address            string  `gorm:"column:pool"`
+	Timestamp          uint64  `gorm:"column:timestamp"`
 }
 
 type PoolLedger struct {

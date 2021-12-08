@@ -7,7 +7,7 @@ import (
 
 func (mdl *Pool) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStatePresent = true
-	state, ok := obj.(*core.Pool)
+	state, ok := obj.(*core.PoolState)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")
 	}

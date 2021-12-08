@@ -1,6 +1,7 @@
 package services
 
 import (
+	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -8,13 +9,13 @@ import (
 )
 
 type ExecuteFilter struct {
-	paramsList    []ExecuteParams
+	paramsList    []core.ExecuteParams
 	paramsIndex   int
 	creditManager common.Address
 }
 
-func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*KnownCall {
-	var calls []*KnownCall
+func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*core.KnownCall {
+	var calls []*core.KnownCall
 	if ef.paramsIndex >= len(ef.paramsList) {
 		return calls
 	}
@@ -39,9 +40,9 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*KnownCall {
 	return calls
 }
 
-func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) []Balances {
-	balances := make(Balances)
-	var execEventBalances []Balances
+func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) []core.Transfers {
+	balances := make(core.Transfers)
+	var execEventBalances []core.Transfers
 	parsingTransfer := false
 	paramsIndex := -1
 	for _, raw := range trace.Logs {
@@ -51,13 +52,13 @@ func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) 
 		// if any creditmanager event add to the execute
 		if utils.Contains(cmEvents, eventSig) && parsingTransfer {
 			execEventBalances = append(execEventBalances, balances)
-			balances = make(Balances)
+			balances = make(core.Transfers)
 			parsingTransfer = false
 		}
 		// ExecuteOrder
 		if eventSig == "0xaed1eb34af6acd8c1e3911fb2ebb875a66324b03957886bd002227b17f52ab03" {
 			paramsIndex += 1
-			balances = make(Balances)
+			balances = make(core.Transfers)
 			parsingTransfer = true
 		}
 		// Transfer

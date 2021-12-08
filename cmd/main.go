@@ -12,7 +12,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/models"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
 	"go.uber.org/fx"
@@ -47,7 +46,6 @@ func main() {
 		repository.Module,
 		services.Module,
 		engine.Module,
-		models.Module,
 		fx.NopLogger,
 		fx.Invoke(StartServer),
 	)

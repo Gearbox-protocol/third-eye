@@ -1,4 +1,4 @@
-package credit_manager
+package core
 
 import (
 	"math/big"
@@ -6,14 +6,16 @@ import (
 
 type EventBalance struct {
 	BorrowedAmount *big.Int
-	Transfers      map[string]*big.Int
+	Transfers      Transfers
 	SessionId      string
 	BlockNumber    int64
 	Index          int64
 	Clear          bool
+	CreditManager  string
+	Borrower       string
 }
 
-func newEventBalance(blockNum uint64, index uint, sessionId string, borrowedAmount *big.Int, transfers map[string]*big.Int, clear bool) EventBalance {
+func NewEventBalance(blockNum int64, index uint, sessionId string, borrowedAmount *big.Int, transfers Transfers, clear bool, cm string) EventBalance {
 	return EventBalance{
 		BorrowedAmount: borrowedAmount,
 		Transfers:      transfers,
@@ -21,11 +23,8 @@ func newEventBalance(blockNum uint64, index uint, sessionId string, borrowedAmou
 		BlockNumber:    int64(blockNum),
 		Index:          int64(index),
 		Clear:          clear,
+		CreditManager:  cm,
 	}
-}
-
-func (mdl *CreditManager) addEventBalance(eb EventBalance) {
-	mdl.eventBalances = append(mdl.eventBalances, &eb)
 }
 
 // sort event balances by block number/log id

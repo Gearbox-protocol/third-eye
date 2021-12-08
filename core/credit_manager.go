@@ -1,18 +1,23 @@
 package core
 
-type CreditManager struct {
+func (CreditManagerState) TableName() string {
+	return "credit_managers"
+}
+
+type CreditManagerState struct {
 	CreditManagerData
-	Address           string `gorm:"primaryKey"`
-	PoolAddress       string `gorm:"column:pool_address"`
-	UnderlyingToken   string `gorm:"column:underlying_token"`
-	IsWETH            bool   `gorm:"column:is_weth"`
-	MaxLeverageFactor int    `gorm:"column:max_leverage"`
-	Sessions          Hstore `gorm:"column:sessions"`
+	Address           string  `gorm:"primaryKey"`
+	PoolAddress       string  `gorm:"column:pool_address"`
+	UnderlyingToken   string  `gorm:"column:underlying_token"`
+	IsWETH            bool    `gorm:"column:is_weth"`
+	MaxLeverageFactor int64   `gorm:"column:max_leverage"`
+	MinAmount         *BigInt `gorm:"column:min_amount"`
+	MaxAmount         *BigInt `gorm:"column:max_amount"`
+	FeeInterest       int64   `gorm:"column:fee_interest"`
+	Sessions          Hstore  `gorm:"column:sessions"`
 }
 
 type CreditManagerData struct {
-	MinAmount               *BigInt `gorm:"column:min_amount" json:"minAmount"`
-	MaxAmount               *BigInt `gorm:"column:max_amount" json:"maxAmount"`
 	BorrowRateBI            *BigInt `gorm:"column:borrow_rate_bi" `
 	BorrowRate              float64 `gorm:"column:borrow_rate"`
 	AvailableLiquidityBI    *BigInt `gorm:"column:available_liquidity_bi"`

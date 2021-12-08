@@ -7,21 +7,25 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
-	"github.com/Gearbox-protocol/third-eye/services"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
-	"sort"
 )
 
+type SessionCloseDetails struct {
+	RemainingFunds *big.Int
+	Status         int
+	LogId          uint
+}
 type CreditManager struct {
 	*core.SyncAdapter
-	contractETH    *creditManager.CreditManager
-	LastTxHash     string
-	executeParams  []services.ExecuteParams
-	eventBalances  SortedEventbalances
-	State          *core.CreditManager
-	lastEventBlock int64
+	contractETH     *creditManager.CreditManager
+	LastTxHash      string
+	executeParams   []core.ExecuteParams
+	State           *core.CreditManagerState
+	lastEventBlock  int64
+	UpdatedSessions map[string]int
+	ClosedSessions  map[string]*SessionCloseDetails
 }
 
 func (CreditManager) TableName() string {
@@ -55,10 +59,10 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 	//
 
 	cm := NewCreditManagerFromAdapter(
-		core.NewSyncAdapter(addr, "CreditManager", discoveredAt, client, repo),
+		core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo),
 	)
 	// create credit manager state
-	cm.SetUnderlyingState(&core.CreditManager{
+	cm.SetUnderlyingState(&core.CreditManagerState{
 		Address:         addr,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
@@ -73,8 +77,10 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		log.Fatal(err)
 	}
 	obj := &CreditManager{
-		SyncAdapter: adapter,
-		contractETH: cmContract,
+		SyncAdapter:     adapter,
+		contractETH:     cmContract,
+		UpdatedSessions: make(map[string]int),
+		ClosedSessions:  make(map[string]*SessionCloseDetails),
 	}
 	obj.GetAbi()
 	return obj
@@ -86,27 +92,22 @@ func (mdl *CreditManager) GetUnderlyingDecimal() uint8 {
 }
 
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
-	mdl.createCMStat()
+	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
-	sort.Sort(mdl.eventBalances)
-	for _, eventBalance := range mdl.eventBalances {
-		mdl.updateBalance(eventBalance)
-	}
-	mdl.eventBalances = SortedEventbalances{}
+	mdl.onBlockChange()
 	mdl.SetLastSync(syncTill)
 }
 
-func (cm *CreditManager) GetCreditSessionData(blockNum int64, sessionId string) *dataCompressor.DataTypesCreditAccountDataExtended {
+func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *dataCompressor.DataTypesCreditAccountDataExtended {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	session := cm.Repo.GetCreditSession(sessionId)
 	data, err := cm.Repo.GetDataCompressor(blockNum).GetCreditAccountDataExtended(opts,
-		common.HexToAddress(session.CreditManager),
-		common.HexToAddress(session.Borrower),
+		common.HexToAddress(cm.GetAddress()),
+		common.HexToAddress(borrower),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("CM:%s Borrower:%s %s", cm.GetAddress(), borrower, err)
 	}
 	return &data
 }

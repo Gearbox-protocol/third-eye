@@ -14,7 +14,7 @@ type CreditFilter struct {
 }
 
 func NewCreditFilter(addr, creditManager string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *CreditFilter {
-	syncAdapter := core.NewSyncAdapter(addr, "CreditFilter", discoveredAt, client, repo)
+	syncAdapter := core.NewSyncAdapter(addr, core.CreditFilter, discoveredAt, client, repo)
 	syncAdapter.Details = map[string]string{"creditManager": creditManager}
 	return NewCreditFilterFromAdapter(
 		syncAdapter,

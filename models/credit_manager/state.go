@@ -13,7 +13,7 @@ import (
 
 func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStatePresent = true
-	state, ok := obj.(*core.CreditManager)
+	state, ok := obj.(*core.CreditManagerState)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")
 	}
@@ -79,8 +79,6 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 			TotalClosedAccounts:     mdl.State.TotalClosedAccounts,
 			TotalRepaidAccounts:     mdl.State.TotalRepaidAccounts,
 			TotalLiquidatedAccounts: mdl.State.TotalLiquidatedAccounts,
-			MinAmount:               core.NewBigInt(mdl.State.MinAmount),
-			MaxAmount:               core.NewBigInt(mdl.State.MaxAmount),
 			BorrowRateBI:            core.NewBigInt(mdl.State.BorrowRateBI),
 			BorrowRate:              mdl.State.BorrowRate,
 			AvailableLiquidityBI:    core.NewBigInt(mdl.State.AvailableLiquidityBI),

@@ -32,17 +32,15 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 
 		token := newPriceFeedEvent.Token.Hex()
 		oracle := newPriceFeedEvent.PriceFeed.Hex()
-		mdl.Repo.AddTokenOracle(token, oracle, blockNum)
-		log.Info(token, oracle)
 		priceFeedType, err := mdl.checkPriceFeedContract(blockNum, oracle)
 		if err != nil {
 			log.Fatal(err)
 		}
 		if priceFeedType == ChainlinkPriceFeed {
-			obj := chainlink_price_feed.NewChainlinkPriceFeed(oracle, token, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(obj)
 		} else if priceFeedType == YearnPriceFeed {
-			obj := yearn_price_feed.NewYearnPriceFeed(oracle, token, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			obj := yearn_price_feed.NewYearnPriceFeed(token, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(obj)
 		} else {
 			log.Fatal("Unknown PriceFeed type", priceFeedType)
@@ -60,7 +58,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 	}
 	_, err = pfContract.PhaseId(opts)
 	if err != nil {
-		if err.Error() != "VM execution error." {
+		if err.Error() == "VM execution error." {
 			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 			if err != nil {
 				return -1, err

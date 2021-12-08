@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/big"
 	"net/http"
 	"strings"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapV3Adapter"
 	"github.com/Gearbox-protocol/third-eye/artifacts/yearnAdapter"
 	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 
@@ -39,7 +39,7 @@ type ExecuteParser struct {
 	ChainId             uint
 }
 
-func NewExecuteParser(config *config.Config) *ExecuteParser {
+func NewExecuteParser(config *config.Config) core.ExecuteParserI {
 	return &ExecuteParser{
 		Client:              http.Client{},
 		IgnoreCMEventIds:    utils.GetCreditManagerEventIds(),
@@ -96,35 +96,10 @@ func (ep *ExecuteParser) getTenderlyData(txHash string) (*TxTrace, error) {
 
 // executeOrder
 
-type Balances map[string]*big.Int
-
-func (bal *Balances) String() string {
-	var str string
-	first := true
-	for addr, amt := range (map[string]*big.Int)(*bal) {
-		if !first {
-			str += ","
-		}
-		str += fmt.Sprintf("%s=>%s", addr, amt.String())
-		first = false
-	}
-	return str
-}
-
-type KnownCall struct {
-	// Input string
-	From     common.Address
-	To       common.Address
-	Depth    uint8
-	Name     string
-	Args     string
-	Balances Balances
-}
-
-func (call *Call) dappCall(dappAddr common.Address) *KnownCall {
+func (call *Call) dappCall(dappAddr common.Address) *core.KnownCall {
 	if (call.CallerOp == "CALL" || call.CallerOp == "DELEGATECALL") && dappAddr == common.HexToAddress(call.To) {
 		name, arguments := ParseCallData(call.Input)
-		return &KnownCall{
+		return &core.KnownCall{
 			From: common.HexToAddress(call.From),
 			To:   common.HexToAddress(call.To),
 			Name: name,
@@ -156,7 +131,7 @@ func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
 	return trace
 }
 
-func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall {
+func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []core.ExecuteParams) []*core.KnownCall {
 	trace := ep.GetTxTrace(txHash)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)
@@ -165,7 +140,7 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	// check if parsed execute Order currently
 	if len(calls) == len(executeTransfers) {
 		for i, call := range calls {
-			call.Balances = executeTransfers[i]
+			call.Transfers = executeTransfers[i]
 		}
 	} else {
 		log.Fatal("Calls ", len(calls), ", execute details ", len(executeTransfers))

@@ -18,7 +18,6 @@ func (repo *Repository) AddToken(addr string) *core.Token {
 func (repo *Repository) GetToken(addr string) *core.Token {
 	token := repo.tokens[addr]
 	if token == nil {
-		log.Info("token not found for address", addr)
 		return repo.AddToken(addr)
 	}
 	return token
@@ -35,36 +34,28 @@ func (repo *Repository) loadToken() {
 	}
 }
 
+func (repo *Repository) loadTokenLastPrice() {
+	data := []*core.PriceFeed{}
+	query := `SELECT price_feeds.* FROM price_feeds
+	JOIN (SELECT max(block_num) AS bn, token FROM price_feeds GROUP BY token) AS max_pf
+	ON max_pf.bn = price_feeds.block_num AND max_pf.token = price_feeds.token`
+	err := repo.db.Raw(query).Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, tokenPrice := range data {
+		repo.AddTokenLastPrice(tokenPrice)
+	}
+}
+
+func (repo *Repository) AddTokenLastPrice(pf *core.PriceFeed) {
+	repo.tokenLastPrice[pf.Token] = pf
+}
+
 func (repo *Repository) AddTokenObj(t *core.Token) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.tokens[t.Address] == nil {
 		repo.tokens[t.Address] = t
 	}
-}
-
-// for credit filter
-func (repo *Repository) AddAllowedProtocol(p *core.Protocol) {
-	repo.blocks[p.BlockNumber].AddAllowedProtocol(p)
-}
-
-func (repo *Repository) AddAllowedToken(atoken *core.AllowedToken) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.allowedTokens = append(repo.allowedTokens, atoken)
-}
-
-// for price oracle/feeds
-func (repo *Repository) AddTokenOracle(token, oracle string, blockNum int64) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.blocks[blockNum].AddTokenOracle(
-		&core.TokenOracle{Token: token, Oracle: oracle, BlockNumber: blockNum},
-	)
-}
-
-func (repo *Repository) AddPriceFeed(blockNum int64, pf *core.PriceFeed) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.blocks[blockNum].AddPriceFeed(pf)
 }
