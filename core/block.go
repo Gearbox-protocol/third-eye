@@ -74,6 +74,11 @@ func (b *Block) GetEventBalances() []*EventBalance {
 	sort.Sort(b.eventBalances)
 	return b.eventBalances
 }
+
+func (b *Block) GetCSS() []*CreditSessionSnapshot {
+	return b.CSS
+}
+
 func (b *Block) GetPoolStats() []*PoolStat {
 	return b.PoolStats
 }

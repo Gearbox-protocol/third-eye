@@ -35,6 +35,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	if mdl.lastEventBlock != blockNum {
 		mdl.createCMStat()
+		mdl.FetchFromDCForChangedSessions()
 	}
 	mdl.lastEventBlock = blockNum
 	//-- for credit manager stats

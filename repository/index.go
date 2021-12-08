@@ -7,7 +7,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/services"
 	"gorm.io/gorm"
 
 	"context"
@@ -21,7 +20,7 @@ type Repository struct {
 	db            *gorm.DB
 	kit           *core.AdapterKit
 	client        *ethclient.Client
-	executeParser *services.ExecuteParser
+	executeParser core.ExecuteParserI
 	dc            map[int64]*dataCompressor.DataCompressor
 	// blocks/token
 	blocks map[int64]*core.Block
@@ -40,7 +39,7 @@ type Repository struct {
 	poolLastInterestData   map[string]*core.PoolInterestData
 }
 
-func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecuteParser) core.RepositoryI {
+func NewRepository(db *gorm.DB, client *ethclient.Client, ep core.ExecuteParserI) core.RepositoryI {
 	r := &Repository{
 		db:                     db,
 		mu:                     &sync.Mutex{},
@@ -62,7 +61,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, ep *services.ExecutePa
 	return r
 }
 
-func (repo *Repository) GetExecuteParser() *services.ExecuteParser {
+func (repo *Repository) GetExecuteParser() core.ExecuteParserI {
 	return repo.executeParser
 }
 

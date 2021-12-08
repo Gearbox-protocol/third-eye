@@ -2,17 +2,15 @@ package core
 
 import (
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type ExecuteParams struct {
-	SessionId             string
-	Protocol              common.Address
-	CreditAccount         common.Address
-	Borrower              common.Address
-	Index                 uint
-	BlockNumber           int64
-	CumulativeIndexAtOpen *big.Int
+	SessionId     string
+	Protocol      common.Address
+	CreditAccount common.Address
+	Borrower      common.Address
+	Index         uint
+	BlockNumber   int64
 }
 
 type ExecuteParserI interface {

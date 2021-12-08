@@ -5,15 +5,14 @@ import (
 )
 
 type EventBalance struct {
-	BorrowedAmount        *big.Int
-	Transfers             Transfers
-	SessionId             string
-	BlockNumber           int64
-	Index                 int64
-	Clear                 bool
-	CreditManager         string
-	Borrower              string
-	СumulativeIndexAtOpen *big.Int
+	BorrowedAmount *big.Int
+	Transfers      Transfers
+	SessionId      string
+	BlockNumber    int64
+	Index          int64
+	Clear          bool
+	CreditManager  string
+	Borrower       string
 }
 
 func NewEventBalance(blockNum int64, index uint, sessionId string, borrowedAmount *big.Int, transfers Transfers, clear bool, cm string) EventBalance {
