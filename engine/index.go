@@ -103,8 +103,8 @@ func (e *Engine) sync(syncTill int64) {
 		kit.Reset(lvlIndex)
 		wg.Wait()
 	}
-	e.repo.CalculateDebt()
 	e.repo.Flush()
+	e.repo.CalculateDebt()
 	e.currentlySyncedTill = syncTill
 }
 

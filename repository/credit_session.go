@@ -8,9 +8,10 @@ import (
 	"sort"
 )
 
-func (repo *Repository) loadCreditSessions() {
+func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
 	data := []*core.CreditSession{}
-	err := repo.db.Find(&data, "status = ?", core.Active).Error
+	err := repo.db.Find(&data, "status = ? OR (status <> ? AND closed_at > ?)",
+		core.Active, core.Active, lastDebtSync).Error
 	if err != nil {
 		log.Fatal(err)
 	}

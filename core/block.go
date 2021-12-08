@@ -18,7 +18,6 @@ type (
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
 		allowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
-		debts             []*Debt                  `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -81,8 +80,4 @@ func (b *Block) GetCSS() []*CreditSessionSnapshot {
 
 func (b *Block) GetPoolStats() []*PoolStat {
 	return b.PoolStats
-}
-
-func (b *Block) AddDebt(debt *Debt) {
-	b.debts = append(b.debts, debt)
 }

@@ -10,6 +10,28 @@ import (
 	"sort"
 )
 
+type DebtSync struct {
+	LastCalculatedAt int64 `gorm:"last_calculated_at"`
+}
+
+func (DebtSync) TableName() string {
+	return "debt_sync"
+}
+
+func (repo *Repository) loadLastDebtSync() int64 {
+	data := DebtSync{}
+	query := "SELECT max(last_calculated_at) as last_calculated_at FROM  debt_sync"
+	err := repo.db.Raw(query).Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	return data.LastCalculatedAt
+}
+
+func (repo *Repository) AddDebt(debt *core.Debt) {
+	repo.debts = append(repo.debts, debt)
+}
+
 func (repo *Repository) CalculateDebt() {
 	blockNums := make([]int64, 0, len(repo.blocks))
 	for blockNum := range repo.blocks {
@@ -24,6 +46,7 @@ func (repo *Repository) CalculateDebt() {
 		}
 		// update pool borrow rate and cumulative index
 		for _, ps := range block.GetPoolStats() {
+			log.Info("Pool details", ps)
 			repo.AddPoolLastInterestData(&core.PoolInterestData{
 				Address:            ps.Address,
 				BlockNum:           ps.BlockNum,
@@ -71,8 +94,14 @@ func (repo *Repository) CalculateDebt() {
 			// pool cum index is when the pool is not registered
 			if poolToCumIndex[cmAddr] != nil {
 				repo.CalculateSessionDebt(blockNum, sessionId, cmAddr, poolToCumIndex[cmAddr])
+			} else {
+				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
 		}
+	}
+	blockNumLen := len(blockNums)
+	if blockNumLen > 0 {
+		repo.flushDebt(blockNums[blockNumLen-1])
 	}
 }
 
@@ -83,9 +112,6 @@ func (repo *Repository) GetCumulativeIndexForPools(blockNum int64, ts uint64) ma
 		poolAddr := repo.GetCMState(cmAddr).PoolAddress
 		poolInterestData := repo.poolLastInterestData[poolAddr]
 		if poolInterestData == nil {
-			if blockNum >= repo.kit.GetAdapter(poolAddr).GetDiscoveredAt() {
-				log.Fatalf("Pool(%s) is missing stats at %d, so cumulative index is unknown", poolAddr, blockNum)
-			}
 			poolToCI[poolAddr] = nil
 		} else {
 			tsDiff := new(big.Int).SetInt64(int64(ts - poolInterestData.Timestamp))
@@ -122,7 +148,7 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 	calBorrowWithInterest := big.NewInt(0).Quo(
 		big.NewInt(0).Mul(cumIndexNow, sessionSnapshot.BorrowedAmountBI.Convert()),
 		sessionSnapshot.СumulativeIndexAtOpen.Convert())
-	repo.blocks[blockNum].AddDebt(&core.Debt{
+	repo.AddDebt(&core.Debt{
 		BlockNumber:                     blockNum,
 		SessionId:                       sessionId,
 		CalThresholdValueBI:             calThresholdValue.String(),

@@ -37,6 +37,7 @@ type Repository struct {
 	//// token -> credit_manager -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*core.PoolInterestData
+	debts                  []*core.Debt
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, ep core.ExecuteParserI) core.RepositoryI {
@@ -66,17 +67,19 @@ func (repo *Repository) GetExecuteParser() core.ExecuteParserI {
 }
 
 func (repo *Repository) init() {
+	lastDebtSync := repo.loadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
 	repo.loadToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
+	repo.loadCurrentTokenOracle()
 	repo.loadPool()
 	repo.loadCreditManagers()
-	repo.loadCreditSessions()
-	repo.loadLastCSS()
-	repo.loadCurrentTokenOracle()
-	repo.loadTokenLastPrice()
-	repo.loadAllowedTokenThreshold()
+	repo.loadCreditSessions(lastDebtSync)
+	repo.loadLastCSS(lastDebtSync)
+	repo.loadTokenLastPrice(lastDebtSync)
+	repo.loadAllowedTokenThreshold(lastDebtSync)
+	repo.loadBlocks(lastDebtSync)
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
@@ -109,4 +112,18 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.blocks[eb.BlockNumber].AddEventBalance(&eb)
+}
+
+func (repo *Repository) loadBlocks(lastDebtSync int64) {
+	data := []*core.Block{}
+	err := repo.db.Find(&data, "id > ?", lastDebtSync).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, block := range data {
+		repo.blocks[block.BlockNumber] = block
+	}
+	if len(data) > 0 {
+		repo.CalculateDebt()
+	}
 }

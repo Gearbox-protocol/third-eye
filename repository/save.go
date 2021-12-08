@@ -51,14 +51,11 @@ func (repo *Repository) Flush() (err error) {
 		// 	log.Fatal(err.Error)
 		// }
 	}
-	for key, session := range repo.sessions {
+	for _, session := range repo.sessions {
 		tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(session)
-		if session.ClosedAt != 0 {
-			delete(repo.sessions, key)
-		}
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }
@@ -77,7 +74,6 @@ func (repo *Repository) Flush() (err error) {
 	if info.Error != nil {
 		log.Fatal(info.Error, *info.Statement)
 	}
-	repo.blocks = map[int64]*core.Block{}
 	return nil
 }
 
@@ -85,4 +81,17 @@ func check(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+}
+
+func (repo *Repository) flushDebt(newDebtSync int64) {
+	err := repo.db.Create(DebtSync{LastCalculatedAt: newDebtSync}).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, session := range repo.sessions {
+		if session.ClosedAt != 0 {
+			delete(repo.sessions, session.ID)
+		}
+	}
+	repo.blocks = map[int64]*core.Block{}
 }
