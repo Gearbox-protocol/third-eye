@@ -53,16 +53,16 @@ type (
 		Since                 int64
 	}
 	CreditSessionSnapshot struct {
-		ID                    int64       `gorm:"primaryKey;autoincrement:true" json:"id"`
-		BlockNum              int64       `gorm:"column:block_num"`
-		SessionId             string      `gorm:"column:session_id"`
-		BorrowedAmountBI      *BigInt     `gorm:"column:borrowed_amount_bi"`
-		BorrowedAmount        float64     `gorm:"column:borrowed_amount"`
-		TotalValueBI          *BigInt     `gorm:"column:total_value_bi"`
-		TotalValue            float64     `gorm:"column:total_value"`
-		Balances              JsonBalance `gorm:"column:balances"`
-		Borrower              string      `gorm:"<-:false;column:borrower"`
-		СumulativeIndexAtOpen *BigInt     `gorm:"column:cumulative_index"`
-		HealthFactor          int64       `gorm:"column:health_factor"`
+		ID                    int64        `gorm:"primaryKey;autoincrement:true"`
+		BlockNum              int64        `gorm:"column:block_num"`
+		SessionId             string       `gorm:"column:session_id"`
+		BorrowedAmountBI      *BigInt      `gorm:"column:borrowed_amount_bi"`
+		BorrowedAmount        float64      `gorm:"column:borrowed_amount"`
+		TotalValueBI          *BigInt      `gorm:"column:total_value_bi"`
+		TotalValue            float64      `gorm:"column:total_value"`
+		Balances              *JsonBalance `gorm:"column:balances"`
+		Borrower              string       `gorm:"column:borrower"`
+		СumulativeIndexAtOpen *BigInt      `gorm:"column:cumulative_index"`
+		HealthFactor          int64        `gorm:"column:health_factor"`
 	}
 )

@@ -103,8 +103,7 @@ func (e *Engine) sync(syncTill int64) {
 		kit.Reset(lvlIndex)
 		wg.Wait()
 	}
-	e.repo.CalculateDebt()
-	e.repo.Flush()
+	e.repo.FlushAndDebt()
 	e.currentlySyncedTill = syncTill
 }
 
@@ -142,8 +141,8 @@ func (e *Engine) GetLogs(fromBlock, toBlock int64, addr string) ([]types.Log, er
 	var err error
 	logs, err = e.client.FilterLogs(context.Background(), query)
 	if err != nil {
-		if err.Error() == "query returned more than 10000 results" ||
-			strings.Contains(err.Error(), "Log response size exceeded. You can make eth_getLogs requests with up to a 2K block range and no limit on the response size, or you can request any block range with a cap of 10K logs in the response.") {
+		if err.Error() == core.QueryMoreThan10000Error ||
+			strings.Contains(err.Error(), core.LogFilterLenError) {
 			middle := (fromBlock + toBlock) / 2
 			log.Info(fromBlock, middle, toBlock)
 			bottomHalfLogs, err := e.GetLogs(fromBlock, middle-1, addr)

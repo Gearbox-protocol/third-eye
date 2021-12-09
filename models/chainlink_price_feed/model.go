@@ -30,15 +30,15 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
 	}
-
 	adapter := NewChainlinkPriceFeedFromAdapter(
 		syncAdapter,
+		true,
 	)
 	repo.AddTokenOracle(token, oracle, feed, discoveredAt)
 	return adapter
 }
 
-func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter) *ChainlinkPriceFeed {
+func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogBeforeDiscover bool) *ChainlinkPriceFeed {
 	oracleAddr := adapter.Details["oracle"]
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracleAddr), adapter.Client)
 	if err != nil {
@@ -51,6 +51,18 @@ func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter) *ChainlinkPrice
 	if adapter.Address == oracleAddr {
 		pfAddr := obj.GetPriceFeedAddr(adapter.DiscoveredAt)
 		obj.SetAddress(pfAddr)
+	}
+	if includeLastLogBeforeDiscover {
+		if lastLogBeforeDiscoverNum, err := obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
+			core.Topic("AnswerUpdated(int256,uint256,uint256)"),
+		}); err != nil {
+			log.Fatal(err)
+		} else {
+			if lastLogBeforeDiscoverNum != 0 {
+				obj.LastSync = lastLogBeforeDiscoverNum - 1
+				obj.FirstLogAt = lastLogBeforeDiscoverNum
+			}
+		}
 	}
 	return obj
 }

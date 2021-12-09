@@ -161,8 +161,8 @@ func (c *Contract) findFirstLogBound(fromBlock, toBlock int64) (int64, error) {
 
 	logs, err := c.Client.FilterLogs(context.Background(), query)
 	if err != nil {
-		if err.Error() == "query returned more than 10000 results" ||
-			strings.Contains(err.Error(), "Log response size exceeded. You can make eth_getLogs requests with up to a 2K block range and no limit on the response size, or you can request any block range with a cap of 10K logs in the response.") {
+		if err.Error() == QueryMoreThan10000Error ||
+			strings.Contains(err.Error(), LogFilterLenError) {
 			middle := (fromBlock + toBlock) / 2
 
 			log.Verbosef("FirstLog %d %d %d", fromBlock, middle-1, toBlock)
@@ -204,6 +204,49 @@ func (c *Contract) findFirstLogBound(fromBlock, toBlock int64) (int64, error) {
 	}
 
 	return FirstLogAt, nil
+}
+
+func (c *Contract) FindLastLogBound(fromBlock, toBlock int64, topics []common.Hash) (int64, error) {
+
+	query := ethereum.FilterQuery{
+		FromBlock: big.NewInt(fromBlock),
+		ToBlock:   big.NewInt(toBlock),
+		Addresses: []common.Address{
+			common.HexToAddress(c.Address),
+		},
+		Topics: [][]common.Hash{
+			topics,
+		},
+	}
+	logs, err := c.Client.FilterLogs(context.Background(), query)
+	if err != nil {
+		if err.Error() == QueryMoreThan10000Error ||
+			strings.Contains(err.Error(), LogFilterLenError) {
+			middle := (fromBlock + toBlock) / 2
+			foundHigh, err := c.FindLastLogBound(middle, toBlock, topics)
+			if err != nil {
+				return 0, err
+			}
+			if foundHigh != 0 {
+				return foundHigh, nil
+			}
+			foundLow, err := c.FindLastLogBound(fromBlock, middle-1, topics)
+			if err != nil {
+				return 0, err
+			}
+			if foundLow != 0 {
+				return foundLow, nil
+			}
+		}
+		return 0, err
+	}
+
+	logLen := len(logs)
+	if logLen > 0 {
+		return int64(logs[logLen-1].BlockNumber), nil
+	} else {
+		return 0, nil
+	}
 }
 
 func (c *Contract) UnpackLogIntoMap(out map[string]interface{}, event string, txLog types.Log) error {

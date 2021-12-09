@@ -16,9 +16,8 @@ type (
 		PoolStats         []*PoolStat              `gorm:"foreignKey:block_num"`
 		PoolLedgers       []*PoolLedger            `gorm:"foreignKey:block_num"`
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
-		allowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
+		AllowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
-		debts             []*Debt                  `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -40,7 +39,7 @@ func (b *Block) AddAllowedProtocol(p *Protocol) {
 }
 
 func (b *Block) AddAllowedToken(atoken *AllowedToken) {
-	b.allowedTokens = append(b.allowedTokens, atoken)
+	b.AllowedTokens = append(b.AllowedTokens, atoken)
 }
 
 func (b *Block) AddCreditSessionSnapshot(css *CreditSessionSnapshot) {
@@ -59,7 +58,7 @@ func (b *Block) AddCreditManagerStats(cms *CreditManagerStat) {
 }
 
 func (b *Block) GetAllowedTokens() []*AllowedToken {
-	return b.allowedTokens
+	return b.AllowedTokens
 }
 
 func (b *Block) GetPriceFeeds() []*PriceFeed {
@@ -81,8 +80,4 @@ func (b *Block) GetCSS() []*CreditSessionSnapshot {
 
 func (b *Block) GetPoolStats() []*PoolStat {
 	return b.PoolStats
-}
-
-func (b *Block) AddDebt(debt *Debt) {
-	b.debts = append(b.debts, debt)
 }

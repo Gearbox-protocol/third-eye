@@ -81,6 +81,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
+	log.Info(css)
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
@@ -109,8 +110,8 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CreditManager) convertToBalance(balances []dataCompressor.DataTypesTokenBalance) core.JsonBalance {
-	jsonBalance := map[string]*core.BalanceType{}
+func (mdl *CreditManager) convertToBalance(balances []dataCompressor.DataTypesTokenBalance) *core.JsonBalance {
+	jsonBalance := core.JsonBalance{}
 	for _, token := range balances {
 		tokenAddr := token.Token.Hex()
 		jsonBalance[tokenAddr] = &core.BalanceType{
@@ -118,5 +119,5 @@ func (mdl *CreditManager) convertToBalance(balances []dataCompressor.DataTypesTo
 			F:  utils.GetFloat64Decimal(token.Balance, mdl.Repo.GetToken(tokenAddr).Decimals),
 		}
 	}
-	return jsonBalance
+	return &jsonBalance
 }
