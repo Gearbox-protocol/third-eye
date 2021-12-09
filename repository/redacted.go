@@ -22,7 +22,7 @@ func (repo *Repository) UpdateBalance(eb *core.EventBalance) {
 			lastCSS.BorrowedAmountBI = (*core.BigInt)(newBorrowedAmount)
 			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(newBorrowedAmount, repo.GetUnderlyingDecimal(eb.CreditManager))
 		}
-		oldBalances := lastCSS.Balances
+		oldBalances := *lastCSS.Balances
 		for tokenAddr, amount := range eb.Transfers {
 			tokenBStruct := oldBalances[tokenAddr]
 			token := repo.GetToken(tokenAddr)
@@ -41,7 +41,7 @@ func (repo *Repository) UpdateBalance(eb *core.EventBalance) {
 				}
 			}
 		}
-		lastCSS.Balances = oldBalances
+		lastCSS.Balances = &oldBalances
 	} else {
 		if eb.BorrowedAmount == nil {
 			lastCSS.BorrowedAmountBI = nil
@@ -58,19 +58,19 @@ func (repo *Repository) UpdateBalance(eb *core.EventBalance) {
 				F:  utils.GetFloat64Decimal(amount, token.Decimals),
 			}
 		}
-		lastCSS.Balances = newBalances
+		lastCSS.Balances = &newBalances
 	}
 
 	newCSS := core.CreditSessionSnapshot{}
 	newBalances := core.JsonBalance{}
-	for tokenAddr, details := range lastCSS.Balances {
+	for tokenAddr, details := range *lastCSS.Balances {
 		amt := *(details.BI.Convert())
 		newBalances[tokenAddr] = &core.BalanceType{
 			BI: (*core.BigInt)(&amt),
 			F:  details.F,
 		}
 	}
-	newCSS.Balances = newBalances
+	newCSS.Balances = &newBalances
 	// newCSS.LogId = lastCSS.LogId
 	newCSS.BlockNum = lastCSS.BlockNum
 	newCSS.SessionId = lastCSS.SessionId

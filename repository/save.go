@@ -65,6 +65,9 @@ func (repo *Repository) Flush() (err error) {
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).Create(block)
+		if len(block.CSS) > 0 {
+			log.Infof("%#v\n", block.CSS[0])
+		}
 		// if err.Error != nil {
 		// 	log.Fatal(err.Error)
 		// }
@@ -84,9 +87,12 @@ func check(err error) {
 }
 
 func (repo *Repository) flushDebt(newDebtSync int64) {
-	err := repo.db.Create(DebtSync{LastCalculatedAt: newDebtSync}).Error
-	if err != nil {
-		log.Fatal(err)
+	tx := repo.db.Begin()
+	tx.Create(DebtSync{LastCalculatedAt: newDebtSync})
+	tx.Create(repo.debts)
+	info := tx.Commit()
+	if info.Error != nil {
+		log.Fatal(info.Error, *info.Statement)
 	}
 	for _, session := range repo.sessions {
 		if session.ClosedAt != 0 {

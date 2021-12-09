@@ -9,7 +9,7 @@ func (repo *Repository) loadLastCSS(lastDebtSync int64) {
 	data := []*core.CreditSessionSnapshot{}
 	query := `select distinct on (session_id) borrower, session_id , status, balances, cs.borrowed_amount from
 		credit_sessions as cs inner join credit_session_snapshots as css on css.session_id = cs.id
-		WHERE status=0 AND block_num <= order by session_id, block_num desc`
+		WHERE status=0 AND block_num <= ? order by session_id, block_num desc`
 	err := repo.db.Raw(query, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -31,7 +31,7 @@ func (repo *Repository) GetLastCSS(sessionId string) *core.CreditSessionSnapshot
 	css := repo.lastCSS[sessionId]
 	if css == nil {
 		log.Infof("Last Credit session snapshot not found: %s", sessionId)
-		repo.lastCSS[sessionId] = &core.CreditSessionSnapshot{SessionId: sessionId, Balances: make(core.JsonBalance)}
+		repo.lastCSS[sessionId] = &core.CreditSessionSnapshot{SessionId: sessionId, Balances: &core.JsonBalance{}}
 		css = repo.lastCSS[sessionId]
 	}
 	return css

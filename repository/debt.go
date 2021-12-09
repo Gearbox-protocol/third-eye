@@ -20,7 +20,7 @@ func (DebtSync) TableName() string {
 
 func (repo *Repository) loadLastDebtSync() int64 {
 	data := DebtSync{}
-	query := "SELECT max(last_calculated_at) as last_calculated_at FROM  debt_sync"
+	query := "SELECT max(last_calculated_at) as last_calculated_at FROM debt_sync"
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -72,7 +72,7 @@ func (repo *Repository) CalculateDebt() {
 			}
 			sessionSnapshot := repo.lastCSS[session.ID]
 			log.Info("session getting last css", session.ID)
-			for tokenAddr, _ := range sessionSnapshot.Balances {
+			for tokenAddr, _ := range *sessionSnapshot.Balances {
 				sessionWithTokens[tokenAddr] = append(sessionWithTokens[tokenAddr], session.ID)
 			}
 		}
@@ -126,7 +126,7 @@ func (repo *Repository) GetCumulativeIndexForPools(blockNum int64, ts uint64) ma
 func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexNow *big.Int) {
 	sessionSnapshot := repo.lastCSS[sessionId]
 	calThresholdValue := big.NewInt(0)
-	for tokenAddr, balance := range sessionSnapshot.Balances {
+	for tokenAddr, balance := range *sessionSnapshot.Balances {
 		decimal := repo.GetToken(tokenAddr).Decimals
 		price := utils.StringToInt(repo.tokenLastPrice[tokenAddr].PriceETHBI)
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
