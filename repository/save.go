@@ -94,6 +94,9 @@ func (repo *Repository) flushDebt(newDebtSync int64) {
 	if info.Error != nil {
 		log.Fatal(info.Error, *info.Statement)
 	}
+}
+
+func (repo *Repository) clear() {
 	for _, session := range repo.sessions {
 		if session.ClosedAt != 0 {
 			delete(repo.sessions, session.ID)

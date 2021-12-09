@@ -29,10 +29,11 @@ func (repo *Repository) loadLastDebtSync() int64 {
 }
 
 func (repo *Repository) AddDebt(debt *core.Debt) {
+	log.Infof("Debt %#v\n", debt)
 	repo.debts = append(repo.debts, debt)
 }
 
-func (repo *Repository) CalculateDebt() {
+func (repo *Repository) calculateDebt() {
 	blockNums := make([]int64, 0, len(repo.blocks))
 	for blockNum := range repo.blocks {
 		blockNums = append(blockNums, blockNum)
@@ -60,7 +61,6 @@ func (repo *Repository) CalculateDebt() {
 		sessionsToUpdate := make(map[string]bool)
 		for _, css := range block.GetCSS() {
 			repo.AddLastCSS(css)
-			log.Info("add last css", css.SessionId)
 			sessionsToUpdate[css.SessionId] = true
 		}
 		// set the price session list to update
@@ -70,7 +70,6 @@ func (repo *Repository) CalculateDebt() {
 				continue
 			}
 			sessionSnapshot := repo.lastCSS[session.ID]
-			log.Info("session getting last css", session.ID)
 			for tokenAddr, _ := range *sessionSnapshot.Balances {
 				sessionWithTokens[tokenAddr] = append(sessionWithTokens[tokenAddr], session.ID)
 			}

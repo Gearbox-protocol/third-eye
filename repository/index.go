@@ -129,6 +129,12 @@ func (repo *Repository) loadBlocks(lastDebtSync int64) {
 		repo.blocks[block.BlockNumber] = block
 	}
 	if len(data) > 0 {
-		repo.CalculateDebt()
+		repo.calculateDebt()
 	}
+}
+
+func (repo *Repository) FlushAndDebt() {
+	repo.Flush()
+	repo.calculateDebt()
+	repo.clear()
 }
