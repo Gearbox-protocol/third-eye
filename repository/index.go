@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -22,6 +23,7 @@ type Repository struct {
 	client        *ethclient.Client
 	executeParser core.ExecuteParserI
 	dc            map[int64]*dataCompressor.DataCompressor
+	config        *config.Config
 	// blocks/token
 	blocks map[int64]*core.Block
 	tokens map[string]*core.Token
@@ -40,11 +42,12 @@ type Repository struct {
 	debts                  []*core.Debt
 }
 
-func NewRepository(db *gorm.DB, client *ethclient.Client, ep core.ExecuteParserI) core.RepositoryI {
+func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
 	r := &Repository{
 		db:                     db,
 		mu:                     &sync.Mutex{},
 		client:                 client,
+		config:                 config,
 		blocks:                 make(map[int64]*core.Block),
 		executeParser:          ep,
 		kit:                    core.NewAdapterKit(),

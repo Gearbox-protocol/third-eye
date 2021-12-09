@@ -61,7 +61,7 @@ type (
 		TotalValueBI          *BigInt      `gorm:"column:total_value_bi"`
 		TotalValue            float64      `gorm:"column:total_value"`
 		Balances              *JsonBalance `gorm:"column:balances"`
-		Borrower              string       `gorm:"-"`
+		Borrower              string       `gorm:"column:borrower"`
 		СumulativeIndexAtOpen *BigInt      `gorm:"column:cumulative_index"`
 		HealthFactor          int64        `gorm:"column:health_factor"`
 	}

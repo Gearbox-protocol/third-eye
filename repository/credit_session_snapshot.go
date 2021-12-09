@@ -7,9 +7,9 @@ import (
 
 func (repo *Repository) loadLastCSS(lastDebtSync int64) {
 	data := []*core.CreditSessionSnapshot{}
-	query := `select distinct on (session_id) borrower, session_id , status, balances, cs.borrowed_amount from
-		credit_sessions as cs inner join credit_session_snapshots as css on css.session_id = cs.id
-		WHERE status=0 AND block_num <= ? order by session_id, block_num desc`
+	query := `SELECT css_2.* FROM credit_session_snapshots as css_2 JOIN
+		(SELECT session_id, max(block_num) AS block_num FROM credit_session_snapshots WHERE block_num <= ? GROUP BY session_id) AS css
+		ON css_2.block_num = css.block_num AND css_2.session_id = css.session_id`
 	err := repo.db.Raw(query, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
