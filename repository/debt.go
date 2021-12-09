@@ -127,7 +127,7 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 	calThresholdValue := big.NewInt(0)
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
 		decimal := repo.GetToken(tokenAddr).Decimals
-		log.Infof("tokenprice %#v %s",repo.tokenLastPrice, tokenAddr)
+		log.Infof("tokenprice %#v %s", repo.tokenLastPrice, tokenAddr)
 		price := utils.StringToInt(repo.tokenLastPrice[tokenAddr].PriceETHBI)
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
 		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal)

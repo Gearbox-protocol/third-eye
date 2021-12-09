@@ -30,6 +30,16 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
 	}
+	lastLogBeforeDiscoverNum, err := syncAdapter.FindLastLogBound(1, discoveredAt-1, []common.Hash{
+		core.Topic("AnswerUpdated(int256,uint256,uint256)"),
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+	if lastLogBeforeDiscoverNum != 0 {
+		syncAdapter.LastSync = lastLogBeforeDiscoverNum - 1
+		syncAdapter.FirstLogAt = lastLogBeforeDiscoverNum
+	}
 
 	adapter := NewChainlinkPriceFeedFromAdapter(
 		syncAdapter,
