@@ -4,5 +4,7 @@ import (
 	"go.uber.org/fx"
 )
 
-var Module = fx.Option(
-	fx.Provide(NewExecuteParser))
+var Module = fx.Options(
+	fx.Invoke(NewAMQPService),
+	fx.Provide(NewExecuteParser),
+)

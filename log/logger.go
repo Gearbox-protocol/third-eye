@@ -2,6 +2,7 @@ package log
 
 import (
 	"fmt"
+	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"runtime"
 )
@@ -22,12 +23,15 @@ func Debug(v ...interface{}) {
 }
 
 func Warnf(msg string, args ...interface{}) {
-	log.Printf("[Warn] "+detectFunc()+msg, args...)
+	msgFormat := "[Warn] " + detectFunc() + msg
+	log.Printf(msgFormat, args...)
+	amqpSendf(msgFormat, args)
 }
 
 func Warn(v ...interface{}) {
 	args := []interface{}{"[Warn]: " + detectFunc()}
 	args = append(args, v...)
+	amqpSend(args)
 	log.Println(args...)
 }
 
@@ -42,26 +46,63 @@ func Info(v ...interface{}) {
 }
 
 func Errorf(msg string, args ...interface{}) {
-	log.Printf("[Error]: "+detectFunc()+msg, args...)
+	msgFormat := "[Error]: " + detectFunc() + msg
+	amqpSendf(msgFormat, args)
+	log.Printf(msgFormat, args...)
 }
 
 func Error(v ...interface{}) {
 	args := []interface{}{"[Error]: " + detectFunc()}
 	args = append(args, v...)
+	amqpSend(args)
 	log.Println(args...)
 }
 
 func Fatalf(msg string, args ...interface{}) {
-	log.Fatalf("[Fatal]: "+detectFunc()+msg, args...)
+	msgFormat := "[Fatal]: " + detectFunc() + msg
+	amqpSendf(msgFormat, args)
+	log.Fatalf(msgFormat, args...)
 }
 
 func Fatal(v ...interface{}) {
 	args := []interface{}{"[Fatal]: " + detectFunc()}
 	args = append(args, v...)
+	amqpSend(args)
 	log.Fatal(args...)
 }
 
 func detectFunc() string {
 	_, file, line, _ := runtime.Caller(2)
 	return fmt.Sprintf(" %s:%d ", file, line)
+}
+
+var ch *amqp.Channel
+
+func SetAMQP(_ch *amqp.Channel) {
+	ch = _ch
+}
+func amqpSend(v []interface{}) {
+	alert := fmt.Sprint(v...)
+	send(alert)
+}
+func amqpSendf(msg string, args []interface{}) {
+	alert := fmt.Sprintf(msg, args...)
+	send(alert)
+}
+func send(message string) {
+	if ch == nil {
+		return
+	}
+	err := ch.Publish(
+		"TelegramBot", // exchange
+		"",            // routing key
+		false,         // mandatory
+		false,         // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte("Support server:" + message),
+		})
+	if err != nil {
+		log.Println("Cant sent notification", err)
+	}
 }
