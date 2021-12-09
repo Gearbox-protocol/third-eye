@@ -34,7 +34,7 @@ type Repository struct {
 	// modified after sync loop
 	lastCSS        map[string]*core.CreditSessionSnapshot
 	tokenLastPrice map[string]*core.PriceFeed
-	//// token -> credit_manager -> liquidity threshold
+	//// credit_manager -> token -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*core.PoolInterestData
 	debts                  []*core.Debt

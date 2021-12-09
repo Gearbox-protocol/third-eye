@@ -36,8 +36,8 @@ func (repo *Repository) loadAllowedTokenThreshold(lastDebtSync int64) {
 }
 
 func (repo *Repository) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
-	if repo.allowedTokensThreshold[atoken.Token] == nil {
-		repo.allowedTokensThreshold[atoken.Token] = make(map[string]*core.BigInt)
+	if repo.allowedTokensThreshold[atoken.CreditManager] == nil {
+		repo.allowedTokensThreshold[atoken.CreditManager] = make(map[string]*core.BigInt)
 	}
-	repo.allowedTokensThreshold[atoken.Token][atoken.CreditManager] = atoken.LiquidityThreshold
+	repo.allowedTokensThreshold[atoken.CreditManager][atoken.Token] = atoken.LiquidityThreshold
 }
