@@ -116,7 +116,9 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 
 func (repo *Repository) loadBlocks(lastDebtSync int64) {
 	data := []*core.Block{}
-	err := repo.db.Find(&data, "id > ?", lastDebtSync).Error
+	err := repo.db.Preload("CSS").Preload("PoolStats").
+		Preload("AllowedTokens").Preload("PriceFeeds").
+		Find(&data, "id > ?", lastDebtSync).Error
 	if err != nil {
 		log.Fatal(err)
 	}
