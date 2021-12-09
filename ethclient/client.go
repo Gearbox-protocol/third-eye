@@ -2,7 +2,6 @@ package ethclient
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
