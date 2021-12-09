@@ -54,7 +54,5 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		mdl.lastEventBlock = blockNum
 	case core.Topic("Repay(address,uint256,uint256,uint256)"):
 		mdl.lastEventBlock = blockNum
-		// case core.Topic("NewInterestRateModel(address)"):
-		// 	mdl.lastEventBlock = blockNum
 	}
 }

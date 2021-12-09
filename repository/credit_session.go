@@ -8,10 +8,9 @@ import (
 	"sort"
 )
 
-func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
+func (repo *Repository) loadCreditSessions() {
 	data := []*core.CreditSession{}
-	err := repo.db.Find(&data, "status = ? OR (status <> ? AND closed_at > ?)",
-		core.Active, core.Active, lastDebtSync).Error
+	err := repo.db.Find(&data, "status = ?", core.Active).Error
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +35,7 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.sessions[session.ID] == nil {
-		log.Infof("Add creditAccount(%s) with sessionId %s", session.Account, session.ID)
+		log.Info("Add creditSession(%s) with id %s", session.Account, session.ID)
 		repo.sessions[session.ID] = session
 	} else {
 		log.Fatalf("Credit session already present %s", session.ID)

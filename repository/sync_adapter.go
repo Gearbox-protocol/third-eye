@@ -52,7 +52,7 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	case core.PriceOracle:
 		return price_oracle.NewPriceOracleFromAdapter(adapter)
 	case core.ChainlinkPriceFeed:
-		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter, false)
+		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter)
 	case core.YearnPriceFeed:
 		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
 	case core.ContractRegister:

@@ -30,7 +30,6 @@ func (src *Transfers) Value() (driver.Value, error) {
 
 func (dst *Transfers) Scan(value interface{}) error {
 	hstore := NewHstore()
-	fmt.Println("aanil != nil")
 	if err := hstore.Scan(value); err != nil {
 		return err
 	}

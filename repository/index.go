@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
-	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -23,7 +22,6 @@ type Repository struct {
 	client        *ethclient.Client
 	executeParser core.ExecuteParserI
 	dc            map[int64]*dataCompressor.DataCompressor
-	config        *config.Config
 	// blocks/token
 	blocks map[int64]*core.Block
 	tokens map[string]*core.Token
@@ -36,18 +34,16 @@ type Repository struct {
 	// modified after sync loop
 	lastCSS        map[string]*core.CreditSessionSnapshot
 	tokenLastPrice map[string]*core.PriceFeed
-	//// credit_manager -> token -> liquidity threshold
+	//// token -> credit_manager -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*core.PoolInterestData
-	debts                  []*core.Debt
 }
 
-func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
+func NewRepository(db *gorm.DB, client *ethclient.Client, ep core.ExecuteParserI) core.RepositoryI {
 	r := &Repository{
 		db:                     db,
 		mu:                     &sync.Mutex{},
 		client:                 client,
-		config:                 config,
 		blocks:                 make(map[int64]*core.Block),
 		executeParser:          ep,
 		kit:                    core.NewAdapterKit(),
@@ -70,19 +66,17 @@ func (repo *Repository) GetExecuteParser() core.ExecuteParserI {
 }
 
 func (repo *Repository) init() {
-	lastDebtSync := repo.loadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
 	repo.loadToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
-	repo.loadCurrentTokenOracle()
 	repo.loadPool()
 	repo.loadCreditManagers()
-	repo.loadCreditSessions(lastDebtSync)
-	repo.loadLastCSS(lastDebtSync)
-	repo.loadTokenLastPrice(lastDebtSync)
-	repo.loadAllowedTokenThreshold(lastDebtSync)
-	repo.loadBlocks(lastDebtSync)
+	repo.loadCreditSessions()
+	repo.loadLastCSS()
+	repo.loadCurrentTokenOracle()
+	repo.loadTokenLastPrice()
+	repo.loadAllowedTokenThreshold()
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
@@ -115,26 +109,4 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.blocks[eb.BlockNumber].AddEventBalance(&eb)
-}
-
-func (repo *Repository) loadBlocks(lastDebtSync int64) {
-	data := []*core.Block{}
-	err := repo.db.Preload("CSS").Preload("PoolStats").
-		Preload("AllowedTokens").Preload("PriceFeeds").
-		Find(&data, "id > ?", lastDebtSync).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, block := range data {
-		repo.blocks[block.BlockNumber] = block
-	}
-	if len(data) > 0 {
-		repo.calculateDebt()
-	}
-}
-
-func (repo *Repository) FlushAndDebt() {
-	repo.Flush()
-	repo.calculateDebt()
-	repo.clear()
 }

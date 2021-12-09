@@ -58,7 +58,7 @@ func (mdl *YearnPriceFeed) query(blockNum int64) {
 		Token:       mdl.Details["token"],
 		Feed:        mdl.Address,
 		RoundId:     roundData.RoundId.Int64(),
-		PriceETHBI:  (*core.BigInt)(roundData.Answer),
+		PriceETHBI:  roundData.Answer.String(),
 		PriceETH:    utils.GetFloat64Decimal(roundData.Answer, 18),
 	})
 }

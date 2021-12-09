@@ -29,7 +29,7 @@ func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
 			Token:       mdl.Details["token"],
 			Feed:        mdl.Address,
 			RoundId:     roundId,
-			PriceETHBI:  (*core.BigInt)(answerBI),
+			PriceETHBI:  (answerBI).String(),
 			PriceETH:    utils.GetFloat64Decimal(answerBI, 18),
 		})
 	}

@@ -34,7 +34,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers: &core.Transfers{
+		Transfers: core.Transfers{
 			mdl.GetUnderlyingToken(): new(big.Int).Add(borrowAmount, amount),
 		},
 		Dapp: cmAddr,
@@ -79,7 +79,7 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers: &core.Transfers{
+		Transfers: core.Transfers{
 			mdl.GetUnderlyingToken(): remainingFunds,
 		},
 		Dapp: cmAddr,
@@ -109,7 +109,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers: &core.Transfers{
+		Transfers: core.Transfers{
 			mdl.GetUnderlyingToken(): remainingFunds,
 		},
 		Dapp: txLog.Address.Hex(),
@@ -168,7 +168,7 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers: &core.Transfers{
+		Transfers: core.Transfers{
 			token: value,
 		},
 		Dapp: txLog.Address.Hex(),
@@ -199,7 +199,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers: &core.Transfers{
+		Transfers: core.Transfers{
 			mdl.GetUnderlyingToken(): amount,
 		},
 		Dapp: txLog.Address.Hex(),
@@ -273,7 +273,7 @@ func (mdl *CreditManager) handleExecuteEvents() {
 			Action:      call.Name,
 			Args:        call.Args,
 			AdapterCall: true,
-			Transfers:   &call.Transfers,
+			Transfers:   call.Transfers,
 			// extras
 			Depth: call.Depth,
 		}
@@ -295,7 +295,7 @@ func (mdl *CreditManager) AddEventBasedAccountOperationAndState(
 		accountOperation.LogId,
 		accountOperation.SessionId,
 		borrowAmount,
-		*accountOperation.Transfers,
+		accountOperation.Transfers,
 		false,
 		cmAddr,
 	))
