@@ -26,57 +26,45 @@ func (repo *Repository) Flush() (err error) {
 	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
 		for repo.kit.Next(lvlIndex) {
 			adapter := repo.kit.Get(lvlIndex)
-			tx.Clauses(clause.OnConflict{
+			err := tx.Clauses(clause.OnConflict{
 				// err := repo.db.Clauses(clause.OnConflict{
 				UpdateAll: true,
-			}).Create(adapter.GetAdapterState())
-			// if err.Error != nil {
-			// 	log.Fatal(err.Error)
-			// }
+			}).Create(adapter.GetAdapterState()).Error
+			log.CheckFatal(err)
 			if adapter.HasUnderlyingState() {
-				tx.Clauses(clause.OnConflict{
+				err := tx.Clauses(clause.OnConflict{
 					// err := repo.db.Clauses(clause.OnConflict{
 					UpdateAll: true,
-				}).Create(adapter.GetUnderlyingState())
+				}).Create(adapter.GetUnderlyingState()).Error
+				log.CheckFatal(err)
 			}
 		}
 		repo.kit.Reset(lvlIndex)
 	}
 	for _, token := range repo.tokens {
-		tx.Clauses(clause.OnConflict{
+		err := tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(token)
-		// if err.Error != nil {
-		// 	log.Fatal(err.Error)
-		// }
+		}).Create(token).Error
+		log.CheckFatal(err)
 	}
 	for _, session := range repo.sessions {
-		tx.Clauses(clause.OnConflict{
+		err := tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(session)
-		// if err.Error != nil {
-		// 	log.Fatal(err.Error)
-		// }
+		}).Create(session).Error
+		log.CheckFatal(err)
 	}
 	for _, block := range repo.blocks {
-		tx.Clauses(clause.OnConflict{
+		err := tx.Clauses(clause.OnConflict{
 			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
-		}).Create(block)
-		if len(block.CSS) > 0 {
-			log.Infof("%#v\n", block.CSS[0])
-		}
-		// if err.Error != nil {
-		// 	log.Fatal(err.Error)
-		// }
+		}).Create(block).Error
+		log.CheckFatal(err)
 	}
 
 	info := tx.Commit()
-	if info.Error != nil {
-		log.Fatal(info.Error, *info.Statement)
-	}
+	log.CheckFatal(info.Error)
 	return nil
 }
 
@@ -88,8 +76,10 @@ func check(err error) {
 
 func (repo *Repository) flushDebt(newDebtSync int64) {
 	tx := repo.db.Begin()
-	tx.Create(DebtSync{LastCalculatedAt: newDebtSync})
-	tx.Create(repo.debts)
+	err := tx.Create(DebtSync{LastCalculatedAt: newDebtSync}).Error
+	log.CheckFatal(err)
+	err = tx.Create(repo.debts).Error
+	log.CheckFatal(err)
 	info := tx.Commit()
 	if info.Error != nil {
 		log.Fatal(info.Error, *info.Statement)

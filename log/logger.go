@@ -76,6 +76,14 @@ func detectFunc() string {
 	return fmt.Sprintf(" %s:%d ", file, line)
 }
 
+func CheckFatal(err error) {
+	if err != nil {
+		args := []interface{}{"[Fatal]: " + detectFunc(), err}
+		amqpSend(args)
+		log.Fatal(args)
+	}
+}
+
 var ch *amqp.Channel
 
 func SetAMQP(_ch *amqp.Channel) {
