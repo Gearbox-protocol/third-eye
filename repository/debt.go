@@ -127,8 +127,8 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 	calThresholdValue := big.NewInt(0)
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
 		decimal := repo.GetToken(tokenAddr).Decimals
-		log.Infof("tokenprice %#v %s", repo.tokenLastPrice, tokenAddr)
-		price := utils.StringToInt(repo.tokenLastPrice[tokenAddr].PriceETHBI)
+		// log.Infof("tokenprice %#v %s", repo.tokenLastPrice, tokenAddr)
+		price := repo.GetTokenPrice(tokenAddr)
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
 		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal)
 		tokenLiquidityThreshold := repo.allowedTokensThreshold[cmAddr][tokenAddr]
@@ -144,7 +144,7 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		common.HexToAddress(sessionSnapshot.Borrower),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, sessionSnapshot.Borrower, blockNum, err)
 	}
 	calBorrowWithInterest := big.NewInt(0).Quo(
 		big.NewInt(0).Mul(cumIndexNow, sessionSnapshot.BorrowedAmountBI.Convert()),
@@ -172,4 +172,12 @@ func (repo *Repository) GetCMState(cmAddr string) *core.CreditManagerState {
 func (repo *Repository) GetUnderlyingDecimal(cmAddr string) uint8 {
 	cm := repo.GetCMState(cmAddr)
 	return repo.GetToken(cm.UnderlyingToken).Decimals
+}
+
+func (repo *Repository) GetTokenPrice(addr string) *big.Int {
+	if repo.config.WETHAddr == addr {
+		return core.WETHPrice
+	} else {
+		return repo.tokenLastPrice[addr].PriceETHBI.Convert()
+	}
 }

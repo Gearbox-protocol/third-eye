@@ -148,9 +148,6 @@ func (c *Contract) DiscoverFirstLog() int64 {
 	return FirstLogAt
 }
 
-const LogFilterLenError = "Log response size exceeded. You can make eth_getLogs requests with up to a 2K block range and no limit on the response size, or you can request any block range with a cap of 10K logs in the response."
-const QueryMoreThan10000Error = "query returned more than 10000 results"
-
 func (c *Contract) findFirstLogBound(fromBlock, toBlock int64) (int64, error) {
 
 	query := ethereum.FilterQuery{
