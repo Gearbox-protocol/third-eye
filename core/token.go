@@ -11,7 +11,7 @@ import (
 type Token struct {
 	Address  string            `gorm:"primaryKey;column:address"`
 	Symbol   string            `gorm:"column:symbol"`
-	Decimals uint8             `gorm:"column:decimals"`
+	Decimals int8              `gorm:"column:decimals"`
 	client   *ethclient.Client `gorm:"-"`
 }
 
@@ -41,7 +41,7 @@ func (t *Token) init() {
 	if decimals, err := contract.Decimals(&bind.CallOpts{}); err != nil {
 		log.Fatal(err)
 	} else {
-		t.Decimals = decimals
+		t.Decimals = int8(decimals)
 	}
 }
 

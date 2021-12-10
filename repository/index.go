@@ -82,6 +82,7 @@ func (repo *Repository) init() {
 	repo.loadLastCSS(lastDebtSync)
 	repo.loadTokenLastPrice(lastDebtSync)
 	repo.loadAllowedTokenThreshold(lastDebtSync)
+	repo.loadPoolLastInterestData(lastDebtSync)
 	repo.loadBlocks(lastDebtSync)
 }
 
@@ -129,12 +130,16 @@ func (repo *Repository) loadBlocks(lastDebtSync int64) {
 		repo.blocks[block.BlockNumber] = block
 	}
 	if len(data) > 0 {
-		repo.calculateDebt()
+		repo.calculateDebtAndClear()
 	}
 }
 
 func (repo *Repository) FlushAndDebt() {
 	repo.Flush()
+	repo.calculateDebtAndClear()
+}
+
+func (repo *Repository) calculateDebtAndClear() {
 	repo.calculateDebt()
 	repo.clear()
 }

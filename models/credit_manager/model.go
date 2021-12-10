@@ -86,7 +86,7 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 	return obj
 }
 
-func (mdl *CreditManager) GetUnderlyingDecimal() uint8 {
+func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 	decimals := mdl.Repo.GetToken(mdl.GetUnderlyingToken()).Decimals
 	return decimals
 }

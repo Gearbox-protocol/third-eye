@@ -74,9 +74,12 @@ func check(err error) {
 	}
 }
 
-func (repo *Repository) flushDebt(newDebtSync int64) {
+func (repo *Repository) flushDebt(newDebtSyncTill int64) {
+	if len(repo.debts) == 0 {
+		return
+	}
 	tx := repo.db.Begin()
-	err := tx.Create(DebtSync{LastCalculatedAt: newDebtSync}).Error
+	err := tx.Create(DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
 	log.CheckFatal(err)
 	err = tx.Create(repo.debts).Error
 	log.CheckFatal(err)
@@ -84,6 +87,7 @@ func (repo *Repository) flushDebt(newDebtSync int64) {
 	if info.Error != nil {
 		log.Fatal(info.Error, *info.Statement)
 	}
+	repo.debts = []*core.Debt{}
 }
 
 func (repo *Repository) clear() {
