@@ -79,7 +79,7 @@ func (repo *Repository) flushDebt(newDebtSyncTill int64) {
 		return
 	}
 	tx := repo.db.Begin()
-	err := tx.Create(DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
+	err := tx.Create(core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
 	log.CheckFatal(err)
 	err = tx.Create(repo.debts).Error
 	log.CheckFatal(err)

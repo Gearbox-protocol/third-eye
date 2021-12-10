@@ -69,8 +69,7 @@ func GetFloat64(num *big.Int, decimals int8) *big.Float {
 	}
 }
 
-func AlmostSameBigInt(a, b *big.Int, decimals int8) bool {
-	var precision int8 = 2
+func AlmostSameBigInt(a, b *big.Int, decimals int8, precision int8) bool {
 	// diff should be less than 100
 	return new(big.Int).Sub(a, b).CmpAbs(GetExpInt(decimals-precision)) <= 0
 }
@@ -128,4 +127,20 @@ func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
 		BlockNumber: big.NewInt(blockNum),
 		Context:     ctx,
 	}, cancel
+}
+
+func GetPrecision(symbol string) int8 {
+	switch symbol {
+	case "USDC":
+		return 0
+	case "DAI":
+		return 0
+	case "WBTC":
+		return 5
+	case "LINK":
+		return 2
+	case "SNX":
+		return 3
+	}
+	return 0
 }

@@ -19,10 +19,19 @@ type Debt struct {
 	CalThresholdValueBI             string `gorm:"column:cal_threshold_value"`
 }
 
+type DebtSync struct {
+	LastCalculatedAt int64 `gorm:"last_calculated_at"`
+}
+
+func (DebtSync) TableName() string {
+	return "debt_sync"
+}
+
 type TokenDetails struct {
 	Price             *big.Int
 	Decimals          int8
 	TokenLiqThreshold *BigInt `json:"tokenLiqThreshold"`
+	Symbol            string  `json:"symbol"`
 }
 type DebtProfile struct {
 	*Debt                  `json:"debt"`

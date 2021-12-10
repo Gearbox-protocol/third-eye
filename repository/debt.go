@@ -10,16 +10,8 @@ import (
 	"sort"
 )
 
-type DebtSync struct {
-	LastCalculatedAt int64 `gorm:"last_calculated_at"`
-}
-
-func (DebtSync) TableName() string {
-	return "debt_sync"
-}
-
 func (repo *Repository) loadLastDebtSync() int64 {
-	data := DebtSync{}
+	data := core.DebtSync{}
 	query := "SELECT max(last_calculated_at) as last_calculated_at FROM debt_sync"
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
@@ -135,20 +127,24 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
 	profile := core.DebtProfile{}
-	underlyingDecimals := repo.GetToken(cumIndexAndUToken.Token).Decimals
+	underlyingtoken := repo.GetToken(cumIndexAndUToken.Token)
 	// profiling
 	tokenDetails := map[string]core.TokenDetails{}
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
 		decimal := repo.GetToken(tokenAddr).Decimals
 		price := repo.GetTokenPrice(tokenAddr)
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
-		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-underlyingDecimals)
+		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-underlyingtoken.Decimals)
 		tokenLiquidityThreshold := repo.allowedTokensThreshold[cmAddr][tokenAddr]
 		tokenThresholdValue := new(big.Int).Mul(tokenValueInDecimal, tokenLiquidityThreshold.Convert())
 		calThresholdValue = new(big.Int).Add(calThresholdValue, tokenThresholdValue)
 		calTotalValue = new(big.Int).Add(calTotalValue, tokenValueInDecimal)
 		// profiling
-		tokenDetails[tokenAddr] = core.TokenDetails{Price: price, Decimals: decimal, TokenLiqThreshold: tokenLiquidityThreshold}
+		tokenDetails[tokenAddr] = core.TokenDetails{
+			Price:             price,
+			Decimals:          decimal,
+			TokenLiqThreshold: tokenLiquidityThreshold,
+			Symbol:            repo.GetToken(tokenAddr).Symbol}
 	}
 	// the value of credit account is in terms of underlying asset
 	underlyingPrice := repo.GetTokenPrice(cumIndexAndUToken.Token)
@@ -168,8 +164,8 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		CalBorrowedAmountPlusInterestBI: calBorrowWithInterest.String(),
 		CalThresholdValueBI:             calReducedThresholdValue.String(),
 	}
-	// data compressor
-	if repo.config.DebtCheck {
+	// use data compressor if account has healhfactor less than 1 or debt check is enabled
+	if repo.config.DebtCheck || (debt.CalHealthFactor <= 10000) {
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(blockNum),
 		}
@@ -185,12 +181,13 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		debt.TotalValueBI = data.TotalValue.String()
 		debt.BorrowedAmountPlusInterestBI = data.BorrowedAmountPlusInterest.String()
 		// check if data compressor and calculated values match
-		if !utils.AlmostSameBigInt(calTotalValue, data.TotalValue, underlyingDecimals) || !utils.AlmostSameBigInt(calBorrowWithInterest, data.BorrowedAmountPlusInterest, underlyingDecimals) {
+		if !core.CompareBalance(calTotalValue, data.TotalValue, underlyingtoken) ||
+			!core.CompareBalance(calBorrowWithInterest, data.BorrowedAmountPlusInterest, underlyingtoken) {
 			profile.CumIndexAndUToken = cumIndexAndUToken
 			profile.Debt = debt
 			profile.CreditSessionSnapshot = sessionSnapshot
 			profile.RPCBalances = *repo.ConvertToBalance(data.Balances)
-			profile.UnderlyingDecimals = underlyingDecimals
+			profile.UnderlyingDecimals = underlyingtoken.Decimals
 			profile.Tokens = tokenDetails
 			log.Fatalf("Debt fields different from data compressor fields: %s", profile.Json())
 		}
