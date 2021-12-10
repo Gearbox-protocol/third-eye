@@ -154,40 +154,46 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 	underlyingPrice := repo.GetTokenPrice(cumIndexAndUToken.Token)
 	calThresholdValue = new(big.Int).Quo(calThresholdValue, underlyingPrice)
 	calTotalValue = new(big.Int).Quo(calTotalValue, underlyingPrice)
-
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-	data, err := repo.GetDataCompressor(blockNum).GetCreditAccountDataExtended(opts,
-		common.HexToAddress(cmAddr),
-		common.HexToAddress(sessionSnapshot.Borrower),
-	)
-	if err != nil {
-		log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, sessionSnapshot.Borrower, blockNum, err)
-	}
+	// borrowed + interest and normalized threshold value
 	calBorrowWithInterest := big.NewInt(0).Quo(
 		big.NewInt(0).Mul(cumIndexAndUToken.CumulativeIndex, sessionSnapshot.BorrowedAmountBI.Convert()),
 		sessionSnapshot.СumulativeIndexAtOpen.Convert())
 	calReducedThresholdValue := big.NewInt(0).Quo(calThresholdValue, big.NewInt(10000))
+	// set debt fields
 	debt := &core.Debt{
 		BlockNumber:                     blockNum,
 		SessionId:                       sessionId,
-		HealthFactor:                    data.HealthFactor.Int64(),
-		TotalValueBI:                    data.TotalValue.String(),
-		BorrowedAmountPlusInterestBI:    data.BorrowedAmountPlusInterest.String(),
 		CalHealthFactor:                 big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest).Int64(),
 		CalTotalValue:                   calTotalValue.String(),
 		CalBorrowedAmountPlusInterestBI: calBorrowWithInterest.String(),
 		CalThresholdValueBI:             calReducedThresholdValue.String(),
 	}
-	if !utils.AlmostSameBigInt(calTotalValue, data.TotalValue, underlyingDecimals) || !utils.AlmostSameBigInt(calBorrowWithInterest, data.BorrowedAmountPlusInterest, underlyingDecimals) {
-		profile.CumIndexAndUToken = cumIndexAndUToken
-		profile.Debt = debt
-		profile.CreditSessionSnapshot = sessionSnapshot
-		profile.RPCBalances = *repo.ConvertToBalance(data.Balances)
-		profile.UnderlyingDecimals = underlyingDecimals
-		profile.Tokens = tokenDetails
-		log.Fatalf("%s", profile.Json())
+	// data compressor
+	if repo.config.DebtCheck {
+		opts := &bind.CallOpts{
+			BlockNumber: big.NewInt(blockNum),
+		}
+		data, err := repo.GetDataCompressor(blockNum).GetCreditAccountDataExtended(opts,
+			common.HexToAddress(cmAddr),
+			common.HexToAddress(sessionSnapshot.Borrower),
+		)
+		if err != nil {
+			log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, sessionSnapshot.Borrower, blockNum, err)
+		}
+		// set debt data fetched from dc
+		debt.HealthFactor = data.HealthFactor.Int64()
+		debt.TotalValueBI = data.TotalValue.String()
+		debt.BorrowedAmountPlusInterestBI = data.BorrowedAmountPlusInterest.String()
+		// check if data compressor and calculated values match
+		if !utils.AlmostSameBigInt(calTotalValue, data.TotalValue, underlyingDecimals) || !utils.AlmostSameBigInt(calBorrowWithInterest, data.BorrowedAmountPlusInterest, underlyingDecimals) {
+			profile.CumIndexAndUToken = cumIndexAndUToken
+			profile.Debt = debt
+			profile.CreditSessionSnapshot = sessionSnapshot
+			profile.RPCBalances = *repo.ConvertToBalance(data.Balances)
+			profile.UnderlyingDecimals = underlyingDecimals
+			profile.Tokens = tokenDetails
+			log.Fatalf("Debt fields different from data compressor fields: %s", profile.Json())
+		}
 	}
 	repo.AddDebt(debt)
 }

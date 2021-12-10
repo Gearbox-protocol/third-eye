@@ -58,6 +58,12 @@ func NewConfig() *Config {
 		log.Fatal("Cant get chain id")
 	}
 
+	if config.DebtDCMatching == "1" {
+		config.DebtCheck = true
+	} else {
+		config.DebtCheck = false
+	}
+
 	config.ChainId = uint(chainId)
 	switch config.ChainId {
 	case 1:
