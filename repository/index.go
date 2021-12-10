@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm"
 
 	"context"
@@ -116,6 +117,20 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.blocks[eb.BlockNumber].AddEventBalance(&eb)
+}
+
+func (repo *Repository) ConvertToBalance(balances []dataCompressor.DataTypesTokenBalance) *core.JsonBalance {
+	jsonBalance := core.JsonBalance{}
+	for _, token := range balances {
+		tokenAddr := token.Token.Hex()
+		if token.Balance.Sign() != 0 {
+			jsonBalance[tokenAddr] = &core.BalanceType{
+				BI: (*core.BigInt)(token.Balance),
+				F:  utils.GetFloat64Decimal(token.Balance, repo.GetToken(tokenAddr).Decimals),
+			}
+		}
+	}
+	return &jsonBalance
 }
 
 func (repo *Repository) loadBlocks(lastDebtSync int64) {

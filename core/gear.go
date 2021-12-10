@@ -42,6 +42,7 @@ type RepositoryI interface {
 	AddTokenObj(token *Token)
 	AddDataCompressor(blockNum int64, addr string)
 	GetToken(addr string) *Token
+	ConvertToBalance(balances []dataCompressor.DataTypesTokenBalance) *JsonBalance
 	// credit session funcs
 	AddCreditSession(session *CreditSession)
 	GetCreditSession(sessionId string) *CreditSession

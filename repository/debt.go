@@ -97,22 +97,17 @@ func (repo *Repository) calculateDebt() {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
 		}
-		// repo.flushDebt(blockNum)
+		repo.flushDebt(blockNum)
 	}
-	blockNumLen := len(blockNums)
-	if blockNumLen > 0 {
-		repo.flushDebt(blockNums[blockNumLen-1])
-	}
+	// blockNumLen := len(blockNums)
+	// if blockNumLen > 0 {
+	// 	repo.flushDebt(blockNums[blockNumLen-1])
+	// }
 }
 
-type CumIndexAndUToken struct {
-	CumulativeIndex *big.Int
-	Token           string
-}
-
-func (repo *Repository) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uint64) map[string]*CumIndexAndUToken {
+func (repo *Repository) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uint64) map[string]*core.CumIndexAndUToken {
 	cmAddrs := repo.kit.GetAdapterAddressByName(core.CreditManager)
-	poolToCI := make(map[string]*CumIndexAndUToken)
+	poolToCI := make(map[string]*core.CumIndexAndUToken)
 	for _, cmAddr := range cmAddrs {
 		poolAddr := repo.GetCMState(cmAddr).PoolAddress
 		poolInterestData := repo.poolLastInterestData[poolAddr]
@@ -125,7 +120,7 @@ func (repo *Repository) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts ui
 			predicate := new(big.Int).Add(newInterestPerSec, utils.GetExpInt(27))
 			cumIndex := new(big.Int).Mul(poolInterestData.CumulativeIndexRAY.Convert(), predicate)
 			cumIndexNormalized := utils.GetInt64Decimal(cumIndex, 27)
-			poolToCI[cmAddr] = &CumIndexAndUToken{
+			poolToCI[cmAddr] = &core.CumIndexAndUToken{
 				CumulativeIndex: cumIndexNormalized,
 				Token:           repo.GetCMState(cmAddr).UnderlyingToken,
 			}
@@ -135,11 +130,14 @@ func (repo *Repository) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts ui
 	return poolToCI
 }
 
-func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *CumIndexAndUToken) {
+func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) {
 	sessionSnapshot := repo.lastCSS[sessionId]
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
+	profile := core.DebtProfile{}
 	underlyingDecimals := repo.GetToken(cumIndexAndUToken.Token).Decimals
+	// profiling
+	tokenDetails := map[string]core.TokenDetails{}
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
 		decimal := repo.GetToken(tokenAddr).Decimals
 		price := repo.GetTokenPrice(tokenAddr)
@@ -149,6 +147,8 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		tokenThresholdValue := new(big.Int).Mul(tokenValueInDecimal, tokenLiquidityThreshold.Convert())
 		calThresholdValue = new(big.Int).Add(calThresholdValue, tokenThresholdValue)
 		calTotalValue = new(big.Int).Add(calTotalValue, tokenValueInDecimal)
+		// profiling
+		tokenDetails[tokenAddr] = core.TokenDetails{Price: price, Decimals: decimal, TokenLiqThreshold: tokenLiquidityThreshold}
 	}
 	// the value of credit account is in terms of underlying asset
 	underlyingPrice := repo.GetTokenPrice(cumIndexAndUToken.Token)
@@ -169,11 +169,7 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		big.NewInt(0).Mul(cumIndexAndUToken.CumulativeIndex, sessionSnapshot.BorrowedAmountBI.Convert()),
 		sessionSnapshot.СumulativeIndexAtOpen.Convert())
 	calReducedThresholdValue := big.NewInt(0).Quo(calThresholdValue, big.NewInt(10000))
-	if !utils.AlmostSameBigInt(calTotalValue, data.TotalValue, underlyingDecimals) || !utils.AlmostSameBigInt(calBorrowWithInterest, data.BorrowedAmountPlusInterest, underlyingDecimals) {
-		log.Fatal("calTotalValue:%s totalValue:%s calBorrowWithInterest:%s borrowWithInterest:%s",
-			calTotalValue, data.TotalValue, calBorrowWithInterest, data.BorrowedAmountPlusInterest)
-	}
-	repo.AddDebt(&core.Debt{
+	debt := &core.Debt{
 		BlockNumber:                     blockNum,
 		SessionId:                       sessionId,
 		HealthFactor:                    data.HealthFactor.Int64(),
@@ -183,7 +179,17 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		CalTotalValue:                   calTotalValue.String(),
 		CalBorrowedAmountPlusInterestBI: calBorrowWithInterest.String(),
 		CalThresholdValueBI:             calReducedThresholdValue.String(),
-	})
+	}
+	if !utils.AlmostSameBigInt(calTotalValue, data.TotalValue, underlyingDecimals) || !utils.AlmostSameBigInt(calBorrowWithInterest, data.BorrowedAmountPlusInterest, underlyingDecimals) {
+		profile.CumIndexAndUToken = cumIndexAndUToken
+		profile.Debt = debt
+		profile.CreditSessionSnapshot = sessionSnapshot
+		profile.RPCBalances = *repo.ConvertToBalance(data.Balances)
+		profile.UnderlyingDecimals = underlyingDecimals
+		profile.Tokens = tokenDetails
+		log.Fatalf("%s", profile.Json())
+	}
+	repo.AddDebt(debt)
 }
 
 func (repo *Repository) GetCMState(cmAddr string) *core.CreditManagerState {

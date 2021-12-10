@@ -1,6 +1,10 @@
 package core
 
-import ()
+import (
+	"encoding/json"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"math/big"
+)
 
 type Debt struct {
 	Id                              int64  `gorm:"primaryKey;column:id;autoincrement:true"`
@@ -13,4 +17,31 @@ type Debt struct {
 	CalTotalValue                   string `gorm:"column:cal_total_value"`
 	CalBorrowedAmountPlusInterestBI string `gorm:"column:cal_borrowed_amt_with_interest"`
 	CalThresholdValueBI             string `gorm:"column:cal_threshold_value"`
+}
+
+type TokenDetails struct {
+	Price             *big.Int
+	Decimals          int8
+	TokenLiqThreshold *BigInt `json:"tokenLiqThreshold"`
+}
+type DebtProfile struct {
+	*Debt                  `json:"debt"`
+	*CreditSessionSnapshot `json:"css"`
+	RPCBalances            JsonBalance             `json:"rpcBalances"`
+	Tokens                 map[string]TokenDetails `json:"tokens"`
+	UnderlyingDecimals     int8                    `json:"underlyingDecimals"`
+	*CumIndexAndUToken     `json:"poolDetails"`
+}
+
+type CumIndexAndUToken struct {
+	CumulativeIndex *big.Int
+	Token           string
+}
+
+func (debt *DebtProfile) Json() []byte {
+	str, err := json.Marshal(debt)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return str
 }
