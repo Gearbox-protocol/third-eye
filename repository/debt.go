@@ -21,8 +21,14 @@ func (repo *Repository) loadLastDebtSync() int64 {
 }
 
 func (repo *Repository) AddDebt(debt *core.Debt) {
-	log.Infof("Debt %#v\n", debt)
 	repo.debts = append(repo.debts, debt)
+}
+
+func (repo *Repository) SaveProfile(profile string) {
+	err := repo.db.Create(&core.ProfileTable{Profile: profile}).Error
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 func (repo *Repository) calculateDebt() {
@@ -164,8 +170,8 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		CalBorrowedAmountPlusInterestBI: calBorrowWithInterest.String(),
 		CalThresholdValueBI:             calReducedThresholdValue.String(),
 	}
-	// use data compressor if account has healhfactor less than 1 or debt check is enabled
-	if repo.config.DebtCheck || (debt.CalHealthFactor <= 10000) {
+	// use data compressor if debt check is enabled
+	if repo.config.DebtCheck {
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(blockNum),
 		}
@@ -189,7 +195,8 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 			profile.RPCBalances = *repo.ConvertToBalance(data.Balances)
 			profile.UnderlyingDecimals = underlyingtoken.Decimals
 			profile.Tokens = tokenDetails
-			log.Fatalf("Debt fields different from data compressor fields: %s", profile.Json())
+			log.Infof("Debt fields different from data compressor fields: %s", profile.Json())
+			repo.SaveProfile(string(profile.Json()))
 		}
 	}
 	repo.AddDebt(debt)

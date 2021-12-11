@@ -70,6 +70,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 
 	// create session snapshot
 	css := core.CreditSessionSnapshot{}
+	mdl.Repo.SetBlock(blockNum - 1)
 	css.BlockNum = blockNum - 1
 	css.SessionId = sessionId
 	css.Borrower = session.Borrower
@@ -80,7 +81,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
-	log.Info(css)
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 

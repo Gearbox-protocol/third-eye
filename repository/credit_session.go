@@ -16,7 +16,7 @@ func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
 		log.Fatal(err)
 	}
 	for _, session := range data {
-		repo.AddCreditSession(session)
+		repo.AddCreditSession(session, true)
 	}
 }
 
@@ -32,11 +32,13 @@ func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
 	repo.dcBlockNum = arr
 }
 
-func (repo *Repository) AddCreditSession(session *core.CreditSession) {
+func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFromDB bool) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.sessions[session.ID] == nil {
-		log.Infof("Add creditAccount(%s) with sessionId %s", session.Account, session.ID)
+		if !loadedFromDB {
+			log.Infof("Add creditAccount(%s) with sessionId %s", session.Account, session.ID)
+		}
 		repo.sessions[session.ID] = session
 	} else {
 		log.Fatalf("Credit session already present %s", session.ID)

@@ -35,5 +35,5 @@ type Config struct {
 	AMPQEnable     string `env:"AMPQ_ENABLE" validate:"required"`
 	WETHAddr       string `env:"WETH_ADDRESS" validate:"required"`
 	DebtDCMatching string `env:"DEBT_DC_MATCHING" validate:"required"`
-	DebtCheck      bool   `validate:"required"`
+	DebtCheck      bool
 }

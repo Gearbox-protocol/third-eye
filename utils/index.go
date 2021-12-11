@@ -45,7 +45,7 @@ func GetInt64Decimal(num *big.Int, decimals int8) *big.Int {
 	} else {
 		return new(big.Int).Mul(
 			num,
-			GetExpInt(decimals))
+			GetExpInt(-decimals))
 	}
 }
 
@@ -65,7 +65,7 @@ func GetFloat64(num *big.Int, decimals int8) *big.Float {
 	} else {
 		return new(big.Float).Mul(
 			IntToFloat(num),
-			GetExpFloat(decimals))
+			GetExpFloat(-decimals))
 	}
 }
 

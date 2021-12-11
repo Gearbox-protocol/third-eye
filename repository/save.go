@@ -75,9 +75,11 @@ func check(err error) {
 }
 
 func (repo *Repository) flushDebt(newDebtSyncTill int64) {
-	if len(repo.debts) == 0 {
+	debtLen := len(repo.debts)
+	if debtLen == 0 {
 		return
 	}
+	log.Infof("Flushing %d for block:%d", debtLen, newDebtSyncTill)
 	tx := repo.db.Begin()
 	err := tx.Create(core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
 	log.CheckFatal(err)

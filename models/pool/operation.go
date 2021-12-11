@@ -20,7 +20,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		return
 	}
 	token := p.Repo.GetToken(p.State.UnderlyingToken)
-	log.Infof("Pool:%s ciRAY: %s and linearCI: %s\n", p.Address, state.CumulativeIndexRAY.String(), state.LinearCumulativeIndex.String())
+	// log.Infof("Pool:%s ciRAY: %s and linearCI: %s\n", p.Address, state.CumulativeIndexRAY.String(), state.LinearCumulativeIndex.String())
 	p.Repo.AddPoolStat(&core.PoolStat{
 		BlockNum:        blockNum,
 		Address:         p.Address,

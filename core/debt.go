@@ -54,3 +54,11 @@ func (debt *DebtProfile) Json() []byte {
 	}
 	return str
 }
+
+type ProfileTable struct {
+	Profile string `gorm:"column:profile"`
+}
+
+func (ProfileTable) TableName() string {
+	return "profiles"
+}
