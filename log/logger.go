@@ -59,8 +59,8 @@ func Error(v ...interface{}) {
 }
 
 func Msgf(msg string, args ...interface{}) {
-	msgFormat := detectFunc() + msg
 	amqpSendf(msg, args)
+	msgFormat := detectFunc() + msg
 	log.Printf(msgFormat, args...)
 }
 
