@@ -58,7 +58,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		Profit:         (*core.BigInt)(big.NewInt(0)),
 	}
-	mdl.Repo.AddCreditSession(newSession)
+	mdl.Repo.AddCreditSession(newSession, false)
 	return nil
 }
 

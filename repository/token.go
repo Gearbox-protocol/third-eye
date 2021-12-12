@@ -37,9 +37,9 @@ func (repo *Repository) loadToken() {
 func (repo *Repository) loadTokenLastPrice(lastDebtSync int64) {
 	data := []*core.PriceFeed{}
 	query := `SELECT price_feeds.* FROM price_feeds
-	JOIN (SELECT max(block_num) AS bn, token FROM price_feeds GROUP BY token) AS max_pf
+	JOIN (SELECT max(block_num) AS bn, token FROM price_feeds WHERE block_num <= ? GROUP BY token) AS max_pf
 	ON max_pf.bn = price_feeds.block_num AND max_pf.token = price_feeds.token WHERE block_num <= ?`
-	err := repo.db.Raw(query, lastDebtSync).Find(&data).Error
+	err := repo.db.Raw(query, lastDebtSync, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}

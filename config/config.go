@@ -30,8 +30,10 @@ type Config struct {
 
 	SentryDSN string `env:"SENTRY_DSN" validate:"required"`
 
-	Port       string `env:"PORT" default:"8080" validate:"required"`
-	AMPQUrl    string `env:"CLOUDAMQP_URL" validate:"required"`
-	AMPQEnable string `env:"AMPQ_ENABLE" validate:"required"`
-	WETHAddr   string `env:"WETH_ADDRESS" validate:"required"`
+	Port           string `env:"PORT" default:"8080" validate:"required"`
+	AMPQUrl        string `env:"CLOUDAMQP_URL" validate:"required"`
+	AMPQEnable     string `env:"AMPQ_ENABLE" validate:"required"`
+	WETHAddr       string `env:"WETH_ADDRESS" validate:"required"`
+	DebtDCMatching string `env:"DEBT_DC_MATCHING" validate:"required"`
+	DebtCheck      bool
 }

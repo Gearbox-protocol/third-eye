@@ -1,7 +1,6 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
@@ -71,17 +70,17 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 
 	// create session snapshot
 	css := core.CreditSessionSnapshot{}
+	mdl.Repo.SetBlock(blockNum - 1)
 	css.BlockNum = blockNum - 1
 	css.SessionId = sessionId
 	css.Borrower = session.Borrower
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	css.Balances = mdl.convertToBalance(data.Balances)
+	css.Balances = mdl.Repo.ConvertToBalance(data.Balances)
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
-	log.Info(css)
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
@@ -104,20 +103,9 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	css.Balances = mdl.convertToBalance(data.Balances)
+	css.Balances = mdl.Repo.ConvertToBalance(data.Balances)
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
+	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
 	mdl.Repo.AddCreditSessionSnapshot(&css)
-}
-
-func (mdl *CreditManager) convertToBalance(balances []dataCompressor.DataTypesTokenBalance) *core.JsonBalance {
-	jsonBalance := core.JsonBalance{}
-	for _, token := range balances {
-		tokenAddr := token.Token.Hex()
-		jsonBalance[tokenAddr] = &core.BalanceType{
-			BI: (*core.BigInt)(token.Balance),
-			F:  utils.GetFloat64Decimal(token.Balance, mdl.Repo.GetToken(tokenAddr).Decimals),
-		}
-	}
-	return &jsonBalance
 }

@@ -71,14 +71,13 @@ func (e *Engine) SyncHandler() {
 
 func (e *Engine) syncLoop(latestBlockNum int64) {
 	syncTill := e.currentlySyncedTill
-	syncStart := syncTill
 	for syncTill <= latestBlockNum {
 		roundStartTime := time.Now()
 		e.sync(syncTill)
 		roundSyncDur := (time.Now().Sub(roundStartTime).Minutes())
-		syncTimePerBlock := roundSyncDur / float64(syncTill-syncStart)
+		syncTimePerBlock := roundSyncDur / float64(e.syncBlockBatchSize)
 		remainingTime := (syncTimePerBlock * float64(latestBlockNum-syncTill)) / (60)
-		log.Infof("Synced till %d in %f .Remaining time %f hrs ", e.currentlySyncedTill, roundSyncDur, remainingTime)
+		log.Infof("Synced till %d in %f mins. Remaining time %f hrs ", e.currentlySyncedTill, roundSyncDur, remainingTime)
 		// new sync target
 		syncTill += e.syncBlockBatchSize
 	}

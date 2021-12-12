@@ -54,14 +54,14 @@ func (repo *Repository) GetPoolUniqueUserLen(pool string) int {
 }
 
 // pool interest state fetch
-func (repo *Repository) loadPoolLastInterestData() {
+func (repo *Repository) loadPoolLastInterestData(lastDebtSync int64) {
 	data := []*core.PoolInterestData{}
 	query := `SELECT * FROM pool_stats 
-	JOIN (SELECT max(block_num) as bn, pool FROM pool_stats group by pool) as p
-	JOIN blocks ON p.block_num = blocks.id
+	JOIN (SELECT max(block_num) as bn, pool FROM pool_stats WHERE block_num <= ? group by pool) as p
+	JOIN blocks ON p.bn = blocks.id
 	ON p.bn = pool_stats.block_num
 	AND p.pool = pool_stats.pool;`
-	err := repo.db.Raw(query).Find(&data).Error
+	err := repo.db.Raw(query, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}

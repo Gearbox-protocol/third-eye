@@ -4,14 +4,16 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/eRC20"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 )
 
 type Token struct {
 	Address  string            `gorm:"primaryKey;column:address"`
 	Symbol   string            `gorm:"column:symbol"`
-	Decimals uint8             `gorm:"column:decimals"`
+	Decimals int8              `gorm:"column:decimals"`
 	client   *ethclient.Client `gorm:"-"`
 }
 
@@ -41,7 +43,7 @@ func (t *Token) init() {
 	if decimals, err := contract.Decimals(&bind.CallOpts{}); err != nil {
 		log.Fatal(err)
 	} else {
-		t.Decimals = decimals
+		t.Decimals = int8(decimals)
 	}
 }
 
@@ -55,4 +57,9 @@ type AllowedToken struct {
 
 func (AllowedToken) TableName() string {
 	return "allowed_tokens"
+}
+
+func CompareBalance(a, b *big.Int, token *Token) bool {
+	precision := utils.GetPrecision(token.Symbol)
+	return utils.AlmostSameBigInt(a, b, token.Decimals, precision)
 }
