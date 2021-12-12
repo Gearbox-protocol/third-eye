@@ -9,7 +9,6 @@ type CreditManagerState struct {
 	Address           string  `gorm:"primaryKey"`
 	PoolAddress       string  `gorm:"column:pool_address"`
 	UnderlyingToken   string  `gorm:"column:underlying_token"`
-	IsWETH            bool    `gorm:"column:is_weth"`
 	MaxLeverageFactor int64   `gorm:"column:max_leverage"`
 	MinAmount         *BigInt `gorm:"column:min_amount"`
 	MaxAmount         *BigInt `gorm:"column:max_amount"`
