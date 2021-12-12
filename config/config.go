@@ -21,7 +21,7 @@ type Config struct {
 	EthProvider        string `validate:"required"`
 	EthProviderMainnet string `env:"ETH_PROVIDER_MAINNET" validate:"required"`
 	EthProviderKovan   string `env:"ETH_PROVIDER_KOVAN" validate:"required"`
-	EthProviderFork    string `env:"ETH_PROVIDER_FORK" validate:"required"`
+	EthProviderFork    string `env:"ETH_PROVIDER_FORK"`
 
 	ChainId   uint   `validate:"required"`
 	NetworkId string `env:"REACT_APP_CHAIN_ID" validate:"required"`
