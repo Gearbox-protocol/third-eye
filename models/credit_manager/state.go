@@ -51,7 +51,7 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	state, err := mdl.Repo.GetDataCompressor(blockNum).GetCreditManagerData(
+	state, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(
 		opts,
 		common.HexToAddress(mdl.GetAddress()),
 		common.HexToAddress(mdl.GetAddress()),

@@ -63,7 +63,7 @@ func (s *SyncAdapter) DisableOnBlock(currentBlock int64) {
 
 func (s *SyncAdapter) SetBlockToDisableOn(blockNum int64) {
 	if s.Details == nil {
-		s.Details = make(map[string]string)
+		s.Details = make(map[string]interface{})
 	}
 	s.blockToDisableOn = blockNum
 	s.Details["blockToDisableOn"] = fmt.Sprintf("%d", blockNum)

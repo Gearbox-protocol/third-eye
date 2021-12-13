@@ -3,7 +3,7 @@ package repository
 import (
 	"sync"
 
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
@@ -23,13 +23,11 @@ type Repository struct {
 	kit           *core.AdapterKit
 	client        *ethclient.Client
 	executeParser core.ExecuteParserI
-	dc            map[int64]*dataCompressor.DataCompressor
 	config        *config.Config
+	dcWrapper     *core.DataCompressorWrapper
 	// blocks/token
 	blocks map[int64]*core.Block
 	tokens map[string]*core.Token
-	// blockNumbers of dc in asc order
-	dcBlockNum []int64
 	// changed during syncing
 	sessions            map[string]*core.CreditSession
 	poolUniqueUsers     map[string]map[string]bool
@@ -52,7 +50,6 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		blocks:                 make(map[int64]*core.Block),
 		executeParser:          ep,
 		kit:                    core.NewAdapterKit(),
-		dc:                     make(map[int64]*dataCompressor.DataCompressor),
 		tokens:                 make(map[string]*core.Token),
 		sessions:               make(map[string]*core.CreditSession),
 		lastCSS:                make(map[string]*core.CreditSessionSnapshot),
@@ -61,9 +58,14 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		tokenLastPrice:         make(map[string]*core.PriceFeed),
 		allowedTokensThreshold: make(map[string]map[string]*core.BigInt),
 		poolLastInterestData:   make(map[string]*core.PoolInterestData),
+		dcWrapper:              core.NewDataCompressorWrapper(client),
 	}
 	r.init()
 	return r
+}
+
+func (repo *Repository) GetDCWrapper() *core.DataCompressorWrapper {
+	return repo.dcWrapper
 }
 
 func (repo *Repository) GetExecuteParser() core.ExecuteParserI {
@@ -119,7 +121,7 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.blocks[eb.BlockNumber].AddEventBalance(&eb)
 }
 
-func (repo *Repository) ConvertToBalance(balances []dataCompressor.DataTypesTokenBalance) *core.JsonBalance {
+func (repo *Repository) ConvertToBalance(balances []mainnet.DataTypesTokenBalance) *core.JsonBalance {
 	jsonBalance := core.JsonBalance{}
 	for _, token := range balances {
 		tokenAddr := token.Token.Hex()

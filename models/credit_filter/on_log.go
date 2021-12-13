@@ -8,6 +8,10 @@ import (
 
 func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
+	creditManager, ok := mdl.Details["creditManager"].(string)
+	if !ok {
+		log.Fatal("Failed in asserting credit manager(%v) for credit filter %s", mdl.Details["creditManager"], mdl.GetAddress())
+	}
 	switch txLog.Topics[0] {
 	case core.Topic("ContractAllowed(address,address)"):
 		contractAllowedEvent, err := mdl.contractETH.ParseContractAllowed(txLog)
@@ -16,7 +20,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		}
 		mdl.Repo.AddAllowedProtocol(&core.Protocol{
 			BlockNumber:   blockNum,
-			CreditManager: mdl.Details["creditManager"],
+			CreditManager: creditManager,
 			Protocol:      contractAllowedEvent.Protocol.Hex(),
 			Adapter:       contractAllowedEvent.Adapter.Hex(),
 		})
@@ -27,7 +31,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		}
 		mdl.Repo.AddAllowedToken(&core.AllowedToken{
 			BlockNumber:        int64(txLog.BlockNumber),
-			CreditManager:      mdl.Details["creditManager"],
+			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: (*core.BigInt)(tokenEvent.LiquidityThreshold),
 		})

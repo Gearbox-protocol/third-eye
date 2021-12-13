@@ -2,7 +2,7 @@ package credit_manager
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -13,9 +13,10 @@ import (
 )
 
 type SessionCloseDetails struct {
-	RemainingFunds *big.Int
-	Status         int
-	LogId          uint
+	RemainingFunds   *big.Int
+	Status           int
+	LogId            uint
+	AccountOperation *core.AccountOperation
 }
 type CreditManager struct {
 	*core.SyncAdapter
@@ -98,11 +99,11 @@ func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	mdl.SetLastSync(syncTill)
 }
 
-func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *dataCompressor.DataTypesCreditAccountDataExtended {
+func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *mainnet.DataTypesCreditAccountDataExtended {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	data, err := cm.Repo.GetDataCompressor(blockNum).GetCreditAccountDataExtended(opts,
+	data, err := cm.Repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
 		common.HexToAddress(cm.GetAddress()),
 		common.HexToAddress(borrower),
 	)

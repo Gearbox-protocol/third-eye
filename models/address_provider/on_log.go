@@ -39,9 +39,16 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			mdl.Repo.AddSyncAdapter(af)
 		case "DATA_COMPRESSOR":
 			if mdl.Details == nil {
-				mdl.Details = make(map[string]string)
+				mdl.Details = make(map[string]interface{})
 			}
-			mdl.Details[fmt.Sprintf("%d", blockNum)] = address
+			dcObj, ok := mdl.Details["dc"].(map[string]string)
+			if !ok {
+				if dcObj == nil {
+					dcObj = make(map[string]string)
+				}
+			}
+			dcObj[fmt.Sprintf("%d", blockNum)] = address
+			mdl.Details["dc"] = dcObj
 			mdl.Repo.AddDataCompressor(int64(txLog.BlockNumber), address)
 		}
 	}

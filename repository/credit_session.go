@@ -1,11 +1,8 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/ethereum/go-ethereum/common"
-	"sort"
 )
 
 func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
@@ -21,15 +18,7 @@ func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
 }
 
 func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
-	dc, err := dataCompressor.NewDataCompressor(common.HexToAddress(addr), repo.client)
-	if err != nil {
-		log.Fatal(err)
-	}
-	repo.dc[blockNum] = dc
-	repo.dcBlockNum = append(repo.dcBlockNum, blockNum)
-	arr := repo.dcBlockNum
-	sort.Slice(arr, func(i, j int) bool { return arr[i] < arr[j] })
-	repo.dcBlockNum = arr
+	repo.dcWrapper.AddDataCompressor(blockNum, addr)
 }
 
 func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFromDB bool) {
@@ -43,17 +32,6 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 	} else {
 		log.Fatalf("Credit session already present %s", session.ID)
 	}
-}
-
-func (repo *Repository) GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor {
-	var dc *dataCompressor.DataCompressor
-	for _, num := range repo.dcBlockNum {
-		// dc should be deployed before it is queried
-		if num < blockNum {
-			dc = repo.dc[num]
-		}
-	}
-	return dc
 }
 
 func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {

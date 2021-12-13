@@ -26,7 +26,7 @@ func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
 		blockNum := int64(txLog.BlockNumber)
 		mdl.Repo.AddPriceFeed(blockNum, &core.PriceFeed{
 			BlockNumber: blockNum,
-			Token:       mdl.Details["token"],
+			Token:       mdl.Token,
 			Feed:        mdl.Address,
 			RoundId:     roundId,
 			PriceETHBI:  (*core.BigInt)(answerBI),

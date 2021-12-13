@@ -53,9 +53,13 @@ func (mdl *YearnPriceFeed) query(blockNum int64) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	tokenAddr, ok := mdl.Details["token"].(string)
+	if !ok {
+		log.Fatal("Failing in asserting to string: %s", mdl.Details["token"])
+	}
 	mdl.Repo.AddPriceFeed(blockNum, &core.PriceFeed{
 		BlockNumber: blockNum,
-		Token:       mdl.Details["token"],
+		Token:       tokenAddr,
 		Feed:        mdl.Address,
 		RoundId:     roundData.RoundId.Int64(),
 		PriceETHBI:  (*core.BigInt)(roundData.Answer),
