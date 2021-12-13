@@ -41,10 +41,11 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})
 			}
-			dcObj, ok := mdl.Details["dc"].(map[string]string)
+			dcObj, ok := mdl.Details["dc"].(map[string]interface{})
+			log.Infof("Previous data compressors %#v\n", dcObj)
 			if !ok {
 				if dcObj == nil {
-					dcObj = make(map[string]string)
+					dcObj = make(map[string]interface{})
 				}
 			}
 			dcObj[fmt.Sprintf("%d", blockNum)] = address
