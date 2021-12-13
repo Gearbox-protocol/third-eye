@@ -58,6 +58,19 @@ func Error(v ...interface{}) {
 	log.Println(args...)
 }
 
+func Msgf(msg string, args ...interface{}) {
+	amqpSendf(msg, args)
+	msgFormat := detectFunc() + msg
+	log.Printf(msgFormat, args...)
+}
+
+func Msg(v ...interface{}) {
+	amqpSend(v)
+	args := []interface{}{detectFunc()}
+	args = append(args, v...)
+	log.Println(args...)
+}
+
 func Fatalf(msg string, args ...interface{}) {
 	msgFormat := "[Fatal]: " + detectFunc() + msg
 	amqpSendf(msgFormat, args)
@@ -91,19 +104,19 @@ func SetAMQP(_ch *amqp.Channel) {
 }
 func amqpSend(v []interface{}) {
 	alert := fmt.Sprint(v...)
-	send(alert)
+	send(alert, "")
 }
 func amqpSendf(msg string, args []interface{}) {
 	alert := fmt.Sprintf(msg, args...)
-	send(alert)
+	send(alert, "")
 }
-func send(message string) {
+func send(message string, routingKey string) {
 	if ch == nil {
 		return
 	}
 	err := ch.Publish(
 		"TelegramBot", // exchange
-		"",            // routing key
+		routingKey,    // routing key
 		false,         // mandatory
 		false,         // immediate
 		amqp.Publishing{

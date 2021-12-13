@@ -1,25 +1,20 @@
 package engine
 
 import (
-	"context"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"strings"
 	"sync"
 	"time"
 )
 
 type Engine struct {
+	*core.Node
 	config              *config.Config
-	client              *ethclient.Client
 	repo                core.RepositoryI
 	syncBlockBatchSize  int64
 	currentlySyncedTill int64
@@ -30,8 +25,10 @@ func NewEngine(config *config.Config,
 	repo core.RepositoryI) core.EngineI {
 	return &Engine{
 		config: config,
-		client: ec,
 		repo:   repo,
+		Node: &core.Node{
+			Client: ec,
+		},
 	}
 }
 
@@ -41,7 +38,7 @@ func (e *Engine) init() {
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
-		obj := address_provider.NewAddressProvider(addr, e.client, e.repo)
+		obj := address_provider.NewAddressProvider(addr, e.Client, e.repo)
 		e.repo.AddSyncAdapter(obj)
 		e.currentlySyncedTill = obj.GetLastSync()
 	} else {
@@ -49,22 +46,14 @@ func (e *Engine) init() {
 	}
 }
 
-func (e *Engine) getLatestBlockNumber() int64 {
-	latestBlockNum, err := e.client.BlockNumber(context.TODO())
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Info("Lastest blocknumber", latestBlockNum)
-	return int64(latestBlockNum)
-}
 func (e *Engine) SyncHandler() {
 	e.init()
-	latestBlockNum := e.getLatestBlockNumber()
+	latestBlockNum := e.GetLatestBlockNumber()
 	e.syncLoop(latestBlockNum)
 	for {
 		log.Infof("Synced till %d sleeping for 5 mins", e.currentlySyncedTill)
 		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
-		latestBlockNum = e.getLatestBlockNumber()
+		latestBlockNum = e.GetLatestBlockNumber()
 		e.sync(latestBlockNum)
 	}
 }
@@ -128,35 +117,4 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 	// after sync
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
-}
-
-func (e *Engine) GetLogs(fromBlock, toBlock int64, addr string) ([]types.Log, error) {
-	query := ethereum.FilterQuery{
-		FromBlock: new(big.Int).SetInt64(fromBlock),
-		ToBlock:   new(big.Int).SetInt64(toBlock),
-		Addresses: []common.Address{common.HexToAddress(addr)},
-	}
-	var logs []types.Log
-	var err error
-	logs, err = e.client.FilterLogs(context.Background(), query)
-	if err != nil {
-		if err.Error() == core.QueryMoreThan10000Error ||
-			strings.Contains(err.Error(), core.LogFilterLenError) {
-			middle := (fromBlock + toBlock) / 2
-			log.Info(fromBlock, middle, toBlock)
-			bottomHalfLogs, err := e.GetLogs(fromBlock, middle-1, addr)
-			if err != nil {
-				return []types.Log{}, err
-			}
-			logs = append(logs, bottomHalfLogs...)
-
-			topHalfLogs, err := e.GetLogs(middle, toBlock, addr)
-			if err != nil {
-				return []types.Log{}, err
-			}
-			logs = append(logs, topHalfLogs...)
-			return logs, nil
-		}
-	}
-	return logs, err
 }
