@@ -26,7 +26,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"strings"
@@ -267,7 +266,7 @@ func (c *Contract) UnpackLogIntoMap(out map[string]interface{}, event string, tx
 	return abi.ParseTopicsIntoMap(out, indexed, txLog.Topics[1:])
 }
 
-func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, string) {
+func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, *Json) {
 	data := map[string]interface{}{}
 	if eventName == "TransferAccount" && len(txLog.Data) > 0 {
 		data = map[string]interface{}{
@@ -285,11 +284,6 @@ func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, strin
 		argNames = append(argNames, input.Name)
 	}
 	data["_order"] = argNames
-
-	args, err := json.Marshal(data)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return c.ABI.Events[eventName].Sig, string(args)
+	jsonData := Json(data)
+	return c.ABI.Events[eventName].Sig, &jsonData
 }

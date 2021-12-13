@@ -6,15 +6,19 @@ import (
 	"fmt"
 )
 
-type Json map[string]string
+type Json map[string]interface{}
 
 func (j *Json) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
 func (z *Json) Scan(value interface{}) error {
-	out := map[string]string{}
+	out := map[string]interface{}{}
 	switch t := value.(type) {
+	case string:
+		err := json.Unmarshal([]byte(value.(string)), &out)
+		*z = Json(out)
+		return err
 	case []byte:
 		err := json.Unmarshal(value.([]byte), &out)
 		*z = Json(out)

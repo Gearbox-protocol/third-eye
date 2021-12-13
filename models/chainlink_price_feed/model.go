@@ -12,6 +12,8 @@ import (
 type ChainlinkPriceFeed struct {
 	*core.SyncAdapter
 	contractETH *priceFeed.PriceFeed
+	Token       string
+	Oracle      string
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
@@ -26,7 +28,7 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 			ContractName: core.ChainlinkPriceFeed,
 			Client:       client,
 		},
-		Details:  map[string]string{"oracle": oracle, "token": token},
+		Details:  map[string]interface{}{"oracle": oracle, "token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
 	}
@@ -39,7 +41,15 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 }
 
 func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogBeforeDiscover bool) *ChainlinkPriceFeed {
-	oracleAddr := adapter.Details["oracle"]
+	oracleAddr, ok := adapter.Details["oracle"].(string)
+	if !ok {
+		log.Fatal("Failed asserting oracle address(%s) as string for chainlink pricefeed(%s) ", adapter.Details["oracle"], adapter.GetAddress())
+	}
+	token, ok := adapter.Details["token"].(string)
+	if !ok {
+		log.Fatal("Get token addr(%v) for oracle(%s) feed(%s)", adapter.Details["token"], oracleAddr, adapter.GetAddress())
+	}
+
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracleAddr), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
@@ -47,6 +57,8 @@ func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogB
 	obj := &ChainlinkPriceFeed{
 		SyncAdapter: adapter,
 		contractETH: pfContract,
+		Token:       token,
+		Oracle:      oracleAddr,
 	}
 	if adapter.Address == oracleAddr {
 		pfAddr := obj.GetPriceFeedAddr(adapter.DiscoveredAt)
@@ -69,9 +81,9 @@ func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogB
 
 func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 	newPriceFeed := mdl.GetPriceFeedAddr(mdl.LastSync)
-	if newPriceFeed != mdl.Address {
+	if newPriceFeed != mdl.Address && newPriceFeed != "" {
 		mdl.Repo.AddSyncAdapter(
-			NewChainlinkPriceFeed(mdl.Details["token"], mdl.Details["oracle"], newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo),
+			NewChainlinkPriceFeed(mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo),
 		)
 	}
 	mdl.SetLastSync(syncedTill)
@@ -86,9 +98,8 @@ func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) string {
 			log.Fatal(err)
 		} else {
 			mdl.SetError(err)
-			oralceAddr := mdl.Details["oracle"]
-			log.Error(oralceAddr, " oracle failed disabling due to ", err)
-			return oralceAddr
+			log.Error(mdl.GetAddress(), " feed failed disabling due to ", err)
+			return ""
 		}
 	}
 	opts, cancel = utils.GetTimeoutOpts(blockNum)

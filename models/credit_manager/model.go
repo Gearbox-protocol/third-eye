@@ -13,9 +13,10 @@ import (
 )
 
 type SessionCloseDetails struct {
-	RemainingFunds *big.Int
-	Status         int
-	LogId          uint
+	RemainingFunds   *big.Int
+	Status           int
+	LogId            uint
+	AccountOperation *core.AccountOperation
 }
 type CreditManager struct {
 	*core.SyncAdapter

@@ -35,12 +35,18 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		return acl.NewACLFromAdapter(adapter)
 	case core.AddressProvider:
 		ap := address_provider.NewAddressProviderFromAdapter(adapter)
-		for k, dcAddr := range ap.Details {
-			blockNum, err := strconv.ParseInt(k, 10, 64)
-			if err != nil {
-				log.Fatal(err)
+		if ap.Details["dc"] != nil {
+			dcMap, ok := (ap.Details["dc"]).(map[string]interface{})
+			if !ok {
+				log.Fatal("Converting address provider() details for dc to map failed", ap.GetAddress())
 			}
-			repo.AddDataCompressor(blockNum, dcAddr)
+			for k, dcAddr := range dcMap {
+				blockNum, err := strconv.ParseInt(k, 10, 64)
+				if err != nil {
+					log.Fatal(err)
+				}
+				repo.AddDataCompressor(blockNum, dcAddr.(string))
+			}
 		}
 		return ap
 	case core.AccountFactory:

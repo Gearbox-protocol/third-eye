@@ -42,6 +42,8 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	session.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == core.Repaid {
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
+		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmount
+		mdl.AddAccountOperation(closeDetails.AccountOperation)
 		mdl.Repo.AddEventBalance(core.NewEventBalance(blockNum,
 			closeDetails.LogId,
 			sessionId,

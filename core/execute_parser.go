@@ -23,6 +23,6 @@ type KnownCall struct {
 	To        common.Address
 	Depth     uint8
 	Name      string
-	Args      string
+	Args      *Json
 	Transfers Transfers
 }

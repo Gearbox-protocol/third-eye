@@ -143,11 +143,11 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 		Transfers:   nil,
 		Dapp:        cmAddr,
 	}
-	mdl.Repo.AddAccountOperation(accountOperation)
 	// Since remainingFunds is not known for repay, we get it from datacompressor at end of each block
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{RemainingFunds: nil,
-		Status: core.Repaid,
-		LogId:  txLog.Index,
+		Status:           core.Repaid,
+		LogId:            txLog.Index,
+		AccountOperation: accountOperation,
 	}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
@@ -228,7 +228,7 @@ func (mdl *CreditManager) onTransferAccount(txLog *types.Log, owner, newOwner st
 		Transfers:   nil,
 		Dapp:        txLog.Address.Hex(),
 	}
-	mdl.Repo.AddAccountOperation(accountOperation)
+	mdl.AddAccountOperation(accountOperation)
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
 	mdl.AddCreditOwnerSession(newOwner, sessionId)
@@ -299,5 +299,9 @@ func (mdl *CreditManager) AddEventBasedAccountOperationAndState(
 		false,
 		cmAddr,
 	))
+	mdl.AddAccountOperation(accountOperation)
+}
+
+func (mdl *CreditManager) AddAccountOperation(accountOperation *core.AccountOperation) {
 	mdl.Repo.AddAccountOperation(accountOperation)
 }

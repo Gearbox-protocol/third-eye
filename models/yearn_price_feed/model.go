@@ -22,7 +22,7 @@ func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client *ethclie
 			ContractName: core.YearnPriceFeed,
 			Client:       client,
 		},
-		Details:  map[string]string{"token": token},
+		Details:  map[string]interface{}{"token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
 	}
