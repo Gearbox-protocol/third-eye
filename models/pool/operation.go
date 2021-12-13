@@ -14,7 +14,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		BlockNumber: big.NewInt(blockNum),
 	}
 
-	state, err := p.Repo.GetDataCompressor(blockNum).GetPoolData(opts, common.HexToAddress(p.Address))
+	state, err := p.Repo.GetDCWrapper().GetPoolData(opts, common.HexToAddress(p.Address))
 	if err != nil {
 		log.Fatal("[PoolService] Cant get data from data compressor", err)
 		return

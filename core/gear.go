@@ -1,7 +1,7 @@
 package core
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 )
 
 type EngineI interface {
@@ -42,14 +42,14 @@ type RepositoryI interface {
 	AddTokenObj(token *Token)
 	AddDataCompressor(blockNum int64, addr string)
 	GetToken(addr string) *Token
-	ConvertToBalance(balances []dataCompressor.DataTypesTokenBalance) *JsonBalance
+	ConvertToBalance(balances []mainnet.DataTypesTokenBalance) *JsonBalance
 	// credit session funcs
 	AddCreditSession(session *CreditSession, loadedFromDB bool)
 	GetCreditSession(sessionId string) *CreditSession
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
 	GetLastCSS(sessionId string) *CreditSessionSnapshot
-	GetDataCompressor(blockNum int64) *dataCompressor.DataCompressor
+	GetDCWrapper() *DataCompressorWrapper
 	AddEventBalance(eb EventBalance)
 	FlushAndDebt()
 	// pools

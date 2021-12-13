@@ -175,7 +175,7 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(blockNum),
 		}
-		data, err := repo.GetDataCompressor(blockNum).GetCreditAccountDataExtended(opts,
+		data, err := repo.dcWrapper.GetCreditAccountDataExtended(opts,
 			common.HexToAddress(cmAddr),
 			common.HexToAddress(sessionSnapshot.Borrower),
 		)
