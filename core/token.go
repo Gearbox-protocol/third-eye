@@ -33,15 +33,15 @@ func NewToken(addr string, client *ethclient.Client) *Token {
 func (t *Token) init() {
 	contract, err := eRC20.NewERC20(common.HexToAddress(t.Address), t.client)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err, t.Address)
 	}
 	if symbol, err := contract.Symbol(&bind.CallOpts{}); err != nil {
-		log.Fatal(err)
+		log.Fatal(err, t.Address)
 	} else {
 		t.Symbol = symbol
 	}
 	if decimals, err := contract.Decimals(&bind.CallOpts{}); err != nil {
-		log.Fatal(err)
+		log.Fatal(err, t.Address)
 	} else {
 		t.Decimals = int8(decimals)
 	}
