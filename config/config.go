@@ -32,4 +32,6 @@ type Config struct {
 	WETHAddr       string `env:"WETH_ADDRESS" validate:"required"`
 	DebtDCMatching string `env:"DEBT_DC_MATCHING" validate:"required"`
 	DebtCheck      bool
+
+	MiningAddr string `env:"MINING_ADDR"`
 }
