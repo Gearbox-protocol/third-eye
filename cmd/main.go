@@ -7,7 +7,7 @@
 package main
 
 import (
-	"net/http"
+	"context"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/engine"
@@ -16,11 +16,13 @@ import (
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
 	"go.uber.org/fx"
-	"context"
+	"net/http"
+	"fmt"
+	_ "net/http/pprof"
 	"time"
 )
 
-func StartServer(lc fx.Lifecycle, engine core.EngineI) {
+func StartServer(lc fx.Lifecycle, engine core.EngineI, config *config.Config) {
 
 	// Starting server
 	lc.Append(fx.Hook{
@@ -33,6 +35,9 @@ func StartServer(lc fx.Lifecycle, engine core.EngineI) {
 			// better error-handling.
 			go func() {
 				engine.SyncHandler()
+			}()
+			go func() {
+				http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil)
 			}()
 			return nil
 		},

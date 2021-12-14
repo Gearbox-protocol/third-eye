@@ -30,6 +30,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	session := mdl.Repo.GetCreditSession(sessionId)
 	// set session fields
 	session.ClosedAt = blockNum
+	session.IsDirty = true
 	// this checks prevent getting data for credit session that exist only within a block
 	// datacompressor query will fail
 	if session.Since == session.ClosedAt {
@@ -88,6 +89,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	session := mdl.Repo.GetCreditSession(sessionId)
+	session.IsDirty = true
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
 	session.HealthFactor = data.HealthFactor.Int64()
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)

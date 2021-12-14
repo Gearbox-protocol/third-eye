@@ -57,6 +57,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		InitialAmount:  (*core.BigInt)(amount),
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		Profit:         (*core.BigInt)(big.NewInt(0)),
+		IsDirty:        true,
 	}
 	mdl.Repo.AddCreditSession(newSession, false)
 	return nil
@@ -234,6 +235,7 @@ func (mdl *CreditManager) onTransferAccount(txLog *types.Log, owner, newOwner st
 	mdl.AddCreditOwnerSession(newOwner, sessionId)
 	session := mdl.Repo.GetCreditSession(sessionId)
 	session.Borrower = newOwner
+	session.IsDirty = true
 	return nil
 }
 
