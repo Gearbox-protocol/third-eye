@@ -1,1 +1,1 @@
-worker: ./bin/cmd
+web: ./bin/cmd
