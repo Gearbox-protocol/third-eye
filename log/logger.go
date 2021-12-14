@@ -108,7 +108,7 @@ func send(message string) {
 		false,         // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte("Support server:" + message),
+			Body:        []byte("Third eye:" + message),
 		})
 	if err != nil {
 		log.Println("Cant sent notification", err)
