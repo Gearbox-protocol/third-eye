@@ -16,9 +16,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
 	"go.uber.org/fx"
-	"net/http"
-	"fmt"
-	_ "net/http/pprof"
+	_ "github.com/heroku/x/hmetrics/onload"
 	"time"
 )
 
@@ -35,9 +33,6 @@ func StartServer(lc fx.Lifecycle, engine core.EngineI, config *config.Config) {
 			// better error-handling.
 			go func() {
 				engine.SyncHandler()
-			}()
-			go func() {
-				http.ListenAndServe(fmt.Sprintf(":%s", config.Port), nil)
 			}()
 			return nil
 		},
