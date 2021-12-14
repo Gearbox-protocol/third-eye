@@ -2,18 +2,17 @@ package main
 
 import (
 	"context"
-	"flag"
 	"math/big"
 	"time"
 
-	// "github.com/Gearbox-protocol/third-eye/artifacts/accountMining"
+	"github.com/Gearbox-protocol/third-eye/artifacts/addressProvider"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/services"
 	"github.com/Gearbox-protocol/third-eye/utils"
-	ethereum "github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"go.uber.org/fx"
@@ -28,12 +27,12 @@ type BlockMiningDetails struct {
 type AccountMining struct {
 	Address string
 	*core.Node
-	TotalCount     int64
+	TotalCount      int64
 	finished        bool
 	CurrentBlockNum int64
 	// contractETH     *accountMining.AccountMining
-	blockDetails    map[int64]*BlockMiningDetails
-	txProcessed     map[string]bool
+	blockDetails map[int64]*BlockMiningDetails
+	txProcessed  map[string]bool
 }
 
 func (am *AccountMining) IsFinished() bool {
@@ -82,7 +81,7 @@ func (am *AccountMining) Send() {
 	details := am.blockDetails[am.CurrentBlockNum]
 	eipBaseFee := utils.GetFloat64Decimal(details.BaseFee, 9)
 	avgAccountMiningPrice := utils.GetFloat64Decimal(details.TotalEthSpentOnAccount, 18)
-	avgAccountMiningPrice = avgAccountMiningPrice/float64(details.Count)
+	avgAccountMiningPrice = avgAccountMiningPrice / float64(details.Count)
 	log.Msgf("Block[%d]: mined %d, total %d of 5000 accounts, avg price per account: %f ETH, eip 1559 baseFee is %f",
 		am.CurrentBlockNum, details.Count, am.TotalCount, avgAccountMiningPrice, eipBaseFee)
 
@@ -103,29 +102,18 @@ func (am *AccountMining) Sync(startNum int64) {
 	}
 }
 
-
-func isMiningStarted(gearToken string, wss string) {
-	client, err := ethclient.Dial(wss)
-	log.CheckFatal(err)
-	contractAddress := common.HexToAddress(gearToken)
-	query := ethereum.FilterQuery{
-		Addresses: []common.Address{contractAddress},
-	}
-	ch := make(chan types.Log)
-	sub, err := client.SubscribeFilterLogs(context.Background(), query, ch)
-	log.CheckFatal(err)
+func (am *AccountMining) isMiningStarted(gearToken string) {
 	for {
-		select {
-		case err := <-sub.Err():
-			log.Fatal(err)
-		case vlog := <-ch:
-			log.Info(vlog)
-			if vlog.Topics[0] == core.Topic("MinerSet(address)") {
-				log.Msg("Mining Started")
-				close(ch)
+		latestBlockNum := am.GetLatestBlockNumber()
+		logs, err := am.GetLogs(0, latestBlockNum, gearToken)
+		log.CheckFatal(err)
+		for _, txLog := range logs {
+			if txLog.Topics[0] == core.Topic("MinerSet(address)") {
+				log.Msgf("Mining Started at %d", txLog.BlockNumber)
 				return
 			}
 		}
+		time.Sleep(time.Second * 30)
 	}
 }
 
@@ -134,38 +122,33 @@ func StartServer(lc fx.Lifecycle, client *ethclient.Client, config *config.Confi
 	// Starting server
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
-			go func(){
-			var amAddr, gearToken, wss string
-			var miningStarted bool
-			flag.StringVar(&amAddr, "miningAddr", "", "Account mining address")
-			flag.StringVar(&gearToken, "gearToken", "", "Gear token address")
-			flag.StringVar(&wss, "wss", "", "Web socket url")
-			flag.BoolVar(&miningStarted, "started", false, "Web socket url")
-			flag.Parse()
-			if !miningStarted {
-				isMiningStarted(gearToken, wss)
-			}
-			am := AccountMining{
-				Address: amAddr,
-				Node: &core.Node{
-					Client: client,
-				},
-				blockDetails: make(map[int64]*BlockMiningDetails),
-			}
-			am.init()
-			var startNum int64 =0
-			for !am.IsFinished() {
-				am.Sync(startNum)
-				am.Send()
-				startNum = am.CurrentBlockNum+1
-				am.CurrentBlockNum = 0
-				if am.TotalCount == 5000 {
-					am.finished = true
-					log.Msg("Mining finished")
+			go func() {
+				contractETH, err := addressProvider.NewAddressProvider(common.HexToAddress(config.AddressProviderAddress), client)
+				log.CheckFatal(err)
+				gearToken, err := contractETH.GetGearToken(&bind.CallOpts{})
+				log.CheckFatal(err)
+				am := AccountMining{
+					Address: config.MiningAddr,
+					Node: &core.Node{
+						Client: client,
+					},
+					blockDetails: make(map[int64]*BlockMiningDetails),
 				}
-				time.Sleep(time.Second * 30)
-			}
-		}()
+				am.isMiningStarted(gearToken.Hex())
+				am.init()
+				var startNum int64 = 0
+				for !am.IsFinished() {
+					am.Sync(startNum)
+					am.Send()
+					startNum = am.CurrentBlockNum + 1
+					am.CurrentBlockNum = 0
+					if am.TotalCount == 5000 {
+						am.finished = true
+						log.Msg("Mining finished")
+					}
+					time.Sleep(time.Second * 30)
+				}
+			}()
 			return nil
 		},
 	})
