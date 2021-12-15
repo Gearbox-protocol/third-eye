@@ -45,13 +45,17 @@ type PoolInterestData struct {
 }
 
 type PoolLedger struct {
-	Id          int64   `gorm:"primaryKey;autoincrement:true"`
-	BlockNumber int64   `gorm:"column:block_num"`
-	Pool        string  `gorm:"column:pool"`
-	User        string  `gorm:"column:address"`
-	LogId       int64   `gorm:"column:log_id"`
-	Event       string  `gorm:"column:event"`
-	Liquidity   *BigInt `gorm:"column:liquidity"`
+	Id          int64   `gorm:"primaryKey;autoincrement:true" json:"-"`
+	BlockNumber int64   `gorm:"column:block_num" json:"-"`
+	Pool        string  `gorm:"column:pool" json:"pool"`
+	User        string  `gorm:"column:user_address" json:"user"`
+	TxHash      string  `gorm:"column:tx_hash" json:"tx_hash"`
+	SessionId   string  `gorm:"column:session_id" json:"session_id"`
+	LogId       uint    `gorm:"column:log_id" json:"log_id"`
+	Event       string  `gorm:"column:event" json:"event"`
+	AmountBI    *BigInt `gorm:"column:amount_bi" json:"-"`
+	Amount      float64 `gorm:"column:amount" json:"amount"`
+	TimeStamp   int64   `gorm:"column:timestamp" json:"timestamp"`
 }
 
 func (PoolLedger) TableName() string {
