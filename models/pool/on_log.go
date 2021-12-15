@@ -3,8 +3,8 @@ package pool
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 )
 
 func (mdl *Pool) createPoolStat() {
@@ -28,12 +28,14 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			log.Fatal("[PoolServiceModel]: Cant unpack AddLiquidity event", err)
 		}
 		mdl.Repo.AddPoolLedger(&core.PoolLedger{
-			LogId:       int64(txLog.Index),
+			LogId:       txLog.Index,
 			BlockNumber: blockNum,
+			TxHash:      txLog.TxHash.Hex(),
 			Pool:        mdl.Address,
 			Event:       "AddLiquidity",
 			User:        addLiquidityEvent.OnBehalfOf.Hex(),
-			Liquidity:   (*core.BigInt)(addLiquidityEvent.Amount),
+			AmountBI:    (*core.BigInt)(addLiquidityEvent.Amount),
+			Amount:      utils.GetFloat64Decimal(addLiquidityEvent.Amount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals),
 		})
 		mdl.lastEventBlock = blockNum
 	case core.Topic("RemoveLiquidity(address,address,uint256)"):
@@ -42,12 +44,14 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
 		mdl.Repo.AddPoolLedger(&core.PoolLedger{
-			LogId:       int64(txLog.Index),
+			LogId:       txLog.Index,
 			BlockNumber: blockNum,
+			TxHash:      txLog.TxHash.Hex(),
 			Pool:        mdl.Address,
 			Event:       "RemoveLiquidity",
 			User:        removeLiquidityEvent.Sender.Hex(),
-			Liquidity:   (*core.BigInt)(new(big.Int).Neg(removeLiquidityEvent.Amount)),
+			AmountBI:    (*core.BigInt)(removeLiquidityEvent.Amount),
+			Amount:      utils.GetFloat64Decimal(removeLiquidityEvent.Amount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals),
 		})
 		mdl.lastEventBlock = blockNum
 	case core.Topic("Borrow(address,address,uint256)"):

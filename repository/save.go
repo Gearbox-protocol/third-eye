@@ -26,7 +26,7 @@ func (repo *Repository) Flush() error {
 	tx := repo.db.Begin()
 	now := time.Now()
 
-	adapters := make([]*core.SyncAdapter,0, repo.kit.Len())
+	adapters := make([]*core.SyncAdapter, 0, repo.kit.Len())
 	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
 		for repo.kit.Next(lvlIndex) {
 			adapter := repo.kit.Get(lvlIndex)
@@ -76,7 +76,7 @@ func (repo *Repository) Flush() error {
 	log.Infof("created session sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
-	blocksToSync := make([]*core.Block,0, len(repo.blocks))
+	blocksToSync := make([]*core.Block, 0, len(repo.blocks))
 	for _, block := range repo.blocks {
 		blocksToSync = append(blocksToSync, block)
 	}

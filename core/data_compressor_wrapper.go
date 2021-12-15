@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
@@ -9,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"sort"
-	"context"
 )
 
 type DataCompressorWrapper struct {

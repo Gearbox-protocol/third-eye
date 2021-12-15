@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -39,6 +40,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		},
 		Dapp: cmAddr,
 	}
+	mdl.PoolBorrow(txLog, sessionId, onBehalfOf, borrowAmount)
 	mdl.AddEventBasedAccountOperationAndState(accountOperation,
 		borrowAmount,
 		false,
@@ -205,6 +207,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 		},
 		Dapp: txLog.Address.Hex(),
 	}
+	mdl.PoolBorrow(txLog, sessionId, borrower, amount)
 	mdl.AddEventBasedAccountOperationAndState(accountOperation,
 		amount,
 		false,
@@ -306,4 +309,33 @@ func (mdl *CreditManager) AddEventBasedAccountOperationAndState(
 
 func (mdl *CreditManager) AddAccountOperation(accountOperation *core.AccountOperation) {
 	mdl.Repo.AddAccountOperation(accountOperation)
+}
+
+func (mdl *CreditManager) PoolBorrow(txLog *types.Log, sessionId, borrower string, amount *big.Int) {
+	mdl.Repo.AddPoolLedger(&core.PoolLedger{
+		LogId:       txLog.Index,
+		BlockNumber: int64(txLog.BlockNumber),
+		TxHash:      txLog.TxHash.Hex(),
+		Pool:        mdl.State.PoolAddress,
+		Event:       "Borrow",
+		User:        borrower,
+		SessionId:   sessionId,
+		AmountBI:    (*core.BigInt)(amount),
+		Amount:      utils.GetFloat64Decimal(amount, mdl.GetUnderlyingDecimal()),
+	})
+}
+
+func (mdl *CreditManager) PoolRepay(blockNum int64, logId uint, txHash, sessionId, borrower string, amount *big.Int) {
+	log.Info("string", len(borrower),len(sessionId))
+	mdl.Repo.AddPoolLedger(&core.PoolLedger{
+		LogId:       logId,
+		BlockNumber: blockNum,
+		TxHash:      txHash,
+		Pool:        mdl.State.PoolAddress,
+		Event:       "Repay",
+		User:        borrower,
+		SessionId:   sessionId,
+		AmountBI:    (*core.BigInt)(amount),
+		Amount:      utils.GetFloat64Decimal(amount, mdl.GetUnderlyingDecimal()),
+	})
 }
