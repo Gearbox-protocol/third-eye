@@ -30,6 +30,7 @@ type AccountMining struct {
 	TotalCount      int64
 	finished        bool
 	CurrentBlockNum int64
+	canSend         bool
 	// contractETH     *accountMining.AccountMining
 	blockDetails map[int64]*BlockMiningDetails
 	txProcessed  map[string]bool
@@ -75,7 +76,7 @@ func (am *AccountMining) init() {
 	// am.contractETH = contract
 }
 func (am *AccountMining) Send() {
-	if am.CurrentBlockNum == 0 {
+	if !am.canSend {
 		return
 	}
 	details := am.blockDetails[am.CurrentBlockNum]
@@ -84,16 +85,16 @@ func (am *AccountMining) Send() {
 	avgAccountMiningPrice = avgAccountMiningPrice / float64(details.Count)
 	log.Msgf("Block[%d]: mined %d, total %d of 5000 accounts, avg price per account: %f ETH, eip 1559 baseFee is %f",
 		am.CurrentBlockNum, details.Count, am.TotalCount, avgAccountMiningPrice, eipBaseFee)
-
+	am.canSend = false
 }
-func (am *AccountMining) Sync(startNum int64) {
-	latestBlockNum := am.GetLatestBlockNumber()
+func (am *AccountMining) Sync(startNum, latestBlockNum int64) {
 	txLogs, err := am.GetLogs(startNum, latestBlockNum, am.Address)
 	log.CheckFatal(err)
 	for _, txLog := range txLogs {
-		if am.CurrentBlockNum != 0 && am.CurrentBlockNum != int64(txLog.BlockNumber) {
+		if am.CurrentBlockNum != int64(txLog.BlockNumber) {
 			am.Send()
 		}
+		am.canSend = true
 		am.CurrentBlockNum = int64(txLog.BlockNumber)
 		switch txLog.Topics[0] {
 		case core.Topic("Claimed(uint256,address)"):
@@ -138,10 +139,10 @@ func StartServer(lc fx.Lifecycle, client *ethclient.Client, config *config.Confi
 				am.init()
 				var startNum int64 = 0
 				for !am.IsFinished() {
-					am.Sync(startNum)
+					latestBlockNum := am.GetLatestBlockNumber()
+					am.Sync(startNum, latestBlockNum)
 					am.Send()
-					startNum = am.CurrentBlockNum + 1
-					am.CurrentBlockNum = 0
+					startNum = latestBlockNum + 1
 					if am.TotalCount == 5000 {
 						am.finished = true
 						log.Msg("Mining finished")
