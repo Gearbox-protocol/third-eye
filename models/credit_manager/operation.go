@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -326,7 +325,6 @@ func (mdl *CreditManager) PoolBorrow(txLog *types.Log, sessionId, borrower strin
 }
 
 func (mdl *CreditManager) PoolRepay(blockNum int64, logId uint, txHash, sessionId, borrower string, amount *big.Int) {
-	log.Info("string", len(borrower),len(sessionId))
 	mdl.Repo.AddPoolLedger(&core.PoolLedger{
 		LogId:       logId,
 		BlockNumber: blockNum,

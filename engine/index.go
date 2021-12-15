@@ -33,7 +33,7 @@ func NewEngine(config *config.Config,
 }
 
 func (e *Engine) init() {
-	e.syncBlockBatchSize = 1000 * 5
+	e.syncBlockBatchSize = 100 * 5
 	kit := e.repo.GetKit()
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {

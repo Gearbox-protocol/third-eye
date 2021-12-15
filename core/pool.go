@@ -55,7 +55,6 @@ type PoolLedger struct {
 	Event       string  `gorm:"column:event" json:"event"`
 	AmountBI    *BigInt `gorm:"column:amount_bi" json:"-"`
 	Amount      float64 `gorm:"column:amount" json:"amount"`
-	TimeStamp   int64   `gorm:"column:timestamp" json:"timestamp"`
 }
 
 func (PoolLedger) TableName() string {
