@@ -1,6 +1,7 @@
 package core
 
 import (
+	"fmt"
 	"github.com/Gearbox-protocol/third-eye/artifacts/eRC20"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -8,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
-	"fmt"
 )
 
 type Token struct {
@@ -37,7 +37,7 @@ func (t *Token) init() {
 		log.Fatal(err, t.Address)
 	}
 	if symbol, err := contract.Symbol(&bind.CallOpts{}); err != nil {
-		panic(fmt.Sprintf("%s %s",err, t.Address))
+		panic(fmt.Sprintf("%s %s", err, t.Address))
 	} else {
 		t.Symbol = symbol
 	}

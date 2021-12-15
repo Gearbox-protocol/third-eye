@@ -55,6 +55,7 @@ type RepositoryI interface {
 	// pools
 	AddPoolStat(ps *PoolStat)
 	AddPoolLedger(pl *PoolLedger)
+	SetWETHAddr(address string)
 	GetPoolUniqueUserLen(pool string) int
 	// credit manager
 	AddCreditManagerStats(cms *CreditManagerStat)

@@ -216,7 +216,7 @@ func (repo *Repository) GetUnderlyingDecimal(cmAddr string) int8 {
 }
 
 func (repo *Repository) GetTokenPrice(addr string) *big.Int {
-	if repo.config.WETHAddr == addr {
+	if repo.WETHAddr == addr {
 		return core.WETHPrice
 	} else {
 		return repo.tokenLastPrice[addr].PriceETHBI.Convert()

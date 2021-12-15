@@ -38,7 +38,7 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		if ap.Details["dc"] != nil {
 			dcMap, ok := (ap.Details["dc"]).(map[string]interface{})
 			if !ok {
-				log.Fatal("Converting address provider() details for dc to map failed", ap.GetAddress())
+				log.Fatalf("Converting address provider() details for dc to map failed %v", ap.Details["dc"])
 			}
 			for k, dcAddr := range dcMap {
 				blockNum, err := strconv.ParseInt(k, 10, 64)
@@ -47,6 +47,13 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 				}
 				repo.AddDataCompressor(blockNum, dcAddr.(string))
 			}
+		}
+		if ap.Details["weth"] != nil {
+			weth, ok := (ap.Details["weth"]).(string)
+			if !ok {
+				log.Fatalf("weth is set in addressprovider sync adapter but it is not string %v", ap.Details["weth"])
+			}
+			repo.SetWETHAddr(weth)
 		}
 		return ap
 	case core.AccountFactory:

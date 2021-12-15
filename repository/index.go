@@ -39,6 +39,7 @@ type Repository struct {
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*core.PoolInterestData
 	debts                  []*core.Debt
+	WETHAddr               string
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
@@ -159,4 +160,9 @@ func (repo *Repository) FlushAndDebt() {
 func (repo *Repository) calculateDebtAndClear() {
 	repo.calculateDebt()
 	repo.clear()
+}
+
+func (repo *Repository) SetWETHAddr(addr string) {
+	log.Info("##########Set weth", addr)
+	repo.WETHAddr = addr
 }
