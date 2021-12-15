@@ -122,4 +122,5 @@ func (repo *Repository) clear() {
 		}
 	}
 	repo.blocks = map[int64]*core.Block{}
+	repo.debts = []*core.Debt{}
 }
