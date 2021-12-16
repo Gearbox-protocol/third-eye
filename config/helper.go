@@ -58,10 +58,22 @@ func NewConfig() *Config {
 		log.Fatal("Cant get chain id")
 	}
 
-	if config.DebtDCMatching == "1" {
-		config.DebtCheck = true
+	if config.DebtDCMatchingStr == "1" {
+		config.DebtDCMatching = true
 	} else {
-		config.DebtCheck = false
+		config.DebtDCMatching = false
+	}
+
+	if config.DisableDebtEngineStr == "1" {
+		config.DisableDebtEngine = true
+	} else {
+		config.DisableDebtEngine = false
+	}
+
+	if config.ThrottleDebtCalStr == "1" {
+		config.ThrottleDebtCal = true
+	} else {
+		config.ThrottleDebtCal = false
 	}
 
 	config.ChainId = uint(chainId)

@@ -10,20 +10,6 @@ import (
 	"sort"
 )
 
-func (repo *Repository) loadLastDebtSync() int64 {
-	data := core.DebtSync{}
-	query := "SELECT max(last_calculated_at) as last_calculated_at FROM debt_sync"
-	err := repo.db.Raw(query).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	return data.LastCalculatedAt
-}
-
-func (repo *Repository) AddDebt(debt *core.Debt) {
-	repo.debts = append(repo.debts, debt)
-}
-
 func (repo *Repository) SaveProfile(profile string) {
 	err := repo.db.Create(&core.ProfileTable{Profile: profile}).Error
 	if err != nil {
@@ -74,6 +60,7 @@ func (repo *Repository) calculateDebt() {
 		// update price
 		for _, pf := range block.GetPriceFeeds() {
 			repo.AddTokenLastPrice(pf)
+			repo.addThrottleDetailsFromPriceFeed(pf)
 			// set the price session list to update
 			for _, sessionId := range sessionWithTokens[pf.Token] {
 				sessionsToUpdate[sessionId] = true
@@ -171,7 +158,7 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		CalThresholdValueBI:             calReducedThresholdValue.String(),
 	}
 	// use data compressor if debt check is enabled
-	if repo.config.DebtCheck {
+	if repo.config.DebtDCMatching {
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(blockNum),
 		}

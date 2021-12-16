@@ -19,6 +19,7 @@ type Repository struct {
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
+	WETHAddr      string
 	db            *gorm.DB
 	kit           *core.AdapterKit
 	client        *ethclient.Client
@@ -38,8 +39,9 @@ type Repository struct {
 	//// credit_manager -> token -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*core.PoolInterestData
+	tokenThrottleDetails   map[string]*core.ThrottleDetail
 	debts                  []*core.Debt
-	WETHAddr               string
+	lastDebts              map[string]*core.Debt
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
@@ -60,6 +62,8 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		allowedTokensThreshold: make(map[string]map[string]*core.BigInt),
 		poolLastInterestData:   make(map[string]*core.PoolInterestData),
 		dcWrapper:              core.NewDataCompressorWrapper(client),
+		lastDebts:              make(map[string]*core.Debt),
+		tokenThrottleDetails:   make(map[string]*core.ThrottleDetail),
 	}
 	r.init()
 	return r
@@ -83,11 +87,31 @@ func (repo *Repository) init() {
 	repo.loadPool()
 	repo.loadCreditManagers()
 	repo.loadCreditSessions(lastDebtSync)
+	repo.debtInit()
+}
+
+func (repo *Repository) debtInit() {
+	lastDebtSync := repo.loadLastDebtSync()
 	repo.loadLastCSS(lastDebtSync)
 	repo.loadTokenLastPrice(lastDebtSync)
 	repo.loadAllowedTokenThreshold(lastDebtSync)
 	repo.loadPoolLastInterestData(lastDebtSync)
-	repo.loadBlocks(lastDebtSync)
+	repo.loadLastDebts()
+	repo.loadThrottleDetails(lastDebtSync)
+	// process blocks for calculating debts
+	adaptersSyncedTill := repo.loadLastAdapterSync()
+	var batchSize int64 = 1000
+	for ; lastDebtSync+batchSize<adaptersSyncedTill; lastDebtSync+=batchSize {
+		repo.processBlocksInBatch(lastDebtSync, lastDebtSync+batchSize)
+	}
+	repo.processBlocksInBatch(lastDebtSync, adaptersSyncedTill)
+}
+
+func (repo *Repository) processBlocksInBatch(from, to int64) {
+	repo.loadBlocks(from, to)
+	if len(repo.blocks) > 0 {
+		repo.calculateDebtAndClear()
+	}
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
@@ -136,19 +160,16 @@ func (repo *Repository) ConvertToBalance(balances []mainnet.DataTypesTokenBalanc
 	return &jsonBalance
 }
 
-func (repo *Repository) loadBlocks(lastDebtSync int64) {
+func (repo *Repository) loadBlocks(from, to int64) {
 	data := []*core.Block{}
 	err := repo.db.Preload("CSS").Preload("PoolStats").
 		Preload("AllowedTokens").Preload("PriceFeeds").
-		Find(&data, "id > ?", lastDebtSync).Error
+		Find(&data, "id > ? AND id <= ?", from, to).Error
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, block := range data {
 		repo.blocks[block.BlockNumber] = block
-	}
-	if len(data) > 0 {
-		repo.calculateDebtAndClear()
 	}
 }
 
@@ -158,7 +179,9 @@ func (repo *Repository) FlushAndDebt() {
 }
 
 func (repo *Repository) calculateDebtAndClear() {
-	repo.calculateDebt()
+	if !repo.config.DisableDebtEngine {
+		repo.calculateDebt()
+	}
 	repo.clear()
 }
 

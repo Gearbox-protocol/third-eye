@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
 	"time"
 )
@@ -116,8 +117,12 @@ func (repo *Repository) flushDebt(newDebtSyncTill int64) {
 }
 
 func (repo *Repository) clear() {
+	var maxBlockNum int64
+	for num := range repo.blocks {
+		maxBlockNum = utils.Max(maxBlockNum, num)
+	}
 	for _, session := range repo.sessions {
-		if session.ClosedAt != 0 {
+		if session.ClosedAt != 0 && maxBlockNum >= session.ClosedAt {
 			delete(repo.sessions, session.ID)
 		}
 	}
