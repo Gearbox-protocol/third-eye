@@ -18,7 +18,11 @@ func (repo *Repository) SaveProfile(profile string) {
 }
 
 func (repo *Repository) calculateDebt() {
-	blockNums := make([]int64, 0, len(repo.blocks))
+	noOfBlock := len(repo.blocks)
+	blockNums := make([]int64, 0, noOfBlock)
+	log.Info("######################")
+	log.Info("Calculting debts for blocks: %d", noOfBlock)
+	log.Info("######################")
 	for blockNum := range repo.blocks {
 		blockNums = append(blockNums, blockNum)
 	}
@@ -84,9 +88,8 @@ func (repo *Repository) calculateDebt() {
 		}
 		repo.flushDebt(blockNum)
 	}
-	// blockNumLen := len(blockNums)
-	// if blockNumLen > 0 {
-	// 	repo.flushDebt(blockNums[blockNumLen-1])
+	// if noOfBlock > 0 {
+	// 	repo.flushDebt(blockNums[noOfBlock-1])
 	// }
 }
 

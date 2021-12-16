@@ -105,7 +105,7 @@ func (repo *Repository) flushDebt(newDebtSyncTill int64) {
 	}
 	log.Infof("Flushing %d for block:%d", debtLen, newDebtSyncTill)
 	tx := repo.db.Begin()
-	err := tx.Create(core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
+	err := tx.Updates(core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
 	log.CheckFatal(err)
 	err = tx.CreateInBatches(repo.debts, 50).Error
 	log.CheckFatal(err)
