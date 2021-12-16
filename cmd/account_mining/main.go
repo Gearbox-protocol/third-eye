@@ -142,9 +142,9 @@ func StartServer(lc fx.Lifecycle, client *ethclient.Client, config *config.Confi
 				var startNum int64 = 0
 				for !am.IsFinished() {
 					latestBlockNum := am.GetLatestBlockNumber()
-					am.Sync(startNum, latestBlockNum)
+					am.Sync(startNum, latestBlockNum-2)
 					am.Send()
-					startNum = latestBlockNum + 1
+					startNum = latestBlockNum - 1
 					if am.TotalCount == 5000 {
 						am.finished = true
 						log.Msg("Mining finished")
