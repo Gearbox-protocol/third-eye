@@ -110,8 +110,10 @@ func (am *AccountMining) isMiningStarted(gearToken string) {
 		log.CheckFatal(err)
 		for _, txLog := range logs {
 			if txLog.Topics[0] == core.Topic("MinerSet(address)") {
-				log.Msgf("Mining Started at %d", txLog.BlockNumber)
-				return
+				if common.HexToAddress(txLog.Topics[1].Hex()).Hex() == am.Address {
+					log.Msgf("Mining Started at %d", txLog.BlockNumber)
+					return
+				}
 			}
 		}
 		time.Sleep(time.Second * 30)
