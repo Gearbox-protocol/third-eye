@@ -101,7 +101,7 @@ func (repo *Repository) debtInit() {
 	// process blocks for calculating debts
 	adaptersSyncedTill := repo.loadLastAdapterSync()
 	var batchSize int64 = 1000
-	for ; lastDebtSync+batchSize<adaptersSyncedTill; lastDebtSync+=batchSize {
+	for ; lastDebtSync+batchSize < adaptersSyncedTill; lastDebtSync += batchSize {
 		repo.processBlocksInBatch(lastDebtSync, lastDebtSync+batchSize)
 	}
 	repo.processBlocksInBatch(lastDebtSync, adaptersSyncedTill)
@@ -186,6 +186,5 @@ func (repo *Repository) calculateDebtAndClear() {
 }
 
 func (repo *Repository) SetWETHAddr(addr string) {
-	log.Info("##########Set weth", addr)
 	repo.WETHAddr = addr
 }

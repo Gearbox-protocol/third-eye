@@ -50,3 +50,14 @@ func (z *JsonBalance) Scan(value interface{}) error {
 		return fmt.Errorf("Could not scan type %T", t)
 	}
 }
+
+func (j *JsonBalance) Copy() JsonBalance {
+	var newJB = make(JsonBalance)
+	for k, v := range newJB {
+		newJB[k] = &BalanceType{
+			BI: NewBigInt(v.BI),
+			F:  v.F,
+		}
+	}
+	return newJB
+}

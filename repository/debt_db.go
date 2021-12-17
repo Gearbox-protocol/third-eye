@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"math/big"
 )
 
 func (repo *Repository) loadLastDebtSync() int64 {
@@ -27,13 +28,16 @@ func (repo *Repository) loadLastAdapterSync() int64 {
 	return data.LastCalculatedAt
 }
 
-func (repo *Repository) AddDebt(debt *core.Debt) {
+func (repo *Repository) AddDebt(debt *core.Debt, forceAdd bool) {
 	if repo.config.ThrottleDebtCal {
 		lastDebt := repo.lastDebts[debt.SessionId]
-		if lastDebt == nil {
+		// add debt if throttle is enabled and (last debt is missing or forced add is set)
+		if lastDebt == nil || forceAdd {
 			repo.addLastDebt(debt)
 			repo.debts = append(repo.debts, debt)
-		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= repo.sessionBasedThrottleLimit(debt.SessionId) ||
+		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr ||
+			core.DiffMoreThanFraction(lastDebt.TotalValueBI, debt.TotalValueBI, big.NewFloat(0.05)) ||
+			core.DiffMoreThanFraction(lastDebt.BorrowedAmountPlusInterestBI, debt.CalBorrowedAmountPlusInterestBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt
 			(debt.CalHealthFactor >= 10000) != (lastDebt.CalHealthFactor >= 10000) {
 			repo.addLastDebt(debt)
@@ -83,7 +87,7 @@ func (repo *Repository) addThrottleDetailsFromPriceFeed(pf *core.PriceFeed) {
 	td := repo.tokenThrottleDetails[pf.Token]
 	if td == nil {
 		td = &core.ThrottleDetail{Token: pf.Token, MinBlockNum: pf.BlockNumber}
-		td = repo.tokenThrottleDetails[pf.Token]
+		repo.tokenThrottleDetails[pf.Token] = td
 	}
 	td.CurrentBlockNum = pf.BlockNumber
 	td.Count++
@@ -93,11 +97,13 @@ func (repo *Repository) sessionBasedMinUpdatePeriod(sessionId string) int64 {
 	css := repo.lastCSS[sessionId]
 	var minPriceFeedUpdatePeriod int64 = math.MaxInt64
 	for token, balance := range *css.Balances {
-		if balance.BI.Convert().Sign() == 0 {
-			continue
+		var tokenUpdatePeriod int64
+		if balance.BI.Convert().Sign() == 0 || repo.WETHAddr == token {
+			tokenUpdatePeriod = core.NoOfBlocksPerHr
+		} else {
+			td := repo.tokenThrottleDetails[token]
+			tokenUpdatePeriod = (td.CurrentBlockNum - td.MinBlockNum) / td.Count
 		}
-		td := repo.tokenThrottleDetails[token]
-		tokenUpdatePeriod := (td.CurrentBlockNum - td.MinBlockNum) / td.Count
 		if minPriceFeedUpdatePeriod > tokenUpdatePeriod {
 			minPriceFeedUpdatePeriod = tokenUpdatePeriod
 		}
@@ -107,9 +113,11 @@ func (repo *Repository) sessionBasedMinUpdatePeriod(sessionId string) int64 {
 
 func (repo *Repository) sessionBasedThrottleLimit(sessionId string) int64 {
 	minPeriod := repo.sessionBasedMinUpdatePeriod(sessionId)
-	if minPeriod > 60*core.NoOfBlocksPerMin {
+	log.Info(minPeriod, core.NoOfBlocksPerHr)
+	if minPeriod > core.NoOfBlocksPerHr {
 		return minPeriod
 	} else {
-		return 60 * core.NoOfBlocksPerMin
+
+		return core.NoOfBlocksPerHr
 	}
 }

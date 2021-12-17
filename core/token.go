@@ -8,7 +8,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type Token struct {
@@ -60,7 +59,7 @@ func (AllowedToken) TableName() string {
 	return "allowed_tokens"
 }
 
-func CompareBalance(a, b *big.Int, token *Token) bool {
+func CompareBalance(a, b *BigInt, token *Token) bool {
 	precision := utils.GetPrecision(token.Symbol)
-	return utils.AlmostSameBigInt(a, b, token.Decimals, precision)
+	return utils.AlmostSameBigInt(a.Convert(), b.Convert(), token.Decimals, precision)
 }

@@ -20,9 +20,6 @@ func (repo *Repository) SaveProfile(profile string) {
 func (repo *Repository) calculateDebt() {
 	noOfBlock := len(repo.blocks)
 	blockNums := make([]int64, 0, noOfBlock)
-	log.Info("######################")
-	log.Info("Calculting debts for blocks: %d", noOfBlock)
-	log.Info("######################")
 	for blockNum := range repo.blocks {
 		blockNums = append(blockNums, blockNum)
 	}
@@ -86,6 +83,9 @@ func (repo *Repository) calculateDebt() {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
 		}
+		if len(sessionsToUpdate) > 0 {
+			log.Infof("Calculated %d debts for block %d", len(sessionsToUpdate), blockNum)
+		}
 		repo.flushDebt(blockNum)
 	}
 	// if noOfBlock > 0 {
@@ -122,7 +122,6 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 	sessionSnapshot := repo.lastCSS[sessionId]
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
-	profile := core.DebtProfile{}
 	underlyingtoken := repo.GetToken(cumIndexAndUToken.Token)
 	// profiling
 	tokenDetails := map[string]core.TokenDetails{}
@@ -156,10 +155,12 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		BlockNumber:                     blockNum,
 		SessionId:                       sessionId,
 		CalHealthFactor:                 big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest).Int64(),
-		CalTotalValue:                   calTotalValue.String(),
-		CalBorrowedAmountPlusInterestBI: calBorrowWithInterest.String(),
-		CalThresholdValueBI:             calReducedThresholdValue.String(),
+		CalTotalValue:                   (*core.BigInt)(calTotalValue),
+		CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
+		CalThresholdValueBI:             (*core.BigInt)(calReducedThresholdValue),
 	}
+	var notMatched bool
+	profile := core.DebtProfile{}
 	// use data compressor if debt check is enabled
 	if repo.config.DebtDCMatching {
 		opts := &bind.CallOpts{
@@ -174,22 +175,33 @@ func (repo *Repository) CalculateSessionDebt(blockNum int64, sessionId string, c
 		}
 		// set debt data fetched from dc
 		debt.HealthFactor = data.HealthFactor.Int64()
-		debt.TotalValueBI = data.TotalValue.String()
-		debt.BorrowedAmountPlusInterestBI = data.BorrowedAmountPlusInterest.String()
-		// check if data compressor and calculated values match
-		if !core.CompareBalance(calTotalValue, data.TotalValue, underlyingtoken) ||
-			!core.CompareBalance(calBorrowWithInterest, data.BorrowedAmountPlusInterest, underlyingtoken) {
-			profile.CumIndexAndUToken = cumIndexAndUToken
-			profile.Debt = debt
-			profile.CreditSessionSnapshot = sessionSnapshot
+		debt.TotalValueBI = (*core.BigInt)(data.TotalValue)
+		debt.BorrowedAmountPlusInterestBI = (*core.BigInt)(data.BorrowedAmountPlusInterest)
+		if !core.CompareBalance(debt.CalTotalValue, debt.TotalValueBI, underlyingtoken) ||
+			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) {
 			profile.RPCBalances = *repo.ConvertToBalance(data.Balances)
-			profile.UnderlyingDecimals = underlyingtoken.Decimals
-			profile.Tokens = tokenDetails
-			log.Infof("Debt fields different from data compressor fields: %s", profile.Json())
-			repo.SaveProfile(string(profile.Json()))
+			notMatched = true
+		}
+		// even if data compressor matching is disabled check the values  with values at which last credit snapshot was taken
+	} else if sessionSnapshot.BlockNum == blockNum {
+		debt.HealthFactor = sessionSnapshot.HealthFactor
+		debt.TotalValueBI = sessionSnapshot.TotalValueBI
+		if !core.CompareBalance(debt.CalTotalValue, debt.TotalValueBI, underlyingtoken) {
+			profile.RPCBalances = sessionSnapshot.Balances.Copy()
+			notMatched = true
 		}
 	}
-	repo.AddDebt(debt)
+	if notMatched {
+		profile.CumIndexAndUToken = cumIndexAndUToken
+		profile.Debt = debt
+		profile.CreditSessionSnapshot = sessionSnapshot
+		profile.UnderlyingDecimals = underlyingtoken.Decimals
+		profile.Tokens = tokenDetails
+		log.Infof("Debt fields different from data compressor fields: %s", profile.Json())
+		repo.SaveProfile(string(profile.Json()))
+	}
+	// check if data compressor and calculated values match
+	repo.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
 }
 
 func (repo *Repository) GetCMState(cmAddr string) *core.CreditManagerState {
