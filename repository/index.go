@@ -39,7 +39,6 @@ type Repository struct {
 	//// credit_manager -> token -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*core.PoolInterestData
-	tokenThrottleDetails   map[string]*core.ThrottleDetail
 	debts                  []*core.Debt
 	lastDebts              map[string]*core.Debt
 }
@@ -63,7 +62,6 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		poolLastInterestData:   make(map[string]*core.PoolInterestData),
 		dcWrapper:              core.NewDataCompressorWrapper(client),
 		lastDebts:              make(map[string]*core.Debt),
-		tokenThrottleDetails:   make(map[string]*core.ThrottleDetail),
 	}
 	r.init()
 	return r
@@ -97,7 +95,6 @@ func (repo *Repository) debtInit() {
 	repo.loadAllowedTokenThreshold(lastDebtSync)
 	repo.loadPoolLastInterestData(lastDebtSync)
 	repo.loadLastDebts()
-	repo.loadThrottleDetails(lastDebtSync)
 	// process blocks for calculating debts
 	adaptersSyncedTill := repo.loadLastAdapterSync()
 	var batchSize int64 = 1000

@@ -61,7 +61,6 @@ func (repo *Repository) calculateDebt() {
 		// update price
 		for _, pf := range block.GetPriceFeeds() {
 			repo.AddTokenLastPrice(pf)
-			repo.addThrottleDetailsFromPriceFeed(pf)
 			// set the price session list to update
 			for _, sessionId := range sessionWithTokens[pf.Token] {
 				sessionsToUpdate[sessionId] = true

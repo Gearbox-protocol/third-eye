@@ -62,10 +62,3 @@ type ProfileTable struct {
 func (ProfileTable) TableName() string {
 	return "profiles"
 }
-
-type ThrottleDetail struct {
-	Token           string `gorm:"column:token"`
-	Count           int64  `gorm:"column:count"`
-	MinBlockNum     int64  `gorm:"column:min_block_num"`
-	CurrentBlockNum int64  `gorm:"column:current_block_num"`
-}

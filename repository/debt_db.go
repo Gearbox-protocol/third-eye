@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"math"
-
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"math/big"
@@ -64,60 +62,4 @@ func (repo *Repository) loadLastDebts() {
 
 func (repo *Repository) addLastDebt(debt *core.Debt) {
 	repo.lastDebts[debt.SessionId] = debt
-}
-
-func (repo *Repository) loadThrottleDetails(syncedTill int64) {
-	data := []*core.ThrottleDetail{}
-	query := `SELECT token, count(block_num), min(block_num) as min_block_num, max(block_num) as current_block_num FROM 
-		price_feeds where block_num <= ? group by token`
-	err := repo.db.Raw(query, syncedTill).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, throttleDetails := range data {
-		repo.addThrottleDetails(throttleDetails)
-	}
-}
-
-func (repo *Repository) addThrottleDetails(td *core.ThrottleDetail) {
-	repo.tokenThrottleDetails[td.Token] = td
-}
-
-func (repo *Repository) addThrottleDetailsFromPriceFeed(pf *core.PriceFeed) {
-	td := repo.tokenThrottleDetails[pf.Token]
-	if td == nil {
-		td = &core.ThrottleDetail{Token: pf.Token, MinBlockNum: pf.BlockNumber}
-		repo.tokenThrottleDetails[pf.Token] = td
-	}
-	td.CurrentBlockNum = pf.BlockNumber
-	td.Count++
-}
-
-func (repo *Repository) sessionBasedMinUpdatePeriod(sessionId string) int64 {
-	css := repo.lastCSS[sessionId]
-	var minPriceFeedUpdatePeriod int64 = math.MaxInt64
-	for token, balance := range *css.Balances {
-		var tokenUpdatePeriod int64
-		if balance.BI.Convert().Sign() == 0 || repo.WETHAddr == token {
-			tokenUpdatePeriod = core.NoOfBlocksPerHr
-		} else {
-			td := repo.tokenThrottleDetails[token]
-			tokenUpdatePeriod = (td.CurrentBlockNum - td.MinBlockNum) / td.Count
-		}
-		if minPriceFeedUpdatePeriod > tokenUpdatePeriod {
-			minPriceFeedUpdatePeriod = tokenUpdatePeriod
-		}
-	}
-	return minPriceFeedUpdatePeriod
-}
-
-func (repo *Repository) sessionBasedThrottleLimit(sessionId string) int64 {
-	minPeriod := repo.sessionBasedMinUpdatePeriod(sessionId)
-	log.Info(minPeriod, core.NoOfBlocksPerHr)
-	if minPeriod > core.NoOfBlocksPerHr {
-		return minPeriod
-	} else {
-
-		return core.NoOfBlocksPerHr
-	}
 }
