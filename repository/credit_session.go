@@ -37,3 +37,7 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {
 	return repo.sessions[sessionId]
 }
+
+func (repo *Repository) GetSessions() map[string]*core.CreditSession {
+	return repo.sessions
+}

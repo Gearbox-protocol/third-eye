@@ -16,6 +16,7 @@ type Engine struct {
 	*core.Node
 	config              *config.Config
 	repo                core.RepositoryI
+	debtEng             core.DebtEngineI
 	syncBlockBatchSize  int64
 	currentlySyncedTill int64
 }
@@ -33,6 +34,7 @@ func NewEngine(config *config.Config,
 }
 
 func (e *Engine) init() {
+	// repo initialisation
 	e.syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
 	kit := e.repo.GetKit()
 	kit.Details()
@@ -44,6 +46,8 @@ func (e *Engine) init() {
 	} else {
 		e.currentlySyncedTill = kit.First(0).GetLastSync()
 	}
+	// debt engine initialisation
+	e.debtEng.Init()
 }
 
 func (e *Engine) SyncHandler() {
@@ -91,7 +95,7 @@ func (e *Engine) sync(syncTill int64) {
 		kit.Reset(lvlIndex)
 		wg.Wait()
 	}
-	e.repo.FlushAndDebt()
+	e.FlushAndDebt()
 	e.currentlySyncedTill = syncTill
 }
 
@@ -117,4 +121,9 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 	// after sync
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
+}
+
+func (e *Engine) FlushAndDebt() {
+	e.repo.Flush()
+	e.debtEng.CalculateDebtAndClear()
 }

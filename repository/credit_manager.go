@@ -18,3 +18,21 @@ func (repo *Repository) loadCreditManagers() {
 		}
 	}
 }
+
+func (repo *Repository) GetCMState(cmAddr string) *core.CreditManagerState {
+	state := repo.kit.GetAdapter(cmAddr).GetUnderlyingState()
+	cm, ok := state.(*core.CreditManagerState)
+	if !ok {
+		log.Fatal("Type assertion for credit manager state failed")
+	}
+	return cm
+}
+
+func (repo *Repository) GetUnderlyingDecimal(cmAddr string) int8 {
+	cm := repo.GetCMState(cmAddr)
+	return repo.GetToken(cm.UnderlyingToken).Decimals
+}
+
+func (repo *Repository) AddCreditManagerStats(cms *core.CreditManagerStat) {
+	repo.blocks[cms.BlockNum].AddCreditManagerStats(cms)
+}

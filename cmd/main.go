@@ -10,6 +10,7 @@ import (
 	"context"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/debts"
 	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -47,6 +48,7 @@ func main() {
 		services.Module,
 		engine.Module,
 		fx.NopLogger,
+		debts.Module,
 		fx.Invoke(StartServer),
 	)
 	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)

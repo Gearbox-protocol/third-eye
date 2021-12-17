@@ -28,6 +28,8 @@ type RepositoryI interface {
 	Flush() error
 	// adding block/timestamp
 	SetBlock(blockNum int64)
+	GetBlocks() map[int64]*Block
+	LoadBlocks(from, to int64)
 	// credit account operations
 	AddAccountOperation(accountOperation *AccountOperation)
 	// for getting executeparser
@@ -40,23 +42,31 @@ type RepositoryI interface {
 	AddToken(token string) *Token
 	AddAllowedToken(atoken *AllowedToken)
 	AddTokenObj(token *Token)
-	AddDataCompressor(blockNum int64, addr string)
 	GetToken(addr string) *Token
 	ConvertToBalance(balances []mainnet.DataTypesTokenBalance) *JsonBalance
 	// credit session funcs
 	AddCreditSession(session *CreditSession, loadedFromDB bool)
 	GetCreditSession(sessionId string) *CreditSession
+	GetSessions() map[string]*CreditSession
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
-	GetLastCSS(sessionId string) *CreditSessionSnapshot
-	GetDCWrapper() *DataCompressorWrapper
 	AddEventBalance(eb EventBalance)
-	FlushAndDebt()
+	// dc
+	GetDCWrapper() *DataCompressorWrapper
+	AddDataCompressor(blockNum int64, addr string)
 	// pools
 	AddPoolStat(ps *PoolStat)
 	AddPoolLedger(pl *PoolLedger)
-	SetWETHAddr(address string)
 	GetPoolUniqueUserLen(pool string) int
+	// weth
+	SetWETHAddr(address string)
+	GetWETHAddr() string
 	// credit manager
 	AddCreditManagerStats(cms *CreditManagerStat)
+	GetCMState(cmAddr string) *CreditManagerState
+	GetUnderlyingDecimal(cmAddr string) int8
+	//
+	LoadLastDebtSync() int64
+	LoadLastAdapterSync() int64
+	Clear()
 }

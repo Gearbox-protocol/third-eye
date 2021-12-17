@@ -62,3 +62,9 @@ type ProfileTable struct {
 func (ProfileTable) TableName() string {
 	return "profiles"
 }
+
+type DebtEngineI interface {
+	Clear()
+	Init()
+	CalculateDebtAndClear()
+}

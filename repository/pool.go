@@ -52,26 +52,3 @@ func (repo *Repository) AddPoolLedger(pl *core.PoolLedger) {
 func (repo *Repository) GetPoolUniqueUserLen(pool string) int {
 	return len(repo.poolUniqueUsers[pool])
 }
-
-// pool interest state fetch
-func (repo *Repository) loadPoolLastInterestData(lastDebtSync int64) {
-	data := []*core.PoolInterestData{}
-	query := `SELECT * FROM pool_stats 
-	JOIN (SELECT max(block_num) as bn, pool FROM pool_stats WHERE block_num <= ? group by pool) as p
-	JOIN blocks ON p.bn = blocks.id
-	ON p.bn = pool_stats.block_num
-	AND p.pool = pool_stats.pool;`
-	err := repo.db.Raw(query, lastDebtSync).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, pd := range data {
-		repo.AddPoolLastInterestData(pd)
-	}
-}
-
-func (repo *Repository) AddPoolLastInterestData(pd *core.PoolInterestData) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.poolLastInterestData[pd.Address] = pd
-}

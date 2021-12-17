@@ -98,25 +98,7 @@ func check(err error) {
 	}
 }
 
-func (repo *Repository) flushDebt(newDebtSyncTill int64) {
-	debtLen := len(repo.debts)
-	if debtLen == 0 {
-		return
-	}
-	log.Infof("Flushing %d for block:%d", debtLen, newDebtSyncTill)
-	tx := repo.db.Begin()
-	err := tx.Create(core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
-	log.CheckFatal(err)
-	err = tx.CreateInBatches(repo.debts, 50).Error
-	log.CheckFatal(err)
-	info := tx.Commit()
-	if info.Error != nil {
-		log.Fatal(info.Error, *info.Statement)
-	}
-	repo.debts = []*core.Debt{}
-}
-
-func (repo *Repository) clear() {
+func (repo *Repository) Clear() {
 	var maxBlockNum int64
 	for num := range repo.blocks {
 		maxBlockNum = utils.Max(maxBlockNum, num)
@@ -127,5 +109,4 @@ func (repo *Repository) clear() {
 		}
 	}
 	repo.blocks = map[int64]*core.Block{}
-	repo.debts = []*core.Debt{}
 }

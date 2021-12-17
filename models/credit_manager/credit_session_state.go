@@ -8,7 +8,7 @@ import (
 )
 
 func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
-	for sessionId, _ := range mdl.UpdatedSessions {
+	for sessionId := range mdl.UpdatedSessions {
 		if mdl.ClosedSessions[sessionId] == nil {
 			mdl.updateSession(sessionId, blockNum)
 		}
