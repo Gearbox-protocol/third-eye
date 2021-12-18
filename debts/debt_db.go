@@ -14,8 +14,8 @@ func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 			eng.addLastDebt(debt)
 			eng.debts = append(eng.debts, debt)
 		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr ||
-			core.DiffMoreThanFraction(lastDebt.TotalValueBI, debt.TotalValueBI, big.NewFloat(0.05)) ||
-			core.DiffMoreThanFraction(lastDebt.BorrowedAmountPlusInterestBI, debt.CalBorrowedAmountPlusInterestBI, big.NewFloat(0.05)) ||
+			core.DiffMoreThanFraction(lastDebt.CalTotalValueBI, debt.CalTotalValueBI, big.NewFloat(0.05)) ||
+			core.DiffMoreThanFraction(lastDebt.CalBorrowedAmountPlusInterestBI, debt.CalBorrowedAmountPlusInterestBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt
 			(debt.CalHealthFactor >= 10000) != (lastDebt.CalHealthFactor >= 10000) {
 			eng.addLastDebt(debt)

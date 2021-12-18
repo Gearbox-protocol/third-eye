@@ -85,7 +85,7 @@ func (eng *DebtEngine) calculateDebt() {
 			}
 		}
 		if len(sessionsToUpdate) > 0 {
-			log.Infof("Calculated %d debts for block %d", len(sessionsToUpdate), blockNum)
+			log.Verbosef("Calculated %d debts for block %d", len(sessionsToUpdate), blockNum)
 		}
 		eng.flushDebt(blockNum)
 	}
@@ -156,7 +156,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		BlockNumber:                     blockNum,
 		SessionId:                       sessionId,
 		CalHealthFactor:                 big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest).Int64(),
-		CalTotalValue:                   (*core.BigInt)(calTotalValue),
+		CalTotalValueBI:                 (*core.BigInt)(calTotalValue),
 		CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
 		CalThresholdValueBI:             (*core.BigInt)(calReducedThresholdValue),
 	}
@@ -178,7 +178,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		debt.HealthFactor = data.HealthFactor.Int64()
 		debt.TotalValueBI = (*core.BigInt)(data.TotalValue)
 		debt.BorrowedAmountPlusInterestBI = (*core.BigInt)(data.BorrowedAmountPlusInterest)
-		if !core.CompareBalance(debt.CalTotalValue, debt.TotalValueBI, underlyingtoken) ||
+		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
 			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) {
 			profile.RPCBalances = *eng.repo.ConvertToBalance(data.Balances)
 			notMatched = true
@@ -187,7 +187,9 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	} else if sessionSnapshot.BlockNum == blockNum {
 		debt.HealthFactor = sessionSnapshot.HealthFactor
 		debt.TotalValueBI = sessionSnapshot.TotalValueBI
-		if !core.CompareBalance(debt.CalTotalValue, debt.TotalValueBI, underlyingtoken) {
+		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
+			// if healhFactor diff by 4 %
+			utils.IntDiffMoreThanFraction(debt.CalHealthFactor, debt.HealthFactor, 4) {
 			profile.RPCBalances = sessionSnapshot.Balances.Copy()
 			notMatched = true
 		}

@@ -14,7 +14,7 @@ type Debt struct {
 	TotalValueBI                    *BigInt `gorm:"column:total_value"`
 	BorrowedAmountPlusInterestBI    *BigInt `gorm:"column:borrowed_amt_with_interest"`
 	CalHealthFactor                 int64   `gorm:"column:cal_health_factor"`
-	CalTotalValue                   *BigInt `gorm:"column:cal_total_value"`
+	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value"`
 	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest"`
 	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value"`
 }

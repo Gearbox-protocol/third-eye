@@ -23,10 +23,12 @@ type Engine struct {
 
 func NewEngine(config *config.Config,
 	ec *ethclient.Client,
+	debtEng core.DebtEngineI,
 	repo core.RepositoryI) core.EngineI {
 	return &Engine{
-		config: config,
-		repo:   repo,
+		debtEng: debtEng,
+		config:  config,
+		repo:    repo,
 		Node: &core.Node{
 			Client: ec,
 		},
