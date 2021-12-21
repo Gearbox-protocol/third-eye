@@ -22,7 +22,7 @@ func (repo *Repository) LoadLastDebtSync() int64 {
 
 func (repo *Repository) LoadLastAdapterSync() int64 {
 	data := core.DebtSync{}
-	query := "SELECT max(last_sync) as last_calculated_at FROM sync_adapters"
+	query := "SELECT min(last_sync) as last_calculated_at FROM sync_adapters"
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
