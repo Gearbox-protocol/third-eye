@@ -2,6 +2,7 @@ package utils
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -151,6 +152,13 @@ func absInt64(a int64) int64 {
 	}
 	return -1 * a
 }
+
 func IntDiffMoreThanFraction(oldValue, newValue, diff int64) bool {
 	return absInt64((newValue-oldValue)/oldValue) > diff
+}
+
+func ToJson(obj interface{}) {
+	str, err := json.Marshal(obj)
+	log.CheckFatal(err)
+	log.Info(string(str))
 }

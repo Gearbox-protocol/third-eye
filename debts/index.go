@@ -39,6 +39,9 @@ func NewDebtEngine(db *gorm.DB, client *ethclient.Client, config *config.Config,
 }
 
 func (eng *DebtEngine) Init() {
+	if eng.config.DisableDebtEngine {
+		return
+	}
 	lastDebtSync := eng.repo.LoadLastDebtSync()
 	eng.loadLastCSS(lastDebtSync)
 	eng.loadTokenLastPrice(lastDebtSync)

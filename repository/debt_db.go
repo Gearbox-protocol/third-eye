@@ -12,8 +12,8 @@ func (repo *Repository) LoadLastDebtSync() int64 {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// last debt sync starts from the discover at of address provider to the last debt block stored in debt_sync table 
-	if data.LastCalculatedAt != 0{
+	// last debt sync starts from the discover at of address provider to the last debt block stored in debt_sync table
+	if data.LastCalculatedAt != 0 {
 		return data.LastCalculatedAt
 	} else {
 		return repo.loadDiscoveredAt()

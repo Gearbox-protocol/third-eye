@@ -51,6 +51,12 @@ func DiffMoreThanFraction(oldValue, newValue *BigInt, diff *big.Float) bool {
 		oldFloat)
 	return new(big.Float).Abs(fractionalChange).Cmp(diff) > 1
 }
+func ValueDifferSideOf10000(a, b *BigInt) bool {
+	return (IntGreaterThanEqualTo(a, 10000) != IntGreaterThanEqualTo(b, 10000))
+}
+func IntGreaterThanEqualTo(value *BigInt, cmp int64) bool {
+	return value.Convert().Cmp(big.NewInt(cmp)) >= 0
+}
 
 func AddCoreAndInt(a *BigInt, b *big.Int) *BigInt {
 	if a != nil {

@@ -1,10 +1,10 @@
 package debts
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -150,12 +150,11 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return poolToCI
 }
 
-
 func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) {
 	sessionSnapshot := eng.lastCSS[sessionId]
 	debt, profile := eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, cumIndexAndUToken)
 	// if profile is not null
-	// yearn price feed might be stale as a result differ btw dc and calculated values 
+	// yearn price feed might be stale as a result differ btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
 	if profile != nil {
 		kit := eng.repo.GetKit()
@@ -185,7 +184,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAd
 	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
 }
 
-func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) (*core.Debt, *core.DebtProfile){
+func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) (*core.Debt, *core.DebtProfile) {
 	sessionSnapshot := eng.lastCSS[sessionId]
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
@@ -221,7 +220,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	debt := &core.Debt{
 		BlockNumber:                     blockNum,
 		SessionId:                       sessionId,
-		CalHealthFactor:                 big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest).Int64(),
+		CalHealthFactor:                 (*core.BigInt)(big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest)),
 		CalTotalValueBI:                 (*core.BigInt)(calTotalValue),
 		CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
 		CalThresholdValueBI:             (*core.BigInt)(calReducedThresholdValue),
@@ -232,12 +231,12 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	if eng.config.DebtDCMatching {
 		data := eng.SessionDataFromDC(blockNum, cmAddr, sessionSnapshot.Borrower)
 		// set debt data fetched from dc
-		debt.HealthFactor = data.HealthFactor.Int64()
+		debt.HealthFactor = (*core.BigInt)(data.HealthFactor)
 		debt.TotalValueBI = (*core.BigInt)(data.TotalValue)
 		debt.BorrowedAmountPlusInterestBI = (*core.BigInt)(data.BorrowedAmountPlusInterest)
 		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
 			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) ||
-			(debt.CalHealthFactor >= 10000) != (debt.HealthFactor >= 10000) {
+			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) {
 			profile.RPCBalances = *eng.repo.ConvertToBalance(data.Balances)
 			notMatched = true
 		}
@@ -247,9 +246,9 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		debt.TotalValueBI = sessionSnapshot.TotalValueBI
 		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
 			// hf value calculated are on different side of 1
-			(debt.CalHealthFactor >= 10000) != (debt.HealthFactor >= 10000) ||
+			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) ||
 			// if healhFactor diff by 4 %
-			utils.IntDiffMoreThanFraction(debt.CalHealthFactor, debt.HealthFactor, 4) {
+			core.DiffMoreThanFraction(debt.CalHealthFactor, debt.HealthFactor, big.NewFloat(0.04)) {
 			profile.RPCBalances = sessionSnapshot.Balances.Copy()
 			notMatched = true
 		}

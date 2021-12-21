@@ -66,7 +66,7 @@ func Msgf(msg string, args ...interface{}) {
 
 func Msg(v ...interface{}) {
 	amqpSend(v)
-	args := []interface{}{"[AMPQ]"+detectFunc()}
+	args := []interface{}{"[AMPQ]" + detectFunc()}
 	args = append(args, v...)
 	log.Println(args...)
 }

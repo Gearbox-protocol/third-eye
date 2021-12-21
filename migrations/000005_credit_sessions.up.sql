@@ -12,7 +12,7 @@ CREATE TABLE credit_sessions (
     profit varchar(80),
     profit_percent double precision,
     total_value varchar(80),
-    health_factor integer,
+    health_factor varchar(80),
     name text,
     background text
 );
@@ -31,7 +31,7 @@ CREATE TABLE credit_session_snapshots (
     total_value_usd double precision,
     balances jsonb,
     cumulative_index character varying(80),
-    health_factor integer,
+    health_factor varchar(80),
     borrower character varying(42)
 );
 

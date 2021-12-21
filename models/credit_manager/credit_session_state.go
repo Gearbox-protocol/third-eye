@@ -38,7 +38,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	}
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.Status = closeDetails.Status
-	session.HealthFactor = data.HealthFactor.Int64()
+	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	session.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == core.Repaid {
@@ -97,7 +97,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	session := mdl.Repo.GetCreditSession(sessionId)
 	session.IsDirty = true
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
-	session.HealthFactor = data.HealthFactor.Int64()
+	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	session.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	extraFunds := new(big.Int).Sub(data.TotalValue, data.BorrowedAmountPlusInterest)

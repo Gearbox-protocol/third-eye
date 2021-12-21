@@ -3,14 +3,14 @@ package debts
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"math/big"
 	"gorm.io/gorm/clause"
+	"math/big"
 )
 
 func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 	lastDebt := eng.lastDebts[debt.SessionId]
 	if lastDebt != nil {
-		if (debt.CalHealthFactor < 10000) && (lastDebt.CalHealthFactor > 10000) {
+		if core.ValueDifferSideOf10000(debt.CalHealthFactor, lastDebt.CalHealthFactor) {
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
 			log.Msgf("Session(%s)'s hf changed %d at (block:%d) -> %d at (block:%d)", debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
 		}
@@ -23,7 +23,7 @@ func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 			core.DiffMoreThanFraction(lastDebt.CalTotalValueBI, debt.CalTotalValueBI, big.NewFloat(0.05)) ||
 			core.DiffMoreThanFraction(lastDebt.CalBorrowedAmountPlusInterestBI, debt.CalBorrowedAmountPlusInterestBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt
-			(debt.CalHealthFactor >= 10000) != (lastDebt.CalHealthFactor >= 10000) {
+			core.ValueDifferSideOf10000(debt.CalHealthFactor, lastDebt.CalHealthFactor) {
 			eng.addDebt(debt)
 		}
 	} else {
