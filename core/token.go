@@ -36,7 +36,8 @@ func (t *Token) init() {
 		log.Fatal(err, t.Address)
 	}
 	if symbol, err := contract.Symbol(&bind.CallOpts{}); err != nil {
-		panic(fmt.Sprintf("%s %s", err, t.Address))
+		log.Error(fmt.Sprintf("%s %s", err, t.Address))
+		panic("")
 	} else {
 		t.Symbol = symbol
 	}

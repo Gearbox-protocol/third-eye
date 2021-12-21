@@ -10,9 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"sort"
+	"sync"
 )
 
 type DataCompressorWrapper struct {
+	mu *sync.Mutex
 	// blockNumbers of dc in asc order
 	dcBlockNum     []int64
 	blockNumToName map[int64]string
@@ -27,6 +29,7 @@ var MAINNET = "MAINNET"
 
 func NewDataCompressorWrapper(client *ethclient.Client) *DataCompressorWrapper {
 	return &DataCompressorWrapper{
+		mu:             &sync.Mutex{},
 		blockNumToName: make(map[int64]string),
 		nameToAddr:     make(map[string]string),
 		client:         client,
@@ -69,6 +72,8 @@ func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string)
 }
 
 func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
+	dcw.mu.Lock()
+	defer dcw.mu.Unlock()
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
@@ -111,6 +116,8 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 }
 
 func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditManagerData, error) {
+	dcw.mu.Lock()
+	defer dcw.mu.Unlock()
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
@@ -148,6 +155,8 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _cre
 }
 
 func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.Address) (mainnet.DataTypesPoolData, error) {
+	dcw.mu.Lock()
+	defer dcw.mu.Unlock()
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
