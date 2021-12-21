@@ -44,7 +44,7 @@ type RepositoryI interface {
 	AddAllowedToken(atoken *AllowedToken)
 	AddTokenObj(token *Token)
 	GetToken(addr string) *Token
-	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) *JsonBalance
+	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*JsonBalance, error)
 	// credit session funcs
 	AddCreditSession(session *CreditSession, loadedFromDB bool)
 	GetCreditSession(sessionId string) *CreditSession

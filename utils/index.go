@@ -157,8 +157,8 @@ func IntDiffMoreThanFraction(oldValue, newValue, diff int64) bool {
 	return absInt64((newValue-oldValue)/oldValue) > diff
 }
 
-func ToJson(obj interface{}) {
+func ToJson(obj interface{}) string {
 	str, err := json.Marshal(obj)
 	log.CheckFatal(err)
-	log.Info(string(str))
+	return string(str)
 }

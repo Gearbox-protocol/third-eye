@@ -7,20 +7,38 @@ import (
 
 // For token with symbol/decimals
 func (repo *Repository) AddToken(addr string) *core.Token {
+	token, err := repo.addToken(addr)
+	if err != nil {
+		log.Fatal("Adding token failed for", token)
+	}
+	return token
+}
+
+func (repo *Repository) addToken(addr string) (*core.Token, error) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.tokens[addr] == nil {
-		repo.tokens[addr] = core.NewToken(addr, repo.client)
+		var err error
+		repo.tokens[addr], err = core.NewToken(addr, repo.client)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return repo.tokens[addr]
+	return repo.tokens[addr], nil
 }
 
 func (repo *Repository) GetToken(addr string) *core.Token {
+	token, err := repo.getTokenWithError(addr)
+	log.CheckFatal(err)
+	return token
+}
+
+func (repo *Repository) getTokenWithError(addr string) (*core.Token, error) {
 	token := repo.tokens[addr]
 	if token == nil {
-		return repo.AddToken(addr)
+		return repo.addToken(addr)
 	}
-	return token
+	return token, nil
 }
 
 func (repo *Repository) loadToken() {

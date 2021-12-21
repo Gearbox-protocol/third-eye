@@ -192,23 +192,25 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	// profiling
 	tokenDetails := map[string]core.TokenDetails{}
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
-		if !balance.Linked {
-			continue
-		}
 		decimal := eng.repo.GetToken(tokenAddr).Decimals
 		price := eng.GetTokenLastPrice(tokenAddr)
-		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
-		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-underlyingtoken.Decimals)
 		tokenLiquidityThreshold := eng.allowedTokensThreshold[cmAddr][tokenAddr]
-		tokenThresholdValue := new(big.Int).Mul(tokenValueInDecimal, tokenLiquidityThreshold.Convert())
-		calThresholdValue = new(big.Int).Add(calThresholdValue, tokenThresholdValue)
-		calTotalValue = new(big.Int).Add(calTotalValue, tokenValueInDecimal)
 		// profiling
 		tokenDetails[tokenAddr] = core.TokenDetails{
 			Price:             price,
 			Decimals:          decimal,
 			TokenLiqThreshold: tokenLiquidityThreshold,
 			Symbol:            eng.repo.GetToken(tokenAddr).Symbol}
+		// token not linked continue
+		if !balance.Linked {
+			continue
+		}
+		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
+		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-underlyingtoken.Decimals)
+		tokenThresholdValue := new(big.Int).Mul(tokenValueInDecimal, tokenLiquidityThreshold.Convert())
+		calThresholdValue = new(big.Int).Add(calThresholdValue, tokenThresholdValue)
+		calTotalValue = new(big.Int).Add(calTotalValue, tokenValueInDecimal)
+
 	}
 	// the value of credit account is in terms of underlying asset
 	underlyingPrice := eng.GetTokenLastPrice(cumIndexAndUToken.Token)
@@ -242,7 +244,11 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) {
 			mask := eng.repo.GetMask(blockNum, cmAddr, accountAddr)
-			profile.RPCBalances = eng.repo.ConvertToBalanceWithMask(data.Balances, mask)
+			var err error
+			profile.RPCBalances, err = eng.repo.ConvertToBalanceWithMask(data.Balances, mask)
+			if err != nil {
+				log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, utils.ToJson(eng.repo.GetDCWrapper()))
+			}
 			notMatched = true
 		}
 		// even if data compressor matching is disabled check the values  with values at which last credit snapshot was taken
@@ -300,7 +306,6 @@ func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Info(token, roundData.Answer.String(), utils.GetFloat64Decimal(roundData.Answer, 18))
 	eng.AddTokenLastPrice(&core.PriceFeed{
 		BlockNumber: blockNum,
 		Token:       token,
