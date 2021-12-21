@@ -14,7 +14,7 @@ func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
 	ON atokens.bn = allowed_tokens.block_num
 	AND atokens.credit_manager = allowed_tokens.credit_manager
 	AND atokens.token = allowed_tokens.token
-	WHERE block_num <= ?;`
+	WHERE block_num <= ? ORDER BY block_num;`
 	err := eng.db.Raw(query, lastDebtSync, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)

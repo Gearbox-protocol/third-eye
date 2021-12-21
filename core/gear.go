@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
+	"math/big"
 )
 
 type EngineI interface {
@@ -43,7 +44,7 @@ type RepositoryI interface {
 	AddAllowedToken(atoken *AllowedToken)
 	AddTokenObj(token *Token)
 	GetToken(addr string) *Token
-	ConvertToBalance(balances []mainnet.DataTypesTokenBalance) *JsonBalance
+	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) *JsonBalance
 	// credit session funcs
 	AddCreditSession(session *CreditSession, loadedFromDB bool)
 	GetCreditSession(sessionId string) *CreditSession
@@ -62,6 +63,8 @@ type RepositoryI interface {
 	SetWETHAddr(address string)
 	GetWETHAddr() string
 	// credit manager
+	AddCreditManagerToFilter(cmAddr, cfAddr string)
+	GetMask(blockNum int64, cmAddr, accountAddr string) *big.Int
 	AddCreditManagerStats(cms *CreditManagerStat)
 	GetCMState(cmAddr string) *CreditManagerState
 	GetUnderlyingDecimal(cmAddr string) int8

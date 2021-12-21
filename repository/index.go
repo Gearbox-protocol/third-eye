@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
@@ -12,13 +13,14 @@ type Repository struct {
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
-	WETHAddr      string
-	db            *gorm.DB
-	client        *ethclient.Client
-	config        *config.Config
-	kit           *core.AdapterKit
-	executeParser core.ExecuteParserI
-	dcWrapper     *core.DataCompressorWrapper
+	WETHAddr              string
+	db                    *gorm.DB
+	client                *ethclient.Client
+	config                *config.Config
+	kit                   *core.AdapterKit
+	executeParser         core.ExecuteParserI
+	dcWrapper             *core.DataCompressorWrapper
+	creditManagerToFilter map[string]*creditFilter.CreditFilter
 	// blocks/token
 	blocks map[int64]*core.Block
 	tokens map[string]*core.Token
@@ -30,18 +32,19 @@ type Repository struct {
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
 	r := &Repository{
-		mu:                  &sync.Mutex{},
-		db:                  db,
-		client:              client,
-		config:              config,
-		blocks:              make(map[int64]*core.Block),
-		executeParser:       ep,
-		kit:                 core.NewAdapterKit(),
-		tokens:              make(map[string]*core.Token),
-		sessions:            make(map[string]*core.CreditSession),
-		poolUniqueUsers:     make(map[string]map[string]bool),
-		tokensCurrentOracle: make(map[string]*core.TokenOracle),
-		dcWrapper:           core.NewDataCompressorWrapper(client),
+		mu:                    &sync.Mutex{},
+		db:                    db,
+		client:                client,
+		config:                config,
+		blocks:                make(map[int64]*core.Block),
+		executeParser:         ep,
+		kit:                   core.NewAdapterKit(),
+		tokens:                make(map[string]*core.Token),
+		sessions:              make(map[string]*core.CreditSession),
+		poolUniqueUsers:       make(map[string]map[string]bool),
+		tokensCurrentOracle:   make(map[string]*core.TokenOracle),
+		dcWrapper:             core.NewDataCompressorWrapper(client),
+		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
 	}
 	r.init()
 	return r

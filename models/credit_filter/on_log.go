@@ -3,6 +3,7 @@ package credit_filter
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -36,5 +37,24 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			LiquidityThreshold: (*core.BigInt)(tokenEvent.LiquidityThreshold),
 		})
 		mdl.Repo.AddToken(tokenEvent.Token.Hex())
+	case core.Topic("TokenForbidden(address)"):
+		token := common.HexToAddress(txLog.Topics[1].Hex())
+		mdl.Repo.AddAllowedToken(&core.AllowedToken{
+			BlockNumber:        int64(txLog.BlockNumber),
+			CreditManager:      creditManager,
+			Token:              token.Hex(),
+			LiquidityThreshold: core.NewBigInt(nil),
+		})
+	case core.Topic("ContractForbidden(address)"):
+		contractDisabledEvent, err := mdl.contractETH.ParseContractForbidden(txLog)
+		if err != nil {
+			log.Fatal("[CreditManagerModel]: Cant unpack contract forbidden event", err)
+		}
+		mdl.Repo.AddAllowedProtocol(&core.Protocol{
+			BlockNumber:   blockNum,
+			CreditManager: creditManager,
+			Protocol:      contractDisabledEvent.Protocol.Hex(),
+			Adapter:       common.Address{}.Hex(),
+		})
 	}
 }

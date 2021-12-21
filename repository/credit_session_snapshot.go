@@ -1,9 +1,11 @@
 package repository
 
 import (
+	"fmt"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"math/big"
 )
 
 func (repo *Repository) AddCreditSessionSnapshot(css *core.CreditSessionSnapshot) {
@@ -13,14 +15,16 @@ func (repo *Repository) AddCreditSessionSnapshot(css *core.CreditSessionSnapshot
 	repo.blocks[css.BlockNum].AddCreditSessionSnapshot(css)
 }
 
-func (repo *Repository) ConvertToBalance(balances []mainnet.DataTypesTokenBalance) *core.JsonBalance {
+func (repo *Repository) ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) *core.JsonBalance {
 	jsonBalance := core.JsonBalance{}
-	for _, token := range balances {
+	maskInBits := fmt.Sprintf("%b", mask)
+	for i, token := range balances {
 		tokenAddr := token.Token.Hex()
 		if token.Balance.Sign() != 0 {
 			jsonBalance[tokenAddr] = &core.BalanceType{
-				BI: (*core.BigInt)(token.Balance),
-				F:  utils.GetFloat64Decimal(token.Balance, repo.GetToken(tokenAddr).Decimals),
+				BI:     (*core.BigInt)(token.Balance),
+				F:      utils.GetFloat64Decimal(token.Balance, repo.GetToken(tokenAddr).Decimals),
+				Linked: maskInBits[i] == '1',
 			}
 		}
 	}

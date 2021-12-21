@@ -86,7 +86,8 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	css.Balances = mdl.Repo.ConvertToBalance(data.Balances)
+	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	css.Balances = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
@@ -113,7 +114,8 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	css.Balances = mdl.Repo.ConvertToBalance(data.Balances)
+	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	css.Balances = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))

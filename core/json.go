@@ -29,8 +29,9 @@ func (z *Json) Scan(value interface{}) error {
 }
 
 type BalanceType struct {
-	BI *BigInt `json:"BI"`
-	F  float64 `json:"F"`
+	BI     *BigInt `json:"BI"`
+	F      float64 `json:"F"`
+	Linked bool    `json:"linked"`
 }
 
 type JsonBalance map[string]*BalanceType
@@ -51,7 +52,7 @@ func (z *JsonBalance) Scan(value interface{}) error {
 	}
 }
 
-func (j *JsonBalance) Copy() JsonBalance {
+func (j *JsonBalance) Copy() *JsonBalance {
 	var newJB = make(JsonBalance)
 	for k, v := range (map[string]*BalanceType)(*j) {
 		newJB[k] = &BalanceType{
@@ -59,5 +60,5 @@ func (j *JsonBalance) Copy() JsonBalance {
 			F:  v.F,
 		}
 	}
-	return newJB
+	return &newJB
 }

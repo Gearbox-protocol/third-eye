@@ -81,7 +81,7 @@ func (eng *DebtEngine) calculateDebt() {
 			cmAddr := session.CreditManager
 			// pool cum index is when the pool is not registered
 			if cmAddrToCumIndex[cmAddr] != nil {
-				eng.SessionDebtHandler(blockNum, sessionId, cmAddr, cmAddrToCumIndex[cmAddr])
+				eng.SessionDebtHandler(blockNum, sessionId, cmAddr, session.Account, cmAddrToCumIndex[cmAddr])
 				// send notification when account is liquidated
 				css := eng.lastCSS[sessionId]
 				// for w:= 28126779; w<28126780; w++{
@@ -150,9 +150,9 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return poolToCI
 }
 
-func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) {
+func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAddr, accountAddr string, cumIndexAndUToken *core.CumIndexAndUToken) {
 	sessionSnapshot := eng.lastCSS[sessionId]
-	debt, profile := eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, cumIndexAndUToken)
+	debt, profile := eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, accountAddr, cumIndexAndUToken)
 	// if profile is not null
 	// yearn price feed might be stale as a result differ btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
@@ -173,7 +173,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAd
 				}
 			}
 		}
-		debt, profile = eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, cumIndexAndUToken)
+		debt, profile = eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, accountAddr, cumIndexAndUToken)
 		if profile != nil {
 			log.Fatalf("Debt fields different from data compressor fields: %s", profile.Json())
 			eng.SaveProfile(string(profile.Json()))
@@ -184,7 +184,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAd
 	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
 }
 
-func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) (*core.Debt, *core.DebtProfile) {
+func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr, accountAddr string, cumIndexAndUToken *core.CumIndexAndUToken) (*core.Debt, *core.DebtProfile) {
 	sessionSnapshot := eng.lastCSS[sessionId]
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
@@ -192,6 +192,9 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	// profiling
 	tokenDetails := map[string]core.TokenDetails{}
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
+		if !balance.Linked {
+			continue
+		}
 		decimal := eng.repo.GetToken(tokenAddr).Decimals
 		price := eng.GetTokenLastPrice(tokenAddr)
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
@@ -230,6 +233,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	// use data compressor if debt check is enabled
 	if eng.config.DebtDCMatching {
 		data := eng.SessionDataFromDC(blockNum, cmAddr, sessionSnapshot.Borrower)
+		utils.ToJson(data)
 		// set debt data fetched from dc
 		debt.HealthFactor = (*core.BigInt)(data.HealthFactor)
 		debt.TotalValueBI = (*core.BigInt)(data.TotalValue)
@@ -237,7 +241,8 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
 			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) {
-			profile.RPCBalances = *eng.repo.ConvertToBalance(data.Balances)
+			mask := eng.repo.GetMask(blockNum, cmAddr, accountAddr)
+			profile.RPCBalances = eng.repo.ConvertToBalanceWithMask(data.Balances, mask)
 			notMatched = true
 		}
 		// even if data compressor matching is disabled check the values  with values at which last credit snapshot was taken

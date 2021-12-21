@@ -36,7 +36,7 @@ type TokenDetails struct {
 type DebtProfile struct {
 	*Debt                  `json:"debt"`
 	*CreditSessionSnapshot `json:"css"`
-	RPCBalances            JsonBalance             `json:"rpcBalances"`
+	RPCBalances            *JsonBalance            `json:"rpcBalances"`
 	Tokens                 map[string]TokenDetails `json:"tokens"`
 	UnderlyingDecimals     int8                    `json:"underlyingDecimals"`
 	*CumIndexAndUToken     `json:"poolDetails"`
