@@ -117,7 +117,6 @@ func (eng *DebtEngine) calculateDebt() {
 
 func (eng *DebtEngine) ifAccountClosed(sessionId string, closedAt int64, status int) {
 	if status == core.Liquidated {
-		log.Info(sessionId, closedAt)
 		account := eng.liquidableBlockTracker[sessionId]
 		log.Msgf("Session(%s) liquidated at block:%d liquidable since %d ", sessionId, closedAt, account.BlockNum)
 	} else if status != core.Active {

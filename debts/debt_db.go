@@ -12,7 +12,7 @@ func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 	if lastDebt != nil {
 		if core.ValueDifferSideOf10000(debt.CalHealthFactor, lastDebt.CalHealthFactor) {
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
-			log.Msgf("Session(%s)'s hf changed %d at (block:%d) -> %d at (block:%d)", debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
+			log.Msgf("Session(%s)'s hf changed %s at (block:%d) -> %s at (block:%d)", debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
 		}
 	}
 	if eng.config.ThrottleDebtCal {
