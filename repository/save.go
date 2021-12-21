@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
 	"time"
 )
@@ -97,30 +98,15 @@ func check(err error) {
 	}
 }
 
-func (repo *Repository) flushDebt(newDebtSyncTill int64) {
-	debtLen := len(repo.debts)
-	if debtLen == 0 {
-		return
+func (repo *Repository) Clear() {
+	var maxBlockNum int64
+	for num := range repo.blocks {
+		maxBlockNum = utils.Max(maxBlockNum, num)
 	}
-	log.Infof("Flushing %d for block:%d", debtLen, newDebtSyncTill)
-	tx := repo.db.Begin()
-	err := tx.Create(core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
-	log.CheckFatal(err)
-	err = tx.CreateInBatches(repo.debts, 50).Error
-	log.CheckFatal(err)
-	info := tx.Commit()
-	if info.Error != nil {
-		log.Fatal(info.Error, *info.Statement)
-	}
-	repo.debts = []*core.Debt{}
-}
-
-func (repo *Repository) clear() {
 	for _, session := range repo.sessions {
-		if session.ClosedAt != 0 {
+		if session.ClosedAt != 0 && maxBlockNum >= session.ClosedAt {
 			delete(repo.sessions, session.ID)
 		}
 	}
 	repo.blocks = map[int64]*core.Block{}
-	repo.debts = []*core.Debt{}
 }

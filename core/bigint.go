@@ -10,7 +10,6 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
@@ -40,11 +39,23 @@ func NewBigInt(bi *BigInt) *BigInt {
 	if bi == nil {
 		return (*BigInt)(big.NewInt(0))
 	}
-	obj, ok := new(big.Int).SetString(bi.String(), 10)
-	if !ok {
-		log.Fatal("Failed parsing int", bi)
-	}
+	obj := new(big.Int).Mul(bi.Convert(), big.NewInt(1))
 	return (*BigInt)(obj)
+}
+
+func DiffMoreThanFraction(oldValue, newValue *BigInt, diff *big.Float) bool {
+	newFloat := new(big.Float).SetInt(newValue.Convert())
+	oldFloat := new(big.Float).SetInt(oldValue.Convert())
+	fractionalChange := new(big.Float).Quo(
+		new(big.Float).Sub(newFloat, oldFloat),
+		oldFloat)
+	return new(big.Float).Abs(fractionalChange).Cmp(diff) > 1
+}
+func ValueDifferSideOf10000(a, b *BigInt) bool {
+	return (IntGreaterThanEqualTo(a, 10000) != IntGreaterThanEqualTo(b, 10000))
+}
+func IntGreaterThanEqualTo(value *BigInt, cmp int64) bool {
+	return value.Convert().Cmp(big.NewInt(cmp)) >= 0
 }
 
 func AddCoreAndInt(a *BigInt, b *big.Int) *BigInt {

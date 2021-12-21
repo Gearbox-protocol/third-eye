@@ -26,7 +26,7 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 	defer repo.mu.Unlock()
 	if repo.sessions[session.ID] == nil {
 		if !loadedFromDB {
-			log.Infof("Add creditAccount(%s) with sessionId %s", session.Account, session.ID)
+			log.Infof("Add session %s", session.ID)
 		}
 		repo.sessions[session.ID] = session
 	} else {
@@ -36,4 +36,8 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 
 func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {
 	return repo.sessions[sessionId]
+}
+
+func (repo *Repository) GetSessions() map[string]*core.CreditSession {
+	return repo.sessions
 }

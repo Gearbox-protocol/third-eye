@@ -8,7 +8,7 @@ import (
 )
 
 func Verbosef(msg string, args ...interface{}) {
-	log.Printf(msg, args...)
+	// log.Printf(msg, args...)
 }
 func Verbose(v ...interface{}) {
 	// log.Println(v...)
@@ -61,12 +61,12 @@ func Error(v ...interface{}) {
 func Msgf(msg string, args ...interface{}) {
 	amqpSendf(msg, args)
 	msgFormat := detectFunc() + msg
-	log.Printf(msgFormat, args...)
+	log.Printf("[AMPQ]"+msgFormat, args...)
 }
 
 func Msg(v ...interface{}) {
 	amqpSend(v)
-	args := []interface{}{detectFunc()}
+	args := []interface{}{"[AMPQ]" + detectFunc()}
 	args = append(args, v...)
 	log.Println(args...)
 }
@@ -93,7 +93,7 @@ func CheckFatal(err error) {
 	if err != nil {
 		args := []interface{}{"[Fatal]: " + detectFunc(), err}
 		amqpSend(args)
-		log.Fatal(args)
+		log.Fatal(args...)
 	}
 }
 

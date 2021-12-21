@@ -6,7 +6,7 @@ type AccountOperation struct {
 	// ordering data
 	TxHash      string `gorm:"column:tx_hash"`
 	BlockNumber int64  `gorm:"column:block_num"`
-	LogId       uint   `gorm:"column:log_id`
+	LogId       uint   `gorm:"column:log_id"`
 	// owner/account data
 	Borrower  string
 	SessionId string `gorm:"column:session_id"`

@@ -1,4 +1,4 @@
-package repository
+package debts
 
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
@@ -6,8 +6,8 @@ import (
 	"math/big"
 )
 
-func (repo *Repository) UpdateBalance(eb *core.EventBalance) {
-	lastCSS := repo.GetLastCSS(eb.SessionId)
+func (eng *DebtEngine) UpdateBalance(eb *core.EventBalance) {
+	lastCSS := eng.GetLastCSS(eb.SessionId)
 	lastCSS.BlockNum = eb.BlockNumber
 	// lastCSS.LogId = eb.Index
 	lastCSS.Borrower = eb.Borrower
@@ -20,12 +20,12 @@ func (repo *Repository) UpdateBalance(eb *core.EventBalance) {
 				newBorrowedAmount = eb.BorrowedAmount
 			}
 			lastCSS.BorrowedAmountBI = (*core.BigInt)(newBorrowedAmount)
-			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(newBorrowedAmount, repo.GetUnderlyingDecimal(eb.CreditManager))
+			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(newBorrowedAmount, eng.repo.GetUnderlyingDecimal(eb.CreditManager))
 		}
 		oldBalances := *lastCSS.Balances
 		for tokenAddr, amount := range eb.Transfers {
 			tokenBStruct := oldBalances[tokenAddr]
-			token := repo.GetToken(tokenAddr)
+			token := eng.repo.GetToken(tokenAddr)
 			if amount.Sign() != 0 {
 				if oldBalances[tokenAddr] != nil {
 					newAmt := new(big.Int).Add(tokenBStruct.BI.Convert(), amount)
@@ -48,11 +48,11 @@ func (repo *Repository) UpdateBalance(eb *core.EventBalance) {
 			lastCSS.BorrowedAmount = 0
 		} else {
 			lastCSS.BorrowedAmountBI = (*core.BigInt)(eb.BorrowedAmount)
-			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(eb.BorrowedAmount, repo.GetUnderlyingDecimal(eb.CreditManager))
+			lastCSS.BorrowedAmount = utils.GetFloat64Decimal(eb.BorrowedAmount, eng.repo.GetUnderlyingDecimal(eb.CreditManager))
 		}
 		newBalances := core.JsonBalance{}
 		for tokenAddr, amount := range eb.Transfers {
-			token := repo.GetToken(tokenAddr)
+			token := eng.repo.GetToken(tokenAddr)
 			newBalances[tokenAddr] = &core.BalanceType{
 				BI: (*core.BigInt)(amount),
 				F:  utils.GetFloat64Decimal(amount, token.Decimals),
@@ -80,5 +80,5 @@ func (repo *Repository) UpdateBalance(eb *core.EventBalance) {
 		newCSS.BorrowedAmountBI = &newBorrowBI
 	}
 	newCSS.BorrowedAmount = lastCSS.BorrowedAmount
-	repo.AddCreditSessionSnapshot(&newCSS)
+	// eng.AddCreditSessionSnapshot(&newCSS)
 }

@@ -71,6 +71,12 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	case core.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case core.CreditFilter:
+		if adapter.Details["creditManager"] != nil {
+			cmAddr := adapter.Details["creditManager"].(string)
+			repo.AddCreditManagerToFilter(cmAddr, adapter.GetAddress())
+		} else {
+			log.Fatal("Credit filter doesn't have credit manager", adapter.GetAddress())
+		}
 		return credit_filter.NewCreditFilterFromAdapter(adapter)
 	}
 	return nil

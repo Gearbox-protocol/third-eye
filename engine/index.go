@@ -16,16 +16,19 @@ type Engine struct {
 	*core.Node
 	config              *config.Config
 	repo                core.RepositoryI
+	debtEng             core.DebtEngineI
 	syncBlockBatchSize  int64
 	currentlySyncedTill int64
 }
 
 func NewEngine(config *config.Config,
 	ec *ethclient.Client,
+	debtEng core.DebtEngineI,
 	repo core.RepositoryI) core.EngineI {
 	return &Engine{
-		config: config,
-		repo:   repo,
+		debtEng: debtEng,
+		config:  config,
+		repo:    repo,
 		Node: &core.Node{
 			Client: ec,
 		},
@@ -33,7 +36,8 @@ func NewEngine(config *config.Config,
 }
 
 func (e *Engine) init() {
-	e.syncBlockBatchSize = 100 * 5
+	// repo initialisation
+	e.syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
 	kit := e.repo.GetKit()
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {
@@ -42,8 +46,11 @@ func (e *Engine) init() {
 		e.repo.AddSyncAdapter(obj)
 		e.currentlySyncedTill = obj.GetLastSync()
 	} else {
-		e.currentlySyncedTill = kit.First(0).GetLastSync()
+		// it will allow syncing from sratch of least synced adapter in batches
+		e.currentlySyncedTill = e.repo.LoadLastAdapterSync()
 	}
+	// debt engine initialisation
+	e.debtEng.Init()
 }
 
 func (e *Engine) SyncHandler() {
@@ -91,7 +98,7 @@ func (e *Engine) sync(syncTill int64) {
 		kit.Reset(lvlIndex)
 		wg.Wait()
 	}
-	e.repo.FlushAndDebt()
+	e.FlushAndDebt()
 	e.currentlySyncedTill = syncTill
 }
 
@@ -117,4 +124,9 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 	// after sync
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
+}
+
+func (e *Engine) FlushAndDebt() {
+	e.repo.Flush()
+	e.debtEng.CalculateDebtAndClear()
 }

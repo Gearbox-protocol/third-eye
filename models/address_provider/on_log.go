@@ -37,7 +37,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		case "ACCOUNT_FACTORY":
 			af := account_factory.NewAccountFactory(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(af)
-		case "WETH_GATEWAY":
+		case "WETH_TOKEN":
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})
 			}

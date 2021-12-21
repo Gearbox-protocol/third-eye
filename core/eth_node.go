@@ -28,7 +28,6 @@ func (lf *Node) GetLogs(fromBlock, toBlock int64, addr string) ([]types.Log, err
 		if err.Error() == QueryMoreThan10000Error ||
 			strings.Contains(err.Error(), LogFilterLenError) {
 			middle := (fromBlock + toBlock) / 2
-			log.Info(fromBlock, middle, toBlock)
 			bottomHalfLogs, err := lf.GetLogs(fromBlock, middle-1, addr)
 			if err != nil {
 				return []types.Log{}, err

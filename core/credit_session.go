@@ -27,7 +27,7 @@ type (
 		Profit           *BigInt `json:"profit"`
 		ProfitPercentage float64 `gorm:"column:profit_percent" json:"profitPercentage"`
 		TotalValueBI     *BigInt `gorm:"column:total_value" json:"totalValue"`
-		HealthFactor     int64   `gorm:"column:health_factor" json:"healthFactor"`
+		HealthFactor     *BigInt `gorm:"column:health_factor" json:"healthFactor"`
 		Score            float64 `json:"score"`
 		IsDirty          bool    `gorm:"-"`
 	}
@@ -41,7 +41,7 @@ type (
 		UnderlyingToken            string
 		BorrowedAmountPlusInterest *big.Int
 		TotalValue                 *big.Int
-		HealthFactor               int64
+		HealthFactor               *big.Int
 		BorrowRate                 *big.Int
 	}
 
@@ -64,6 +64,6 @@ type (
 		Balances              *JsonBalance `gorm:"column:balances"`
 		Borrower              string       `gorm:"column:borrower"`
 		СumulativeIndexAtOpen *BigInt      `gorm:"column:cumulative_index"`
-		HealthFactor          int64        `gorm:"column:health_factor"`
+		HealthFactor          *BigInt      `gorm:"column:health_factor"`
 	}
 )

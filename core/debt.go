@@ -7,16 +7,16 @@ import (
 )
 
 type Debt struct {
-	Id                              int64  `gorm:"primaryKey;column:id;autoincrement:true"`
-	BlockNumber                     int64  `gorm:"column:block_num"`
-	SessionId                       string `gorm:"column:session_id"`
-	HealthFactor                    int64  `gorm:"column:health_factor"`
-	TotalValueBI                    string `gorm:"column:total_value"`
-	BorrowedAmountPlusInterestBI    string `gorm:"column:borrowed_amt_with_interest"`
-	CalHealthFactor                 int64  `gorm:"column:cal_health_factor"`
-	CalTotalValue                   string `gorm:"column:cal_total_value"`
-	CalBorrowedAmountPlusInterestBI string `gorm:"column:cal_borrowed_amt_with_interest"`
-	CalThresholdValueBI             string `gorm:"column:cal_threshold_value"`
+	Id                              int64   `gorm:"primaryKey;column:id"`
+	BlockNumber                     int64   `gorm:"column:block_num"`
+	SessionId                       string  `gorm:"column:session_id"`
+	HealthFactor                    *BigInt `gorm:"column:health_factor"`
+	TotalValueBI                    *BigInt `gorm:"column:total_value"`
+	BorrowedAmountPlusInterestBI    *BigInt `gorm:"column:borrowed_amt_with_interest"`
+	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor"`
+	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value"`
+	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest"`
+	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value"`
 }
 
 type DebtSync struct {
@@ -36,7 +36,7 @@ type TokenDetails struct {
 type DebtProfile struct {
 	*Debt                  `json:"debt"`
 	*CreditSessionSnapshot `json:"css"`
-	RPCBalances            JsonBalance             `json:"rpcBalances"`
+	RPCBalances            *JsonBalance            `json:"rpcBalances"`
 	Tokens                 map[string]TokenDetails `json:"tokens"`
 	UnderlyingDecimals     int8                    `json:"underlyingDecimals"`
 	*CumIndexAndUToken     `json:"poolDetails"`
@@ -61,4 +61,16 @@ type ProfileTable struct {
 
 func (ProfileTable) TableName() string {
 	return "profiles"
+}
+
+type DebtEngineI interface {
+	Clear()
+	Init()
+	CalculateDebtAndClear()
+}
+
+type LiquidableAccount struct {
+	SessionId string `gorm:"primaryKey;column:session_id"`
+	BlockNum  int64  `gorm:"block_num"`
+	Updated   bool   `gorm:"-"`
 }

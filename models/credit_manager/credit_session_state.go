@@ -8,7 +8,7 @@ import (
 )
 
 func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
-	for sessionId, _ := range mdl.UpdatedSessions {
+	for sessionId := range mdl.UpdatedSessions {
 		if mdl.ClosedSessions[sessionId] == nil {
 			mdl.updateSession(sessionId, blockNum)
 		}
@@ -38,7 +38,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	}
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.Status = closeDetails.Status
-	session.HealthFactor = data.HealthFactor.Int64()
+	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	session.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == core.Repaid {
@@ -86,7 +86,12 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	css.Balances = mdl.Repo.ConvertToBalance(data.Balances)
+	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	var err error
+	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
+	if err != nil {
+		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, utils.ToJson(mdl.Repo.GetDCWrapper()))
+	}
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
@@ -97,7 +102,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	session := mdl.Repo.GetCreditSession(sessionId)
 	session.IsDirty = true
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
-	session.HealthFactor = data.HealthFactor.Int64()
+	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	session.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	extraFunds := new(big.Int).Sub(data.TotalValue, data.BorrowedAmountPlusInterest)
@@ -113,7 +118,12 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	css.Balances = mdl.Repo.ConvertToBalance(data.Balances)
+	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	var err error
+	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
+	if err != nil {
+		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, utils.ToJson(mdl.Repo.GetDCWrapper()))
+	}
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))

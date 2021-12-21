@@ -55,6 +55,7 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 	if err != nil {
 		log.Fatal(err)
 	}
+	repo.AddCreditManagerToFilter(addr, creditFilter.Hex())
 	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), addr, discoveredAt, client, repo)
 	repo.AddSyncAdapter(cf)
 	//
