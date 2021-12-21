@@ -3,6 +3,8 @@ package debts
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -79,7 +81,26 @@ func (eng *DebtEngine) calculateDebt() {
 			cmAddr := session.CreditManager
 			// pool cum index is when the pool is not registered
 			if cmAddrToCumIndex[cmAddr] != nil {
-				eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, cmAddrToCumIndex[cmAddr])
+				eng.SessionDebtHandler(blockNum, sessionId, cmAddr, cmAddrToCumIndex[cmAddr])
+				// send notification when account is liquidated
+				css := eng.lastCSS[sessionId]
+				// for w:= 28126779; w<28126780; w++{
+				// 	opts := &bind.CallOpts{
+				// 		BlockNumber: big.NewInt(int64(w)),
+				// 	}
+				// 	data, err := eng.repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
+				// 		common.HexToAddress(cmAddr),
+				// 		common.HexToAddress(css.Borrower),
+				// 	)
+				// 	if err != nil {
+				// 		log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, css.Borrower, blockNum, err)
+				// 	}
+				// 	log.Infof("%#v\n",data)
+				// }
+				if session.ClosedAt == css.BlockNum+1 {
+					eng.ifAccountClosed(css.SessionId, session.ClosedAt, session.Status)
+				}
+				//
 			} else {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
@@ -92,6 +113,16 @@ func (eng *DebtEngine) calculateDebt() {
 	// if noOfBlock > 0 {
 	// 	eng.flushDebt(blockNums[noOfBlock-1])
 	// }
+}
+
+func (eng *DebtEngine) ifAccountClosed(sessionId string, closedAt int64, status int) {
+	if status == core.Liquidated {
+		log.Info(sessionId, closedAt)
+		account := eng.liquidableBlockTracker[sessionId]
+		log.Msgf("Session(%s) liquidated at block:%d liquidable since %d ", sessionId, closedAt, account.BlockNum)
+	} else if status != core.Active {
+		delete(eng.liquidableBlockTracker, sessionId)
+	}
 }
 
 func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uint64) map[string]*core.CumIndexAndUToken {
@@ -119,7 +150,42 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return poolToCI
 }
 
-func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) {
+
+func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) {
+	sessionSnapshot := eng.lastCSS[sessionId]
+	debt, profile := eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, cumIndexAndUToken)
+	// if profile is not null
+	// yearn price feed might be stale as a result differ btw dc and calculated values 
+	// solution: fetch price again for all stale yearn feeds
+	if profile != nil {
+		kit := eng.repo.GetKit()
+		yearnFeeds := kit.GetAdapterAddressByName(core.YearnPriceFeed)
+		for tokenAddr := range *sessionSnapshot.Balances {
+			lastPriceEvent := eng.tokenLastPrice[tokenAddr]
+			// for weth price feed is null
+			if lastPriceEvent != nil {
+				feed := lastPriceEvent.Feed
+				eng.requestPriceFeed(blockNum, feed, tokenAddr)
+			}
+			if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
+				feed := lastPriceEvent.Feed
+				if utils.Contains(yearnFeeds, feed) {
+					eng.requestPriceFeed(blockNum, feed, tokenAddr)
+				}
+			}
+		}
+		debt, profile = eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, cumIndexAndUToken)
+		if profile != nil {
+			log.Fatalf("Debt fields different from data compressor fields: %s", profile.Json())
+			eng.SaveProfile(string(profile.Json()))
+
+		}
+	}
+	// check if data compressor and calculated values match
+	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
+}
+
+func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr string, cumIndexAndUToken *core.CumIndexAndUToken) (*core.Debt, *core.DebtProfile){
 	sessionSnapshot := eng.lastCSS[sessionId]
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
@@ -128,7 +194,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	tokenDetails := map[string]core.TokenDetails{}
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
 		decimal := eng.repo.GetToken(tokenAddr).Decimals
-		price := eng.GetTokenPrice(tokenAddr)
+		price := eng.GetTokenLastPrice(tokenAddr)
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
 		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-underlyingtoken.Decimals)
 		tokenLiquidityThreshold := eng.allowedTokensThreshold[cmAddr][tokenAddr]
@@ -143,7 +209,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 			Symbol:            eng.repo.GetToken(tokenAddr).Symbol}
 	}
 	// the value of credit account is in terms of underlying asset
-	underlyingPrice := eng.GetTokenPrice(cumIndexAndUToken.Token)
+	underlyingPrice := eng.GetTokenLastPrice(cumIndexAndUToken.Token)
 	calThresholdValue = new(big.Int).Quo(calThresholdValue, underlyingPrice)
 	calTotalValue = new(big.Int).Quo(calTotalValue, underlyingPrice)
 	// borrowed + interest and normalized threshold value
@@ -164,22 +230,14 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	profile := core.DebtProfile{}
 	// use data compressor if debt check is enabled
 	if eng.config.DebtDCMatching {
-		opts := &bind.CallOpts{
-			BlockNumber: big.NewInt(blockNum),
-		}
-		data, err := eng.repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
-			common.HexToAddress(cmAddr),
-			common.HexToAddress(sessionSnapshot.Borrower),
-		)
-		if err != nil {
-			log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, sessionSnapshot.Borrower, blockNum, err)
-		}
+		data := eng.SessionDataFromDC(blockNum, cmAddr, sessionSnapshot.Borrower)
 		// set debt data fetched from dc
 		debt.HealthFactor = data.HealthFactor.Int64()
 		debt.TotalValueBI = (*core.BigInt)(data.TotalValue)
 		debt.BorrowedAmountPlusInterestBI = (*core.BigInt)(data.BorrowedAmountPlusInterest)
 		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
-			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) {
+			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) ||
+			(debt.CalHealthFactor >= 10000) != (debt.HealthFactor >= 10000) {
 			profile.RPCBalances = *eng.repo.ConvertToBalance(data.Balances)
 			notMatched = true
 		}
@@ -188,6 +246,8 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		debt.HealthFactor = sessionSnapshot.HealthFactor
 		debt.TotalValueBI = sessionSnapshot.TotalValueBI
 		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
+			// hf value calculated are on different side of 1
+			(debt.CalHealthFactor >= 10000) != (debt.HealthFactor >= 10000) ||
 			// if healhFactor diff by 4 %
 			utils.IntDiffMoreThanFraction(debt.CalHealthFactor, debt.HealthFactor, 4) {
 			profile.RPCBalances = sessionSnapshot.Balances.Copy()
@@ -200,17 +260,49 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		profile.CreditSessionSnapshot = sessionSnapshot
 		profile.UnderlyingDecimals = underlyingtoken.Decimals
 		profile.Tokens = tokenDetails
-		log.Infof("Debt fields different from data compressor fields: %s", profile.Json())
-		eng.SaveProfile(string(profile.Json()))
+		return debt, &profile
 	}
-	// check if data compressor and calculated values match
-	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
+	return debt, nil
 }
 
-func (eng *DebtEngine) GetTokenPrice(addr string) *big.Int {
+func (eng *DebtEngine) GetTokenLastPrice(addr string) *big.Int {
 	if eng.repo.GetWETHAddr() == addr {
 		return core.WETHPrice
 	} else {
 		return eng.tokenLastPrice[addr].PriceETHBI.Convert()
 	}
+}
+
+func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) mainnet.DataTypesCreditAccountDataExtended {
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
+	}
+	data, err := eng.repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
+		common.HexToAddress(cmAddr),
+		common.HexToAddress(borrower),
+	)
+	if err != nil {
+		log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, borrower, blockNum, err)
+	}
+	return data
+}
+
+func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
+	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(feed), eng.client)
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
+	}
+	roundData, err := yearnPFContract.LatestRoundData(opts)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Info(token, roundData.Answer.String(), utils.GetFloat64Decimal(roundData.Answer, 18))
+	eng.AddTokenLastPrice(&core.PriceFeed{
+		BlockNumber: blockNum,
+		Token:       token,
+		Feed:        feed,
+		RoundId:     roundData.RoundId.Int64(),
+		PriceETHBI:  (*core.BigInt)(roundData.Answer),
+		PriceETH:    utils.GetFloat64Decimal(roundData.Answer, 18),
+	})
 }

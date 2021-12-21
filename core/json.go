@@ -53,7 +53,7 @@ func (z *JsonBalance) Scan(value interface{}) error {
 
 func (j *JsonBalance) Copy() JsonBalance {
 	var newJB = make(JsonBalance)
-	for k, v := range newJB {
+	for k, v := range (map[string]*BalanceType)(*j) {
 		newJB[k] = &BalanceType{
 			BI: NewBigInt(v.BI),
 			F:  v.F,

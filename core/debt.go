@@ -7,7 +7,7 @@ import (
 )
 
 type Debt struct {
-	Id                              int64   `gorm:"primaryKey;column:id;autoincrement:true"`
+	Id                              int64   `gorm:"primaryKey;column:id"`
 	BlockNumber                     int64   `gorm:"column:block_num"`
 	SessionId                       string  `gorm:"column:session_id"`
 	HealthFactor                    int64   `gorm:"column:health_factor"`
@@ -67,4 +67,10 @@ type DebtEngineI interface {
 	Clear()
 	Init()
 	CalculateDebtAndClear()
+}
+
+type LiquidableAccount struct {
+	SessionId string `gorm:"primaryKey;column:session_id"`
+	BlockNum  int64  `gorm:"block_num"`
+	Updated   bool   `gorm:"-"`
 }
