@@ -11,7 +11,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/debts"
-	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/repository"
@@ -21,7 +20,7 @@ import (
 	"time"
 )
 
-func StartServer(lc fx.Lifecycle, engine core.EngineI, config *config.Config) {
+func StartServer(lc fx.Lifecycle, debtEng core.DebtEngineI, shutdowner fx.Shutdowner) {
 
 	// Starting server
 	lc.Append(fx.Hook{
@@ -33,7 +32,8 @@ func StartServer(lc fx.Lifecycle, engine core.EngineI, config *config.Config) {
 			// In production, we'd want to separate the Listen and Serve phases for
 			// better error-handling.
 			go func() {
-				engine.SyncHandler()
+				debtEng.ProcessBackLogs()
+				shutdowner.Shutdown()
 			}()
 			return nil
 		},
@@ -46,7 +46,6 @@ func main() {
 		config.Module,
 		repository.Module,
 		services.Module,
-		engine.Module,
 		fx.NopLogger,
 		debts.Module,
 		fx.Invoke(StartServer),
@@ -56,6 +55,5 @@ func main() {
 	if err := app.Start(startCtx); err != nil {
 		log.Fatal(err)
 	}
-
 	<-app.Done()
 }

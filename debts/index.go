@@ -38,7 +38,7 @@ func NewDebtEngine(db *gorm.DB, client *ethclient.Client, config *config.Config,
 	}
 }
 
-func (eng *DebtEngine) Init() {
+func (eng *DebtEngine) ProcessBackLogs() {
 	// NOTE: while syncing from scratch for some adapter disable the debt engine
 	// as it might happen that some of the components for calculating debt are missing
 	// check if adapters are synchronised.

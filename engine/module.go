@@ -1,6 +1,6 @@
 /*
 * Gearbox monitoring
-* Copyright (c) 2021. Mikael Lazarev
+* Copyright (c) 2021. Harsh Jain
 *
  */
 

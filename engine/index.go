@@ -25,7 +25,7 @@ func NewEngine(config *config.Config,
 	ec *ethclient.Client,
 	debtEng core.DebtEngineI,
 	repo core.RepositoryI) core.EngineI {
-	return &Engine{
+	eng := &Engine{
 		debtEng: debtEng,
 		config:  config,
 		repo:    repo,
@@ -33,6 +33,8 @@ func NewEngine(config *config.Config,
 			Client: ec,
 		},
 	}
+	eng.init()
+	return eng
 }
 
 func (e *Engine) init() {
@@ -52,11 +54,10 @@ func (e *Engine) init() {
 		e.currentlySyncedTill = e.repo.LoadLastAdapterSync()
 	}
 	// debt engine initialisation
-	e.debtEng.Init()
+	e.debtEng.ProcessBackLogs()
 }
 
 func (e *Engine) SyncHandler() {
-	e.init()
 	latestBlockNum := e.GetLatestBlockNumber()
 	e.syncLoop(latestBlockNum)
 	for {

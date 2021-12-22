@@ -65,7 +65,7 @@ func (ProfileTable) TableName() string {
 
 type DebtEngineI interface {
 	Clear()
-	Init()
+	ProcessBackLogs()
 	CalculateDebtAndClear()
 }
 
