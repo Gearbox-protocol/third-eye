@@ -13,7 +13,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
-	"strconv"
 )
 
 func (repo *Repository) loadSyncAdapters() {
@@ -36,17 +35,7 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	case core.AddressProvider:
 		ap := address_provider.NewAddressProviderFromAdapter(adapter)
 		if ap.Details["dc"] != nil {
-			dcMap, ok := (ap.Details["dc"]).(map[string]interface{})
-			if !ok {
-				log.Fatalf("Converting address provider() details for dc to map failed %v", ap.Details["dc"])
-			}
-			for k, dcAddr := range dcMap {
-				blockNum, err := strconv.ParseInt(k, 10, 64)
-				if err != nil {
-					log.Fatal(err)
-				}
-				repo.AddDataCompressor(blockNum, dcAddr.(string))
-			}
+			repo.dcWrapper.LoadMultipleDC(ap.Details["dc"])
 		}
 		if ap.Details["weth"] != nil {
 			weth, ok := (ap.Details["weth"]).(string)

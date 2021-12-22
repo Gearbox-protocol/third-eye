@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"sort"
+	"strconv"
 	"sync"
 )
 
@@ -50,7 +51,11 @@ func (dcw *DataCompressorWrapper) getDataCompressorIndex(blockNum int64) string 
 	return name
 }
 
+// the data compressor are added in increasing order of blockNum
 func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string) {
+	if len(dcw.DCBlockNum) > 0 && dcw.DCBlockNum[len(dcw.DCBlockNum)-1] >= blockNum {
+		log.Fatal("Current dc added at :%v, new dc:%s added at %d  ", dcw.DCBlockNum, addr, blockNum)
+	}
 	chainId, err := dcw.client.ChainID(context.TODO())
 	log.CheckFatal(err)
 	var key string
@@ -67,9 +72,27 @@ func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string)
 	dcw.BlockNumToName[blockNum] = key
 	dcw.NameToAddr[key] = addr
 	dcw.DCBlockNum = append(dcw.DCBlockNum, blockNum)
-	arr := dcw.DCBlockNum
-	sort.Slice(arr, func(i, j int) bool { return arr[i] < arr[j] })
-	dcw.DCBlockNum = arr
+}
+
+func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
+	dcMap, ok := (multiDCs).(map[string]interface{})
+	if !ok {
+		log.Fatalf("Converting address provider() details for dc to map failed %v", multiDCs)
+	}
+	var blockNums []int64
+	for k := range dcMap {
+		blockNum, err := strconv.ParseInt(k, 10, 64)
+		if err != nil {
+			log.Fatal(err)
+		}
+		blockNums = append(blockNums, blockNum)
+	}
+	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
+	for _, blockNum := range blockNums {
+		k := fmt.Sprintf("%d", blockNum)
+		dcAddr := dcMap[k]
+		dcw.AddDataCompressor(blockNum, dcAddr.(string))
+	}
 }
 
 func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
