@@ -27,8 +27,8 @@ func (repo *Repository) ConvertToBalanceWithMask(balances []mainnet.DataTypesTok
 				return nil, err
 			}
 			jsonBalance[tokenAddr] = &core.BalanceType{
-				BI:     (*core.BigInt)(token.Balance),
-				F:      utils.GetFloat64Decimal(token.Balance, tokenObj.Decimals),
+				BI: (*core.BigInt)(token.Balance),
+				F:  utils.GetFloat64Decimal(token.Balance, tokenObj.Decimals),
 			}
 			if maskLen-i-1 >= 0 {
 				jsonBalance[tokenAddr].Linked = maskInBits[maskLen-i-1] == '1'

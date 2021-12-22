@@ -46,7 +46,9 @@ func (e *Engine) init() {
 		e.repo.AddSyncAdapter(obj)
 		e.currentlySyncedTill = obj.GetLastSync()
 	} else {
-		// it will allow syncing from sratch of least synced adapter in batches
+		// it will allow syncing from scratch of least synced adapter in batches
+		// NOTE: while syncing from scratch for some adapter disable the debt engine
+		// as it might happen that some of the components for calculating debt are missing
 		e.currentlySyncedTill = e.repo.LoadLastAdapterSync()
 	}
 	// debt engine initialisation

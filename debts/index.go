@@ -39,6 +39,12 @@ func NewDebtEngine(db *gorm.DB, client *ethclient.Client, config *config.Config,
 }
 
 func (eng *DebtEngine) Init() {
+	// NOTE: while syncing from scratch for some adapter disable the debt engine
+	// as it might happen that some of the components for calculating debt are missing
+	// check if adapters are synchronised.
+	if !eng.AreActiveAdapterSynchronized() {
+		eng.config.DisableDebtEngine = true
+	}
 	if eng.config.DisableDebtEngine {
 		return
 	}
@@ -103,4 +109,18 @@ func (eng *DebtEngine) addLiquidableAccount(sessionId string, newBlockNum int64)
 		liquidableAccount.BlockNum = newBlockNum
 		liquidableAccount.Updated = true
 	}
+}
+
+func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
+	data := core.DebtSync{}
+	query := "SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters where disabled=false"
+	err := eng.db.Raw(query).Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	val := data.LastCalculatedAt <= 1
+	if !val {
+		log.Warn("DebtEngine disabled acitve adapters are not synchronised")
+	}
+	return val
 }
