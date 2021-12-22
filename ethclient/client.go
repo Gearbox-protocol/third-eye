@@ -74,6 +74,8 @@ func (rc *Client) errorHandler(err error) bool {
 		} else if strings.HasPrefix(err.Error(), "429") {
 			log.Error("sleep because of error: ", err)
 			time.Sleep(20 * time.Second)
+		} else if strings.Contains(err.Error(), "project ID does not have access to archive state") {
+			log.Fatal(err)
 		}
 	} else {
 		return false
