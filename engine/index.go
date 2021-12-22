@@ -117,13 +117,13 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, log := range logs {
-		blockNum := int64(log.BlockNumber)
+	for _, txLog := range logs {
+		blockNum := int64(txLog.BlockNumber)
 		if mdl.GetBlockToDisableOn() < blockNum {
 			break
 		}
 		e.repo.SetBlock(blockNum)
-		mdl.OnLog(log)
+		mdl.OnLog(txLog)
 	}
 	// after sync
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))

@@ -43,6 +43,9 @@ func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, disco
 		DieselToken:     dieselToken.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
 	})
+	// create a pool stat snapshot at first log of the pool
+	pool.lastEventBlock = pool.DiscoveredAt
+	pool.createPoolStat()
 
 	return pool
 }
