@@ -51,7 +51,8 @@ func (lf *Node) GetLatestBlockNumber() int64 {
 		log.Fatal(err)
 	}
 	log.Info("Lastest blocknumber", latestBlockNum)
-	return int64(latestBlockNum)
+	// skip 2 blocks ~30 sec latest block might reorder
+	return int64(latestBlockNum - 2)
 }
 
 func (lf *Node) GetHeader(blockNum int64) *types.Header {

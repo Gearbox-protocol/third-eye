@@ -84,19 +84,6 @@ func (eng *DebtEngine) calculateDebt() {
 				eng.SessionDebtHandler(blockNum, sessionId, cmAddr, session.Account, cmAddrToCumIndex[cmAddr])
 				// send notification when account is liquidated
 				css := eng.lastCSS[sessionId]
-				// for w:= 28126779; w<28126780; w++{
-				// 	opts := &bind.CallOpts{
-				// 		BlockNumber: big.NewInt(int64(w)),
-				// 	}
-				// 	data, err := eng.repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
-				// 		common.HexToAddress(cmAddr),
-				// 		common.HexToAddress(css.Borrower),
-				// 	)
-				// 	if err != nil {
-				// 		log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, css.Borrower, blockNum, err)
-				// 	}
-				// 	log.Infof("%#v\n",data)
-				// }
 				if session.ClosedAt == css.BlockNum+1 {
 					eng.ifAccountClosed(css.SessionId, session.ClosedAt, session.Status)
 				}
@@ -246,7 +233,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 			var err error
 			profile.RPCBalances, err = eng.repo.ConvertToBalanceWithMask(data.Balances, mask)
 			if err != nil {
-				log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, utils.ToJson(eng.repo.GetDCWrapper()))
+				log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, eng.repo.GetDCWrapper().ToJson())
 			}
 			notMatched = true
 		}

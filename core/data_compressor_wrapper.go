@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"sort"
@@ -16,11 +17,11 @@ import (
 type DataCompressorWrapper struct {
 	mu *sync.Mutex
 	// blockNumbers of dc in asc order
-	dcBlockNum     []int64
-	blockNumToName map[int64]string
+	DCBlockNum     []int64
+	BlockNumToName map[int64]string
 	dcOldKovan     *dataCompressor.DataCompressor
 	dcMainnet      *mainnet.DataCompressor
-	nameToAddr     map[string]string
+	NameToAddr     map[string]string
 	client         *ethclient.Client
 }
 
@@ -30,18 +31,18 @@ var MAINNET = "MAINNET"
 func NewDataCompressorWrapper(client *ethclient.Client) *DataCompressorWrapper {
 	return &DataCompressorWrapper{
 		mu:             &sync.Mutex{},
-		blockNumToName: make(map[int64]string),
-		nameToAddr:     make(map[string]string),
+		BlockNumToName: make(map[int64]string),
+		NameToAddr:     make(map[string]string),
 		client:         client,
 	}
 }
 
 func (dcw *DataCompressorWrapper) getDataCompressorIndex(blockNum int64) string {
 	var name string
-	for _, num := range dcw.dcBlockNum {
+	for _, num := range dcw.DCBlockNum {
 		// dc should be deployed before it is queried
 		if num < blockNum {
-			name = dcw.blockNumToName[num]
+			name = dcw.BlockNumToName[num]
 		} else {
 			break
 		}
@@ -56,19 +57,19 @@ func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string)
 	if chainId.Int64() == 1 {
 		key = MAINNET
 	} else {
-		switch len(dcw.dcBlockNum) {
+		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = OLDKOVAN
 		case 1:
 			key = MAINNET
 		}
 	}
-	dcw.blockNumToName[blockNum] = key
-	dcw.nameToAddr[key] = addr
-	dcw.dcBlockNum = append(dcw.dcBlockNum, blockNum)
-	arr := dcw.dcBlockNum
+	dcw.BlockNumToName[blockNum] = key
+	dcw.NameToAddr[key] = addr
+	dcw.DCBlockNum = append(dcw.DCBlockNum, blockNum)
+	arr := dcw.DCBlockNum
 	sort.Slice(arr, func(i, j int) bool { return arr[i] < arr[j] })
-	dcw.dcBlockNum = arr
+	dcw.DCBlockNum = arr
 }
 
 func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
@@ -193,7 +194,7 @@ func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.
 
 func (dcw *DataCompressorWrapper) setOldKovan() {
 	if dcw.dcOldKovan == nil {
-		addr := dcw.nameToAddr[OLDKOVAN]
+		addr := dcw.NameToAddr[OLDKOVAN]
 		var err error
 		dcw.dcOldKovan, err = dataCompressor.NewDataCompressor(common.HexToAddress(addr), dcw.client)
 		log.CheckFatal(err)
@@ -202,9 +203,13 @@ func (dcw *DataCompressorWrapper) setOldKovan() {
 
 func (dcw *DataCompressorWrapper) setMainnet() {
 	if dcw.dcMainnet == nil {
-		addr := dcw.nameToAddr[MAINNET]
+		addr := dcw.NameToAddr[MAINNET]
 		var err error
 		dcw.dcMainnet, err = mainnet.NewDataCompressor(common.HexToAddress(addr), dcw.client)
 		log.CheckFatal(err)
 	}
+}
+
+func (dcw *DataCompressorWrapper) ToJson() string {
+	return utils.ToJson(dcw)
 }
