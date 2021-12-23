@@ -20,6 +20,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		return
 	}
 	token := p.Repo.GetToken(p.State.UnderlyingToken)
+	p.State.IsWETH = state.IsWETH
 	// log.Infof("Pool:%s ciRAY: %s and linearCI: %s\n", p.Address, state.CumulativeIndexRAY.String(), state.LinearCumulativeIndex.String())
 	p.Repo.AddPoolStat(&core.PoolStat{
 		BlockNum:        blockNum,
@@ -30,6 +31,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 
 		ExpectedLiquidityBI: (*core.BigInt)(state.ExpectedLiquidity),
 		ExpectedLiquidity:   utils.GetFloat64Decimal(state.ExpectedLiquidity, token.Decimals),
+		ExpectedLiquidityLimitBI: (*core.BigInt)(state.ExpectedLiquidityLimit),
 
 		AvailableLiquidityBI: (*core.BigInt)(state.AvailableLiquidity),
 		AvailableLiquidity:   utils.GetFloat64Decimal(state.AvailableLiquidity, token.Decimals),

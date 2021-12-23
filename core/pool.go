@@ -22,6 +22,7 @@ type PoolStat struct {
 	BorrowAPYBI          *BigInt `gorm:"column:borrow_apy_bi"`
 	ExpectedLiquidity    float64 `gorm:"column:expected_liquidity"`
 	ExpectedLiquidityBI  *BigInt `gorm:"column:expected_liquidity_bi"`
+	ExpectedLiquidityLimitBI  *BigInt `gorm:"column:expected_liquidity_limit_bi"`
 	AvailableLiquidity   float64 `gorm:"column:available_liquidity"`
 	AvailableLiquidityBI *BigInt `gorm:"column:available_liquidity_bi"`
 	TotalBorrowed        float64 `gorm:"column:total_borrowed"`

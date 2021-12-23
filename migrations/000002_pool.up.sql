@@ -22,6 +22,7 @@ CREATE TABLE pool_stats (
     borrow_apy_bi varchar(80),
     expected_liquidity double precision,
     expected_liquidity_bi varchar(80),
+    expected_liquidity_limit_bi varchar(80),
     available_liquidity double precision,
     available_liquidity_bi varchar(80),
     withdraw_fee integer,
