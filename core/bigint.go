@@ -33,7 +33,7 @@ func (z *BigInt) Value() (driver.Value, error) {
 	if z != nil {
 		return (*big.Int)(z).String(), nil
 	}
-	return nil, nil
+	return "0", nil
 }
 func NewBigInt(bi *BigInt) *BigInt {
 	if bi == nil {
