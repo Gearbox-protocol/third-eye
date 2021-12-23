@@ -1,0 +1,1 @@
+alter table credit_managers drop column sessions;

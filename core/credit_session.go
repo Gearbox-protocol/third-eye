@@ -67,4 +67,15 @@ type (
 		СumulativeIndexAtOpen *BigInt      `gorm:"column:cumulative_index"`
 		HealthFactor          *BigInt      `gorm:"column:health_factor"`
 	}
+	CreditSessionUpdate struct {
+		SessionId        string  `gorm:"column:id;primaryKey"`
+		BorrowedAmountBI *BigInt `gorm:"column:borrowed_amount_bi"`
+		TotalValueBI     *BigInt `gorm:"column:total_value_bi"`
+		Borrower         string  `gorm:"column:borrower"`
+		HealthFactor     *BigInt `gorm:"column:health_factor"`
+	}
 )
+
+func (CreditSessionUpdate) TableName() string {
+	return "credit_sessions"
+}

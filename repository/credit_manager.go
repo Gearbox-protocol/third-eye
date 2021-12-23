@@ -17,6 +17,28 @@ func (repo *Repository) loadCreditManagers() {
 			adapter.SetUnderlyingState(cm)
 		}
 	}
+	repo.loadSessionIdToBorrower()
+}
+
+func (repo *Repository) loadSessionIdToBorrower() {
+	data := []*core.CreditSession{}
+	err := repo.db.Raw(`SELECT credit_manager, id, borrower FROM credit_sessions where status=0;`).Find(&data).Error
+	log.CheckFatal(err)
+	borrowerToSession := map[string]map[string]string{}
+	for _, cs := range data {
+		hstore := borrowerToSession[cs.CreditManager]
+		if hstore == nil {
+			borrowerToSession[cs.CreditManager] = map[string]string{}
+			hstore = borrowerToSession[cs.CreditManager]
+		}
+		hstore[cs.Borrower] = cs.ID
+	}
+	for cm, hstore := range borrowerToSession {
+		adapter := repo.kit.GetAdapter(cm)
+		if adapter != nil && adapter.GetName() == "CreditManager" {
+			adapter.SetUnderlyingState(hstore)
+		}
+	}
 }
 
 func (repo *Repository) GetCMState(cmAddr string) *core.CreditManagerState {

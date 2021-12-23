@@ -13,11 +13,16 @@ import (
 
 func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStatePresent = true
-	state, ok := obj.(*core.CreditManagerState)
-	if !ok {
+	switch obj.(type) {
+	case (*core.CreditManagerState):
+		state := obj.(*core.CreditManagerState)
+		mdl.State = state
+	case (map[string]string):
+		sessions := obj.(map[string]string)
+		mdl.State.Sessions = sessions
+	default:
 		log.Fatal("Type assertion for credit manager state failed")
 	}
-	mdl.State = state
 }
 
 func (mdl *CreditManager) GetUnderlyingState() interface{} {
@@ -25,15 +30,15 @@ func (mdl *CreditManager) GetUnderlyingState() interface{} {
 }
 
 func (mdl *CreditManager) AddCreditOwnerSession(owner, sessionId string) {
-	mdl.State.Sessions.Set(owner, sessionId)
+	mdl.State.Sessions[owner] = sessionId
 }
 
 func (mdl *CreditManager) RemoveCreditOwnerSession(owner string) {
-	mdl.State.Sessions.Remove(owner)
+	delete(mdl.State.Sessions, owner)
 }
 
 func (mdl *CreditManager) GetCreditOwnerSession(owner string) string {
-	sessionId := mdl.State.Sessions.Get(owner)
+	sessionId := mdl.State.Sessions[owner]
 	if sessionId == "" {
 		panic(
 			fmt.Sprintf("session id not found for %s in %+v\n", owner, mdl.State.Sessions),
