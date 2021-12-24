@@ -10,7 +10,8 @@ type AdapterKit struct {
 func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory})
-	kit.AddLevel([]string{CreditManager, Pool, ChainlinkPriceFeed, YearnPriceFeed})
+	kit.AddLevel([]string{Pool})
+	kit.AddLevel([]string{CreditManager, ChainlinkPriceFeed, YearnPriceFeed})
 	kit.AddLevel([]string{CreditFilter})
 }
 

@@ -7,6 +7,7 @@ CREATE TABLE credit_managers (
     max_leverage integer,
     sessions hstore,
     disabled boolean,
+    is_weth boolean,
     min_amount character varying(80),
     max_amount character varying(80),
     borrow_rate_bi character varying(80),

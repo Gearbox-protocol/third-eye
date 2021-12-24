@@ -34,5 +34,13 @@ func (repo *Repository) GetUnderlyingDecimal(cmAddr string) int8 {
 }
 
 func (repo *Repository) AddCreditManagerStats(cms *core.CreditManagerStat) {
-	repo.blocks[cms.BlockNum].AddCreditManagerStats(cms)
+	repo.GetBlock(cms.BlockNum).AddCreditManagerStats(cms)
+}
+
+func (repo *Repository) AddRepayOnCM(blockNum int64, cmAddr string, pnlOnRepay core.PnlOnRepay) {
+	repo.GetBlock(blockNum).AddRepayOnCM(cmAddr, &pnlOnRepay)
+}
+
+func (repo *Repository) GetRepayOnCM(blockNum int64, cmAddr string) *core.PnlOnRepay {
+	return repo.GetBlock(blockNum).GetRepayOnCM(cmAddr)
 }

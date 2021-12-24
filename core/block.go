@@ -2,6 +2,8 @@ package core
 
 import (
 	"sort"
+	"math/big"
+	"github.com/Gearbox-protocol/third-eye/log"
 )
 
 type (
@@ -18,6 +20,7 @@ type (
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
 		AllowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
+		pnlOnCM     	  map[string]*PnlOnRepay   `gorm:"-"`
 	}
 )
 
@@ -80,4 +83,24 @@ func (b *Block) GetCSS() []*CreditSessionSnapshot {
 
 func (b *Block) GetPoolStats() []*PoolStat {
 	return b.PoolStats
+}
+
+func (b *Block) AddRepayOnCM(cmAddr string, pnl *PnlOnRepay) {
+	if b.pnlOnCM == nil {
+		b.pnlOnCM = make(map[string]*PnlOnRepay)
+	}
+	oldPnl := b.pnlOnCM[cmAddr]
+	if oldPnl != nil {
+		pnl.Profit = new(big.Int).Add(oldPnl.Profit, pnl.Profit)
+		pnl.Loss = new(big.Int).Add(oldPnl.Loss, pnl.Loss)
+		pnl.BorrowedAmount = new(big.Int).Add(oldPnl.BorrowedAmount, pnl.BorrowedAmount)
+	}
+	b.pnlOnCM[cmAddr] = pnl
+}
+
+func (b *Block) GetRepayOnCM(cmAddr string) *PnlOnRepay {
+	if b.pnlOnCM == nil || b.pnlOnCM[cmAddr] == nil {
+		log.Fatalf("Repay event for pool not found for cm: %s blockNum: %d", cmAddr, b.BlockNumber)
+	}
+	return b.pnlOnCM[cmAddr]
 }

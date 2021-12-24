@@ -57,6 +57,16 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 	case core.Topic("Borrow(address,address,uint256)"):
 		mdl.lastEventBlock = blockNum
 	case core.Topic("Repay(address,uint256,uint256,uint256)"):
+		repayEvent, err := mdl.contractETH.ParseRepay(txLog)
+		if err != nil {
+			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
+		}
+		mdl.Repo.AddRepayOnCM(blockNum ,repayEvent.CreditManager.Hex(), core.PnlOnRepay{
+			BorrowedAmount: repayEvent.BorrowedAmount,
+			Profit: repayEvent.Profit,
+			Loss: repayEvent.Loss,
+		})
+
 		mdl.lastEventBlock = blockNum
 		// case core.Topic("NewInterestRateModel(address)"):
 		// 	mdl.lastEventBlock = blockNum

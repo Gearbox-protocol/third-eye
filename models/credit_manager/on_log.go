@@ -18,8 +18,8 @@ func (mdl *CreditManager) onBlockChange() {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
-		mdl.calculateCMStat(mdl.lastEventBlock)
 		mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
+		mdl.calculateCMStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
 	}
 }

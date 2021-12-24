@@ -64,6 +64,12 @@ func AddCoreAndInt(a *BigInt, b *big.Int) *BigInt {
 	}
 	return NewBigInt((*BigInt)(b))
 }
+func SubCoreAndInt(a *BigInt, b *big.Int) *BigInt {
+	if a != nil {
+		return (*BigInt)(new(big.Int).Sub(a.Convert(), b))
+	}
+	return NewBigInt((*BigInt)(b))
+}
 
 func (z *BigInt) Scan(value interface{}) error {
 	if value == nil {

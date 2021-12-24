@@ -59,6 +59,7 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	if err != nil {
 		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
 	}
+	mdl.State.IsWETH = state.IsWETH
 
 	mdl.State.MinAmount = (*core.BigInt)(state.MinAmount)
 	mdl.State.MaxAmount = (*core.BigInt)(state.MaxAmount)

@@ -1,5 +1,8 @@
 package core
 
+import (
+	"math/big"
+)
 func (CreditManagerState) TableName() string {
 	return "credit_managers"
 }
@@ -14,6 +17,7 @@ type CreditManagerState struct {
 	MaxAmount         *BigInt `gorm:"column:max_amount"`
 	FeeInterest       int64   `gorm:"column:fee_interest"`
 	Sessions          Hstore  `gorm:"column:sessions"`
+	IsWETH          bool  `gorm:"column:is_weth"`
 }
 
 type CreditManagerData struct {
@@ -44,4 +48,10 @@ type CreditManagerStat struct {
 	ID       int64  `gorm:"primaryKey"`
 	BlockNum int64  `gorm:"column:block_num"`
 	Address  string `gorm:"column:credit_manager"`
+}
+
+type PnlOnRepay struct {
+	Loss *big.Int 
+	Profit *big.Int 
+	BorrowedAmount *big.Int 
 }

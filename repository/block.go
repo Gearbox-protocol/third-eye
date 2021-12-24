@@ -36,3 +36,11 @@ func (repo *Repository) SetBlock(blockNum int64) {
 		repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum, Timestamp: b.Time()}
 	}
 }
+
+func (repo *Repository) GetBlock(blockNum int64) *core.Block {
+	block := repo.blocks[blockNum]
+	if block == nil {
+		repo.SetBlock(blockNum)
+	}
+	return repo.blocks[blockNum]
+}
