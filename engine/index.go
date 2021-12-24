@@ -89,6 +89,9 @@ func (e *Engine) sync(syncTill int64) {
 		wg := &sync.WaitGroup{}
 		for kit.Next(lvlIndex) {
 			adapter := kit.Get(lvlIndex)
+			// if utils.Contains([]string{core.AccountFactory, core.YearnPriceFeed, core.ChainlinkPriceFeed}, adapter.GetName()) {
+			// 	continue
+			// }
 			if !adapter.IsDisabled() {
 				wg.Add(1)
 				if adapter.OnlyQueryAllowed() {

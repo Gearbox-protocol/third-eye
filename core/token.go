@@ -47,11 +47,11 @@ func (t *Token) init() error {
 }
 
 type AllowedToken struct {
-	Id                 int64   `gorm:"primaryKey;column:id;autoIncrement:true"`
-	BlockNumber        int64   `gorm:"column:block_num"`
-	CreditManager      string  `gorm:"column:credit_manager"`
-	Token              string  `gorm:"column:token"`
+	BlockNumber        int64   `gorm:"column:block_num;primaryKey"`
+	CreditManager      string  `gorm:"column:credit_manager;primaryKey"`
+	Token              string  `gorm:"column:token;primaryKey"`
 	LiquidityThreshold *BigInt `gorm:"column:liquiditythreshold"`
+	DisableBlock       int64   `gorm:"column:disable_block"`
 }
 
 func (AllowedToken) TableName() string {

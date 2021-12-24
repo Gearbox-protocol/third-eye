@@ -42,6 +42,7 @@ type RepositoryI interface {
 	AddAllowedProtocol(p *Protocol)
 	AddToken(token string) *Token
 	AddAllowedToken(atoken *AllowedToken)
+	DisableAllowedToken(creditManager, token string, disableBlockNum int64)
 	AddTokenObj(token *Token)
 	GetToken(addr string) *Token
 	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*JsonBalance, error)

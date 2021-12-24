@@ -21,6 +21,8 @@ type Repository struct {
 	executeParser         core.ExecuteParserI
 	dcWrapper             *core.DataCompressorWrapper
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
+	allowedTokens         map[string]map[string]*core.AllowedToken
+	disabledTokens        []*core.AllowedToken
 	// blocks/token
 	blocks map[int64]*core.Block
 	tokens map[string]*core.Token
@@ -45,6 +47,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		tokensCurrentOracle:   make(map[string]*core.TokenOracle),
 		dcWrapper:             core.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
+		allowedTokens:         make(map[string]map[string]*core.AllowedToken),
 	}
 	r.init()
 	return r
@@ -71,6 +74,7 @@ func (repo *Repository) init() {
 	repo.loadCurrentTokenOracle()
 	repo.loadPool()
 	repo.loadCreditManagers()
+	repo.loadAllowedTokensState()
 	repo.loadCreditSessions(lastDebtSync)
 }
 

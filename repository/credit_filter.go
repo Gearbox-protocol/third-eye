@@ -19,7 +19,17 @@ func (repo *Repository) AddAllowedProtocol(p *core.Protocol) {
 func (repo *Repository) AddAllowedToken(atoken *core.AllowedToken) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	repo.addAllowedTokenState(atoken)
 	repo.blocks[atoken.BlockNumber].AddAllowedToken(atoken)
+}
+
+func (repo *Repository) DisableAllowedToken(creditManager, token string, disableBlockNum int64) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	atoken := repo.allowedTokens[creditManager][token]
+	atoken.DisableBlock = disableBlockNum
+	repo.disabledTokens = append(repo.disabledTokens, atoken)
+	delete(repo.allowedTokens[creditManager], token)
 }
 
 func (repo *Repository) AddCreditManagerToFilter(cmAddr, cfAddr string) {

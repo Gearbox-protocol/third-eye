@@ -59,3 +59,25 @@ func (repo *Repository) AddTokenObj(t *core.Token) {
 		repo.tokens[t.Address] = t
 	}
 }
+
+func (repo *Repository) loadAllowedTokensState() {
+	data := []*core.AllowedToken{}
+	err := repo.db.Raw("SELECT * FROM allowed_tokens where disable_block = 0").Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		repo.addAllowedTokenState(entry)
+	}
+}
+
+func (repo *Repository) addAllowedTokenState(entry *core.AllowedToken) {
+	tokensForCM := repo.allowedTokens[entry.CreditManager]
+	if tokensForCM == nil {
+		repo.allowedTokens[entry.CreditManager] = make(map[string]*core.AllowedToken)
+		tokensForCM = repo.allowedTokens[entry.CreditManager]
+	}
+	if tokensForCM[entry.Token] != nil {
+		log.Warnf("Token already enabled: new %#v, previous entry: %#v", entry, tokensForCM[entry.Token])
+	} else {
+		tokensForCM[entry.Token] = entry
+	}
+}

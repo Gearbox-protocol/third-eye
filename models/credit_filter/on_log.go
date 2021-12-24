@@ -31,7 +31,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			log.Fatal("[CreditManagerModel]: Cant unpack token allowed event", err)
 		}
 		mdl.Repo.AddAllowedToken(&core.AllowedToken{
-			BlockNumber:        int64(txLog.BlockNumber),
+			BlockNumber:        blockNum,
 			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: (*core.BigInt)(tokenEvent.LiquidityThreshold),
@@ -39,12 +39,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		mdl.Repo.AddToken(tokenEvent.Token.Hex())
 	case core.Topic("TokenForbidden(address)"):
 		token := common.HexToAddress(txLog.Topics[1].Hex())
-		mdl.Repo.AddAllowedToken(&core.AllowedToken{
-			BlockNumber:        int64(txLog.BlockNumber),
-			CreditManager:      creditManager,
-			Token:              token.Hex(),
-			LiquidityThreshold: core.NewBigInt(nil),
-		})
+		mdl.Repo.DisableAllowedToken(creditManager, token.Hex(), blockNum)
 	case core.Topic("ContractForbidden(address)"):
 		contractDisabledEvent, err := mdl.contractETH.ParseContractForbidden(txLog)
 		if err != nil {

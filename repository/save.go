@@ -86,6 +86,15 @@ func (repo *Repository) Flush() error {
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
 
+	// add disabled tokens after the block num is synced to db
+	if len(repo.disabledTokens) > 0 {
+		err = tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(repo.disabledTokens, 50).Error
+		log.CheckFatal(err)
+		repo.disabledTokens = []*core.AllowedToken{}
+	}
+
 	log.Infof("created blocks sql update in %f sec", time.Now().Sub(now).Seconds())
 	info := tx.Commit()
 	log.CheckFatal(info.Error)
