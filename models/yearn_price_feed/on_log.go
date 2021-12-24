@@ -20,7 +20,7 @@ const interval = 25
 func (mdl *YearnPriceFeed) Query(queryTill int64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	queryFrom := mdl.GetLastSync() + interval
-	if queryFrom > queryTill {
+	if mdl.GetLastSync() > queryTill {
 		return
 	}
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), queryFrom, queryTill)
