@@ -58,7 +58,7 @@ func (AllowedToken) TableName() string {
 	return "allowed_tokens"
 }
 
-func CompareBalance(a, b *BigInt, token *Token) bool {
+func CompareBalance(a, b *BigInt, token *CumIndexAndUToken) bool {
 	precision := utils.GetPrecision(token.Symbol)
 	return utils.AlmostSameBigInt(a.Convert(), b.Convert(), token.Decimals, precision)
 }

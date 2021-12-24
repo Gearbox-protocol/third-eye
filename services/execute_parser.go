@@ -146,7 +146,7 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 			call.Transfers = executeTransfers[i]
 		}
 	} else {
-		log.Fatal("Calls ", len(calls), ", execute details ", len(executeTransfers))
+		log.Fatal("Calls %d execute details %d tx:%s creditManager:%s", txHash, creditManagerAddr, len(calls), len(executeTransfers))
 	}
 	return calls
 }

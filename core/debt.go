@@ -45,6 +45,8 @@ type DebtProfile struct {
 type CumIndexAndUToken struct {
 	CumulativeIndex *big.Int
 	Token           string
+	Decimals         int8
+	Symbol           string
 }
 
 func (debt *DebtProfile) Json() []byte {

@@ -126,9 +126,13 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 			predicate := new(big.Int).Add(newInterestPerSec, utils.GetExpInt(27))
 			cumIndex := new(big.Int).Mul(poolInterestData.CumulativeIndexRAY.Convert(), predicate)
 			cumIndexNormalized := utils.GetInt64Decimal(cumIndex, 27)
+			tokenAddr := eng.repo.GetCMState(cmAddr).UnderlyingToken
+			token := eng.repo.GetToken(tokenAddr)
 			poolToCI[cmAddr] = &core.CumIndexAndUToken{
 				CumulativeIndex: cumIndexNormalized,
-				Token:           eng.repo.GetCMState(cmAddr).UnderlyingToken,
+				Token:           tokenAddr,
+				Symbol: token.Symbol, 
+				Decimals: token.Decimals,
 			}
 			// log.Infof("blockNum%d newInterest:%s tsDiff:%s cumIndexDecimal:%s predicate:%s cumIndex:%s",blockNum ,newInterest, tsDiff, cumIndexNormalized, predicate, cumIndex)
 		}
@@ -140,7 +144,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAd
 	sessionSnapshot := eng.lastCSS[sessionId]
 	debt, profile := eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, accountAddr, cumIndexAndUToken)
 	// if profile is not null
-	// yearn price feed might be stale as a result differ btw dc and calculated values
+	// yearn price feed might be stale as a result difference btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
 	if profile != nil {
 		kit := eng.repo.GetKit()
@@ -167,6 +171,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAd
 		}
 	}
 	// check if data compressor and calculated values match
+	eng.liquidationCheck(debt, cmAddr, sessionSnapshot.Borrower, cumIndexAndUToken)
 	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
 }
 
@@ -174,7 +179,6 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	sessionSnapshot := eng.lastCSS[sessionId]
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
-	underlyingtoken := eng.repo.GetToken(cumIndexAndUToken.Token)
 	// profiling
 	tokenDetails := map[string]core.TokenDetails{}
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
@@ -192,7 +196,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 			continue
 		}
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
-		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-underlyingtoken.Decimals)
+		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-cumIndexAndUToken.Decimals)
 		tokenThresholdValue := new(big.Int).Mul(tokenValueInDecimal, tokenLiquidityThreshold.Convert())
 		calThresholdValue = new(big.Int).Add(calThresholdValue, tokenThresholdValue)
 		calTotalValue = new(big.Int).Add(calTotalValue, tokenValueInDecimal)
@@ -226,8 +230,8 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		debt.HealthFactor = (*core.BigInt)(data.HealthFactor)
 		debt.TotalValueBI = (*core.BigInt)(data.TotalValue)
 		debt.BorrowedAmountPlusInterestBI = (*core.BigInt)(data.BorrowedAmountPlusInterest)
-		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
-			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, underlyingtoken) ||
+		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, cumIndexAndUToken) ||
+			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, cumIndexAndUToken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) {
 			mask := eng.repo.GetMask(blockNum, cmAddr, accountAddr)
 			var err error
@@ -241,7 +245,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 	} else if sessionSnapshot.BlockNum == blockNum {
 		debt.HealthFactor = sessionSnapshot.HealthFactor
 		debt.TotalValueBI = sessionSnapshot.TotalValueBI
-		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, underlyingtoken) ||
+		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, cumIndexAndUToken) ||
 			// hf value calculated are on different side of 1
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) ||
 			// if healhFactor diff by 4 %
@@ -254,7 +258,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		profile.CumIndexAndUToken = cumIndexAndUToken
 		profile.Debt = debt
 		profile.CreditSessionSnapshot = sessionSnapshot
-		profile.UnderlyingDecimals = underlyingtoken.Decimals
+		profile.UnderlyingDecimals = cumIndexAndUToken.Decimals
 		profile.Tokens = tokenDetails
 		return debt, &profile
 	}

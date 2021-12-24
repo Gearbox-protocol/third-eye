@@ -1,20 +1,50 @@
 package debts
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
-	"math/big"
 )
+func (eng *DebtEngine) explorerUrl() string {
+	switch eng.config.ChainId {
+	case 1:
+		return "https://etherscan.io/address"
+	case 42:
+		return "https://kovan.etherscan.io/address"
+	} 
+	return ""
+}
+func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string,  token *core.CumIndexAndUToken) {
+	lastDebt := eng.lastDebts[debt.SessionId]
+	if lastDebt != nil {
+		if core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
+			!core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
+
+			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
+			log.Msgf("Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)", 
+				debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
+
+		} else if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
+			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
+			log.Msgf(`Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)
+				CreditManager: %s/%s
+				Borrower: %s RepayAmount:%s %s
+				web: https://charts.gearbox.fi/%s`, 
+				debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber,
+				eng.explorerUrl(), cmAddr, 
+				borrower,
+				utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
+				debt.SessionId,
+			)
+		}
+	}
+}
 
 func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 	lastDebt := eng.lastDebts[debt.SessionId]
-	if lastDebt != nil {
-		if core.ValueDifferSideOf10000(debt.CalHealthFactor, lastDebt.CalHealthFactor) {
-			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
-			log.Msgf("Session(%s)'s hf changed %s at (block:%d) -> %s at (block:%d)", debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
-		}
-	}
 	if eng.config.ThrottleDebtCal {
 		// add debt if throttle is enabled and (last debt is missing or forced add is set)
 		if lastDebt == nil || forceAdd {
