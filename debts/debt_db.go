@@ -29,6 +29,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 
 		} else if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
+			eng.addLiquidableAccount(debt.SessionId, 0)
 			log.Msgf(`Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)
 				CreditManager: %s/%s
 				Borrower: %s RepayAmount:%f %s
