@@ -31,8 +31,8 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			log.Msgf(`Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)
 				CreditManager: %s/%s
-				Borrower: %s RepayAmount:%s %s
-				web: https://charts.gearbox.fi/%s`, 
+				Borrower: %s RepayAmount:%f %s
+				web: https://charts.gearbox.fi/accounts/history/%s`, 
 				debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber,
 				eng.explorerUrl(), cmAddr, 
 				borrower,
