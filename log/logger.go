@@ -98,9 +98,10 @@ func CheckFatal(err error) {
 }
 
 var ch *amqp.Channel
-
-func SetAMQP(_ch *amqp.Channel) {
+var netName string
+func SetAMQP(_ch *amqp.Channel, name string) {
 	ch = _ch
+	netName = name
 }
 func amqpSend(v []interface{}) {
 	alert := fmt.Sprint(v...)
@@ -121,7 +122,7 @@ func send(message string, routingKey string) {
 		false,         // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
-			Body:        []byte("Third eye:" + message),
+			Body:        []byte(fmt.Sprintf("[%s]Third eye:", netName) + message),
 		})
 	if err != nil {
 		log.Println("Cant sent notification", err)
