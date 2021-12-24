@@ -96,27 +96,6 @@ func (ep *ExecuteParser) getTenderlyData(txHash string) (*TxTrace, error) {
 
 // executeOrder
 
-func (call *Call) dappCall(dappAddr common.Address) *core.KnownCall {
-	if (call.CallerOp == "CALL" || call.CallerOp == "DELEGATECALL") && dappAddr == common.HexToAddress(call.To) {
-		name, arguments := ParseCallData(call.Input)
-		if arguments == nil {
-			log.Fatalf("%s %#v %#v\n", name, arguments, call)
-		}
-		return &core.KnownCall{
-			From: common.HexToAddress(call.From),
-			To:   common.HexToAddress(call.To),
-			Name: name,
-			Args: arguments,
-		}
-	}
-	for _, c := range call.Calls {
-		knownCall := c.dappCall(dappAddr)
-		if knownCall != nil {
-			return knownCall
-		}
-	}
-	return nil
-}
 func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
 	trace, err := ep.getTenderlyData(txHash)
 	if err != nil {
@@ -146,7 +125,8 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 			call.Transfers = executeTransfers[i]
 		}
 	} else {
-		log.Fatal("Calls %d execute details %d tx:%s creditManager:%s", txHash, creditManagerAddr, len(calls), len(executeTransfers))
+		log.Fatalf("Calls %d execute details %d tx:%s creditManager:%s",
+			len(calls), len(executeTransfers), txHash, creditManagerAddr)
 	}
 	return calls
 }
