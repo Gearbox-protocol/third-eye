@@ -60,7 +60,16 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
 	}
 	mdl.State.IsWETH = state.IsWETH
-
+	// pnl on repay
+	pnlOnRepay := mdl.Repo.GetRepayOnCM(blockNum, mdl.GetAddress())
+	if pnlOnRepay != nil {
+		mdl.State.TotalBorrowedBI = core.SubCoreAndInt(mdl.State.TotalBorrowedBI, pnlOnRepay.BorrowedAmount)
+		mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
+		mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, pnlOnRepay.Loss)
+		mdl.State.TotalLosses = utils.GetFloat64Decimal(mdl.State.TotalLossesBI.Convert(), mdl.GetUnderlyingDecimal())
+		mdl.State.TotalProfitBI = core.AddCoreAndInt(mdl.State.TotalProfitBI, pnlOnRepay.Profit)
+		mdl.State.TotalProfit = utils.GetFloat64Decimal(mdl.State.TotalProfitBI.Convert(), mdl.GetUnderlyingDecimal())
+	}
 	mdl.State.MinAmount = (*core.BigInt)(state.MinAmount)
 	mdl.State.MaxAmount = (*core.BigInt)(state.MaxAmount)
 

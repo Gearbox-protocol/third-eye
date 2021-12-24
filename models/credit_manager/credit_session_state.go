@@ -69,14 +69,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	// credit manager state
 	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, data.RepayAmount)
 	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
-	// pnl on repay
-	pnlOnRepay := mdl.Repo.GetRepayOnCM(blockNum, mdl.GetAddress())
-	mdl.State.TotalBorrowedBI = core.SubCoreAndInt(mdl.State.TotalBorrowedBI, pnlOnRepay.BorrowedAmount)
-	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
-	mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, pnlOnRepay.Loss)
-	mdl.State.TotalLosses = utils.GetFloat64Decimal(mdl.State.TotalLossesBI.Convert(), mdl.GetUnderlyingDecimal())
-	mdl.State.TotalProfitBI = core.AddCoreAndInt(mdl.State.TotalProfitBI, pnlOnRepay.Profit)
-	mdl.State.TotalProfit = utils.GetFloat64Decimal(mdl.State.TotalProfitBI.Convert(), mdl.GetUnderlyingDecimal())
 	//
 	// create session snapshot
 	css := core.CreditSessionSnapshot{}

@@ -3,7 +3,6 @@ package core
 import (
 	"sort"
 	"math/big"
-	"github.com/Gearbox-protocol/third-eye/log"
 )
 
 type (
@@ -100,7 +99,7 @@ func (b *Block) AddRepayOnCM(cmAddr string, pnl *PnlOnRepay) {
 
 func (b *Block) GetRepayOnCM(cmAddr string) *PnlOnRepay {
 	if b.pnlOnCM == nil || b.pnlOnCM[cmAddr] == nil {
-		log.Fatalf("Repay event for pool not found for cm: %s blockNum: %d", cmAddr, b.BlockNumber)
+		return nil
 	}
 	return b.pnlOnCM[cmAddr]
 }
