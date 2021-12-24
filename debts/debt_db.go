@@ -20,15 +20,15 @@ func (eng *DebtEngine) explorerUrl() string {
 func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string,  token *core.CumIndexAndUToken) {
 	lastDebt := eng.lastDebts[debt.SessionId]
 	if lastDebt != nil {
-		if core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
-			!core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
+		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
+			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
 			log.Msgf("Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)", 
 				debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
 
-		} else if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
-			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
+		} else if core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
+			!core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			eng.addLiquidableAccount(debt.SessionId, 0)
 			log.Msgf(`Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)
 				CreditManager: %s/%s
