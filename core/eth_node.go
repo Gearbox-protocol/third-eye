@@ -13,6 +13,7 @@ import (
 
 type Node struct {
 	Client *ethclient.Client
+	ChainId int64
 }
 
 func (lf *Node) GetLogs(fromBlock, toBlock int64, addr string) ([]types.Log, error) {
@@ -50,9 +51,13 @@ func (lf *Node) GetLatestBlockNumber() int64 {
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Info("Lastest blocknumber", latestBlockNum)
+	blockNumToReturn := int64(latestBlockNum)
 	// skip 2 blocks ~30 sec latest block might reorder
-	return int64(latestBlockNum - 2)
+	if lf.ChainId != 1337 {
+		blockNumToReturn-=2
+	}
+	log.Info("Lastest blocknumber", blockNumToReturn)
+	return blockNumToReturn
 }
 
 func (lf *Node) GetHeader(blockNum int64) *types.Header {

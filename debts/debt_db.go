@@ -27,20 +27,21 @@ func (eng *DebtEngine) networkUIUrl() NetworkUI {
 	} 
 	return NetworkUI{}
 }
-func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string,  token *core.CumIndexAndUToken) {
+func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string, token *core.CumIndexAndUToken) {
 	lastDebt := eng.lastDebts[debt.SessionId]
 	if lastDebt != nil {
 		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 				eng.addLiquidableAccount(debt.SessionId, 0)
-			log.Msgf("Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)", 
+			log.Msgf(`Session:%s 
+			HF: %s@(block:%d) -> %s@(block:%d)`, 
 				debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
 
 		} else if core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			!core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
 			urls := eng.networkUIUrl()
-			log.Msgf(`Liquidaiton alert
+			log.Msgf(`Liquidation alert
 				Session: %s
 				HF: %s -> %s
 				CreditManager: %s/address/%s

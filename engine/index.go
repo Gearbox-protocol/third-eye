@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"sync"
+	"context"
 	"time"
 )
 
@@ -25,12 +26,15 @@ func NewEngine(config *config.Config,
 	ec *ethclient.Client,
 	debtEng core.DebtEngineI,
 	repo core.RepositoryI) core.EngineI {
+	chaindId, err := ec.ChainID(context.TODO())
+	log.CheckFatal(err)
 	eng := &Engine{
 		debtEng: debtEng,
 		config:  config,
 		repo:    repo,
 		Node: &core.Node{
 			Client: ec,
+			ChainId: chaindId.Int64(),
 		},
 	}
 	eng.init()
@@ -59,12 +63,16 @@ func (e *Engine) init() {
 
 func (e *Engine) SyncHandler() {
 	latestBlockNum := e.GetLatestBlockNumber()
-	e.syncLoop(latestBlockNum)
-	for {
+	// only do batch sync if latestblock is far from currently synced block
+	if e.currentlySyncedTill + e.syncBlockBatchSize <= latestBlockNum {
+		e.syncLoop(latestBlockNum)
 		log.Infof("Synced till %d sleeping for 5 mins", e.currentlySyncedTill)
-		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
+	}
+	for {
 		latestBlockNum = e.GetLatestBlockNumber()
 		e.sync(latestBlockNum)
+		log.Infof("Synced till %d sleeping for 5 mins", e.currentlySyncedTill)
+		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
 	}
 }
 

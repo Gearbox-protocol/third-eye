@@ -31,8 +31,10 @@ func (eng *DebtEngine) calculateDebt() {
 	for _, blockNum := range blockNums {
 		block := blocks[blockNum]
 		// update threshold
+		ltChangedTokens := []string{}
 		for _, allowedToken := range block.GetAllowedTokens() {
 			eng.AddAllowedTokenThreshold(allowedToken)
+			ltChangedTokens = append(ltChangedTokens, allowedToken.Token)
 		}
 		// update pool borrow rate and cumulative index
 		for _, ps := range block.GetPoolStats() {
@@ -67,6 +69,11 @@ func (eng *DebtEngine) calculateDebt() {
 			eng.AddTokenLastPrice(pf)
 			// set the price session list to update
 			for _, sessionId := range sessionWithTokens[pf.Token] {
+				sessionsToUpdate[sessionId] = true
+			}
+		}
+		for _, token := range ltChangedTokens {
+			for _, sessionId := range sessionWithTokens[token] {
 				sessionsToUpdate[sessionId] = true
 			}
 		}
