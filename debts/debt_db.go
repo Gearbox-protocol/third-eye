@@ -8,14 +8,24 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
 )
-func (eng *DebtEngine) explorerUrl() string {
+type NetworkUI struct {
+	ExplorerUrl string
+	ChartUrl string
+}
+func (eng *DebtEngine) networkUIUrl() NetworkUI {
 	switch eng.config.ChainId {
 	case 1:
-		return "https://etherscan.io/address"
+		return NetworkUI{
+			ExplorerUrl: "https://etherscan.io",
+			ChartUrl: "https://charts.gearbox.fi",
+		}
 	case 42:
-		return "https://kovan.etherscan.io/address"
+		return NetworkUI{
+			ExplorerUrl: "https://kovan.etherscan.io",
+			ChartUrl: "https://charts.kovan.gearbox.fi",
+		}
 	} 
-	return ""
+	return NetworkUI{}
 }
 func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string,  token *core.CumIndexAndUToken) {
 	lastDebt := eng.lastDebts[debt.SessionId]
@@ -29,15 +39,19 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 		} else if core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			!core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
-			log.Msgf(`Session(%s)'s hf changed %s@(block:%d) -> %s@(block:%d)
-				CreditManager: %s/%s
+			urls := eng.networkUIUrl()
+			log.Msgf(`Liquidaiton alert
+				Session: %s
+				HF: %s -> %s
+				CreditManager: %s/address/%s
 				Borrower: %s RepayAmount:%f %s
-				web: https://charts.gearbox.fi/accounts/history/%s`, 
-				debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber,
-				eng.explorerUrl(), cmAddr, 
+				web: %s/accounts/%s/%s`, 
+				debt.SessionId, 
+				lastDebt.CalHealthFactor, debt.CalHealthFactor,
+				urls.ExplorerUrl, cmAddr, 
 				borrower,
 				utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
-				debt.SessionId,
+				urls.ChartUrl, cmAddr, borrower,
 			)
 		}
 	}
