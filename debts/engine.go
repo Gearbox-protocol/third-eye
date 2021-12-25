@@ -105,9 +105,18 @@ func (eng *DebtEngine) calculateDebt() {
 func (eng *DebtEngine) ifAccountClosed(sessionId string, closedAt int64, status int) {
 	if status == core.Liquidated {
 		account := eng.liquidableBlockTracker[sessionId]
-		log.Msgf("Session(%s) liquidated at block:%d liquidable since %d ", sessionId, closedAt, account.BlockNum)
+		var liquidableSinceBlockNum int64
+		if account != nil {
+			liquidableSinceBlockNum = account.BlockNum
+		} else {
+			log.Warnf("Session(%s) liquidated at block:%d, but liquidable since block not stored", sessionId, closedAt)
+		}
+		log.Msgf("Session(%s) liquidated at block:%d liquidable since %d ", sessionId, closedAt, liquidableSinceBlockNum)
 	} else if status != core.Active {
-		delete(eng.liquidableBlockTracker, sessionId)
+		// comment deletion form map
+		// this way if the account is liquidable and liquidated in the smae debt calculation cycl
+		// we can store in db which last block it became liquidable
+		// delete(eng.liquidableBlockTracker, sessionId)
 	}
 }
 
