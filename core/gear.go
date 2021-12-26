@@ -69,8 +69,8 @@ type RepositoryI interface {
 	AddCreditManagerStats(cms *CreditManagerStat)
 	GetCMState(cmAddr string) *CreditManagerState
 	GetUnderlyingDecimal(cmAddr string) int8
-	AddRepayOnCM(blockNum int64 , cm string, pnl PnlOnRepay)
-	GetRepayOnCM(blockNum int64 , cm string) *PnlOnRepay
+	AddRepayOnCM(blockNum int64, cm string, pnl PnlOnRepay)
+	GetRepayOnCM(blockNum int64, cm string) *PnlOnRepay
 	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64

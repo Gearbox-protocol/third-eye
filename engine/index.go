@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"context"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
@@ -9,7 +10,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"sync"
-	"context"
 	"time"
 )
 
@@ -33,7 +33,7 @@ func NewEngine(config *config.Config,
 		config:  config,
 		repo:    repo,
 		Node: &core.Node{
-			Client: ec,
+			Client:  ec,
 			ChainId: chaindId.Int64(),
 		},
 	}
@@ -64,7 +64,7 @@ func (e *Engine) init() {
 func (e *Engine) SyncHandler() {
 	latestBlockNum := e.GetLatestBlockNumber()
 	// only do batch sync if latestblock is far from currently synced block
-	if e.currentlySyncedTill + e.syncBlockBatchSize <= latestBlockNum {
+	if e.currentlySyncedTill+e.syncBlockBatchSize <= latestBlockNum {
 		e.syncLoop(latestBlockNum)
 		log.Infof("Synced till %d sleeping for 5 mins", e.currentlySyncedTill)
 	}

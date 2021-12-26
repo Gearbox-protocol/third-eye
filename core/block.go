@@ -1,8 +1,8 @@
 package core
 
 import (
-	"sort"
 	"math/big"
+	"sort"
 )
 
 type (
@@ -19,7 +19,7 @@ type (
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
 		AllowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
-		pnlOnCM     	  map[string]*PnlOnRepay   `gorm:"-"`
+		pnlOnCM           map[string]*PnlOnRepay   `gorm:"-"`
 	}
 )
 

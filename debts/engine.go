@@ -92,7 +92,7 @@ func (eng *DebtEngine) calculateDebt() {
 				// send notification when account is liquidated
 				css := eng.lastCSS[sessionId]
 				if session.ClosedAt == css.BlockNum+1 {
-					eng.ifAccountClosed(css.SessionId, session.ClosedAt, session.Status)
+					eng.ifAccountClosed(css.SessionId, session.CreditManager, session.ClosedAt, session.Status)
 				}
 				//
 			} else {
@@ -109,7 +109,8 @@ func (eng *DebtEngine) calculateDebt() {
 	// }
 }
 
-func (eng *DebtEngine) ifAccountClosed(sessionId string, closedAt int64, status int) {
+func (eng *DebtEngine) ifAccountClosed(sessionId, cmAddr string, closedAt int64, status int) {
+	sessionSnapshot := eng.lastCSS[sessionId]
 	if status == core.Liquidated {
 		account := eng.liquidableBlockTracker[sessionId]
 		var liquidableSinceBlockNum int64
@@ -118,7 +119,16 @@ func (eng *DebtEngine) ifAccountClosed(sessionId string, closedAt int64, status 
 		} else {
 			log.Warnf("Session(%s) liquidated at block:%d, but liquidable since block not stored", sessionId, closedAt)
 		}
-		log.Msgf("Session(%s) liquidated at block:%d liquidable since %d ", sessionId, closedAt, liquidableSinceBlockNum)
+		urls := eng.networkUIUrl()
+		log.Msgf(`Liquidation Alert:
+		CreditManager: %s/address/%s
+		Borrower: %s
+		LiquidatedAt: %d 
+		Liquidable since: %d
+		web: %s/accounts/%s/%s`,
+			urls.ExplorerUrl, cmAddr, sessionSnapshot.Borrower,
+			closedAt, liquidableSinceBlockNum,
+			urls.ChartUrl, cmAddr, sessionSnapshot.Borrower)
 	} else if status != core.Active {
 		// comment deletion form map
 		// this way if the account is liquidable and liquidated in the smae debt calculation cycl
@@ -147,8 +157,8 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 			poolToCI[cmAddr] = &core.CumIndexAndUToken{
 				CumulativeIndex: cumIndexNormalized,
 				Token:           tokenAddr,
-				Symbol: token.Symbol, 
-				Decimals: token.Decimals,
+				Symbol:          token.Symbol,
+				Decimals:        token.Decimals,
 			}
 			// log.Infof("blockNum%d newInterest:%s tsDiff:%s cumIndexDecimal:%s predicate:%s cumIndex:%s",blockNum ,newInterest, tsDiff, cumIndexNormalized, predicate, cumIndex)
 		}

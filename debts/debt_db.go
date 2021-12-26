@@ -8,23 +8,25 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
 )
+
 type NetworkUI struct {
 	ExplorerUrl string
-	ChartUrl string
+	ChartUrl    string
 }
+
 func (eng *DebtEngine) networkUIUrl() NetworkUI {
 	switch eng.config.ChainId {
 	case 1:
 		return NetworkUI{
 			ExplorerUrl: "https://etherscan.io",
-			ChartUrl: "https://charts.gearbox.fi",
+			ChartUrl:    "https://charts.gearbox.fi",
 		}
 	case 42:
 		return NetworkUI{
 			ExplorerUrl: "https://kovan.etherscan.io",
-			ChartUrl: "https://charts.kovan.gearbox.fi",
+			ChartUrl:    "https://charts.kovan.gearbox.fi",
 		}
-	} 
+	}
 	return NetworkUI{}
 }
 func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string, token *core.CumIndexAndUToken) {
@@ -32,24 +34,26 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 	if lastDebt != nil {
 		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
-				eng.addLiquidableAccount(debt.SessionId, 0)
-			log.Msgf(`Session:%s 
-			HF: %s@(block:%d) -> %s@(block:%d)`, 
-				debt.SessionId, lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
+			eng.addLiquidableAccount(debt.SessionId, 0)
+			log.Msgf(`HealthFactor safe again: 
+			SessionId:%s
+			HF: %s@(block:%d) -> %s@(block:%d)`,
+				debt.SessionId,
+				lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
 
 		} else if core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			!core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
 			urls := eng.networkUIUrl()
-			log.Msgf(`Liquidation alert
+			log.Msgf(`HealthFactor low:
 				Session: %s
 				HF: %s -> %s
 				CreditManager: %s/address/%s
 				Borrower: %s RepayAmount:%f %s
-				web: %s/accounts/%s/%s`, 
-				debt.SessionId, 
+				web: %s/accounts/%s/%s`,
+				debt.SessionId,
 				lastDebt.CalHealthFactor, debt.CalHealthFactor,
-				urls.ExplorerUrl, cmAddr, 
+				urls.ExplorerUrl, cmAddr,
 				borrower,
 				utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
 				urls.ChartUrl, cmAddr, borrower,

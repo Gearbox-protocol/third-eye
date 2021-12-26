@@ -13,6 +13,7 @@ CREATE TABLE credit_sessions (
     profit_percent double precision,
     total_value varchar(80),
     health_factor varchar(80),
+    liquidator  varchar(42),
     name text,
     background text
 );

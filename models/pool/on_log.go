@@ -61,10 +61,10 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		mdl.Repo.AddRepayOnCM(blockNum ,repayEvent.CreditManager.Hex(), core.PnlOnRepay{
+		mdl.Repo.AddRepayOnCM(blockNum, repayEvent.CreditManager.Hex(), core.PnlOnRepay{
 			BorrowedAmount: repayEvent.BorrowedAmount,
-			Profit: repayEvent.Profit,
-			Loss: repayEvent.Loss,
+			Profit:         repayEvent.Profit,
+			Loss:           repayEvent.Loss,
 		})
 
 		mdl.lastEventBlock = blockNum

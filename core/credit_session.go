@@ -30,6 +30,7 @@ type (
 		HealthFactor     *BigInt `gorm:"column:health_factor" json:"healthFactor"`
 		Score            float64 `json:"score"`
 		IsDirty          bool    `gorm:"-"`
+		Liquidator       string  `gorm:"liquidator"`
 	}
 
 	CreditAccountData struct {

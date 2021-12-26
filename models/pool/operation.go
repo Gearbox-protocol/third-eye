@@ -29,8 +29,8 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		TotalBorrowedBI: (*core.BigInt)(state.TotalBorrowed),
 		TotalBorrowed:   utils.GetFloat64Decimal(state.TotalBorrowed, token.Decimals),
 
-		ExpectedLiquidityBI: (*core.BigInt)(state.ExpectedLiquidity),
-		ExpectedLiquidity:   utils.GetFloat64Decimal(state.ExpectedLiquidity, token.Decimals),
+		ExpectedLiquidityBI:      (*core.BigInt)(state.ExpectedLiquidity),
+		ExpectedLiquidity:        utils.GetFloat64Decimal(state.ExpectedLiquidity, token.Decimals),
 		ExpectedLiquidityLimitBI: (*core.BigInt)(state.ExpectedLiquidityLimit),
 
 		AvailableLiquidityBI: (*core.BigInt)(state.AvailableLiquidity),

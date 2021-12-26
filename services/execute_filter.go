@@ -20,9 +20,9 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*core.KnownCall {
 		return calls
 	}
 	ep := ef.paramsList[ef.paramsIndex]
-	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"},call.CallerOp) {
+	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		// Execute call on credit manager
-		if ef.creditManager == common.HexToAddress(call.To) && len(call.Input) >=10 && call.Input[:10] == "0x6ce4074a" {
+		if ef.creditManager == common.HexToAddress(call.To) && len(call.Input) >= 10 && call.Input[:10] == "0x6ce4074a" {
 
 			dappcall := call.dappCall(ep.Protocol)
 			// this check is there as there are 2 executeOrder call in
@@ -41,9 +41,8 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*core.KnownCall {
 	return calls
 }
 
-
 func (call *Call) dappCall(dappAddr common.Address) *core.KnownCall {
-	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"},call.CallerOp) && dappAddr == common.HexToAddress(call.To) {
+	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) && dappAddr == common.HexToAddress(call.To) {
 		name, arguments := ParseCallData(call.Input)
 		if arguments == nil {
 			log.Fatalf("%s %#v %#v\n", name, arguments, call)

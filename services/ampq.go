@@ -28,14 +28,14 @@ func NewAMQPService(config *config.Config) {
 
 	ch, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
-	name :=""
+	name := ""
 	switch config.ChainId {
 	case 42:
-		name= "KOVAN"
+		name = "KOVAN"
 	case 1:
-		name= "MAINNET"
+		name = "MAINNET"
 	case 1337:
-		name="TEST"
+		name = "TEST"
 	}
 	logger.SetAMQP(ch, name)
 }

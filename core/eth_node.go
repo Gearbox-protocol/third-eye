@@ -12,7 +12,7 @@ import (
 )
 
 type Node struct {
-	Client *ethclient.Client
+	Client  *ethclient.Client
 	ChainId int64
 }
 
@@ -54,7 +54,7 @@ func (lf *Node) GetLatestBlockNumber() int64 {
 	blockNumToReturn := int64(latestBlockNum)
 	// skip 2 blocks ~30 sec latest block might reorder
 	if lf.ChainId != 1337 {
-		blockNumToReturn-=2
+		blockNumToReturn -= 2
 	}
 	log.Info("Lastest blocknumber", blockNumToReturn)
 	return blockNumToReturn

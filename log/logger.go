@@ -99,6 +99,7 @@ func CheckFatal(err error) {
 
 var ch *amqp.Channel
 var netName string
+
 func SetAMQP(_ch *amqp.Channel, name string) {
 	ch = _ch
 	netName = name

@@ -121,6 +121,8 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 		true,
 		mdl.GetAddress())
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{RemainingFunds: remainingFunds, Status: core.Liquidated}
+	session := mdl.Repo.GetCreditSession(sessionId)
+	session.Liquidator = liquidator
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
 	return nil
