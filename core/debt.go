@@ -29,10 +29,10 @@ type CurrentDebt struct {
 	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor"`
 	CalTotalValue                   float64 `gorm:"column:cal_total_value"`
 	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value_bi"`
-	ProfitBI                        *BigInt `gorm:"column:profit_bi"`
-	LossBI                          *BigInt `gorm:"column:loss_bi"`
-	RepayAmountBI                   *BigInt `gorm:"column:repay_amount_bi"`
-	LiqAmountBI                     *BigInt `gorm:"liq_amount_bi"`
+	Profit                          float64 `gorm:"column:profit"`
+	Loss                            float64 `gorm:"column:loss"`
+	RepayAmount                     float64 `gorm:"column:repay_amount"`
+	LiqAmount                       float64 `gorm:"column:liq_amount"`
 	CalBorrowedAmountPlusInterest   float64 `gorm:"column:cal_borrowed_amt_with_interest"`
 	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest_bi"`
 	CalThresholdValue               float64 `gorm:"column:cal_threshold_value"`

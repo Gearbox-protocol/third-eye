@@ -63,7 +63,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 }
 
 func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
-	eng.currentDebts = append(eng.currentDebts, &core.CurrentDebt{
+	curDebt := core.CurrentDebt{
 		SessionId:                       debt.SessionId,
 		BlockNumber:                     debt.BlockNumber,
 		CalHealthFactor:                 debt.CalHealthFactor,
@@ -73,11 +73,16 @@ func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
 		CalBorrowedAmountPlusInterestBI: core.NewBigInt(debt.CalBorrowedAmountPlusInterestBI),
 		CalThresholdValue:               utils.GetFloat64Decimal((debt.CalThresholdValueBI).Convert(), decimals),
 		CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
-		LiqAmountBI:                     debt.LiqAmountBI,
-		RepayAmountBI:                   debt.RepayAmountBI,
-		ProfitBI:                        debt.ProfitBI,
-		LossBI:                          debt.LossBI,
-	})
+		LiqAmount:                       utils.GetFloat64Decimal(debt.LiqAmountBI.Convert(), decimals),
+		RepayAmount:                     utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
+	}
+	if debt.ProfitBI != nil {
+		curDebt.Profit = utils.GetFloat64Decimal(debt.ProfitBI.Convert(), decimals)
+	}
+	if debt.LossBI != nil {
+		curDebt.Loss = utils.GetFloat64Decimal(debt.LossBI.Convert(), decimals)
+	}
+	eng.currentDebts = append(eng.currentDebts, &curDebt)
 }
 
 func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
