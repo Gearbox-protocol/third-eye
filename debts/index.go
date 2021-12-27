@@ -99,6 +99,8 @@ func (eng *DebtEngine) Clear() {
 
 func (eng *DebtEngine) calRepayAmount(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
 	params := eng.lastParameters[creditManager]
+	loss = big.NewInt(0)
+	profit = big.NewInt(0)
 	var totalFunds *big.Int
 	if isLiquidated {
 		totalFunds = utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
