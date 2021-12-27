@@ -62,6 +62,24 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 	}
 }
 
+func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
+	eng.currentDebts = append(eng.currentDebts, &core.CurrentDebt{
+		SessionId:                       debt.SessionId,
+		BlockNumber:                     debt.BlockNumber,
+		CalHealthFactor:                 debt.CalHealthFactor,
+		CalTotalValue:                   utils.GetFloat64Decimal(debt.CalTotalValueBI.Convert(), decimals),
+		CalTotalValueBI:                 core.NewBigInt(debt.CalTotalValueBI),
+		CalBorrowedAmountPlusInterest:   utils.GetFloat64Decimal((debt.CalBorrowedAmountPlusInterestBI).Convert(), decimals),
+		CalBorrowedAmountPlusInterestBI: core.NewBigInt(debt.CalBorrowedAmountPlusInterestBI),
+		CalThresholdValue:               utils.GetFloat64Decimal((debt.CalThresholdValueBI).Convert(), decimals),
+		CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
+		LiqAmountBI:                     debt.LiqAmountBI,
+		RepayAmountBI:                   debt.RepayAmountBI,
+		ProfitBI:                        debt.ProfitBI,
+		LossBI:                          debt.LossBI,
+	})
+}
+
 func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 	lastDebt := eng.lastDebts[debt.SessionId]
 	if eng.config.ThrottleDebtCal {
@@ -110,7 +128,7 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	}
 	log.Infof("Flushing %d for block:%d", debtLen, newDebtSyncTill)
 	tx := eng.db.Begin()
-	err := tx.Create(core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
+	err := tx.Create(&core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
 	log.CheckFatal(err)
 	liquidableAccounts := []*core.LiquidableAccount{}
 	for _, la := range eng.liquidableBlockTracker {

@@ -18,6 +18,7 @@ type (
 		PoolLedgers       []*PoolLedger            `gorm:"foreignKey:block_num"`
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
 		AllowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
+		Params            []*Parameters            `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
 		pnlOnCM           map[string]*PnlOnRepay   `gorm:"-"`
 	}
@@ -76,6 +77,10 @@ func (b *Block) GetEventBalances() []*EventBalance {
 	return b.eventBalances
 }
 
+func (b *Block) AddParameters(params *Parameters) {
+	b.Params = append(b.Params, params)
+}
+
 func (b *Block) GetCSS() []*CreditSessionSnapshot {
 	return b.CSS
 }
@@ -102,4 +107,8 @@ func (b *Block) GetRepayOnCM(cmAddr string) *PnlOnRepay {
 		return nil
 	}
 	return b.pnlOnCM[cmAddr]
+}
+
+func (b *Block) GetParams() []*Parameters {
+	return b.Params
 }

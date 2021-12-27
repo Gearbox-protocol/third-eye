@@ -112,6 +112,16 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		mdl.State.MaxAmount = (*core.BigInt)(params.MaxAmount)
 		mdl.State.MaxLeverageFactor = params.MaxLeverage.Int64()
 		mdl.State.FeeInterest = params.FeeInterest.Int64()
+		mdl.Repo.AddParameters(&core.Parameters{
+			BlockNum:            blockNum,
+			CreditManager:       mdl.GetAddress(),
+			MinAmount:           (*core.BigInt)(params.MinAmount),
+			MaxAmount:           (*core.BigInt)(params.MaxAmount),
+			MaxLeverage:         (*core.BigInt)(params.MaxLeverage),
+			FeeInterest:         (*core.BigInt)(params.FeeInterest),
+			FeeLiquidation:      (*core.BigInt)(params.FeeLiquidation),
+			LiquidationDiscount: (*core.BigInt)(params.LiquidationDiscount),
+		})
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.contractETH.ParseTransferAccount(txLog)

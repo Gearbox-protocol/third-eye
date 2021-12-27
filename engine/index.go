@@ -112,7 +112,7 @@ func (e *Engine) sync(syncTill int64) {
 		kit.Reset(lvlIndex)
 		wg.Wait()
 	}
-	e.FlushAndDebt()
+	e.FlushAndDebt(syncTill)
 	e.currentlySyncedTill = syncTill
 }
 
@@ -140,7 +140,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
 }
 
-func (e *Engine) FlushAndDebt() {
+func (e *Engine) FlushAndDebt(to int64) {
 	e.repo.Flush()
-	e.debtEng.CalculateDebtAndClear()
+	e.debtEng.CalculateDebtAndClear(to)
 }

@@ -5,7 +5,10 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm"
+
+	"math/big"
 )
 
 type DebtEngine struct {
@@ -20,7 +23,10 @@ type DebtEngine struct {
 	poolLastInterestData   map[string]*core.PoolInterestData
 	debts                  []*core.Debt
 	lastDebts              map[string]*core.Debt
+	currentDebts           []*core.CurrentDebt
 	liquidableBlockTracker map[string]*core.LiquidableAccount
+	// cm to paramters
+	lastParameters map[string]*core.Parameters
 }
 
 func NewDebtEngine(db *gorm.DB, client *ethclient.Client, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
@@ -35,6 +41,7 @@ func NewDebtEngine(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		poolLastInterestData:   make(map[string]*core.PoolInterestData),
 		lastDebts:              make(map[string]*core.Debt),
 		liquidableBlockTracker: make(map[string]*core.LiquidableAccount),
+		lastParameters:         make(map[string]*core.Parameters),
 	}
 }
 
@@ -54,6 +61,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.loadAllowedTokenThreshold(lastDebtSync)
 	eng.loadPoolLastInterestData(lastDebtSync)
 	eng.loadLastDebts()
+	eng.loadParameters(lastDebtSync)
 	eng.loadLiquidableAccounts(lastDebtSync)
 	// process blocks for calculating debts
 	adaptersSyncedTill := eng.repo.LoadLastAdapterSync()
@@ -70,14 +78,16 @@ func (eng *DebtEngine) processBlocksInBatch(from, to int64) {
 	}
 	eng.repo.LoadBlocks(from, to)
 	if len(eng.repo.GetBlocks()) > 0 {
-		eng.CalculateDebtAndClear()
+		eng.CalculateDebtAndClear(to)
 	}
 }
 
-func (eng *DebtEngine) CalculateDebtAndClear() {
+// called for the engine/index.go and the debt engine
+func (eng *DebtEngine) CalculateDebtAndClear(to int64) {
 	if !eng.config.DisableDebtEngine {
 		eng.calculateDebt()
 	}
+	eng.flushCurrentDebts(to)
 	eng.Clear()
 }
 
@@ -85,6 +95,36 @@ func (eng *DebtEngine) Clear() {
 	eng.debts = []*core.Debt{}
 	// clear repo after calculating debt as debt uses repository for calculations
 	eng.repo.Clear()
+}
+
+func (eng *DebtEngine) calRepayAmount(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
+	params := eng.lastParameters[creditManager]
+	var totalFunds *big.Int
+	if isLiquidated {
+		totalFunds = utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
+	} else {
+		totalFunds = totalValue.Convert()
+	}
+	// borrow amt is greater than total funds
+	if totalFunds.Cmp(borrowedAmountWithInterest) < 0 {
+		amountToPool = new(big.Int).Sub(totalFunds, big.NewInt(1))
+		loss = new(big.Int).Sub(borrowedAmountWithInterest, amountToPool)
+	} else {
+		if isLiquidated {
+			amountToPool = utils.PercentMul(totalFunds, params.FeeLiquidation.Convert())
+			amountToPool = new(big.Int).Add(borrowedAmountWithInterest, amountToPool)
+		} else {
+			interestAmt := new(big.Int).Sub(borrowedAmountWithInterest, borrowedAmount)
+			fee := utils.PercentMul(interestAmt, params.FeeInterest.Convert())
+			amountToPool = new(big.Int).Add(borrowedAmountWithInterest, fee)
+		}
+
+		if totalFunds.Cmp(amountToPool) <= 0 {
+			amountToPool = new(big.Int).Sub(totalFunds, big.NewInt(1))
+		}
+		profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
+	}
+	return
 }
 
 func (eng *DebtEngine) loadLiquidableAccounts(lastDebtSync int64) {

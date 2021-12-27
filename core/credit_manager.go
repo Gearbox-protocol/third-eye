@@ -44,6 +44,26 @@ type CreditManagerData struct {
 	TotalLossesBI           *BigInt `gorm:"column:total_losses_bi"`
 }
 
+type Parameters struct {
+	BlockNum            int64   `gorm:"column:block_num"`
+	CreditManager       string  `gorm:"column:credit_manager"`
+	MinAmount           *BigInt `gorm:"column:min_amount"`
+	MaxAmount           *BigInt `gorm:"column:max_amount"`
+	MaxLeverage         *BigInt `gorm:"column:max_leverage"`
+	FeeInterest         *BigInt `gorm:"column:fee_interest"`
+	FeeLiquidation      *BigInt `gorm:"column:fee_liquidation"`
+	LiquidationDiscount *BigInt `gorm:"column:liq_discount"`
+}
+
+type CreditManagerUpdate struct {
+	*CreditManagerData
+	Address string `gorm:"primaryKey"`
+}
+
+func (CreditManagerUpdate) TableName() string {
+	return "credit_managers"
+}
+
 type CreditManagerStat struct {
 	*CreditManagerData
 	ID       int64  `gorm:"primaryKey"`

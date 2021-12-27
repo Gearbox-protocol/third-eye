@@ -77,6 +77,10 @@ func (eng *DebtEngine) calculateDebt() {
 				sessionsToUpdate[sessionId] = true
 			}
 		}
+
+		for _, params := range block.GetParams() {
+			eng.addLastParameters(params)
+		}
 		// get pool cumulative interest rate
 		cmAddrToCumIndex := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
 		// calculate each session debt
@@ -288,6 +292,16 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		profile.Tokens = tokenDetails
 		return debt, &profile
 	}
+	repayAmount, profit, loss := eng.calRepayAmount(cmAddr, debt.CalTotalValueBI, false,
+		debt.CalBorrowedAmountPlusInterestBI.Convert(),
+		sessionSnapshot.BorrowedAmountBI.Convert())
+	liquidationAmount, _, _ := eng.calRepayAmount(cmAddr, debt.CalTotalValueBI, true,
+		debt.CalBorrowedAmountPlusInterestBI.Convert(),
+		sessionSnapshot.BorrowedAmountBI.Convert())
+	debt.RepayAmountBI = (*core.BigInt)(repayAmount)
+	debt.LiqAmountBI = (*core.BigInt)(liquidationAmount)
+	debt.ProfitBI = (*core.BigInt)(profit)
+	debt.LossBI = (*core.BigInt)(loss)
 	return debt, nil
 }
 
