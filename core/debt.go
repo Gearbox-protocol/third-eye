@@ -17,6 +17,30 @@ type Debt struct {
 	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value"`
 	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest"`
 	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value"`
+	ProfitBI                        *BigInt `gorm:"-"`
+	LossBI                          *BigInt `gorm:"-"`
+	RepayAmountBI                   *BigInt `gorm:"-"`
+	LiqAmountBI                     *BigInt `gorm:"-"`
+}
+
+type CurrentDebt struct {
+	SessionId                       string  `gorm:"column:session_id;primaryKey"`
+	BlockNumber                     int64   `gorm:"column:block_num"`
+	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor"`
+	CalTotalValue                   float64 `gorm:"column:cal_total_value"`
+	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value_bi"`
+	ProfitBI                        *BigInt `gorm:"column:profit_bi"`
+	LossBI                          *BigInt `gorm:"column:loss_bi"`
+	RepayAmountBI                   *BigInt `gorm:"column:repay_amount_bi"`
+	LiqAmountBI                     *BigInt `gorm:"liq_amount_bi"`
+	CalBorrowedAmountPlusInterest   float64 `gorm:"column:cal_borrowed_amt_with_interest"`
+	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest_bi"`
+	CalThresholdValue               float64 `gorm:"column:cal_threshold_value"`
+	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value_bi"`
+}
+
+func (CurrentDebt) TableName() string {
+	return "current_debts"
 }
 
 type DebtSync struct {
@@ -68,7 +92,7 @@ func (ProfileTable) TableName() string {
 type DebtEngineI interface {
 	Clear()
 	ProcessBackLogs()
-	CalculateDebtAndClear()
+	CalculateDebtAndClear(to int64)
 }
 
 type LiquidableAccount struct {

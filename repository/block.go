@@ -11,7 +11,7 @@ func (repo *Repository) LoadBlocks(from, to int64) {
 	log.Infof("Loaded %d to %d blocks for debt", from, to)
 	data := []*core.Block{}
 	err := repo.db.Preload("CSS").Preload("PoolStats").
-		Preload("AllowedTokens").Preload("PriceFeeds").
+		Preload("AllowedTokens").Preload("PriceFeeds").Preload("Params").
 		Find(&data, "id > ? AND id <= ?", from, to).Error
 	if err != nil {
 		log.Fatal(err)

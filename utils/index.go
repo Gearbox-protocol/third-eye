@@ -33,6 +33,11 @@ func IntToFloat(amt *big.Int) *big.Float {
 	return new(big.Float).SetInt(amt)
 }
 
+func PercentMul(a, b *big.Int) *big.Int {
+	ans := new(big.Int).Mul(a, b)
+	return new(big.Int).Quo(ans, big.NewInt(10000))
+}
+
 func GetFloat64Decimal(num *big.Int, decimals int8) float64 {
 	floatBorrowedAmount, _ := GetFloat64(num, decimals).Float64()
 	return floatBorrowedAmount
