@@ -15,7 +15,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
-	_ "github.com/heroku/x/hmetrics/onload"
 	"go.uber.org/fx"
 	"time"
 )

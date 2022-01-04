@@ -68,7 +68,7 @@ func NewCreditManager(addr string, client *ethclient.Client, repo core.Repositor
 		Address:         addr,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
-		Sessions:        core.NewHstore(),
+		Sessions:        map[string]string{},
 	})
 	return cm
 }

@@ -10,15 +10,15 @@ func (CreditManagerState) TableName() string {
 
 type CreditManagerState struct {
 	CreditManagerData
-	Address           string  `gorm:"primaryKey"`
-	PoolAddress       string  `gorm:"column:pool_address"`
-	UnderlyingToken   string  `gorm:"column:underlying_token"`
-	MaxLeverageFactor int64   `gorm:"column:max_leverage"`
-	MinAmount         *BigInt `gorm:"column:min_amount"`
-	MaxAmount         *BigInt `gorm:"column:max_amount"`
-	FeeInterest       int64   `gorm:"column:fee_interest"`
-	Sessions          Hstore  `gorm:"column:sessions"`
-	IsWETH            bool    `gorm:"column:is_weth"`
+	Address           string            `gorm:"primaryKey"`
+	IsWETH            bool              `gorm:"is_weth"`
+	PoolAddress       string            `gorm:"column:pool_address"`
+	UnderlyingToken   string            `gorm:"column:underlying_token"`
+	MaxLeverageFactor int64             `gorm:"column:max_leverage"`
+	MinAmount         *BigInt           `gorm:"column:min_amount"`
+	MaxAmount         *BigInt           `gorm:"column:max_amount"`
+	FeeInterest       int64             `gorm:"column:fee_interest"`
+	Sessions          map[string]string `gorm:"-"`
 }
 
 type CreditManagerData struct {
