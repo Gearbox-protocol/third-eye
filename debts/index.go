@@ -86,8 +86,8 @@ func (eng *DebtEngine) processBlocksInBatch(from, to int64) {
 func (eng *DebtEngine) CalculateDebtAndClear(to int64) {
 	if !eng.config.DisableDebtEngine {
 		eng.calculateDebt()
+		eng.flushCurrentDebts(to)
 	}
-	eng.flushCurrentDebts(to)
 	eng.Clear()
 }
 

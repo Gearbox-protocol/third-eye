@@ -75,8 +75,8 @@ func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
 		CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
 		LiqAmount:                       utils.GetFloat64Decimal(debt.LiqAmountBI.Convert(), decimals),
 		RepayAmount:                     utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
-		Profit:                     utils.GetFloat64Decimal(debt.ProfitBI.Convert(), decimals),
-		Loss:                     utils.GetFloat64Decimal(debt.LossBI.Convert(), decimals),
+		Profit:                          utils.GetFloat64Decimal(debt.ProfitBI.Convert(), decimals),
+		Loss:                            utils.GetFloat64Decimal(debt.LossBI.Convert(), decimals),
 	}
 	eng.currentDebts = append(eng.currentDebts, &curDebt)
 }

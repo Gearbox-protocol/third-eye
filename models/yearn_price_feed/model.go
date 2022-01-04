@@ -1,16 +1,22 @@
 package yearn_price_feed
 
 import (
+	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
+	"github.com/Gearbox-protocol/third-eye/artifacts/yVault"
 	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 )
 
 type YearnPriceFeed struct {
 	*core.SyncAdapter
-	contractETH *yearnPriceFeed.YearnPriceFeed
+	contractETH       *yearnPriceFeed.YearnPriceFeed
+	YVaultContract    *yVault.YVault
+	PriceFeedContract *priceFeed.PriceFeed
+	DecimalDivider    *big.Int
 }
 
 func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *YearnPriceFeed {
