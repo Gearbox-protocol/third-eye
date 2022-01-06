@@ -1,6 +1,7 @@
 package yearn_price_feed
 
 import (
+	"fmt"
 	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
 	"github.com/Gearbox-protocol/third-eye/artifacts/yVault"
 	"github.com/Gearbox-protocol/third-eye/core"
@@ -70,7 +71,7 @@ func (mdl *YearnPriceFeed) queryHandler(blockNum int64) {
 		if strings.Contains(err.Error(), "execution reverted") {
 			pf = mdl.calculatePriceFeedInternally(blockNum)
 		} else {
-			log.CheckFatal(err)
+			log.CheckFatal(fmt.Errorf("%s %s", mdl.GetAddress(), err))
 		}
 	}
 	tokenAddr, ok := mdl.Details["token"].(string)

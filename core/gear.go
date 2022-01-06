@@ -50,6 +50,7 @@ type RepositoryI interface {
 	AddCreditSession(session *CreditSession, loadedFromDB bool)
 	GetCreditSession(sessionId string) *CreditSession
 	GetSessions() map[string]*CreditSession
+	GetPriceInUSD(blockNum int64, token string, amount *big.Int) *big.Int
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
 	AddEventBalance(eb EventBalance)
@@ -63,6 +64,7 @@ type RepositoryI interface {
 	// weth
 	SetWETHAddr(address string)
 	GetWETHAddr() string
+	GetUSDCAddr() string
 	// credit manager
 	AddCreditManagerToFilter(cmAddr, cfAddr string)
 	GetMask(blockNum int64, cmAddr, accountAddr string) *big.Int

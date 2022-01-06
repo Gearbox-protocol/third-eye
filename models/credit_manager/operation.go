@@ -61,6 +61,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		IsDirty:        true,
 	}
 	mdl.Repo.AddCreditSession(newSession, false)
+	mdl.AddCollateralToSession(blockNum, sessionId, mdl.State.UnderlyingToken, amount)
 	return nil
 }
 
@@ -181,8 +182,19 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 		nil,
 		false,
 		mdl.GetAddress())
+	mdl.AddCollateralToSession(blockNum, sessionId, token, value)
 	mdl.UpdatedSessions[sessionId]++
 	return nil
+}
+
+func (mdl *CreditManager) AddCollateralToSession(blockNum int64, sessionId, token string, amount *big.Int) {
+	session := mdl.Repo.GetCreditSession(sessionId)
+	valueInUSD := mdl.Repo.GetPriceInUSD(blockNum, token, amount)
+	prevAmtInUSD := big.NewInt(0)
+	if session.CollateralInUSD != nil {
+		prevAmtInUSD = session.CollateralInUSD.Convert()
+	}
+	session.CollateralInUSD = (*core.BigInt)(new(big.Int).Add(prevAmtInUSD, valueInUSD))
 }
 
 func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower string, amount *big.Int) error {

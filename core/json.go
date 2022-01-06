@@ -56,9 +56,32 @@ func (j *JsonBalance) Copy() *JsonBalance {
 	var newJB = make(JsonBalance)
 	for k, v := range (map[string]*BalanceType)(*j) {
 		newJB[k] = &BalanceType{
-			BI: NewBigInt(v.BI),
-			F:  v.F,
+			BI:     NewBigInt(v.BI),
+			F:      v.F,
+			Linked: v.Linked,
 		}
 	}
 	return &newJB
+}
+
+type JsonCollateral map[string]*BigInt
+
+func (j *JsonCollateral) Value() (driver.Value, error) {
+	return json.Marshal(j)
+}
+
+func (z *JsonCollateral) Scan(value interface{}) error {
+	out := JsonCollateral{}
+	switch t := value.(type) {
+	case string:
+		err := json.Unmarshal([]byte(value.(string)), &out)
+		*z = out
+		return err
+	case []byte:
+		err := json.Unmarshal(value.([]byte), &out)
+		*z = out
+		return err
+	default:
+		return fmt.Errorf("Could not scan type %T", t)
+	}
 }

@@ -14,6 +14,7 @@ type Repository struct {
 	mu *sync.Mutex
 	// object fx objects
 	WETHAddr              string
+	USDCAddr              string
 	db                    *gorm.DB
 	client                *ethclient.Client
 	config                *config.Config
@@ -90,6 +91,9 @@ func (repo *Repository) SetWETHAddr(addr string) {
 
 func (repo *Repository) GetWETHAddr() string {
 	return repo.WETHAddr
+}
+func (repo *Repository) GetUSDCAddr() string {
+	return repo.USDCAddr
 }
 
 // redundant

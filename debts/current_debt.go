@@ -25,9 +25,11 @@ func (eng *DebtEngine) flushCurrentDebts(to int64) {
 	}
 	cmAddrToCumIndex := eng.GetCumulativeIndexAndDecimalForCMs(to, b.Time())
 	for _, session := range eng.repo.GetSessions() {
-		if (session.ClosedAt == 0 || session.ClosedAt > to) && session.Since <= to {
+		// calculate the current debt for accounts that are only closed after `to` + 1
+		// for account closed till `to` + 1 current_debt is calculated while calculating debt
+		if (session.ClosedAt == 0 || session.ClosedAt > to+1) && session.Since <= to {
 			cumIndex := cmAddrToCumIndex[session.CreditManager]
-			debt, profile := eng.CalculateSessionDebt(to, session.ID, session.CreditManager, session.Account, cumIndex)
+			debt, profile := eng.CalculateSessionDebt(to, session, cumIndex)
 			if profile != nil {
 				log.Info(profile)
 			}
