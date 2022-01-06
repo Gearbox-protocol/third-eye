@@ -94,13 +94,13 @@ func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) string {
 	defer cancel()
 	phaseId, err := mdl.contractETH.PhaseId(opts)
 	if err != nil {
-		if err.Error() == "execution aborted (timeout = 20s)" {
-			log.Fatal(err)
-		} else {
-			mdl.SetError(err)
-			log.Error(mdl.GetAddress(), " feed failed disabling due to ", err)
-			return ""
-		}
+		log.Fatal(err)
+		// if err.Error() == "execution aborted (timeout = 20s)" {
+		// } else {
+		// 	mdl.SetError(err)
+		// 	log.Error(mdl.GetAddress(), " feed failed disabling due to ", err)
+		// 	return ""
+		// }
 	}
 	opts, cancel = utils.GetTimeoutOpts(blockNum)
 	defer cancel()
