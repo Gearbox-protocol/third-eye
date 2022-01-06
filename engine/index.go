@@ -43,7 +43,7 @@ func NewEngine(config *config.Config,
 
 func (e *Engine) init() {
 	// repo initialisation
-	e.syncBlockBatchSize = 10000 * core.NoOfBlocksPerMin
+	e.syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
 	kit := e.repo.GetKit()
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {

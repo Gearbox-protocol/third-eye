@@ -7,8 +7,11 @@ import (
 
 func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
 	data := []*core.CreditSession{}
-	err := repo.db.Find(&data, "status = ? OR (status <> ? AND closed_at > ?)",
-		core.Active, core.Active, lastDebtSync).Error
+	err := repo.db.Raw(`SELECT * FROM credit_sessions cs 
+	JOIN (SELECT distinct on (session_id) collateral_in_usd, session_id FROM credit_session_snapshots ORDER BY session_id, block_num DESC) css
+	ON css.session_id = cs.id
+	WHERE status = ? OR (status <> ? AND closed_at > ?)`,
+		core.Active, core.Active, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}

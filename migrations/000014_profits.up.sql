@@ -1,5 +1,5 @@
 alter table credit_session_snapshots add collateral_in_usd varchar(80);
-alter table credit_managers drop column allowed_contracts;
+alter table credit_managers drop column allowed_contracts, drop column score;
 
 alter table current_debts drop column liq_amount, drop column loss, drop column repay_amount;
 alter table current_debts add amount_to_pool DOUBLE PRECISION,add amount_to_pool_bi varchar(80);

@@ -322,7 +322,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.C
 	// fields in USD
 	debt.CollateralInUSDBI = core.NewBigInt(sessionSnapshot.CollateralInUSD)
 	debt.ProfitInUSDBI = (*core.BigInt)(profitInUSD)
-	debt.TotalValueInUSDBI = (*core.BigInt)(eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.TotalValueBI.Convert()))
+	debt.TotalValueInUSDBI = (*core.BigInt)(eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert()))
 }
 
 func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.Int {
@@ -333,7 +333,7 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.In
 	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
 
 	value := new(big.Int).Mul(amount, tokenPrice)
-	value = utils.GetInt64Decimal(value, usdcDecimals-tokenDecimals)
+	value = utils.GetInt64Decimal(value, tokenDecimals-usdcDecimals)
 	value = new(big.Int).Quo(value, usdcPrice)
 	return value
 }
