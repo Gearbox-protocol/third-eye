@@ -97,7 +97,7 @@ func (eng *DebtEngine) Clear() {
 	eng.repo.Clear()
 }
 
-func (eng *DebtEngine) calRepayAmount(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
+func (eng *DebtEngine) calCloseAmount(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
 	params := eng.lastParameters[creditManager]
 	loss = big.NewInt(0)
 	profit = big.NewInt(0)

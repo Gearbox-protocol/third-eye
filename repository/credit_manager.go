@@ -14,6 +14,7 @@ func (repo *Repository) loadCreditManagers() {
 	for _, cm := range data {
 		adapter := repo.kit.GetAdapter(cm.Address)
 		if adapter != nil && adapter.GetName() == "CreditManager" {
+			cm.Sessions = map[string]string{}
 			adapter.SetUnderlyingState(cm)
 		}
 	}

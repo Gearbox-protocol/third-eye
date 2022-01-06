@@ -75,6 +75,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	mdl.Repo.SetBlock(blockNum - 1)
 	css.BlockNum = blockNum - 1
 	css.SessionId = sessionId
+	css.CollateralInUSD = session.CollateralInUSD
 	css.Borrower = session.Borrower
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
@@ -107,6 +108,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css := core.CreditSessionSnapshot{}
 	css.BlockNum = blockNum
 	css.SessionId = sessionId
+	css.CollateralInUSD = session.CollateralInUSD
 	css.Borrower = session.Borrower
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)

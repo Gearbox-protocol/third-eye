@@ -45,8 +45,8 @@ type CreditManagerData struct {
 }
 
 type Parameters struct {
-	BlockNum            int64   `gorm:"column:block_num"`
-	CreditManager       string  `gorm:"column:credit_manager"`
+	BlockNum            int64   `gorm:"column:block_num;primaryKey"`
+	CreditManager       string  `gorm:"column:credit_manager;primaryKey"`
 	MinAmount           *BigInt `gorm:"column:min_amount"`
 	MaxAmount           *BigInt `gorm:"column:max_amount"`
 	MaxLeverage         *BigInt `gorm:"column:max_leverage"`

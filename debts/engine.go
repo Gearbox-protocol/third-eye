@@ -92,13 +92,8 @@ func (eng *DebtEngine) calculateDebt() {
 			cmAddr := session.CreditManager
 			// pool cum index is when the pool is not registered
 			if cmAddrToCumIndex[cmAddr] != nil {
-				eng.SessionDebtHandler(blockNum, sessionId, cmAddr, session.Account, cmAddrToCumIndex[cmAddr])
+				eng.SessionDebtHandler(blockNum, session, cmAddrToCumIndex[cmAddr])
 				// send notification when account is liquidated
-				css := eng.lastCSS[sessionId]
-				if session.ClosedAt == css.BlockNum+1 {
-					eng.ifAccountClosed(css.SessionId, session.CreditManager, session.ClosedAt, session.Status)
-				}
-				//
 			} else {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
@@ -170,9 +165,11 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return poolToCI
 }
 
-func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAddr, accountAddr string, cumIndexAndUToken *core.CumIndexAndUToken) {
+func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *core.CreditSession, cumIndexAndUToken *core.CumIndexAndUToken) {
+	sessionId := session.ID
 	sessionSnapshot := eng.lastCSS[sessionId]
-	debt, profile := eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, accountAddr, cumIndexAndUToken)
+	cmAddr := session.CreditManager
+	debt, profile := eng.CalculateSessionDebt(blockNum, session, cumIndexAndUToken)
 	// if profile is not null
 	// yearn price feed might be stale as a result difference btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
@@ -193,7 +190,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAd
 				}
 			}
 		}
-		debt, profile = eng.CalculateSessionDebt(blockNum, sessionId, cmAddr, accountAddr, cumIndexAndUToken)
+		debt, profile = eng.CalculateSessionDebt(blockNum, session, cumIndexAndUToken)
 		if profile != nil {
 			log.Fatalf("Debt fields different from data compressor fields: %s", profile.Json())
 			eng.SaveProfile(string(profile.Json()))
@@ -202,11 +199,18 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, sessionId string, cmAd
 	}
 	// check if data compressor and calculated values match
 	eng.liquidationCheck(debt, cmAddr, sessionSnapshot.Borrower, cumIndexAndUToken)
+	if session.ClosedAt == blockNum+1 {
+		eng.ifAccountClosed(sessionId, cmAddr, session.ClosedAt, session.Status)
+		eng.addCurrentDebt(debt, cumIndexAndUToken.Decimals)
+	}
 	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
 }
 
-func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cmAddr, accountAddr string, cumIndexAndUToken *core.CumIndexAndUToken) (*core.Debt, *core.DebtProfile) {
+func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.CreditSession, cumIndexAndUToken *core.CumIndexAndUToken) (*core.Debt, *core.DebtProfile) {
+	sessionId := session.ID
 	sessionSnapshot := eng.lastCSS[sessionId]
+	cmAddr := session.CreditManager
+	accountAddr := session.Account
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
 	// profiling
@@ -292,17 +296,46 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, sessionId string, cm
 		profile.Tokens = tokenDetails
 		return debt, &profile
 	}
-	repayAmount, profit, loss := eng.calRepayAmount(cmAddr, debt.CalTotalValueBI, false,
-		debt.CalBorrowedAmountPlusInterestBI.Convert(),
-		sessionSnapshot.BorrowedAmountBI.Convert())
-	liquidationAmount, _, _ := eng.calRepayAmount(cmAddr, debt.CalTotalValueBI, true,
-		debt.CalBorrowedAmountPlusInterestBI.Convert(),
-		sessionSnapshot.BorrowedAmountBI.Convert())
-	debt.RepayAmountBI = (*core.BigInt)(repayAmount)
-	debt.LiqAmountBI = (*core.BigInt)(liquidationAmount)
-	debt.ProfitBI = (*core.BigInt)(profit)
-	debt.LossBI = (*core.BigInt)(loss)
+	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken)
 	return debt, nil
+}
+
+func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.CreditSession, cumIndexAndUToken *core.CumIndexAndUToken) {
+	var amountToPool *big.Int
+	sessionSnapshot := eng.lastCSS[session.ID]
+	// amount to pool
+	// if account is liquidable
+	if debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 0 {
+		amountToPool, _, _ = eng.calCloseAmount(session.CreditManager, debt.CalTotalValueBI, true,
+			debt.CalBorrowedAmountPlusInterestBI.Convert(),
+			sessionSnapshot.BorrowedAmountBI.Convert())
+	} else {
+		amountToPool, _, _ = eng.calCloseAmount(session.CreditManager, debt.CalTotalValueBI, false,
+			debt.CalBorrowedAmountPlusInterestBI.Convert(),
+			sessionSnapshot.BorrowedAmountBI.Convert())
+	}
+	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)
+	// calculate profit
+	remainingFunds := new(big.Int).Sub(debt.CalTotalValueBI.Convert(), debt.AmountToPoolBI.Convert())
+	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds)
+	profitInUSD := new(big.Int).Sub(remainingFundsInUSD, sessionSnapshot.CollateralInUSD.Convert())
+	// fields in USD
+	debt.CollateralInUSDBI = core.NewBigInt(sessionSnapshot.CollateralInUSD)
+	debt.ProfitInUSDBI = (*core.BigInt)(profitInUSD)
+	debt.TotalValueInUSDBI = (*core.BigInt)(eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.TotalValueBI.Convert()))
+}
+
+func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.Int {
+	usdcAddr := eng.repo.GetUSDCAddr()
+	tokenPrice := eng.GetTokenLastPrice(tokenAddr)
+	usdcPrice := eng.GetTokenLastPrice(usdcAddr)
+	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
+	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
+
+	value := new(big.Int).Mul(amount, tokenPrice)
+	value = utils.GetInt64Decimal(value, usdcDecimals-tokenDecimals)
+	value = new(big.Int).Quo(value, usdcPrice)
+	return value
 }
 
 func (eng *DebtEngine) GetTokenLastPrice(addr string) *big.Int {

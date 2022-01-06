@@ -73,10 +73,10 @@ func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
 		CalBorrowedAmountPlusInterestBI: core.NewBigInt(debt.CalBorrowedAmountPlusInterestBI),
 		CalThresholdValue:               utils.GetFloat64Decimal((debt.CalThresholdValueBI).Convert(), decimals),
 		CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
-		LiqAmount:                       utils.GetFloat64Decimal(debt.LiqAmountBI.Convert(), decimals),
-		RepayAmount:                     utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
-		Profit:                          utils.GetFloat64Decimal(debt.ProfitBI.Convert(), decimals),
-		Loss:                            utils.GetFloat64Decimal(debt.LossBI.Convert(), decimals),
+		AmountToPoolBI:                  debt.AmountToPoolBI,
+		AmountToPool:                    utils.GetFloat64Decimal(debt.AmountToPoolBI.Convert(), decimals),
+		ProfitInUSDBI:                   debt.ProfitInUSDBI,
+		CollateralInUSDBI:               debt.CollateralInUSDBI,
 	}
 	eng.currentDebts = append(eng.currentDebts, &curDebt)
 }

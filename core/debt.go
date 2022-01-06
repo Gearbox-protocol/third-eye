@@ -10,17 +10,17 @@ type Debt struct {
 	Id                              int64   `gorm:"primaryKey;column:id"`
 	BlockNumber                     int64   `gorm:"column:block_num"`
 	SessionId                       string  `gorm:"column:session_id"`
-	HealthFactor                    *BigInt `gorm:"column:health_factor"`
-	TotalValueBI                    *BigInt `gorm:"column:total_value"`
-	BorrowedAmountPlusInterestBI    *BigInt `gorm:"column:borrowed_amt_with_interest"`
+	HealthFactor                    *BigInt `gorm:"-"`
+	TotalValueBI                    *BigInt `gorm:"-"`
+	BorrowedAmountPlusInterestBI    *BigInt `gorm:"-"`
 	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor"`
 	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value"`
 	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest"`
 	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value"`
-	ProfitBI                        *BigInt `gorm:"-"`
-	LossBI                          *BigInt `gorm:"-"`
-	RepayAmountBI                   *BigInt `gorm:"-"`
-	LiqAmountBI                     *BigInt `gorm:"-"`
+	AmountToPoolBI                  *BigInt `gorm:"-"`
+	ProfitInUSDBI                   *BigInt `gorm:"column:profit_usd_bi"`
+	TotalValueInUSDBI               *BigInt `gorm:"column:total_value_usd_bi"`
+	CollateralInUSDBI               *BigInt `gorm:"column:collateral_usd_bi"`
 }
 
 type CurrentDebt struct {
@@ -29,14 +29,14 @@ type CurrentDebt struct {
 	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor"`
 	CalTotalValue                   float64 `gorm:"column:cal_total_value"`
 	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value_bi"`
-	Profit                          float64 `gorm:"column:profit"`
-	Loss                            float64 `gorm:"column:loss"`
-	RepayAmount                     float64 `gorm:"column:repay_amount"`
-	LiqAmount                       float64 `gorm:"column:liq_amount"`
 	CalBorrowedAmountPlusInterest   float64 `gorm:"column:cal_borrowed_amt_with_interest"`
 	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest_bi"`
 	CalThresholdValue               float64 `gorm:"column:cal_threshold_value"`
 	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value_bi"`
+	AmountToPoolBI                  *BigInt `gorm:"column:amount_to_pool_bi"`
+	AmountToPool                    float64 `gorm:"column:amount_to_pool"`
+	ProfitInUSDBI                   *BigInt `gorm:"column:profit_usd_bi"`
+	CollateralInUSDBI               *BigInt `gorm:"column:collateral_usd_bi"`
 }
 
 func (CurrentDebt) TableName() string {
