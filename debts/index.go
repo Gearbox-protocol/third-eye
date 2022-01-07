@@ -153,6 +153,12 @@ func (eng *DebtEngine) addLiquidableAccount(sessionId string, newBlockNum int64)
 	}
 }
 
+func (eng *DebtEngine) notifiedIfLiquidable(sessionId string, notified bool) {
+	liquidableAccount := eng.liquidableBlockTracker[sessionId]
+	liquidableAccount.NotifiedIfLiquidable = notified
+	liquidableAccount.Updated = true
+}
+
 func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
 	data := core.DebtSync{}
 	query := "SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters where disabled=false"
@@ -165,4 +171,17 @@ func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
 		log.Warn("DebtEngine disabled acitve adapters are not synchronised")
 	}
 	return val
+}
+
+type LiquidationTx struct {
+	TxHash string `gorm:"column:tx_hash"`
+}
+
+func (eng *DebtEngine) GetLiquidationTx(sessionId string) string {
+	data := LiquidationTx{}
+	query := `SELECT tx_hash from account_operations 
+		WHERE session_id = ?  AND action='LiquidateCreditAccount'`
+	err := eng.db.Raw(query).Find(&data, sessionId).Error
+	log.CheckFatal(err)
+	return data.TxHash
 }
