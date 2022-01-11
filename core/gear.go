@@ -29,6 +29,7 @@ type RepositoryI interface {
 	Flush() error
 	// adding block/timestamp
 	SetBlock(blockNum int64)
+	GetBlock(blockNum int64) *Block
 	GetBlocks() map[int64]*Block
 	LoadBlocks(from, to int64)
 	// credit account operations

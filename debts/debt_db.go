@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
+	"time"
 )
 
 type NetworkUI struct {
@@ -34,31 +35,47 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 	if lastDebt != nil {
 		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
+			if eng.liquidableBlockTracker[debt.SessionId] != nil &&
+				(debt.BlockNumber - eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
+				eng.ValidLiqMsg(debt.BlockNumber, `HealthFactor safe again: 
+				SessionId:%s
+				HF: %s@(block:%d) -> %s@(block:%d)`,
+					debt.SessionId,
+					lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
+			}
 			eng.addLiquidableAccount(debt.SessionId, 0)
-			log.Msgf(`HealthFactor safe again: 
-			SessionId:%s
-			HF: %s@(block:%d) -> %s@(block:%d)`,
-				debt.SessionId,
-				lastDebt.CalHealthFactor, lastDebt.BlockNumber, debt.CalHealthFactor, debt.BlockNumber)
-
+			eng.notifiedIfLiquidable(debt.SessionId, false)
 		} else if core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			!core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
-			urls := eng.networkUIUrl()
-			log.Msgf(`HealthFactor low:
+		}
+	}
+	// sent the account is liquidable notification after 20 blocks
+	if !core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) &&
+		eng.liquidableBlockTracker[debt.SessionId] != nil &&
+		(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 &&
+		!eng.liquidableBlockTracker[debt.SessionId].NotifiedIfLiquidable {
+		urls := eng.networkUIUrl()
+		eng.notifiedIfLiquidable(debt.SessionId, true)
+		eng.ValidLiqMsg(debt.BlockNumber, `HealthFactor low:
 				Session: %s
-				HF: %s -> %s
+				HF: %s
 				CreditManager: %s/address/%s
 				Borrower: %s RepayAmount:%f %s
 				web: %s/accounts/%s/%s`,
-				debt.SessionId,
-				lastDebt.CalHealthFactor, debt.CalHealthFactor,
-				urls.ExplorerUrl, cmAddr,
-				borrower,
-				utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
-				urls.ChartUrl, cmAddr, borrower,
-			)
-		}
+			debt.SessionId, debt.CalHealthFactor,
+			urls.ExplorerUrl, cmAddr,
+			borrower,
+			utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
+			urls.ChartUrl, cmAddr, borrower,
+		)
+	}
+}
+
+func (eng *DebtEngine) ValidLiqMsg(blockNum int64, msg string, args ...interface{}) {
+	ts := eng.repo.GetBlock(blockNum).Timestamp
+	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
+		log.Msgf(msg, args...)
 	}
 }
 
