@@ -78,6 +78,7 @@ type RepositoryI interface {
 	GetRepayOnCM(blockNum int64, cm string) *PnlOnRepay
 	AddParameters(logID uint, txHash string, params *Parameters)
 	AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *FastCheckParams)
+	CalCurrentTreasuryValue(blockNum int64)
 	// dao
 	AddDAOOperation(operation *DAOOperation)
 	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)

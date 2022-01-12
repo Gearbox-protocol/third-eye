@@ -1,4 +1,4 @@
-update sync_adapters set last_sync = firstlog_at - 1 where type in ('CreditManager', 'CreditFilter', 'Pool');
+update sync_adapters set last_sync = firstlog_at - 1 where type not in ('YearnPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
 delete from pool_ledger;
 delete from account_operations;
 delete from allowed_protocols;

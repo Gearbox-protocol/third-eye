@@ -23,7 +23,7 @@ type (
 		FastCheckParams   []*FastCheckParams       `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
 		pnlOnCM           map[string]*PnlOnRepay   `gorm:"-"`
-		treasuryTransfers []*TreasuryTransfer      `gorm:"foreignKey:timestamp"`
+		treasuryTransfers []*TreasuryTransfer      `gorm:"foreignKey:block_num"`
 		treasurySnapshots []*TreasurySnapshot      `gorm:"foreignKey:timestamp"`
 	}
 )

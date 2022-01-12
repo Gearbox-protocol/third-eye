@@ -22,8 +22,8 @@ type BlockDate struct {
 }
 
 type TreasurySnapshot struct {
+	Timestamp   int64          `gorm:"column:ts"`
 	Date        string         `gorm:"column:date_str"`
-	Timestamp   int64          `gorm:"primaryKey;column:timestamp"`
 	PricesInUSD *JsonBigIntMap `gorm:"column:prices_in_usd"`
 	Balances    *JsonBigIntMap `gorm:"column:balances"`
 	ValueInUSD  float64        `gorm:"column:value_in_usd"`

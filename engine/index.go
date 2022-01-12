@@ -103,9 +103,9 @@ func (e *Engine) sync(syncTill int64) {
 			if !adapter.IsDisabled() {
 				wg.Add(1)
 				if adapter.OnlyQueryAllowed() {
-					go adapter.Query(syncTill, wg)
+					adapter.Query(syncTill, wg)
 				} else {
-					go e.SyncModel(adapter, syncTill, wg)
+					e.SyncModel(adapter, syncTill, wg)
 				}
 			}
 		}
@@ -114,6 +114,7 @@ func (e *Engine) sync(syncTill int64) {
 	}
 	e.FlushAndDebt(syncTill)
 	e.currentlySyncedTill = syncTill
+	e.repo.CalCurrentTreasuryValue(syncTill)
 }
 
 func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {

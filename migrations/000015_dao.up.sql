@@ -20,7 +20,7 @@ create table gear_balances (
 
 create table treasury_snapshots (
     date_str varchar(20),
-    timestamp integer PRIMARY KEY,
+    ts integer PRIMARY KEY,
     prices_in_usd jsonb,
     balances jsonb,
     value_in_usd DOUBLE PRECISION);

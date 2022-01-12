@@ -36,7 +36,7 @@ type Repository struct {
 	cmParams          map[string]*core.Parameters
 	cmFastCheckParams map[string]*core.FastCheckParams
 	// treasury
-	treasurySnapshot core.TreasurySnapshot
+	treasurySnapshot *core.TreasurySnapshot
 	lastTreasureTime time.Time
 	BlockDatePairs   map[int64]*core.BlockDate
 	dieselTokens     map[string]*core.UTokenAndPool
@@ -62,10 +62,6 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		cmFastCheckParams:     make(map[string]*core.FastCheckParams),
 		BlockDatePairs:        make(map[int64]*core.BlockDate),
 		dieselTokens:          make(map[string]*core.UTokenAndPool),
-		treasurySnapshot: core.TreasurySnapshot{
-			Timestamp: 0,
-			Balances:  &core.JsonBigIntMap{},
-		},
 	}
 	r.init()
 	return r
