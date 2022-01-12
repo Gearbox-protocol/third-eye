@@ -95,6 +95,12 @@ func (repo *Repository) Flush() error {
 		repo.disabledTokens = []*core.AllowedToken{}
 	}
 
+	// save current treasury snapshot
+	err = tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(repo.treasurySnapshot).Error
+	log.CheckFatal(err)
+
 	log.Infof("created blocks sql update in %f sec", time.Now().Sub(now).Seconds())
 	info := tx.Commit()
 	log.CheckFatal(info.Error)

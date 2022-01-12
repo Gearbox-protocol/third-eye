@@ -17,3 +17,17 @@ create table fast_check_params (
 create table gear_balances (
     balance varchar(80),
     user_address varchar(42) PRIMARY KEY);
+
+create table treasury_snapshots (
+    date_str varchar(20),
+    timestamp integer PRIMARY KEY,
+    prices_in_usd jsonb,
+    balances jsonb,
+    value_in_usd DOUBLE PRECISION);
+
+create table treasury_transfers (
+    amount varchar(80),
+    token varchar(42),
+    log_id integer,
+    block_num integer,
+    PRIMARY KEY (block_num, log_id));

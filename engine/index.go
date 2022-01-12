@@ -124,7 +124,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
-	logs, err := e.GetLogs(syncFrom, syncTill, mdl.GetAddress())
+	logs, err := e.GetLogs(syncFrom, syncTill, []common.Address{common.HexToAddress(mdl.GetAddress())}, [][]common.Hash{})
 	if err != nil {
 		log.Fatal(err)
 	}

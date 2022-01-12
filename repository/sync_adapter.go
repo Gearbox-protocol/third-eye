@@ -13,6 +13,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/treasury"
 	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
 )
 
@@ -62,6 +63,8 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case core.GearToken:
 		return gear_token.NewGearTokenFromAdapter(adapter)
+	case core.Treasury:
+		return treasury.NewTreasuryFromAdapter(adapter)
 	case core.CreditFilter:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)

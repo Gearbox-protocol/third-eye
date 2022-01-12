@@ -101,7 +101,7 @@ func (repo *Repository) GetActivePriceOracle() (string, error) {
 	return "", fmt.Errorf("Not Found")
 }
 
-func (repo *Repository) GetPriceInUSD(blockNum int64, token string, amount *big.Int) *big.Int {
+func (repo *Repository) GetValueInUSD(blockNum int64, token string, amount *big.Int) *big.Int {
 	oracle, err := repo.GetActivePriceOracle()
 	log.CheckFatal(err)
 	poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
@@ -112,4 +112,12 @@ func (repo *Repository) GetPriceInUSD(blockNum int64, token string, amount *big.
 	usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), common.HexToAddress(repo.USDCAddr))
 	log.CheckFatal(err)
 	return usdcAmount
+}
+
+func (repo *Repository) GetTokens() []string {
+	tokens := []string{}
+	for addr, _ := range repo.tokens {
+		tokens = append(tokens, addr)
+	}
+	return tokens
 }

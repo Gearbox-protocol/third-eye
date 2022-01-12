@@ -88,7 +88,7 @@ func (am *AccountMining) Send() {
 	am.canSend = false
 }
 func (am *AccountMining) Sync(startNum, latestBlockNum int64) {
-	txLogs, err := am.GetLogs(startNum, latestBlockNum, am.Address)
+	txLogs, err := am.GetLogs(startNum, latestBlockNum, []common.Address{common.HexToAddress(am.Address)}, [][]common.Hash{})
 	log.CheckFatal(err)
 	for _, txLog := range txLogs {
 		if am.CurrentBlockNum != int64(txLog.BlockNumber) {
@@ -106,7 +106,7 @@ func (am *AccountMining) Sync(startNum, latestBlockNum int64) {
 func (am *AccountMining) isMiningStarted(gearToken string) {
 	for {
 		latestBlockNum := am.GetLatestBlockNumber()
-		logs, err := am.GetLogs(0, latestBlockNum, gearToken)
+		logs, err := am.GetLogs(0, latestBlockNum, []common.Address{common.HexToAddress(gearToken)}, [][]common.Hash{})
 		log.CheckFatal(err)
 		for _, txLog := range logs {
 			if txLog.Topics[0] == core.Topic("MinerSet(address)") {

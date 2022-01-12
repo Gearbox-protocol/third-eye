@@ -64,14 +64,14 @@ func (j *JsonBalance) Copy() *JsonBalance {
 	return &newJB
 }
 
-type JsonCollateral map[string]*BigInt
+type JsonBigIntMap map[string]*BigInt
 
-func (j *JsonCollateral) Value() (driver.Value, error) {
+func (j *JsonBigIntMap) Value() (driver.Value, error) {
 	return json.Marshal(j)
 }
 
-func (z *JsonCollateral) Scan(value interface{}) error {
-	out := JsonCollateral{}
+func (z *JsonBigIntMap) Scan(value interface{}) error {
+	out := JsonBigIntMap{}
 	switch t := value.(type) {
 	case string:
 		err := json.Unmarshal([]byte(value.(string)), &out)

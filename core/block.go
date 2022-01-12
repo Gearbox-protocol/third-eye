@@ -23,6 +23,8 @@ type (
 		FastCheckParams   []*FastCheckParams       `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
 		pnlOnCM           map[string]*PnlOnRepay   `gorm:"-"`
+		treasuryTransfers []*TreasuryTransfer      `gorm:"foreignKey:timestamp"`
+		treasurySnapshots []*TreasurySnapshot      `gorm:"foreignKey:timestamp"`
 	}
 )
 
@@ -64,6 +66,14 @@ func (b *Block) AddPoolLedger(pl *PoolLedger) {
 
 func (b *Block) AddCreditManagerStats(cms *CreditManagerStat) {
 	b.CMStats = append(b.CMStats, cms)
+}
+
+func (b *Block) AddTreasuryTransfer(tt *TreasuryTransfer) {
+	b.treasuryTransfers = append(b.treasuryTransfers, tt)
+}
+
+func (b *Block) AddTreasurySnapshot(tss *TreasurySnapshot) {
+	b.treasurySnapshots = append(b.treasurySnapshots, tss)
 }
 
 func (b *Block) GetAllowedTokens() []*AllowedToken {

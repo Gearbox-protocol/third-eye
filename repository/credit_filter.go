@@ -96,16 +96,6 @@ func (repo *Repository) GetMask(blockNum int64, cmAddr, accountAddr string) *big
 	return mask
 }
 
-func (repo *Repository) AddDAOOperation(operation *core.DAOOperation) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.addDAOOperation(operation)
-}
-
-func (repo *Repository) addDAOOperation(operation *core.DAOOperation) {
-	repo.setAndGetBlock(operation.BlockNumber).AddDAOOperation(operation)
-}
-
 func (repo *Repository) AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *core.FastCheckParams) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()

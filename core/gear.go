@@ -46,12 +46,14 @@ type RepositoryI interface {
 	DisableAllowedToken(blockNum int64, logID uint, txHash string, creditManager, creditFilter, token string)
 	AddToken(token string) *Token
 	GetToken(addr string) *Token
+	GetTokens() []string
 	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*JsonBalance, error)
 	// credit session funcs
 	AddCreditSession(session *CreditSession, loadedFromDB bool)
 	GetCreditSession(sessionId string) *CreditSession
 	GetSessions() map[string]*CreditSession
-	GetPriceInUSD(blockNum int64, token string, amount *big.Int) *big.Int
+	GetValueInUSD(blockNum int64, token string, amount *big.Int) *big.Int
+	AddDieselToken(dieselToken, underlyingToken, pool string)
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
 	AddEventBalance(eb EventBalance)
@@ -78,6 +80,7 @@ type RepositoryI interface {
 	AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *FastCheckParams)
 	// dao
 	AddDAOOperation(operation *DAOOperation)
+	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)
 	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64

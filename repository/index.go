@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"gorm.io/gorm"
 	"sync"
+	"time"
 )
 
 type Repository struct {
@@ -34,6 +35,11 @@ type Repository struct {
 	// for params diff calculation
 	cmParams          map[string]*core.Parameters
 	cmFastCheckParams map[string]*core.FastCheckParams
+	// treasury
+	treasurySnapshot core.TreasurySnapshot
+	lastTreasureTime time.Time
+	BlockDatePairs   map[int64]*core.BlockDate
+	dieselTokens     map[string]*core.UTokenAndPool
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
@@ -54,6 +60,12 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		allowedTokens:         make(map[string]map[string]*core.AllowedToken),
 		cmParams:              make(map[string]*core.Parameters),
 		cmFastCheckParams:     make(map[string]*core.FastCheckParams),
+		BlockDatePairs:        make(map[int64]*core.BlockDate),
+		dieselTokens:          make(map[string]*core.UTokenAndPool),
+		treasurySnapshot: core.TreasurySnapshot{
+			Timestamp: 0,
+			Balances:  &core.JsonBigIntMap{},
+		},
 	}
 	r.init()
 	return r
@@ -87,6 +99,10 @@ func (repo *Repository) init() {
 	repo.loadAllowedTokensState()
 	// fastcheck and new parameters
 	repo.loadAllParams()
+	// treasury funcs
+	repo.loadBlockDatePair()
+	repo.loadLastTreasuryTs()
+	repo.loadTreasurySnapshot()
 	// credit_sessions
 	repo.loadCreditSessions(lastDebtSync)
 }

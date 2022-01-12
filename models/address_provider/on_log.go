@@ -11,7 +11,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
-	// "github.com/Gearbox-protocol/third-eye/models/data_compressor"
+	"github.com/Gearbox-protocol/third-eye/models/treasury"
 
 	"fmt"
 	"strings"
@@ -47,6 +47,9 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		case "GEAR_TOKEN":
 			gt := gear_token.NewGearToken(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
 			mdl.Repo.AddSyncAdapter(gt)
+		case "TREASURY_CONTRACT":
+			ttf := treasury.NewTreasury(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.Repo.AddSyncAdapter(ttf)
 		case "DATA_COMPRESSOR":
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})

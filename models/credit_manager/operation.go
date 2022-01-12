@@ -189,7 +189,7 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 
 func (mdl *CreditManager) AddCollateralToSession(blockNum int64, sessionId, token string, amount *big.Int) {
 	session := mdl.Repo.GetCreditSession(sessionId)
-	valueInUSD := mdl.Repo.GetPriceInUSD(blockNum, token, amount)
+	valueInUSD := mdl.Repo.GetValueInUSD(blockNum, token, amount)
 	prevAmtInUSD := big.NewInt(0)
 	if session.CollateralInUSD != nil {
 		prevAmtInUSD = session.CollateralInUSD.Convert()

@@ -9,6 +9,30 @@ type DAOOperation struct {
 	Args        *Json  `gorm:"column:args"`
 }
 
+type TreasuryTransfer struct {
+	Amount   *BigInt `gorm:"column:amount"`
+	Token    string  `gorm:"column:token"`
+	LogID    uint    `gorm:"column:log_id;primaryKey"`
+	BlockNum int64   `gorm:"column:block_num;primaryKey"`
+}
+
+type BlockDate struct {
+	BlockNum  int64 `gorm:"column:block_num"`
+	Timestamp int64 `gorm:"column:timestamp"`
+}
+
+type TreasurySnapshot struct {
+	Date        string         `gorm:"column:date_str"`
+	Timestamp   int64          `gorm:"primaryKey;column:timestamp"`
+	PricesInUSD *JsonBigIntMap `gorm:"column:prices_in_usd"`
+	Balances    *JsonBigIntMap `gorm:"column:balances"`
+	ValueInUSD  float64        `gorm:"column:value_in_usd"`
+}
+
+func (TreasurySnapshot) TableName() string {
+	return "treasury_snapshots"
+}
+
 const (
 	// credit filter
 	TokenAllowed = iota

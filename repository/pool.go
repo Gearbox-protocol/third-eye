@@ -14,6 +14,10 @@ func (repo *Repository) loadPool() {
 	for _, pool := range data {
 		adapter := repo.kit.GetAdapter(pool.Address)
 		adapter.SetUnderlyingState(pool)
+		repo.dieselTokens[pool.DieselToken] = &core.UTokenAndPool{
+			Pool:   pool.Address,
+			UToken: pool.UnderlyingToken,
+		}
 	}
 }
 
@@ -51,4 +55,14 @@ func (repo *Repository) AddPoolLedger(pl *core.PoolLedger) {
 
 func (repo *Repository) GetPoolUniqueUserLen(pool string) int {
 	return len(repo.poolUniqueUsers[pool])
+}
+
+func (repo *Repository) AddDieselToken(dieselToken, underlyingToken, pool string) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.dieselTokens[dieselToken] = &core.UTokenAndPool{
+		UToken: underlyingToken,
+		Pool:   pool,
+	}
+	repo.addToken(dieselToken)
 }
