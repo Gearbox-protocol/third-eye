@@ -10,15 +10,16 @@ import (
 
 type GearToken struct {
 	*core.SyncAdapter
-	contractETH *eRC20.ERC20
-	State       map[string]*core.GearBalance
+	contractETH               *eRC20.ERC20
+	State                     map[string]*core.GearBalance
+	arrayOfGearBalanceUpdates []*core.GearBalance
 }
 
 func NewGearToken(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *GearToken {
 	pool := NewGearTokenFromAdapter(
 		core.NewSyncAdapter(addr, core.GearToken, discoveredAt, client, repo),
 	)
-	pool.SetUnderlyingState(map[string]*core.GearBalance{})
+	pool.SetUnderlyingState([]*core.GearBalance{})
 	return pool
 }
 

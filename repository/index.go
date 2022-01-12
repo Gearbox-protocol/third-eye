@@ -94,7 +94,7 @@ func (repo *Repository) init() {
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.blocks[accountOperation.BlockNumber].AddAccountOperation(accountOperation)
+	repo.setAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
 }
 
 func (repo *Repository) SetWETHAddr(addr string) {
@@ -112,5 +112,5 @@ func (repo *Repository) GetUSDCAddr() string {
 func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.blocks[eb.BlockNumber].AddEventBalance(&eb)
+	repo.setAndGetBlock(eb.BlockNumber).AddEventBalance(&eb)
 }

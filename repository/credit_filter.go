@@ -15,7 +15,7 @@ func (repo *Repository) AddAllowedProtocol(logID uint, txHash, creditFilter stri
 	defer repo.mu.Unlock()
 	repo.blocks[p.BlockNumber].AddAllowedProtocol(p)
 	args := core.Json{"adapter": p.Adapter, "protocol": p.Protocol}
-	repo.AddDAOOperation(&core.DAOOperation{
+	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: p.BlockNumber,
 		LogID:       logID,
 		TxHash:      txHash,
@@ -26,8 +26,10 @@ func (repo *Repository) AddAllowedProtocol(logID uint, txHash, creditFilter stri
 }
 
 func (repo *Repository) DisableProtocol(blockNum int64, logID uint, txHash, cm, creditFilter, protocol string) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	args := core.Json{"protocol": protocol}
-	repo.AddDAOOperation(&core.DAOOperation{
+	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: blockNum,
 		LogID:       logID,
 		TxHash:      txHash,
@@ -41,9 +43,9 @@ func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string,
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.addAllowedTokenState(atoken)
-	repo.blocks[atoken.BlockNumber].AddAllowedToken(atoken)
+	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
 	args := core.Json{"liqThreshold": atoken.LiquidityThreshold}
-	repo.AddDAOOperation(&core.DAOOperation{
+	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: atoken.BlockNumber,
 		LogID:       logID,
 		TxHash:      txHash,
@@ -60,7 +62,7 @@ func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, 
 	atoken.DisableBlock = blockNum
 	repo.disabledTokens = append(repo.disabledTokens, atoken)
 	delete(repo.allowedTokens[creditManager], token)
-	repo.AddDAOOperation(&core.DAOOperation{
+	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: atoken.DisableBlock,
 		LogID:       logID,
 		TxHash:      txHash,
@@ -86,8 +88,6 @@ func (repo *Repository) getCreditManagerToFilter(cmAddr string) *creditFilter.Cr
 }
 
 func (repo *Repository) GetMask(blockNum int64, cmAddr, accountAddr string) *big.Int {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
@@ -97,20 +97,26 @@ func (repo *Repository) GetMask(blockNum int64, cmAddr, accountAddr string) *big
 }
 
 func (repo *Repository) AddDAOOperation(operation *core.DAOOperation) {
-	repo.GetBlock(operation.BlockNumber).AddDAOOperation(operation)
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.addDAOOperation(operation)
+}
+
+func (repo *Repository) addDAOOperation(operation *core.DAOOperation) {
+	repo.setAndGetBlock(operation.BlockNumber).AddDAOOperation(operation)
 }
 
 func (repo *Repository) AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *core.FastCheckParams) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.GetBlock(fcParams.BlockNum).AddFastCheckParams(fcParams)
+	repo.setAndGetBlock(fcParams.BlockNum).AddFastCheckParams(fcParams)
 	// set the dao action
 	oldFCParams := repo.cmFastCheckParams[fcParams.CreditManager]
 	if oldFCParams == nil {
 		oldFCParams = core.NewFastCheckParams()
 	}
 	args := oldFCParams.Diff(fcParams)
-	repo.AddDAOOperation(&core.DAOOperation{
+	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: fcParams.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,

@@ -73,7 +73,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 }
 
 func (eng *DebtEngine) ValidLiqMsg(blockNum int64, msg string, args ...interface{}) {
-	ts := eng.repo.GetBlock(blockNum).Timestamp
+	ts := eng.repo.SetAndGetBlock(blockNum).Timestamp
 	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
 		log.Msgf(msg, args...)
 	}

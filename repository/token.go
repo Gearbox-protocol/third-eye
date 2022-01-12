@@ -12,6 +12,8 @@ import (
 
 // For token with symbol/decimals
 func (repo *Repository) AddToken(addr string) *core.Token {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	token, err := repo.addToken(addr)
 	if err != nil {
 		log.Fatal("Adding token failed for", token)
@@ -20,19 +22,19 @@ func (repo *Repository) AddToken(addr string) *core.Token {
 }
 
 func (repo *Repository) addToken(addr string) (*core.Token, error) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 	if repo.tokens[addr] == nil {
 		token, err := core.NewToken(addr, repo.client)
 		if err != nil {
 			return nil, err
 		}
-		repo.AddTokenObj(token)
+		repo.addTokenObj(token)
 	}
 	return repo.tokens[addr], nil
 }
 
 func (repo *Repository) GetToken(addr string) *core.Token {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	token, err := repo.getTokenWithError(addr)
 	log.CheckFatal(err)
 	return token
@@ -53,13 +55,11 @@ func (repo *Repository) loadToken() {
 		log.Fatal(err)
 	}
 	for _, token := range data {
-		repo.AddTokenObj(token)
+		repo.addTokenObj(token)
 	}
 }
 
-func (repo *Repository) AddTokenObj(t *core.Token) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (repo *Repository) addTokenObj(t *core.Token) {
 	// set usdc addr in repo
 	if t.Symbol == "USDC" {
 		repo.USDCAddr = t.Address

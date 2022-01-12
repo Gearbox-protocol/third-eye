@@ -12,7 +12,7 @@ func (repo *Repository) AddCreditSessionSnapshot(css *core.CreditSessionSnapshot
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	css.ID = 0
-	repo.blocks[css.BlockNum].AddCreditSessionSnapshot(css)
+	repo.setAndGetBlock(css.BlockNum).AddCreditSessionSnapshot(css)
 }
 
 func (repo *Repository) ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*core.JsonBalance, error) {
@@ -22,10 +22,7 @@ func (repo *Repository) ConvertToBalanceWithMask(balances []mainnet.DataTypesTok
 	for i, token := range balances {
 		tokenAddr := token.Token.Hex()
 		if token.Balance.Sign() != 0 {
-			tokenObj, err := repo.getTokenWithError(tokenAddr)
-			if err != nil {
-				return nil, err
-			}
+			tokenObj := repo.GetToken(tokenAddr)
 			jsonBalance[tokenAddr] = &core.BalanceType{
 				BI: (*core.BigInt)(token.Balance),
 				F:  utils.GetFloat64Decimal(token.Balance, tokenObj.Decimals),

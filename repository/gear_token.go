@@ -17,5 +17,4 @@ func (repo *Repository) loadGearBalances() {
 			adapter.SetUnderlyingState(data)
 		}
 	}
-	repo.loadSessionIdToBorrower()
 }

@@ -25,9 +25,7 @@ func (repo *Repository) GetBlocks() map[int64]*core.Block {
 	return repo.blocks
 }
 
-func (repo *Repository) SetBlock(blockNum int64) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (repo *Repository) setBlock(blockNum int64) {
 	if repo.blocks[blockNum] == nil {
 		b, err := repo.client.BlockByNumber(context.Background(), big.NewInt(blockNum))
 		if err != nil {
@@ -37,10 +35,19 @@ func (repo *Repository) SetBlock(blockNum int64) {
 	}
 }
 
-func (repo *Repository) GetBlock(blockNum int64) *core.Block {
-	block := repo.blocks[blockNum]
-	if block == nil {
-		repo.SetBlock(blockNum)
-	}
+func (repo *Repository) setAndGetBlock(blockNum int64) *core.Block {
+	repo.setBlock(blockNum)
 	return repo.blocks[blockNum]
+}
+
+func (repo *Repository) SetAndGetBlock(blockNum int64) *core.Block {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	return repo.setAndGetBlock(blockNum)
+}
+
+func (repo *Repository) SetBlock(blockNum int64) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.setBlock(blockNum)
 }

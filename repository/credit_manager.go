@@ -59,30 +59,32 @@ func (repo *Repository) GetUnderlyingDecimal(cmAddr string) int8 {
 func (repo *Repository) AddCreditManagerStats(cms *core.CreditManagerStat) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.GetBlock(cms.BlockNum).AddCreditManagerStats(cms)
+	repo.setAndGetBlock(cms.BlockNum).AddCreditManagerStats(cms)
 }
 
 func (repo *Repository) AddRepayOnCM(blockNum int64, cmAddr string, pnlOnRepay core.PnlOnRepay) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.GetBlock(blockNum).AddRepayOnCM(cmAddr, &pnlOnRepay)
+	repo.setAndGetBlock(blockNum).AddRepayOnCM(cmAddr, &pnlOnRepay)
 }
 
 func (repo *Repository) GetRepayOnCM(blockNum int64, cmAddr string) *core.PnlOnRepay {
-	return repo.GetBlock(blockNum).GetRepayOnCM(cmAddr)
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	return repo.blocks[blockNum].GetRepayOnCM(cmAddr)
 }
 
 func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Parameters) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.GetBlock(params.BlockNum).AddParameters(params)
+	repo.setAndGetBlock(params.BlockNum).AddParameters(params)
 	// cal dao action
 	oldCMParams := repo.cmParams[params.CreditManager]
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
 	}
 
-	repo.AddDAOOperation(&core.DAOOperation{
+	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: params.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,

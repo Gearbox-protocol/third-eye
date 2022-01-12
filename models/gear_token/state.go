@@ -6,13 +6,7 @@ import (
 )
 
 func (mdl *GearToken) GetUnderlyingState() interface{} {
-	gb := []*core.GearBalance{}
-	for _, entry := range mdl.State {
-		if entry.Updated {
-			gb = append(gb, entry)
-		}
-	}
-	return gb
+	return mdl.arrayOfGearBalanceUpdates
 }
 
 func (mdl *GearToken) SetUnderlyingState(obj interface{}) {
@@ -26,4 +20,15 @@ func (mdl *GearToken) SetUnderlyingState(obj interface{}) {
 		state[entry.User] = entry
 	}
 	mdl.State = state
+}
+
+func (mdl *GearToken) HasUnderlyingState() bool {
+	gb := []*core.GearBalance{}
+	for _, entry := range mdl.State {
+		if entry.Updated {
+			gb = append(gb, entry)
+		}
+	}
+	mdl.arrayOfGearBalanceUpdates = gb
+	return len(gb) > 0
 }

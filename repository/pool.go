@@ -25,13 +25,11 @@ func (repo *Repository) loadPoolUniqueUsers() {
 		log.Fatal(err)
 	}
 	for _, entry := range data {
-		repo.AddPoolUniqueUser(entry.Pool, entry.User)
+		repo.addPoolUniqueUser(entry.Pool, entry.User)
 	}
 }
 
-func (repo *Repository) AddPoolUniqueUser(pool, user string) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (repo *Repository) addPoolUniqueUser(pool, user string) {
 	if repo.poolUniqueUsers[pool] == nil {
 		repo.poolUniqueUsers[pool] = make(map[string]bool)
 	}
@@ -41,12 +39,14 @@ func (repo *Repository) AddPoolUniqueUser(pool, user string) {
 func (repo *Repository) AddPoolStat(ps *core.PoolStat) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.blocks[ps.BlockNum].AddPoolStat(ps)
+	repo.setAndGetBlock(ps.BlockNum).AddPoolStat(ps)
 }
 
 func (repo *Repository) AddPoolLedger(pl *core.PoolLedger) {
-	repo.AddPoolUniqueUser(pl.Pool, pl.User)
-	repo.blocks[pl.BlockNumber].AddPoolLedger(pl)
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.addPoolUniqueUser(pl.Pool, pl.User)
+	repo.setAndGetBlock(pl.BlockNumber).AddPoolLedger(pl)
 }
 
 func (repo *Repository) GetPoolUniqueUserLen(pool string) int {

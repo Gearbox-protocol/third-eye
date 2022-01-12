@@ -16,4 +16,4 @@ create table fast_check_params (
 
 create table gear_balances (
     balance varchar(80),
-    user varchar(42) PRIMARY KEY);
+    user_address varchar(42) PRIMARY KEY);

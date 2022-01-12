@@ -29,7 +29,7 @@ type RepositoryI interface {
 	Flush() error
 	// adding block/timestamp
 	SetBlock(blockNum int64)
-	GetBlock(blockNum int64) *Block
+	SetAndGetBlock(blockNum int64) *Block
 	GetBlocks() map[int64]*Block
 	LoadBlocks(from, to int64)
 	// credit account operations
@@ -42,10 +42,9 @@ type RepositoryI interface {
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *Protocol)
 	DisableProtocol(blockNum int64, logID uint, txHash, cm, creditFilter, protocol string)
-	AddToken(token string) *Token
 	AddAllowedToken(logID uint, txHash, creditFilter string, atoken *AllowedToken)
 	DisableAllowedToken(blockNum int64, logID uint, txHash string, creditManager, creditFilter, token string)
-	AddTokenObj(token *Token)
+	AddToken(token string) *Token
 	GetToken(addr string) *Token
 	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*JsonBalance, error)
 	// credit session funcs
@@ -88,7 +87,7 @@ type RepositoryI interface {
 type GearBalance struct {
 	Balance *BigInt `gorm:"column:balance"`
 	Updated bool    `gorm:"-"`
-	User    string  `gorm:"column:user;primaryKey"`
+	User    string  `gorm:"column:user_address;primaryKey"`
 }
 
 func (GearBalance) TableName() string {

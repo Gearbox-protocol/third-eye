@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/account_factory"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
+	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	// "github.com/Gearbox-protocol/third-eye/models/data_compressor"
 
@@ -44,11 +45,8 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			mdl.Details["weth"] = address
 			mdl.Repo.SetWETHAddr(address)
 		case "GEAR_TOKEN":
-			if mdl.Details == nil {
-				mdl.Details = make(map[string]interface{})
-			}
-			mdl.Details["weth"] = address
-			mdl.Repo.SetWETHAddr(address)
+			gt := gear_token.NewGearToken(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
+			mdl.Repo.AddSyncAdapter(gt)
 		case "DATA_COMPRESSOR":
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})
