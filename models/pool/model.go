@@ -66,7 +66,3 @@ func (mdl *Pool) AfterSyncHook(syncTill int64) {
 	mdl.createPoolStat()
 	mdl.SetLastSync(syncTill)
 }
-
-func (mdl *Pool) GetState() interface{} {
-	return mdl
-}

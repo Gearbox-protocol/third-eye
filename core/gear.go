@@ -84,3 +84,13 @@ type RepositoryI interface {
 	LoadLastAdapterSync() int64
 	Clear()
 }
+
+type GearBalance struct {
+	Balance *BigInt `gorm:"column:balance"`
+	Updated bool    `gorm:"-"`
+	User    string  `gorm:"column:user;primaryKey"`
+}
+
+func (GearBalance) TableName() string {
+	return "gear_balances"
+}

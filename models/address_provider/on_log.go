@@ -43,6 +43,12 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			}
 			mdl.Details["weth"] = address
 			mdl.Repo.SetWETHAddr(address)
+		case "GEAR_TOKEN":
+			if mdl.Details == nil {
+				mdl.Details = make(map[string]interface{})
+			}
+			mdl.Details["weth"] = address
+			mdl.Repo.SetWETHAddr(address)
 		case "DATA_COMPRESSOR":
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})

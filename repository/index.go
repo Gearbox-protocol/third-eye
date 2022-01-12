@@ -77,11 +77,17 @@ func (repo *Repository) init() {
 	repo.loadToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
+	// for disabling previous token oracle if new oracle is set
 	repo.loadCurrentTokenOracle()
+	// load state for sync_adpters
 	repo.loadPool()
 	repo.loadCreditManagers()
+	repo.loadGearBalances()
+	// required for disabling allowed tokens
 	repo.loadAllowedTokensState()
+	// fastcheck and new parameters
 	repo.loadAllParams()
+	// credit_sessions
 	repo.loadCreditSessions(lastDebtSync)
 }
 
