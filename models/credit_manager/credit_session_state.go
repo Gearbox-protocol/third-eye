@@ -80,7 +80,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account)
 	var err error
 	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
 	if err != nil {

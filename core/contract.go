@@ -83,7 +83,7 @@ func (c *Contract) GetAbi() {
 		// Pool
 		"CreditManager":           creditManager.CreditManagerMetaData,
 		"LinearInterestRateModel": linearInterestRateModel.LinearInterestRateModelMetaData,
-		"CreditFilter":            creditFilter.CreditFilterMetaData,
+		"CreditFilter":            &bind.MetaData{ABI: creditFilter.CreditFilterABI},
 		"PoolService":             poolService.PoolServiceMetaData,
 
 		// GetUnderlyingToken

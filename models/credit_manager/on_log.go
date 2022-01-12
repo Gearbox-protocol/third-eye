@@ -112,7 +112,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		mdl.State.MaxAmount = (*core.BigInt)(params.MaxAmount)
 		mdl.State.MaxLeverageFactor = params.MaxLeverage.Int64()
 		mdl.State.FeeInterest = params.FeeInterest.Int64()
-		mdl.Repo.AddParameters(&core.Parameters{
+		mdl.Repo.AddParameters(txLog.Index, txLog.TxHash.Hex(), &core.Parameters{
 			BlockNum:            blockNum,
 			CreditManager:       mdl.GetAddress(),
 			MinAmount:           (*core.BigInt)(params.MinAmount),

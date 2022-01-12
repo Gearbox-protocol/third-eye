@@ -31,6 +31,9 @@ type Repository struct {
 	sessions            map[string]*core.CreditSession
 	poolUniqueUsers     map[string]map[string]bool
 	tokensCurrentOracle map[string]*core.TokenOracle
+	// for params diff calculation
+	cmParams          map[string]*core.Parameters
+	cmFastCheckParams map[string]*core.FastCheckParams
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
@@ -49,6 +52,8 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		dcWrapper:             core.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
 		allowedTokens:         make(map[string]map[string]*core.AllowedToken),
+		cmParams:              make(map[string]*core.Parameters),
+		cmFastCheckParams:     make(map[string]*core.FastCheckParams),
 	}
 	r.init()
 	return r
@@ -76,6 +81,7 @@ func (repo *Repository) init() {
 	repo.loadPool()
 	repo.loadCreditManagers()
 	repo.loadAllowedTokensState()
+	repo.loadAllParams()
 	repo.loadCreditSessions(lastDebtSync)
 }
 

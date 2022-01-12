@@ -36,7 +36,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			if eng.liquidableBlockTracker[debt.SessionId] != nil &&
-				(debt.BlockNumber - eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
+				(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
 				eng.ValidLiqMsg(debt.BlockNumber, `HealthFactor safe again: 
 				SessionId:%s
 				HF: %s@(block:%d) -> %s@(block:%d)`,

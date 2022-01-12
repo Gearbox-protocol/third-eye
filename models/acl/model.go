@@ -1,13 +1,16 @@
 package acl
 
 import (
+	"github.com/Gearbox-protocol/third-eye/artifacts/aCL"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type ACL struct {
 	*core.SyncAdapter
+	contractETH *aCL.ACL
 }
 
 func NewACL(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ACL {
@@ -17,11 +20,11 @@ func NewACL(addr string, discoveredAt int64, client *ethclient.Client, repo core
 }
 
 func NewACLFromAdapter(adapter *core.SyncAdapter) *ACL {
+	contractETH, err := aCL.NewACL(common.HexToAddress(adapter.Address), adapter.Client)
+	log.CheckFatal(err)
 	obj := &ACL{
 		SyncAdapter: adapter,
+		contractETH: contractETH,
 	}
 	return obj
-}
-
-func (mdl *ACL) OnLog(txLog types.Log) {
 }

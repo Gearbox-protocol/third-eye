@@ -40,10 +40,11 @@ type RepositoryI interface {
 	AddTokenOracle(token, oracle, feed string, blockNum int64)
 	AddPriceFeed(blockNum int64, pf *PriceFeed)
 	// token funcs
-	AddAllowedProtocol(p *Protocol)
+	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *Protocol)
+	DisableProtocol(blockNum int64, logID uint, txHash, cm, creditFilter, protocol string)
 	AddToken(token string) *Token
-	AddAllowedToken(atoken *AllowedToken)
-	DisableAllowedToken(creditManager, token string, disableBlockNum int64)
+	AddAllowedToken(logID uint, txHash, creditFilter string, atoken *AllowedToken)
+	DisableAllowedToken(blockNum int64, logID uint, txHash string, creditManager, creditFilter, token string)
 	AddTokenObj(token *Token)
 	GetToken(addr string) *Token
 	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*JsonBalance, error)
@@ -74,7 +75,10 @@ type RepositoryI interface {
 	GetUnderlyingDecimal(cmAddr string) int8
 	AddRepayOnCM(blockNum int64, cm string, pnl PnlOnRepay)
 	GetRepayOnCM(blockNum int64, cm string) *PnlOnRepay
-	AddParameters(*Parameters)
+	AddParameters(logID uint, txHash string, params *Parameters)
+	AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *FastCheckParams)
+	// dao
+	AddDAOOperation(operation *DAOOperation)
 	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64

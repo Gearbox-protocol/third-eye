@@ -96,8 +96,8 @@ type DebtEngineI interface {
 }
 
 type LiquidableAccount struct {
-	SessionId string `gorm:"primaryKey;column:session_id"`
-	BlockNum  int64  `gorm:"column:block_num"`
-	NotifiedIfLiquidable bool `gorm:"column:notified_if_liquidable"`
-	Updated   bool   `gorm:"-"`
+	SessionId            string `gorm:"primaryKey;column:session_id"`
+	BlockNum             int64  `gorm:"column:block_num"`
+	NotifiedIfLiquidable bool   `gorm:"column:notified_if_liquidable"`
+	Updated              bool   `gorm:"-"`
 }

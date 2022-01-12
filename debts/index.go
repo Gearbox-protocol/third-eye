@@ -180,7 +180,7 @@ type LiquidationTx struct {
 func (eng *DebtEngine) GetLiquidationTx(sessionId string) string {
 	data := LiquidationTx{}
 	query := `SELECT tx_hash from account_operations 
-		WHERE session_id = ?  AND action='LiquidateCreditAccount'`
+		WHERE session_id = ?  AND action like 'LiquidateCreditAccount%'`
 	err := eng.db.Raw(query).Find(&data, sessionId).Error
 	log.CheckFatal(err)
 	return data.TxHash

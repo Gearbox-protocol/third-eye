@@ -75,9 +75,9 @@ func GetFloat64(num *big.Int, decimals int8) *big.Float {
 	}
 }
 
-func AlmostSameBigInt(a, b *big.Int, decimals int8, precision int8) bool {
+func AlmostSameBigInt(a, b *big.Int, noOFZeroIndiff int8) bool {
 	// diff should be less than 100
-	return new(big.Int).Sub(a, b).CmpAbs(GetExpInt(decimals-precision)) <= 0
+	return new(big.Int).Sub(a, b).CmpAbs(GetExpInt(noOFZeroIndiff)) <= 0
 }
 
 func Min(a, b int64) int64 {

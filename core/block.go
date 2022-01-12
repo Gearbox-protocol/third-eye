@@ -18,7 +18,9 @@ type (
 		PoolLedgers       []*PoolLedger            `gorm:"foreignKey:block_num"`
 		CMStats           []*CreditManagerStat     `gorm:"foreignKey:block_num"`
 		AllowedTokens     []*AllowedToken          `gorm:"foreignKey:block_num"`
+		DAOOperations     []*DAOOperation          `gorm:"foreignKey:block_num"`
 		Params            []*Parameters            `gorm:"foreignKey:block_num"`
+		FastCheckParams   []*FastCheckParams       `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
 		pnlOnCM           map[string]*PnlOnRepay   `gorm:"-"`
 	}
@@ -43,6 +45,10 @@ func (b *Block) AddAllowedProtocol(p *Protocol) {
 
 func (b *Block) AddAllowedToken(atoken *AllowedToken) {
 	b.AllowedTokens = append(b.AllowedTokens, atoken)
+}
+
+func (b *Block) AddDAOOperation(operation *DAOOperation) {
+	b.DAOOperations = append(b.DAOOperations, operation)
 }
 
 func (b *Block) AddCreditSessionSnapshot(css *CreditSessionSnapshot) {
@@ -79,6 +85,10 @@ func (b *Block) GetEventBalances() []*EventBalance {
 
 func (b *Block) AddParameters(params *Parameters) {
 	b.Params = append(b.Params, params)
+}
+
+func (b *Block) AddFastCheckParams(params *FastCheckParams) {
+	b.FastCheckParams = append(b.FastCheckParams, params)
 }
 
 func (b *Block) GetCSS() []*CreditSessionSnapshot {
