@@ -78,18 +78,22 @@ func (mdl *Treasury) Query(queryTill int64, wg *sync.WaitGroup) {
 		{
 			core.Topic("Transfer(address,address,uint256)"),
 		},
-		{
-			common.HexToHash(mdl.Address),
-		},
-		{
-			common.HexToHash(mdl.Address),
-		},
 	}
+	treasuryAddrTopic := []common.Hash{
+		common.HexToHash(mdl.Address),
+	}
+	otherAddrTopic := []common.Hash{}
 	for _, tokenAddr := range tokenAddrs {
 		hexAddrs = append(hexAddrs, common.HexToAddress(tokenAddr))
 	}
-
-	logs, err := mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, topics)
+	// from treasury to other address
+	logs, err := mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, treasuryAddrTopic, otherAddrTopic))
+	log.CheckFatal(err)
+	for _, log := range logs {
+		mdl.OnLog(log)
+	}
+	// from other address to treasury
+	logs, err = mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, otherAddrTopic, treasuryAddrTopic))
 	log.CheckFatal(err)
 	for _, log := range logs {
 		mdl.OnLog(log)
