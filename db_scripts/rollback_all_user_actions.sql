@@ -13,3 +13,4 @@ insert into credit_managers(address, pool_address,underlying_token, is_weth)
 update credit_managers set address = concat('0',address);
 delete from pool_stats;
 delete from debts; delete from liquidable_accounts; delete from profiles;delete from current_debts; delete from debt_sync;
+delete from dao_operations;delete from fast_check_params;delete from gear_balances;delete from treasury_snapshots;delete from treasury_transfers;

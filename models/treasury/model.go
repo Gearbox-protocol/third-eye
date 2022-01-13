@@ -94,4 +94,6 @@ func (mdl *Treasury) Query(queryTill int64, wg *sync.WaitGroup) {
 	for _, log := range logs {
 		mdl.OnLog(log)
 	}
+	// after sync
+	mdl.AfterSyncHook(queryTill)
 }

@@ -55,7 +55,7 @@ func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string,
 	})
 }
 
-func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, creditFilter string, creditManager, token string) {
+func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, creditManager, creditFilter, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	atoken := repo.allowedTokens[creditManager][token]
