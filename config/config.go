@@ -36,4 +36,5 @@ type Config struct {
 	ThrottleDebtCalStr   string `env:"THROTTLE_DEBT_CAL" validate:"required"`
 	ThrottleDebtCal      bool
 	MiningAddr           string `env:"MINING_ADDR"`
+	ROLLBACK             string `env:"ROLLBACK"`
 }

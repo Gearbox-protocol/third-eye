@@ -119,5 +119,8 @@ func (repo *Repository) GetTokens() []string {
 	for addr, _ := range repo.tokens {
 		tokens = append(tokens, addr)
 	}
+	if repo.GearTokenAddr != "" {
+		tokens = append(tokens, repo.GearTokenAddr)
+	}
 	return tokens
 }

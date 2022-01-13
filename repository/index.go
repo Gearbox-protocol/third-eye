@@ -16,6 +16,7 @@ type Repository struct {
 	// object fx objects
 	WETHAddr              string
 	USDCAddr              string
+	GearTokenAddr         string
 	db                    *gorm.DB
 	client                *ethclient.Client
 	config                *config.Config

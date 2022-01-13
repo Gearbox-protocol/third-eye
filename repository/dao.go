@@ -85,7 +85,10 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 func (repo *Repository) GetPriceAndValInUSD(blockNum int64, token string, amount *big.Int) (price, value *big.Int) {
 	tokenObj := repo.GetToken(token)
 	uTokenAndPool := repo.dieselTokens[token]
-	if uTokenAndPool != nil {
+	if token == repo.GearTokenAddr {
+		price = big.NewInt(0)
+		value = big.NewInt(0)
+	} else if uTokenAndPool != nil {
 		price = repo.GetValueInUSD(blockNum, uTokenAndPool.UToken, utils.GetExpInt(tokenObj.Decimals))
 		pool, err := poolService.NewPoolService(common.HexToAddress(uTokenAndPool.Pool), repo.client)
 		log.CheckFatal(err)

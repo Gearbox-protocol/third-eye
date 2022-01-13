@@ -26,7 +26,7 @@ func (repo *Repository) loadSyncAdapters() {
 	for _, adapter := range data {
 		adapter.Client = repo.client
 		adapter.Repo = repo
-		repo.AddSyncAdapter(repo.prepareSyncAdapter(adapter))
+		repo.addSyncAdapter(repo.prepareSyncAdapter(adapter))
 	}
 }
 
@@ -80,5 +80,15 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	if repo.config.ROLLBACK == "1" {
+		return
+	}
+	repo.addSyncAdapter(adapterI)
+}
+
+func (repo *Repository) addSyncAdapter(adapterI core.SyncAdapterI) {
+	if core.GearToken == adapterI.GetName() {
+		repo.GearTokenAddr = adapterI.GetAddress()
+	}
 	repo.kit.Add(adapterI)
 }

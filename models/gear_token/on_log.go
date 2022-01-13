@@ -29,11 +29,13 @@ func (mdl *GearToken) UpdateStateBalances(from, to string, value *big.Int) {
 	if toBalance == nil {
 		toBalance = &core.GearBalance{
 			Balance: (*core.BigInt)(big.NewInt(0)),
-			User:    from,
+			User:    to,
 		}
 	}
 	fromBalance.Balance = core.AddCoreAndInt(fromBalance.Balance, new(big.Int).Neg(value))
+	fromBalance.Updated = true
 	mdl.State[from] = fromBalance
 	toBalance.Balance = core.AddCoreAndInt(toBalance.Balance, value)
+	toBalance.Updated = true
 	mdl.State[to] = toBalance
 }
