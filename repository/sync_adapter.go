@@ -10,8 +10,10 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
+	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/treasury"
 	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
 )
 
@@ -24,7 +26,7 @@ func (repo *Repository) loadSyncAdapters() {
 	for _, adapter := range data {
 		adapter.Client = repo.client
 		adapter.Repo = repo
-		repo.AddSyncAdapter(repo.prepareSyncAdapter(adapter))
+		repo.addSyncAdapter(repo.prepareSyncAdapter(adapter))
 	}
 }
 
@@ -59,6 +61,10 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
 	case core.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
+	case core.GearToken:
+		return gear_token.NewGearTokenFromAdapter(adapter)
+	case core.Treasury:
+		return treasury.NewTreasuryFromAdapter(adapter)
 	case core.CreditFilter:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)
@@ -74,5 +80,15 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	if repo.config.ROLLBACK == "1" {
+		return
+	}
+	repo.addSyncAdapter(adapterI)
+}
+
+func (repo *Repository) addSyncAdapter(adapterI core.SyncAdapterI) {
+	if core.GearToken == adapterI.GetName() {
+		repo.GearTokenAddr = adapterI.GetAddress()
+	}
 	repo.kit.Add(adapterI)
 }

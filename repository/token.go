@@ -12,6 +12,8 @@ import (
 
 // For token with symbol/decimals
 func (repo *Repository) AddToken(addr string) *core.Token {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	token, err := repo.addToken(addr)
 	if err != nil {
 		log.Fatal("Adding token failed for", token)
@@ -20,19 +22,19 @@ func (repo *Repository) AddToken(addr string) *core.Token {
 }
 
 func (repo *Repository) addToken(addr string) (*core.Token, error) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 	if repo.tokens[addr] == nil {
 		token, err := core.NewToken(addr, repo.client)
 		if err != nil {
 			return nil, err
 		}
-		repo.AddTokenObj(token)
+		repo.addTokenObj(token)
 	}
 	return repo.tokens[addr], nil
 }
 
 func (repo *Repository) GetToken(addr string) *core.Token {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	token, err := repo.getTokenWithError(addr)
 	log.CheckFatal(err)
 	return token
@@ -53,13 +55,11 @@ func (repo *Repository) loadToken() {
 		log.Fatal(err)
 	}
 	for _, token := range data {
-		repo.AddTokenObj(token)
+		repo.addTokenObj(token)
 	}
 }
 
-func (repo *Repository) AddTokenObj(t *core.Token) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+func (repo *Repository) addTokenObj(t *core.Token) {
 	// set usdc addr in repo
 	if t.Symbol == "USDC" {
 		repo.USDCAddr = t.Address
@@ -101,7 +101,7 @@ func (repo *Repository) GetActivePriceOracle() (string, error) {
 	return "", fmt.Errorf("Not Found")
 }
 
-func (repo *Repository) GetPriceInUSD(blockNum int64, token string, amount *big.Int) *big.Int {
+func (repo *Repository) GetValueInUSD(blockNum int64, token string, amount *big.Int) *big.Int {
 	oracle, err := repo.GetActivePriceOracle()
 	log.CheckFatal(err)
 	poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
@@ -111,5 +111,17 @@ func (repo *Repository) GetPriceInUSD(blockNum int64, token string, amount *big.
 	}
 	usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), common.HexToAddress(repo.USDCAddr))
 	log.CheckFatal(err)
-	return usdcAmount
+	// convert to 8 decimals
+	return new(big.Int).Mul(usdcAmount, big.NewInt(100))
+}
+
+func (repo *Repository) GetTokens() []string {
+	tokens := []string{}
+	for addr, _ := range repo.tokens {
+		tokens = append(tokens, addr)
+	}
+	if repo.GearTokenAddr != "" {
+		tokens = append(tokens, repo.GearTokenAddr)
+	}
+	return tokens
 }

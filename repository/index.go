@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"gorm.io/gorm"
 	"sync"
+	"time"
 )
 
 type Repository struct {
@@ -15,6 +16,7 @@ type Repository struct {
 	// object fx objects
 	WETHAddr              string
 	USDCAddr              string
+	GearTokenAddr         string
 	db                    *gorm.DB
 	client                *ethclient.Client
 	config                *config.Config
@@ -31,6 +33,14 @@ type Repository struct {
 	sessions            map[string]*core.CreditSession
 	poolUniqueUsers     map[string]map[string]bool
 	tokensCurrentOracle map[string]*core.TokenOracle
+	// for params diff calculation
+	cmParams          map[string]*core.Parameters
+	cmFastCheckParams map[string]*core.FastCheckParams
+	// treasury
+	treasurySnapshot *core.TreasurySnapshot
+	lastTreasureTime time.Time
+	BlockDatePairs   map[int64]*core.BlockDate
+	dieselTokens     map[string]*core.UTokenAndPool
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
@@ -49,6 +59,10 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		dcWrapper:             core.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
 		allowedTokens:         make(map[string]map[string]*core.AllowedToken),
+		cmParams:              make(map[string]*core.Parameters),
+		cmFastCheckParams:     make(map[string]*core.FastCheckParams),
+		BlockDatePairs:        make(map[int64]*core.BlockDate),
+		dieselTokens:          make(map[string]*core.UTokenAndPool),
 	}
 	r.init()
 	return r
@@ -72,17 +86,28 @@ func (repo *Repository) init() {
 	repo.loadToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
+	// for disabling previous token oracle if new oracle is set
 	repo.loadCurrentTokenOracle()
+	// load state for sync_adpters
 	repo.loadPool()
 	repo.loadCreditManagers()
+	repo.loadGearBalances()
+	// required for disabling allowed tokens
 	repo.loadAllowedTokensState()
+	// fastcheck and new parameters
+	repo.loadAllParams()
+	// treasury funcs
+	repo.loadBlockDatePair()
+	repo.loadLastTreasuryTs()
+	repo.loadTreasurySnapshot()
+	// credit_sessions
 	repo.loadCreditSessions(lastDebtSync)
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.blocks[accountOperation.BlockNumber].AddAccountOperation(accountOperation)
+	repo.setAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
 }
 
 func (repo *Repository) SetWETHAddr(addr string) {
@@ -100,5 +125,5 @@ func (repo *Repository) GetUSDCAddr() string {
 func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.blocks[eb.BlockNumber].AddEventBalance(&eb)
+	repo.setAndGetBlock(eb.BlockNumber).AddEventBalance(&eb)
 }

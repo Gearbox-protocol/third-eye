@@ -75,6 +75,12 @@ func NewConfig() *Config {
 	} else {
 		config.ThrottleDebtCal = false
 	}
+	throttleHr, err := strconv.Atoi(config.ThrottleByHrsStr)
+	if err != nil {
+		config.ThrottleByHrs = 1
+	} else {
+		config.ThrottleByHrs = int64(throttleHr)
+	}
 
 	config.ChainId = uint(chainId)
 	switch config.ChainId {

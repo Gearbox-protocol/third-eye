@@ -37,7 +37,7 @@ func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, disco
 	if err != nil {
 		log.Fatal(err)
 	}
-	repo.AddToken(dieselToken.Hex())
+	repo.AddDieselToken(dieselToken.Hex(), underlyingToken.Hex(), addr)
 	pool.SetUnderlyingState(&core.PoolState{
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),
@@ -65,8 +65,4 @@ func NewPoolFromAdapter(adapter *core.SyncAdapter) *Pool {
 func (mdl *Pool) AfterSyncHook(syncTill int64) {
 	mdl.createPoolStat()
 	mdl.SetLastSync(syncTill)
-}
-
-func (mdl *Pool) GetState() interface{} {
-	return mdl
 }

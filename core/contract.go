@@ -54,6 +54,7 @@ func NewContract(address, contractName string, discoveredAt int64, client *ethcl
 		Client:       client,
 	}
 	con.FirstLogAt = con.DiscoverFirstLog()
+	// for address provider discoveredAt is -1
 	if discoveredAt == -1 {
 		con.DiscoveredAt = con.FirstLogAt
 	} else {
@@ -83,7 +84,7 @@ func (c *Contract) GetAbi() {
 		// Pool
 		"CreditManager":           creditManager.CreditManagerMetaData,
 		"LinearInterestRateModel": linearInterestRateModel.LinearInterestRateModelMetaData,
-		"CreditFilter":            creditFilter.CreditFilterMetaData,
+		"CreditFilter":            &bind.MetaData{ABI: creditFilter.CreditFilterABI},
 		"PoolService":             poolService.PoolServiceMetaData,
 
 		// GetUnderlyingToken
@@ -141,7 +142,7 @@ func (c *Contract) DiscoverFirstLog() int64 {
 
 	FirstLogAt, err := c.findFirstLogBound(1, int64(lastBlock))
 	if err != nil {
-		log.Fatal("Cant find deployment events " + err.Error())
+		log.Fatal(c.Address, err.Error())
 	}
 
 	return FirstLogAt

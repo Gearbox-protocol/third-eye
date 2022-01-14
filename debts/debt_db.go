@@ -36,7 +36,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			if eng.liquidableBlockTracker[debt.SessionId] != nil &&
-				(debt.BlockNumber - eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
+				(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
 				eng.ValidLiqMsg(debt.BlockNumber, `HealthFactor safe again: 
 				SessionId:%s
 				HF: %s@(block:%d) -> %s@(block:%d)`,
@@ -73,7 +73,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 }
 
 func (eng *DebtEngine) ValidLiqMsg(blockNum int64, msg string, args ...interface{}) {
-	ts := eng.repo.GetBlock(blockNum).Timestamp
+	ts := eng.repo.SetAndGetBlock(blockNum).Timestamp
 	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
 		log.Msgf(msg, args...)
 	}
@@ -104,7 +104,7 @@ func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 		// add debt if throttle is enabled and (last debt is missing or forced add is set)
 		if lastDebt == nil || forceAdd {
 			eng.addDebt(debt)
-		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr ||
+		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr * eng.config.ThrottleByHrs ||
 			core.DiffMoreThanFraction(lastDebt.CalTotalValueBI, debt.CalTotalValueBI, big.NewFloat(0.05)) ||
 			core.DiffMoreThanFraction(lastDebt.CalBorrowedAmountPlusInterestBI, debt.CalBorrowedAmountPlusInterestBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt

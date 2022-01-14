@@ -16,11 +16,12 @@ type Node struct {
 	ChainId int64
 }
 
-func (lf *Node) GetLogs(fromBlock, toBlock int64, addr string) ([]types.Log, error) {
+func (lf *Node) GetLogs(fromBlock, toBlock int64, addrs []common.Address, topics [][]common.Hash) ([]types.Log, error) {
 	query := ethereum.FilterQuery{
 		FromBlock: new(big.Int).SetInt64(fromBlock),
 		ToBlock:   new(big.Int).SetInt64(toBlock),
-		Addresses: []common.Address{common.HexToAddress(addr)},
+		Addresses: addrs, //[]common.Address{common.HexToAddress(addr)},
+		Topics:    topics,
 	}
 	var logs []types.Log
 	var err error
@@ -29,13 +30,13 @@ func (lf *Node) GetLogs(fromBlock, toBlock int64, addr string) ([]types.Log, err
 		if err.Error() == QueryMoreThan10000Error ||
 			strings.Contains(err.Error(), LogFilterLenError) {
 			middle := (fromBlock + toBlock) / 2
-			bottomHalfLogs, err := lf.GetLogs(fromBlock, middle-1, addr)
+			bottomHalfLogs, err := lf.GetLogs(fromBlock, middle-1, addrs, topics)
 			if err != nil {
 				return []types.Log{}, err
 			}
 			logs = append(logs, bottomHalfLogs...)
 
-			topHalfLogs, err := lf.GetLogs(middle, toBlock, addr)
+			topHalfLogs, err := lf.GetLogs(middle, toBlock, addrs, topics)
 			if err != nil {
 				return []types.Log{}, err
 			}

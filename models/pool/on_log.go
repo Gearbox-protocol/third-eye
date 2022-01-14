@@ -68,7 +68,60 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		})
 
 		mdl.lastEventBlock = blockNum
-		// case core.Topic("NewInterestRateModel(address)"):
-		// 	mdl.lastEventBlock = blockNum
+	case core.Topic("NewInterestRateModel(address)"):
+		interestModel, err := mdl.contractETH.ParseNewInterestRateModel(txLog)
+		log.CheckFatal(err)
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: blockNum,
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    mdl.Address,
+			Type:        core.NewInterestRateModel,
+			Args:        &core.Json{"newInterestRateModel": interestModel.NewInterestRateModel.Hex()},
+		})
+	case core.Topic("NewCreditManagerConnected(address)"):
+		newCreditManager, err := mdl.contractETH.ParseNewCreditManagerConnected(txLog)
+		log.CheckFatal(err)
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: blockNum,
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    mdl.Address,
+			Type:        core.NewCreditManagerConnected,
+			Args:        &core.Json{"creditManager": newCreditManager.CreditManager.Hex()},
+		})
+	case core.Topic("BorrowForbidden(address)"):
+		borrowForbidden, err := mdl.contractETH.ParseBorrowForbidden(txLog)
+		log.CheckFatal(err)
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: blockNum,
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    mdl.Address,
+			Type:        core.BorrowForbidden,
+			Args:        &core.Json{"creditManager": borrowForbidden.CreditManager.Hex()},
+		})
+	case core.Topic("NewWithdrawFee(uint256)"):
+		withdrawFee, err := mdl.contractETH.ParseNewWithdrawFee(txLog)
+		log.CheckFatal(err)
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: blockNum,
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    mdl.Address,
+			Type:        core.BorrowForbidden,
+			Args:        &core.Json{"fee": (*core.BigInt)(withdrawFee.Fee)},
+		})
+	case core.Topic("NewExpectedLiquidityLimit(uint256)"):
+		expectedLiq, err := mdl.contractETH.ParseNewExpectedLiquidityLimit(txLog)
+		log.CheckFatal(err)
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: blockNum,
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    mdl.Address,
+			Type:        core.BorrowForbidden,
+			Args:        &core.Json{"newLimit": (*core.BigInt)(expectedLiq.NewLimit)},
+		})
 	}
 }

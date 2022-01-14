@@ -16,11 +16,11 @@ func (repo *Repository) loadCurrentTokenOracle() {
 		log.Fatal(err)
 	}
 	for _, oracle := range data {
-		repo.AddTokenCurrentOracle(oracle)
+		repo.addTokenCurrentOracle(oracle)
 	}
 }
 
-func (repo *Repository) AddTokenCurrentOracle(oracle *core.TokenOracle) {
+func (repo *Repository) addTokenCurrentOracle(oracle *core.TokenOracle) {
 	repo.tokensCurrentOracle[oracle.Token] = oracle
 }
 
@@ -33,11 +33,11 @@ func (repo *Repository) AddTokenOracle(token, oracle, feed string, blockNum int6
 		repo.kit.GetAdapter(currentFeed).SetBlockToDisableOn(blockNum)
 	}
 	// set current state of oracle for token.
-	repo.AddTokenCurrentOracle(
+	repo.addTokenCurrentOracle(
 		&core.TokenOracle{Token: token, Oracle: oracle, Feed: feed, BlockNumber: blockNum},
 	)
 	// token oracle
-	repo.blocks[blockNum].AddTokenOracle(
+	repo.setAndGetBlock(blockNum).AddTokenOracle(
 		&core.TokenOracle{Token: token, Oracle: oracle, Feed: feed, BlockNumber: blockNum},
 	)
 }
@@ -45,5 +45,5 @@ func (repo *Repository) AddTokenOracle(token, oracle, feed string, blockNum int6
 func (repo *Repository) AddPriceFeed(blockNum int64, pf *core.PriceFeed) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.blocks[blockNum].AddPriceFeed(pf)
+	repo.setAndGetBlock(blockNum).AddPriceFeed(pf)
 }

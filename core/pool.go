@@ -11,6 +11,10 @@ func (PoolState) TableName() string {
 	return "pools"
 }
 
+type UTokenAndPool struct {
+	Pool   string
+	UToken string
+}
 type PoolStat struct {
 	ID                       int64   `gorm:"primaryKey"`
 	BlockNum                 int64   `gorm:"column:block_num"`

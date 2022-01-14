@@ -59,21 +59,58 @@ func (repo *Repository) GetUnderlyingDecimal(cmAddr string) int8 {
 func (repo *Repository) AddCreditManagerStats(cms *core.CreditManagerStat) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.GetBlock(cms.BlockNum).AddCreditManagerStats(cms)
+	repo.setAndGetBlock(cms.BlockNum).AddCreditManagerStats(cms)
 }
 
 func (repo *Repository) AddRepayOnCM(blockNum int64, cmAddr string, pnlOnRepay core.PnlOnRepay) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.GetBlock(blockNum).AddRepayOnCM(cmAddr, &pnlOnRepay)
+	repo.setAndGetBlock(blockNum).AddRepayOnCM(cmAddr, &pnlOnRepay)
 }
 
 func (repo *Repository) GetRepayOnCM(blockNum int64, cmAddr string) *core.PnlOnRepay {
-	return repo.GetBlock(blockNum).GetRepayOnCM(cmAddr)
-}
-
-func (repo *Repository) AddParameters(params *core.Parameters) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.GetBlock(params.BlockNum).AddParameters(params)
+	return repo.blocks[blockNum].GetRepayOnCM(cmAddr)
+}
+
+func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Parameters) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.setAndGetBlock(params.BlockNum).AddParameters(params)
+	// cal dao action
+	oldCMParams := repo.cmParams[params.CreditManager]
+	if oldCMParams == nil {
+		oldCMParams = core.NewParameters()
+	}
+
+	repo.addDAOOperation(&core.DAOOperation{
+		BlockNumber: params.BlockNum,
+		LogID:       logID,
+		TxHash:      txHash,
+		Contract:    params.CreditManager,
+		Args:        oldCMParams.Diff(params),
+	})
+	//
+	repo.cmParams[params.CreditManager] = params
+}
+
+func (repo *Repository) loadAllParams() {
+	// parameters
+	data := []*core.Parameters{}
+	err := repo.db.Raw(`SELECT distinct on (credit_manager) * FROM parameters 
+		ORDER BY credit_manager, block_num desc`).Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		repo.cmParams[entry.CreditManager] = entry
+	}
+
+	// fast check parameters
+	fcparams := []*core.FastCheckParams{}
+	err = repo.db.Raw(`SELECT distinct on (credit_manager) * FROM fast_check_params 
+		ORDER BY credit_manager, block_num desc`).Find(&fcparams).Error
+	log.CheckFatal(err)
+	for _, entry := range fcparams {
+		repo.cmFastCheckParams[entry.CreditManager] = entry
+	}
 }

@@ -11,4 +11,6 @@ const (
 	ChainlinkPriceFeed = "ChainlinkPriceFeed"
 	YearnPriceFeed     = "YearnPriceFeed"
 	CreditFilter       = "CreditFilter"
+	GearToken          = "GearToken"
+	Treasury           = "Treasury"
 )

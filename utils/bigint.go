@@ -1,16 +1,8 @@
 package utils
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
-	"strings"
-	"time"
 )
 
 // maths
@@ -43,7 +35,7 @@ func GetFloat64Decimal(num *big.Int, decimals int8) float64 {
 	return floatBorrowedAmount
 }
 
-func GetInt64Decimal(num *big.Int, decimals int8) *big.Int {
+func GetInt64(num *big.Int, decimals int8) *big.Int {
 	if decimals > 0 {
 		return new(big.Int).Quo(
 			num,
@@ -75,9 +67,9 @@ func GetFloat64(num *big.Int, decimals int8) *big.Float {
 	}
 }
 
-func AlmostSameBigInt(a, b *big.Int, decimals int8, precision int8) bool {
+func AlmostSameBigInt(a, b *big.Int, noOFZeroIndiff int8) bool {
 	// diff should be less than 100
-	return new(big.Int).Sub(a, b).CmpAbs(GetExpInt(decimals-precision)) <= 0
+	return new(big.Int).Sub(a, b).CmpAbs(GetExpInt(noOFZeroIndiff)) <= 0
 }
 
 func Min(a, b int64) int64 {
@@ -95,45 +87,6 @@ func Max(a, b int64) int64 {
 }
 
 // others
-
-func GetCreditManagerEventIds() []string {
-	var ids []string
-	if a, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
-		for _, event := range a.Events {
-			// fmt.Println(event.RawName, event.ID.Hex())
-			// if event.RawName != "ExecuteOrder" {
-			ids = append(ids, event.ID.Hex())
-			// }
-		}
-	}
-	return ids
-}
-
-func Contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-func GetTimeoutCtx(sec int) (context.Context, context.CancelFunc) {
-	//https://blog.golang.org/context
-	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", sec))
-	if err != nil {
-		log.Error(err)
-	}
-	ctx, cancel := context.WithTimeout(context.TODO(), timeout*time.Second)
-	return ctx, cancel
-}
-func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
-	ctx, cancel := GetTimeoutCtx(20)
-	return &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-		Context:     ctx,
-	}, cancel
-}
 
 func GetPrecision(symbol string) int8 {
 	switch symbol {
@@ -160,10 +113,4 @@ func absInt64(a int64) int64 {
 
 func IntDiffMoreThanFraction(oldValue, newValue, diff int64) bool {
 	return absInt64((newValue-oldValue)/oldValue) > diff
-}
-
-func ToJson(obj interface{}) string {
-	str, err := json.Marshal(obj)
-	log.CheckFatal(err)
-	return string(str)
 }

@@ -55,6 +55,68 @@ type Parameters struct {
 	LiquidationDiscount *BigInt `gorm:"column:liq_discount"`
 }
 
+func NewParameters() *Parameters {
+	return &Parameters{
+		MinAmount:           (*BigInt)(big.NewInt(0)),
+		MaxAmount:           (*BigInt)(big.NewInt(0)),
+		MaxLeverage:         (*BigInt)(big.NewInt(0)),
+		FeeInterest:         (*BigInt)(big.NewInt(0)),
+		FeeLiquidation:      (*BigInt)(big.NewInt(0)),
+		LiquidationDiscount: (*BigInt)(big.NewInt(0)),
+	}
+}
+
+func (old *Parameters) Diff(new *Parameters) *Json {
+	obj := Json{}
+	if old.MinAmount != new.MinAmount {
+		obj["minAmount"] = []*BigInt{old.MinAmount, new.MinAmount}
+	}
+	if old.MaxAmount != new.MaxAmount {
+		obj["maxAmount"] = []*BigInt{old.MaxAmount, new.MaxAmount}
+	}
+	if old.MaxLeverage != new.MaxLeverage {
+		obj["maxLeverage"] = []*BigInt{old.MaxLeverage, new.MaxLeverage}
+	}
+	if old.FeeInterest != new.FeeInterest {
+		obj["feeInterest"] = []*BigInt{old.FeeInterest, new.FeeInterest}
+	}
+	if old.FeeLiquidation != new.FeeLiquidation {
+		obj["feeLiquidation"] = []*BigInt{old.FeeLiquidation, new.FeeLiquidation}
+	}
+	if old.LiquidationDiscount != new.LiquidationDiscount {
+		obj["LiquidationDiscount"] = []*BigInt{old.LiquidationDiscount, new.LiquidationDiscount}
+	}
+	return &obj
+}
+
+type FastCheckParams struct {
+	BlockNum        int64   `gorm:"column:block_num;primaryKey"`
+	CreditManager   string  `gorm:"column:credit_manager;primaryKey"`
+	ChiThreshold    *BigInt `gorm:"column:chi_threshold"`
+	HFCheckInterval *BigInt `gorm:"column:hf_checkinterval"`
+}
+
+func NewFastCheckParams() *FastCheckParams {
+	return &FastCheckParams{
+		ChiThreshold:    (*BigInt)(big.NewInt(0)),
+		HFCheckInterval: (*BigInt)(big.NewInt(0)),
+	}
+}
+func (old *FastCheckParams) Diff(new *FastCheckParams) *Json {
+	obj := Json{}
+	if old.ChiThreshold != new.ChiThreshold {
+		obj["chiThreshold"] = []*BigInt{old.ChiThreshold, new.ChiThreshold}
+	}
+	if old.HFCheckInterval != new.HFCheckInterval {
+		obj["hfCheckInterval"] = []*BigInt{old.HFCheckInterval, new.HFCheckInterval}
+	}
+	return &obj
+}
+
+func (FastCheckParams) TableName() string {
+	return "fast_check_params"
+}
+
 type CreditManagerUpdate struct {
 	*CreditManagerData
 	Address string `gorm:"primaryKey"`

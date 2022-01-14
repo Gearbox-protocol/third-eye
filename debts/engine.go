@@ -153,7 +153,7 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 			newInterestPerSec := new(big.Int).Quo(newInterest, big.NewInt(3600*365*24))
 			predicate := new(big.Int).Add(newInterestPerSec, utils.GetExpInt(27))
 			cumIndex := new(big.Int).Mul(poolInterestData.CumulativeIndexRAY.Convert(), predicate)
-			cumIndexNormalized := utils.GetInt64Decimal(cumIndex, 27)
+			cumIndexNormalized := utils.GetInt64(cumIndex, 27)
 			tokenAddr := eng.repo.GetCMState(cmAddr).UnderlyingToken
 			token := eng.repo.GetToken(tokenAddr)
 			poolToCI[cmAddr] = &core.CumIndexAndUToken{
@@ -233,7 +233,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 			continue
 		}
 		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
-		tokenValueInDecimal := utils.GetInt64Decimal(tokenValue, decimal-cumIndexAndUToken.Decimals)
+		tokenValueInDecimal := utils.GetInt64(tokenValue, decimal-cumIndexAndUToken.Decimals)
 		tokenThresholdValue := new(big.Int).Mul(tokenValueInDecimal, tokenLiquidityThreshold.Convert())
 		calThresholdValue = new(big.Int).Add(calThresholdValue, tokenThresholdValue)
 		calTotalValue = new(big.Int).Add(calTotalValue, tokenValueInDecimal)
@@ -336,7 +336,7 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.In
 	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
 
 	value := new(big.Int).Mul(amount, tokenPrice)
-	value = utils.GetInt64Decimal(value, tokenDecimals-usdcDecimals)
+	value = utils.GetInt64(value, tokenDecimals-usdcDecimals)
 	value = new(big.Int).Quo(value, usdcPrice)
 	return value
 }

@@ -107,6 +107,11 @@ func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Cli
 		Contract: NewContract(addr, name, discoveredAt, client),
 		Repo:     repo,
 	}
+	// if obj.FirstLogAt != 0 {
+	// 	obj.LastSync = obj.FirstLogAt - 1
+	// } else {
+	// 	obj.LastSync = discoveredAt - 1
+	// }
 	obj.LastSync = obj.FirstLogAt - 1
 	return obj
 }
