@@ -190,11 +190,7 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 func (mdl *CreditManager) AddCollateralToSession(blockNum int64, sessionId, token string, amount *big.Int) {
 	session := mdl.Repo.GetCreditSession(sessionId)
 	valueInUSD := mdl.Repo.GetValueInUSD(blockNum, token, amount)
-	prevAmtInUSD := big.NewInt(0)
-	if session.CollateralInUSD != nil {
-		prevAmtInUSD = session.CollateralInUSD.Convert()
-	}
-	session.CollateralInUSD = (*core.BigInt)(new(big.Int).Add(prevAmtInUSD, valueInUSD))
+	session.CollateralInUSD = core.AddCoreAndInt(session.CollateralInUSD, valueInUSD)
 }
 
 func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower string, amount *big.Int) error {

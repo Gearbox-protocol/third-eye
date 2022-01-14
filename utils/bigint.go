@@ -1,25 +1,9 @@
 package utils
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"math/big"
-	"strings"
-	"time"
 )
-
-func TsToDateStartTs(ts int64) int64 {
-	year, month, day := time.Unix(ts, 0).Date()
-	return time.Date(year, month, day, 23, 59, 59, 0, time.UTC).Unix()
-}
-func TimeToDate(t time.Time) string {
-	return fmt.Sprintf("%s", t.Format("2006-01-02"))
-}
 
 // maths
 func GetExpFloat(decimals int8) *big.Float {
@@ -104,45 +88,6 @@ func Max(a, b int64) int64 {
 
 // others
 
-func GetCreditManagerEventIds() []string {
-	var ids []string
-	if a, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
-		for _, event := range a.Events {
-			// fmt.Println(event.RawName, event.ID.Hex())
-			// if event.RawName != "ExecuteOrder" {
-			ids = append(ids, event.ID.Hex())
-			// }
-		}
-	}
-	return ids
-}
-
-func Contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-func GetTimeoutCtx(sec int) (context.Context, context.CancelFunc) {
-	//https://blog.golang.org/context
-	timeout, err := time.ParseDuration(fmt.Sprintf("%ds", sec))
-	if err != nil {
-		log.Error(err)
-	}
-	ctx, cancel := context.WithTimeout(context.TODO(), timeout*time.Second)
-	return ctx, cancel
-}
-func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
-	ctx, cancel := GetTimeoutCtx(20)
-	return &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-		Context:     ctx,
-	}, cancel
-}
-
 func GetPrecision(symbol string) int8 {
 	switch symbol {
 	case "USDC":
@@ -168,10 +113,4 @@ func absInt64(a int64) int64 {
 
 func IntDiffMoreThanFraction(oldValue, newValue, diff int64) bool {
 	return absInt64((newValue-oldValue)/oldValue) > diff
-}
-
-func ToJson(obj interface{}) string {
-	str, err := json.Marshal(obj)
-	log.CheckFatal(err)
-	return string(str)
 }

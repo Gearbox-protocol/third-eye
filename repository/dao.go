@@ -32,16 +32,13 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 		Token:    token,
 		Amount:   (*core.BigInt)(amount),
 	})
-	log.Info(blockNum, logID, token, amount)
 	// treasury snapshots
 	currentTime := time.Unix(int64(block.Timestamp), 0)
 	for currentTime.Sub(repo.lastTreasureTime) >= 24*time.Hour {
 		if repo.lastTreasureTime.Unix() == 0 {
-			year, month, day := currentTime.Date()
-			repo.lastTreasureTime = time.Date(year, month, day-1, 23, 59, 59, 0, time.UTC)
+			repo.lastTreasureTime = utils.TimeToDateEndTime(currentTime.AddDate(0, 0, -1))
 		} else {
-			year, month, day := repo.lastTreasureTime.Date()
-			repo.lastTreasureTime = time.Date(year, month, day+1, 23, 59, 59, 0, time.UTC)
+			repo.lastTreasureTime = utils.TimeToDateEndTime(repo.lastTreasureTime.AddDate(0, 0, 1))
 		}
 		repo.saveTreasurySnapshot()
 	}
@@ -61,14 +58,13 @@ func (repo *Repository) saveTreasurySnapshot() {
 	for token, amt := range *repo.treasurySnapshot.Balances {
 		balances[token] = amt
 	}
-	log.Info(repo.lastTreasureTime.Unix())
 	tss := &core.TreasurySnapshot{
 		Date:     utils.TimeToDate(repo.lastTreasureTime),
 		BlockNum: blockDate.BlockNum,
 		Balances: &balances,
 	}
-	log.Info(utils.ToJson(tss))
 	repo.CalFieldsOfTreasurySnapshot(blockDate.BlockNum, tss)
+	log.Info(utils.ToJson(tss))
 	repo.setAndGetBlock(blockDate.BlockNum).AddTreasurySnapshot(tss)
 }
 
@@ -89,7 +85,6 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 }
 
 func (repo *Repository) GetPriceInUSD(blockNum int64, token string) (price *big.Int) {
-	log.Info(token)
 	tokenObj, err := repo.getTokenWithError(token)
 	log.CheckFatal(err)
 	uTokenAndPool := repo.dieselTokens[token]
@@ -118,13 +113,13 @@ func (repo *Repository) loadLastTreasuryTs() {
 		WHERE id in (SELECT max(block_num) FROM treasury_snapshots)`).Find(&data).Error; err != nil {
 		log.Fatal(err)
 	}
-	repo.lastTreasureTime = time.Unix(data.LastCalculatedAt, 0)
+	repo.lastTreasureTime = utils.TimeToDateEndTime(time.Unix(data.LastCalculatedAt, 0))
 }
 
 func (repo *Repository) loadBlockDatePair() {
 	data := []*core.BlockDate{}
 	sql := `select b.*, a.timestamp from blocks a 
-	JOIN (select to_timestamp(timestamp)::date as date,max(id) as block_num from blocks group by date) b 
+	JOIN (select timezone('UTC', to_timestamp(timestamp))::date as date,max(id) as block_num from blocks group by date) b 
 	ON a.id=b.block_num order by block_num`
 	if err := repo.db.Raw(sql).Find(&data).Error; err != nil {
 		log.Fatal(err)
@@ -135,7 +130,11 @@ func (repo *Repository) loadBlockDatePair() {
 }
 
 func (repo *Repository) addBlockDate(entry *core.BlockDate) {
-	repo.BlockDatePairs[utils.TsToDateStartTs(entry.Timestamp)] = entry
+	ts := utils.TimeToDateEndTs(time.Unix(entry.Timestamp, 0))
+	previousEntry := repo.BlockDatePairs[ts]
+	if previousEntry == nil || previousEntry.BlockNum < entry.BlockNum {
+		repo.BlockDatePairs[ts] = entry
+	}
 }
 
 func (repo *Repository) loadTreasurySnapshot() {
@@ -144,6 +143,8 @@ func (repo *Repository) loadTreasurySnapshot() {
 	if err := repo.db.Raw(sql).Find(&ss).Error; err != nil {
 		log.Fatal(err)
 	}
-	ss.Balances = &core.JsonFloatMap{}
+	if ss.Balances == nil {
+		ss.Balances = &core.JsonFloatMap{}
+	}
 	repo.treasurySnapshot = &ss
 }

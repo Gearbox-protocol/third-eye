@@ -17,8 +17,9 @@ type TreasuryTransfer struct {
 }
 
 type BlockDate struct {
-	BlockNum  int64 `gorm:"column:block_num"`
-	Timestamp int64 `gorm:"column:timestamp"`
+	Date      string `gorm:"column:date"`
+	BlockNum  int64  `gorm:"column:block_num"`
+	Timestamp int64  `gorm:"column:timestamp"`
 }
 
 type TreasurySnapshot struct {

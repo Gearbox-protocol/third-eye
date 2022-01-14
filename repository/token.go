@@ -111,7 +111,8 @@ func (repo *Repository) GetValueInUSD(blockNum int64, token string, amount *big.
 	}
 	usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), common.HexToAddress(repo.USDCAddr))
 	log.CheckFatal(err)
-	return usdcAmount
+	// convert to 8 decimals
+	return new(big.Int).Mul(usdcAmount, big.NewInt(100))
 }
 
 func (repo *Repository) GetTokens() []string {
