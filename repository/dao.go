@@ -32,7 +32,7 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 		Token:    token,
 		Amount:   (*core.BigInt)(amount),
 	})
-	log.Info(blockNum, logID, token,amount)
+	log.Info(blockNum, logID, token, amount)
 	// treasury snapshots
 	currentTime := time.Unix(int64(block.Timestamp), 0)
 	for currentTime.Sub(repo.lastTreasureTime) >= 24*time.Hour {
@@ -63,9 +63,9 @@ func (repo *Repository) saveTreasurySnapshot() {
 	}
 	log.Info(repo.lastTreasureTime.Unix())
 	tss := &core.TreasurySnapshot{
-		Date:      utils.TimeToDate(repo.lastTreasureTime),
+		Date:     utils.TimeToDate(repo.lastTreasureTime),
 		BlockNum: blockDate.BlockNum,
-		Balances:  &balances,
+		Balances: &balances,
 	}
 	log.Info(utils.ToJson(tss))
 	repo.CalFieldsOfTreasurySnapshot(blockDate.BlockNum, tss)
@@ -78,7 +78,7 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.Tr
 	for token, amt := range *tss.Balances {
 		price := repo.GetPriceInUSD(blockNum, token)
 		prices[token] = utils.GetFloat64Decimal(price, 8)
-		totalValueInUSD += amt*prices[token]
+		totalValueInUSD += amt * prices[token]
 	}
 	tss.PricesInUSD = &prices
 	tss.ValueInUSD = totalValueInUSD
