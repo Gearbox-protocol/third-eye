@@ -24,16 +24,16 @@ type BlockDate struct {
 type TreasurySnapshot struct {
 	BlockNum   int64          `gorm:"column:block_num"`
 	Date        string         `gorm:"column:date_str"`
-	PricesInUSD *JsonBigIntMap `gorm:"column:prices_in_usd"`
-	Balances    *JsonBigIntMap `gorm:"column:balances"`
+	PricesInUSD *JsonFloatMap `gorm:"column:prices_in_usd"`
+	Balances    *JsonFloatMap `gorm:"column:balances"`
 	ValueInUSD  float64        `gorm:"column:value_in_usd"`
 }
 
 type TreasurySnapshotModel2 struct {
 	BlockNum   int64          `gorm:"column:block_num;primaryKey"`
 	Date        string         `gorm:"column:date_str"`
-	PricesInUSD *JsonBigIntMap `gorm:"column:prices_in_usd"`
-	Balances    *JsonBigIntMap `gorm:"column:balances"`
+	PricesInUSD *JsonFloatMap `gorm:"column:prices_in_usd"`
+	Balances    *JsonFloatMap `gorm:"column:balances"`
 	ValueInUSD  float64        `gorm:"column:value_in_usd"`
 }
 

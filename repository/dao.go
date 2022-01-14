@@ -50,16 +50,16 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 	balance := (*repo.treasurySnapshot.Balances)[token]
 	tokenObj, err := repo.getTokenWithError(token)
 	log.CheckFatal(err)
-	utils.GetFloat64Decimal(amount, tokenObj.Decimals)
-	(*repo.treasurySnapshot.Balances)[token] = core.AddCoreAndInt(balance, amount)
+	amt := utils.GetFloat64Decimal(amount, tokenObj.Decimals)
+	(*repo.treasurySnapshot.Balances)[token] = balance + amt
 }
 
 func (repo *Repository) saveTreasurySnapshot() {
 	ts := repo.lastTreasureTime.Unix()
 	blockDate := repo.BlockDatePairs[ts]
-	balances := core.JsonBigIntMap{}
+	balances := core.JsonFloatMap{}
 	for token, amt := range *repo.treasurySnapshot.Balances {
-		balances[token] = core.NewBigInt(amt)
+		balances[token] = amt
 	}
 	log.Info(repo.lastTreasureTime.Unix())
 	tss := &core.TreasurySnapshot{
@@ -74,12 +74,11 @@ func (repo *Repository) saveTreasurySnapshot() {
 
 func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.TreasurySnapshot) {
 	var totalValueInUSD float64
-	prices := core.JsonBigIntMap{}
+	prices := core.JsonFloatMap{}
 	for token, amt := range *tss.Balances {
-		price, value := repo.GetPriceAndValInUSD(blockNum, token, amt.Convert())
-		prices[token] = (*core.BigInt)(price)
-		valueInUSD := utils.GetFloat64Decimal(value, 8)
-		totalValueInUSD += valueInUSD
+		price := repo.GetPriceInUSD(blockNum, token)
+		prices[token] = utils.GetFloat64Decimal(price, 8)
+		totalValueInUSD += amt*prices[token]
 	}
 	tss.PricesInUSD = &prices
 	tss.ValueInUSD = totalValueInUSD
@@ -89,14 +88,13 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
 }
 
-func (repo *Repository) GetPriceAndValInUSD(blockNum int64, token string, amount *big.Int) (price, value *big.Int) {
+func (repo *Repository) GetPriceInUSD(blockNum int64, token string) (price *big.Int) {
 	log.Info(token)
 	tokenObj, err := repo.getTokenWithError(token)
 	log.CheckFatal(err)
 	uTokenAndPool := repo.dieselTokens[token]
 	if token == repo.GearTokenAddr {
 		price = big.NewInt(0)
-		value = big.NewInt(0)
 	} else if uTokenAndPool != nil {
 		price = repo.GetValueInUSD(blockNum, uTokenAndPool.UToken, utils.GetExpInt(tokenObj.Decimals))
 		pool, err := poolService.NewPoolService(common.HexToAddress(uTokenAndPool.Pool), repo.client)
@@ -111,7 +109,6 @@ func (repo *Repository) GetPriceAndValInUSD(blockNum int64, token string, amount
 	} else {
 		price = repo.GetValueInUSD(blockNum, token, utils.GetExpInt(tokenObj.Decimals))
 	}
-	value = utils.GetInt64(new(big.Int).Mul(price, amount), tokenObj.Decimals)
 	return
 }
 
@@ -147,6 +144,6 @@ func (repo *Repository) loadTreasurySnapshot() {
 	if err := repo.db.Raw(sql).Find(&ss).Error; err != nil {
 		log.Fatal(err)
 	}
-	ss.Balances = &core.JsonBigIntMap{}
+	ss.Balances = &core.JsonFloatMap{}
 	repo.treasurySnapshot = &ss
 }
