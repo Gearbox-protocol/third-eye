@@ -96,11 +96,8 @@ func (repo *Repository) Flush() error {
 	}
 
 	// save current treasury snapshot
-	// err = tx.Clauses(clause.OnConflict{
-	// 	UpdateAll: true,
-	// }).Create(repo.treasurySnapshot).Error
 	err = tx.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "ts"}},
+		Columns:   []clause.Column{{Name: "block_num"}},
 		DoUpdates: clause.AssignmentColumns([]string{"date_str", "prices_in_usd", "balances", "value_in_usd"}),
 	}).Create(repo.treasurySnapshot).Error
 	log.CheckFatal(err)

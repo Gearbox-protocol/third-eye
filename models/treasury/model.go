@@ -50,7 +50,7 @@ func (mdl *Treasury) OnLog(txLog types.Log) {
 	case core.Topic("Transfer(address,address,uint256)"):
 		from := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		to := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
-		value, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
+		value, ok := new(big.Int).SetString(common.BytesToHash(txLog.Data).Hex()[2:], 16)
 		if !ok {
 			log.Fatal("Failed parsing value")
 		}
@@ -89,11 +89,13 @@ func (mdl *Treasury) Query(queryTill int64, wg *sync.WaitGroup) {
 	// from treasury to other address
 	logs, err := mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, treasuryAddrTopic, otherAddrTopic))
 	log.CheckFatal(err)
+	log.Info(queryFrom,queryTill, len(logs))
 	for _, log := range logs {
 		mdl.OnLog(log)
 	}
 	// from other address to treasury
 	logs, err = mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, otherAddrTopic, treasuryAddrTopic))
+	log.Info(queryFrom,queryTill, len(logs))
 	log.CheckFatal(err)
 	for _, log := range logs {
 		mdl.OnLog(log)

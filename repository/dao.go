@@ -32,21 +32,25 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 		Token:    token,
 		Amount:   (*core.BigInt)(amount),
 	})
+	log.Info(blockNum, logID, token,amount)
 	// treasury snapshots
 	currentTime := time.Unix(int64(block.Timestamp), 0)
 	for currentTime.Sub(repo.lastTreasureTime) >= 24*time.Hour {
 		if repo.lastTreasureTime.Unix() == 0 {
 			year, month, day := currentTime.Date()
-			repo.lastTreasureTime = time.Date(year, month, day-1, 0, 0, 0, 0, time.UTC)
+			repo.lastTreasureTime = time.Date(year, month, day-1, 23, 59, 59, 0, time.UTC)
 		} else {
 			year, month, day := repo.lastTreasureTime.Date()
-			repo.lastTreasureTime = time.Date(year, month, day+1, 0, 0, 0, 0, time.UTC)
+			repo.lastTreasureTime = time.Date(year, month, day+1, 23, 59, 59, 0, time.UTC)
 		}
 		repo.saveTreasurySnapshot()
 	}
 	// set the current treasury snapshot fields
 	repo.treasurySnapshot.Date = utils.TimeToDate(currentTime)
 	balance := (*repo.treasurySnapshot.Balances)[token]
+	tokenObj, err := repo.getTokenWithError(token)
+	log.CheckFatal(err)
+	utils.GetFloat64Decimal(amount, tokenObj.Decimals)
 	(*repo.treasurySnapshot.Balances)[token] = core.AddCoreAndInt(balance, amount)
 }
 
@@ -57,11 +61,13 @@ func (repo *Repository) saveTreasurySnapshot() {
 	for token, amt := range *repo.treasurySnapshot.Balances {
 		balances[token] = core.NewBigInt(amt)
 	}
+	log.Info(repo.lastTreasureTime.Unix())
 	tss := &core.TreasurySnapshot{
 		Date:      utils.TimeToDate(repo.lastTreasureTime),
-		Timestamp: blockDate.Timestamp,
+		BlockNum: blockDate.BlockNum,
 		Balances:  &balances,
 	}
+	log.Info(utils.ToJson(tss))
 	repo.CalFieldsOfTreasurySnapshot(blockDate.BlockNum, tss)
 	repo.setAndGetBlock(blockDate.BlockNum).AddTreasurySnapshot(tss)
 }
@@ -75,6 +81,7 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.Tr
 		valueInUSD := utils.GetFloat64Decimal(value, 8)
 		totalValueInUSD += valueInUSD
 	}
+	tss.PricesInUSD = &prices
 	tss.ValueInUSD = totalValueInUSD
 }
 
@@ -83,7 +90,9 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 }
 
 func (repo *Repository) GetPriceAndValInUSD(blockNum int64, token string, amount *big.Int) (price, value *big.Int) {
-	tokenObj := repo.GetToken(token)
+	log.Info(token)
+	tokenObj, err := repo.getTokenWithError(token)
+	log.CheckFatal(err)
 	uTokenAndPool := repo.dieselTokens[token]
 	if token == repo.GearTokenAddr {
 		price = big.NewInt(0)
@@ -102,13 +111,14 @@ func (repo *Repository) GetPriceAndValInUSD(blockNum int64, token string, amount
 	} else {
 		price = repo.GetValueInUSD(blockNum, token, utils.GetExpInt(tokenObj.Decimals))
 	}
-	value = utils.GetInt64(new(big.Int).Mul(price, amount), 8)
+	value = utils.GetInt64(new(big.Int).Mul(price, amount), tokenObj.Decimals)
 	return
 }
 
 func (repo *Repository) loadLastTreasuryTs() {
 	data := core.DebtSync{}
-	if err := repo.db.Raw("SELECT max(ts) AS last_calculated_at FROM treasury_snapshots").Find(&data).Error; err != nil {
+	if err := repo.db.Raw(`SELECT timestamp AS last_calculated_at FROM blocks 
+		WHERE id in (SELECT max(block_num) FROM treasury_snapshots)`).Find(&data).Error; err != nil {
 		log.Fatal(err)
 	}
 	repo.lastTreasureTime = time.Unix(data.LastCalculatedAt, 0)
@@ -133,7 +143,7 @@ func (repo *Repository) addBlockDate(entry *core.BlockDate) {
 
 func (repo *Repository) loadTreasurySnapshot() {
 	ss := core.TreasurySnapshot{}
-	sql := `SELECT * FROM treasury_snapshots WHERE ts=0`
+	sql := `SELECT * FROM treasury_snapshots WHERE block_num=0`
 	if err := repo.db.Raw(sql).Find(&ss).Error; err != nil {
 		log.Fatal(err)
 	}

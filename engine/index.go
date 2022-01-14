@@ -118,8 +118,8 @@ func (e *Engine) sync(syncTill int64) {
 		kit.Reset(lvlIndex)
 		wg.Wait()
 	}
-	e.FlushAndDebt(syncTill)
 	e.repo.CalCurrentTreasuryValue(syncTill)
+	e.FlushAndDebt(syncTill)
 }
 
 func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {

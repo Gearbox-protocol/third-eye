@@ -23,8 +23,8 @@ type (
 		FastCheckParams   []*FastCheckParams       `gorm:"foreignKey:block_num"`
 		eventBalances     SortedEventbalances      `gorm:"-"`
 		pnlOnCM           map[string]*PnlOnRepay   `gorm:"-"`
-		treasuryTransfers []*TreasuryTransfer      `gorm:"foreignKey:block_num"`
-		treasurySnapshots []*TreasurySnapshot      `gorm:"foreignKey:timestamp"`
+		TreasuryTransfers []*TreasuryTransfer      `gorm:"foreignKey:block_num"`
+		TreasurySnapshots []*TreasurySnapshotModel2      `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -69,11 +69,17 @@ func (b *Block) AddCreditManagerStats(cms *CreditManagerStat) {
 }
 
 func (b *Block) AddTreasuryTransfer(tt *TreasuryTransfer) {
-	b.treasuryTransfers = append(b.treasuryTransfers, tt)
+	b.TreasuryTransfers = append(b.TreasuryTransfers, tt)
 }
 
 func (b *Block) AddTreasurySnapshot(tss *TreasurySnapshot) {
-	b.treasurySnapshots = append(b.treasurySnapshots, tss)
+	b.TreasurySnapshots = append(b.TreasurySnapshots, &TreasurySnapshotModel2{
+		BlockNum: tss.BlockNum,
+		Date: tss.Date,
+		PricesInUSD: tss.PricesInUSD,
+		ValueInUSD: tss.ValueInUSD,
+		Balances: tss.Balances,
+	})
 }
 
 func (b *Block) GetAllowedTokens() []*AllowedToken {

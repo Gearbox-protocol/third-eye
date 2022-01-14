@@ -15,10 +15,10 @@ import (
 
 func TsToDateStartTs(ts int64) int64 {
 	year, month, day := time.Unix(ts, 0).Date()
-	return time.Date(year, month, day, 0, 0, 0, 0, time.UTC).Unix()
+	return time.Date(year, month, day, 23, 59, 59, 0, time.UTC).Unix()
 }
 func TimeToDate(t time.Time) string {
-	return fmt.Sprintf("%q", t.Format("2015-02-25"))
+	return fmt.Sprintf("%s", t.Format("2006-01-02"))
 }
 
 // maths
