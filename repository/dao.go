@@ -1,12 +1,9 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/poolService"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"time"
 )
@@ -71,10 +68,12 @@ func (repo *Repository) saveTreasurySnapshot() {
 
 func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.TreasurySnapshot) {
 	var totalValueInUSD float64
-	prices := core.JsonFloatMap{}
+	var tokenAddrs []string
+	for token := range *tss.Balances {
+		tokenAddrs = append(tokenAddrs, token)
+	}
+	prices := repo.GetPriceInUSD(blockNum, tokenAddrs)
 	for token, amt := range *tss.Balances {
-		price := repo.GetPriceInUSD(blockNum, token)
-		prices[token] = utils.GetFloat64Decimal(price, 8)
 		totalValueInUSD += amt * prices[token]
 	}
 	tss.PricesInUSD = &prices
@@ -85,27 +84,35 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
 }
 
-func (repo *Repository) GetPriceInUSD(blockNum int64, token string) (price *big.Int) {
-	tokenObj, err := repo.getTokenWithError(token)
-	log.CheckFatal(err)
-	uTokenAndPool := repo.dieselTokens[token]
-	if token == repo.GearTokenAddr {
-		price = big.NewInt(0)
-	} else if uTokenAndPool != nil {
-		price = repo.GetValueInUSD(blockNum, uTokenAndPool.UToken, utils.GetExpInt(tokenObj.Decimals))
-		pool, err := poolService.NewPoolService(common.HexToAddress(uTokenAndPool.Pool), repo.client)
-		log.CheckFatal(err)
-		opts := &bind.CallOpts{
-			BlockNumber: big.NewInt(blockNum),
+func (repo *Repository) GetPriceInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+	priceByToken := core.JsonFloatMap{}
+	var tokenForCalls []string
+	var poolForDieselRate []string
+	for _, token := range tokenAddrs {
+		uTokenAndPool := repo.dieselTokens[token]
+		if uTokenAndPool != nil {
+			tokenForCalls = append(tokenForCalls, uTokenAndPool.UToken)
+			poolForDieselRate = append(poolForDieselRate, uTokenAndPool.Pool)
+		} else {
+			tokenForCalls = append(tokenForCalls, token)
 		}
-		dieselRate, err := pool.GetDieselRateRAY(opts)
-		log.CheckFatal(err)
-		price = new(big.Int).Mul(dieselRate, price)
-		price = utils.GetInt64(price, 27)
-	} else {
-		price = repo.GetValueInUSD(blockNum, token, utils.GetExpInt(tokenObj.Decimals))
 	}
-	return
+	prices, dieselRates := repo.getPricesInBatch(blockNum, false, tokenForCalls, poolForDieselRate)
+	var poolIndex int
+	for i, token := range tokenAddrs {
+		var price *big.Int
+		uTokenAndPool := repo.dieselTokens[token]
+		if uTokenAndPool != nil {
+			dieselRate := dieselRates[poolIndex]
+			poolIndex++
+			price = new(big.Int).Mul(dieselRate, prices[i])
+			price = utils.GetInt64(price, 27)
+		} else {
+			price = prices[i]
+		}
+		priceByToken[token] = utils.GetFloat64Decimal(price, 8)
+	}
+	return priceByToken
 }
 
 func (repo *Repository) loadLastTreasuryTs() {

@@ -63,50 +63,53 @@ func NewContract(address, contractName string, discoveredAt int64, client *ethcl
 	return con
 }
 
-func (c *Contract) GetAbi() {
+func GetAbi(contractName string) *abi.ABI {
 
 	metadataMap := map[string]*bind.MetaData{
 
 		// Configuration
-		"ACL":               aCL.ACLMetaData,
-		"AddressProvider":   addressProvider.AddressProviderMetaData,
-		"ACLTrait":          aCLTrait.ACLTraitMetaData,
-		"ContractsRegister": contractsRegister.ContractsRegisterMetaData,
+		ACL:              aCL.ACLMetaData,
+		AddressProvider:  addressProvider.AddressProviderMetaData,
+		"ACLTrait":       aCLTrait.ACLTraitMetaData,
+		ContractRegister: contractsRegister.ContractsRegisterMetaData,
 
 		// Core
-		"AccountFactory": accountFactory.AccountFactoryMetaData,
-		"CreditAccount":  creditAccount.CreditAccountMetaData,
-		"WETHGateway":    wETHGateway.WETHGatewayMetaData,
+		AccountFactory:  accountFactory.AccountFactoryMetaData,
+		"CreditAccount": creditAccount.CreditAccountMetaData,
+		"WETHGateway":   wETHGateway.WETHGatewayMetaData,
 
 		// Oracle
-		"PriceOracle": priceOracle.PriceOracleMetaData,
+		PriceOracle: priceOracle.PriceOracleMetaData,
 
 		// Pool
-		"CreditManager":           creditManager.CreditManagerMetaData,
+		CreditManager:             creditManager.CreditManagerMetaData,
 		"LinearInterestRateModel": linearInterestRateModel.LinearInterestRateModelMetaData,
-		"CreditFilter":            &bind.MetaData{ABI: creditFilter.CreditFilterABI},
-		"PoolService":             poolService.PoolServiceMetaData,
+		CreditFilter:              &bind.MetaData{ABI: creditFilter.CreditFilterABI},
+		Pool:                      poolService.PoolServiceMetaData,
 
 		// GetUnderlyingToken
 		"DieselToken": dieselToken.DieselTokenMetaData,
-		"GearToken":   gearToken.GearTokenMetaData,
+		GearToken:     gearToken.GearTokenMetaData,
 		"TokenMock":   tokenMock.TokenMockMetaData,
 	}
-	abiStr, ok := metadataMap[c.ContractName]
+	abiStr, ok := metadataMap[contractName]
 	if !ok {
-		log.Fatalf("ABI for %s doesn't exists", c.ContractName)
+		log.Fatalf("ABI for %s doesn't exists", contractName)
 	}
 
 	abi, err := abiStr.GetAbi()
 	if err != nil {
-		log.Infof("Cant get ABI for %s", c.ContractName)
+		log.Infof("Cant get ABI for %s", contractName)
 		log.Fatal(err)
 	}
 
-	c.ABI = abi
+	return abi
 }
 
 // setter
+func (c *Contract) GetAbi() {
+	c.ABI = GetAbi(c.ContractName)
+}
 func (c *Contract) SetAddress(addr string) {
 	c.Address = addr
 }
