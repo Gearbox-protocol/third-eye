@@ -181,7 +181,7 @@ func (eng *DebtEngine) GetLiquidationTx(sessionId string) string {
 	data := LiquidationTx{}
 	query := `SELECT tx_hash from account_operations 
 		WHERE session_id = ?  AND action like 'LiquidateCreditAccount%'`
-	err := eng.db.Raw(query).Find(&data, sessionId).Error
+	err := eng.db.Raw(query, sessionId).Find(&data).Error
 	log.CheckFatal(err)
 	return data.TxHash
 }

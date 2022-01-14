@@ -109,9 +109,9 @@ func (e *Engine) sync(syncTill int64) {
 			if !adapter.IsDisabled() {
 				wg.Add(1)
 				if adapter.OnlyQueryAllowed() {
-					adapter.Query(syncTill, wg)
+					go adapter.Query(syncTill, wg)
 				} else {
-					e.SyncModel(adapter, syncTill, wg)
+					go e.SyncModel(adapter, syncTill, wg)
 				}
 			}
 		}

@@ -96,11 +96,13 @@ func (repo *Repository) Flush() error {
 	}
 
 	// save current treasury snapshot
-	err = tx.Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "block_num"}},
-		DoUpdates: clause.AssignmentColumns([]string{"date_str", "prices_in_usd", "balances", "value_in_usd"}),
-	}).Create(repo.treasurySnapshot).Error
-	log.CheckFatal(err)
+	if repo.treasurySnapshot.Date != "" {
+		err = tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "block_num"}},
+			DoUpdates: clause.AssignmentColumns([]string{"date_str", "prices_in_usd", "balances", "value_in_usd"}),
+		}).Create(repo.treasurySnapshot).Error
+		log.CheckFatal(err)
+	}
 
 	log.Infof("created blocks sql update in %f sec", time.Now().Sub(now).Seconds())
 	info := tx.Commit()
