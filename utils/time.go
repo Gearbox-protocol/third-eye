@@ -2,9 +2,10 @@ package utils
 
 import (
 	"context"
-	// "github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"math/big"
 	"time"
 )
 
@@ -31,10 +32,10 @@ func GetTimeoutCtx(sec int) (context.Context, context.CancelFunc) {
 	return ctx, cancel
 }
 
-// func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
-// 	ctx, cancel := GetTimeoutCtx(20)
-// 	return &bind.CallOpts{
-// 		BlockNumber: big.NewInt(blockNum),
-// 		Context:     ctx,
-// 	}, cancel
-// }
+func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
+	ctx, cancel := GetTimeoutCtx(20)
+	return &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
+		Context:     ctx,
+	}, cancel
+}

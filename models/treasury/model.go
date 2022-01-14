@@ -89,13 +89,11 @@ func (mdl *Treasury) Query(queryTill int64, wg *sync.WaitGroup) {
 	// from treasury to other address
 	logs, err := mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, treasuryAddrTopic, otherAddrTopic))
 	log.CheckFatal(err)
-	log.Info(queryFrom, queryTill, len(logs))
 	for _, log := range logs {
 		mdl.OnLog(log)
 	}
 	// from other address to treasury
 	logs, err = mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, otherAddrTopic, treasuryAddrTopic))
-	log.Info(queryFrom, queryTill, len(logs))
 	log.CheckFatal(err)
 	for _, log := range logs {
 		mdl.OnLog(log)

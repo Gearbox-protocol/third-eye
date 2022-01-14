@@ -33,7 +33,8 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 		Amount:   (*core.BigInt)(amount),
 	})
 	// treasury snapshots
-	currentTime := time.Unix(int64(block.Timestamp), 0)
+	currentTime := time.Unix(int64(block.Timestamp), 0).UTC()
+	// log.Info(utils.TimeToDate(currentTime), utils.TimeToDate(repo.lastTreasureTime))
 	for currentTime.Sub(repo.lastTreasureTime) >= 24*time.Hour {
 		if repo.lastTreasureTime.Unix() == 0 {
 			repo.lastTreasureTime = utils.TimeToDateEndTime(currentTime.AddDate(0, 0, -1))
@@ -113,7 +114,10 @@ func (repo *Repository) loadLastTreasuryTs() {
 		WHERE id in (SELECT max(block_num) FROM treasury_snapshots)`).Find(&data).Error; err != nil {
 		log.Fatal(err)
 	}
-	repo.lastTreasureTime = utils.TimeToDateEndTime(time.Unix(data.LastCalculatedAt, 0))
+	repo.lastTreasureTime = time.Unix(data.LastCalculatedAt, 0)
+	if repo.lastTreasureTime.Unix() != 0 {
+		repo.lastTreasureTime = utils.TimeToDateEndTime(repo.lastTreasureTime)
+	}
 }
 
 func (repo *Repository) loadBlockDatePair() {
