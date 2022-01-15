@@ -338,7 +338,7 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.In
 	value := new(big.Int).Mul(amount, tokenPrice)
 	value = utils.GetInt64(value, tokenDecimals-usdcDecimals)
 	value = new(big.Int).Quo(value, usdcPrice)
-	return value
+	return new(big.Int).Mul(value, big.NewInt(100))
 }
 
 func (eng *DebtEngine) GetTokenLastPrice(addr string) *big.Int {

@@ -72,7 +72,7 @@ func (rc *Client) errorHandler(err error) bool {
 			log.Error("sleeping due to execution aborted (timeout = 10s)")
 			time.Sleep(2 * time.Second)
 		} else if strings.HasPrefix(err.Error(), "429") {
-			log.Error("sleep because of error: ", err)
+			// log.Error("sleep because of error: ", err)
 			time.Sleep(20 * time.Second)
 		} else if strings.Contains(err.Error(), "project ID does not have access to archive state") {
 			log.Fatal(err)
