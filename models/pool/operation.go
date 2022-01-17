@@ -37,10 +37,11 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		AvailableLiquidity:   utils.GetFloat64Decimal(state.AvailableLiquidity, token.Decimals),
 
 		DepositAPYBI: (*core.BigInt)(state.DepositAPYRAY),
-		DepositAPY:   utils.GetFloat64Decimal(state.DepositAPYRAY, 27),
+		// for 4% is 4 that is why apy is divided by decimal 25 not 27
+		DepositAPY:   utils.GetFloat64Decimal(state.DepositAPYRAY, 25),
 
 		BorrowAPYBI: (*core.BigInt)(state.BorrowAPYRAY),
-		BorrowAPY:   utils.GetFloat64Decimal(state.BorrowAPYRAY, 27),
+		BorrowAPY:   utils.GetFloat64Decimal(state.BorrowAPYRAY, 25),
 
 		DieselRateBI:       (*core.BigInt)(state.DieselRateRAY),
 		DieselRate:         utils.GetFloat64Decimal(state.DieselRateRAY, 27),
