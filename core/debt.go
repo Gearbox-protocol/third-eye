@@ -18,9 +18,9 @@ type Debt struct {
 	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest"`
 	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value"`
 	AmountToPoolBI                  *BigInt `gorm:"-"`
-	ProfitInUSDBI                   *BigInt `gorm:"column:profit_usd_bi"`
-	TotalValueInUSDBI               *BigInt `gorm:"column:total_value_usd_bi"`
-	CollateralInUSDBI               *BigInt `gorm:"column:collateral_usd_bi"`
+	ProfitInUSD                     float64 `gorm:"column:profit_usd"`
+	TotalValueInUSD                 float64 `gorm:"column:total_value_usd"`
+	CollateralInUSD                 float64 `gorm:"column:collateral_usd"`
 }
 
 type CurrentDebt struct {
@@ -35,8 +35,8 @@ type CurrentDebt struct {
 	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value_bi"`
 	AmountToPoolBI                  *BigInt `gorm:"column:amount_to_pool_bi"`
 	AmountToPool                    float64 `gorm:"column:amount_to_pool"`
-	ProfitInUSDBI                   *BigInt `gorm:"column:profit_usd_bi"`
-	CollateralInUSDBI               *BigInt `gorm:"column:collateral_usd_bi"`
+	ProfitInUSD                     float64 `gorm:"column:profit_usd"`
+	CollateralInUSD                 float64 `gorm:"column:collateral_usd"`
 }
 
 func (CurrentDebt) TableName() string {

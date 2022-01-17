@@ -323,9 +323,9 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.C
 	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds)
 	profitInUSD := new(big.Int).Sub(remainingFundsInUSD, sessionSnapshot.CollateralInUSD.Convert())
 	// fields in USD
-	debt.CollateralInUSDBI = core.NewBigInt(sessionSnapshot.CollateralInUSD)
-	debt.ProfitInUSDBI = (*core.BigInt)(profitInUSD)
-	debt.TotalValueInUSDBI = (*core.BigInt)(eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert()))
+	debt.CollateralInUSD = utils.GetFloat64Decimal(sessionSnapshot.CollateralInUSD.Convert(), 8)
+	debt.ProfitInUSD = utils.GetFloat64Decimal(profitInUSD, 8)
+	debt.TotalValueInUSD = utils.GetFloat64Decimal(eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert()), 8)
 }
 
 func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.Int {

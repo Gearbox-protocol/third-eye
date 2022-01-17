@@ -14,3 +14,4 @@ CREATE TABLE debts (
     cal_total_value character varying(80),
     total_value character varying(80)
 );
+create index debts_session_id_index on debts using BTREE (session_id,block_num);

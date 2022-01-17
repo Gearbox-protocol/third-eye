@@ -38,7 +38,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 
 		DepositAPYBI: (*core.BigInt)(state.DepositAPYRAY),
 		// for 4% is 4 that is why apy is divided by decimal 25 not 27
-		DepositAPY:   utils.GetFloat64Decimal(state.DepositAPYRAY, 25),
+		DepositAPY: utils.GetFloat64Decimal(state.DepositAPYRAY, 25),
 
 		BorrowAPYBI: (*core.BigInt)(state.BorrowAPYRAY),
 		BorrowAPY:   utils.GetFloat64Decimal(state.BorrowAPYRAY, 25),
