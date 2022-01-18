@@ -133,7 +133,8 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 func (repo *Repository) CallRankingProcedure() {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if err := repo.db.Raw("CALL rankings();").Error; err != nil {
+	if err := repo.db.Raw("CALL rankings()").Error; err != nil {
 		log.CheckFatal(err)
 	}
+	log.Info("Refreshed rankings by 7/20 days")
 }

@@ -73,9 +73,9 @@ func (e *Engine) SyncHandler() {
 	for {
 		latestBlockNum = e.GetLatestBlockNumber()
 		e.sync(latestBlockNum)
+		e.repo.CallRankingProcedure()
 		log.Infof("Synced till %d sleeping for 5 mins", latestBlockNum)
 		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
-		e.repo.CallRankingProcedure()
 	}
 }
 

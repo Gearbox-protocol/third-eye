@@ -81,11 +81,14 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account)
+	// set balances
 	var err error
 	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
 	if err != nil {
 		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
 	}
+	session.Balances = css.Balances
+	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
@@ -114,11 +117,14 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	// set balances of css and credit session
 	var err error
 	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
 	if err != nil {
 		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
 	}
+	session.Balances = css.Balances
+	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))

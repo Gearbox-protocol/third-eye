@@ -8,7 +8,6 @@ package core
 
 import (
 	"database/sql/driver"
-	"errors"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -96,7 +95,7 @@ func (z *BigInt) MarshalJSON() ([]byte, error) {
 func (z *BigInt) UnmarshalJSON(b []byte) error {
 	value, ok := new(big.Int).SetString(string(b), 10)
 	if !ok {
-		return errors.New("can unmarshap BigInt")
+		return fmt.Errorf("can unmarshal BigInt")
 	}
 
 	*z = *(*BigInt)(value)

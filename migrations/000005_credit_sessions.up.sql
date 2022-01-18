@@ -12,6 +12,7 @@ CREATE TABLE credit_sessions (
     profit varchar(80),
     profit_percent double precision,
     total_value varchar(80),
+    balances jsonb,
     health_factor varchar(80),
     liquidator  varchar(42),
     name text,

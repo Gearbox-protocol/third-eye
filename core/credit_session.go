@@ -13,25 +13,26 @@ const (
 
 type (
 	CreditSession struct {
-		ID               string  `gorm:"primaryKey" json:"id"`
-		Name             string  `gorm:"column:name"`
-		Background       string  `gorm:"column:background"`
-		Status           int     `json:"status"`
-		Borrower         string  `json:"borrower"`
-		CreditManager    string  `json:"creditManager"`
-		Account          string  `json:"account"`
-		Since            int64   `json:"since"`
-		ClosedAt         int64   `json:"closedAt"`
-		InitialAmount    *BigInt `json:"initialAmount"`
-		BorrowedAmount   *BigInt `json:"borrowedAmount"`
-		Profit           *BigInt `json:"profit"`
-		ProfitPercentage float64 `gorm:"column:profit_percent" json:"profitPercentage"`
-		CollateralInUSD  *BigInt `gorm:"<-:false;column:collateral_in_usd"`
-		TotalValueBI     *BigInt `gorm:"column:total_value" json:"totalValue"`
-		HealthFactor     *BigInt `gorm:"column:health_factor" json:"healthFactor"`
-		Score            float64 `json:"score"`
-		IsDirty          bool    `gorm:"-"`
-		Liquidator       string  `gorm:"liquidator"`
+		ID               string       `gorm:"primaryKey" json:"id"`
+		Name             string       `gorm:"column:name"`
+		Background       string       `gorm:"column:background"`
+		Status           int          `json:"status"`
+		Borrower         string       `json:"borrower"`
+		CreditManager    string       `json:"creditManager"`
+		Account          string       `json:"account"`
+		Since            int64        `json:"since"`
+		ClosedAt         int64        `json:"closedAt"`
+		InitialAmount    *BigInt      `json:"initialAmount"`
+		BorrowedAmount   *BigInt      `json:"borrowedAmount"`
+		Balances         *JsonBalance `gorm:"column:balances"`
+		Profit           *BigInt      `json:"profit"`
+		ProfitPercentage float64      `gorm:"column:profit_percent" json:"profitPercentage"`
+		CollateralInUSD  *BigInt      `gorm:"<-:false;column:collateral_in_usd"`
+		TotalValueBI     *BigInt      `gorm:"column:total_value" json:"totalValue"`
+		HealthFactor     *BigInt      `gorm:"column:health_factor" json:"healthFactor"`
+		Score            float64      `json:"score"`
+		IsDirty          bool         `gorm:"-"`
+		Liquidator       string       `gorm:"liquidator"`
 	}
 
 	CreditAccountData struct {
