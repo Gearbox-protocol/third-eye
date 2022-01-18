@@ -1,13 +1,15 @@
 package repository
 
 import (
+	"sync"
+	"time"
+
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"gorm.io/gorm"
-	"sync"
-	"time"
 )
 
 type Repository struct {
@@ -126,4 +128,12 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.setAndGetBlock(eb.BlockNumber).AddEventBalance(&eb)
+}
+
+func (repo *Repository) CallRankingProcedure() {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	if err := repo.db.Raw("CALL rankings();").Error; err != nil {
+		log.CheckFatal(err)
+	}
 }

@@ -86,6 +86,7 @@ type RepositoryI interface {
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64
 	Clear()
+	CallRankingProcedure()
 }
 
 type GearBalance struct {
