@@ -111,7 +111,7 @@ func (e *Engine) sync(syncTill int64) {
 			if !adapter.IsDisabled() {
 				wg.Add(1)
 				if adapter.OnlyQueryAllowed() {
-					go adapter.Query(syncTill, wg)
+					go e.QueryModel(adapter, syncTill, wg)
 				} else {
 					go e.SyncModel(adapter, syncTill, wg)
 				}
@@ -150,11 +150,6 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
 }
 
-func (e *Engine) FlushAndDebt(to int64) {
-	e.repo.Flush()
-	e.debtEng.CalculateDebtAndClear(to)
-}
-
 func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
 	switch txLog.Topics[0] {
 	case core.Topic("Paused"):
@@ -178,4 +173,21 @@ func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
 	default:
 		return false
 	}
+}
+
+func (e *Engine) QueryModel(mdl core.SyncAdapterI, queryTill int64, wg *sync.WaitGroup) {
+	defer wg.Done()
+	if mdl.GetLastSync()+1 > queryTill {
+		return
+	}
+	// if disable block is set disable after that.
+	queryTill = utils.Min(mdl.GetBlockToDisableOn(), queryTill)
+	mdl.Query(queryTill)
+	// after sync
+	mdl.AfterSyncHook(queryTill)
+}
+
+func (e *Engine) FlushAndDebt(to int64) {
+	e.repo.Flush()
+	e.debtEng.CalculateDebtAndClear(to)
 }

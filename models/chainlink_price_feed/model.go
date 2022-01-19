@@ -86,7 +86,7 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 			NewChainlinkPriceFeed(mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo),
 		)
 	}
-	mdl.SetLastSync(syncedTill)
+	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }
 
 func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) string {

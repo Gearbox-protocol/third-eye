@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
-	"sync"
 )
 
 type Treasury struct {
@@ -65,39 +64,20 @@ func (mdl *Treasury) OnLog(txLog types.Log) {
 	}
 }
 
-func (mdl *Treasury) Query(queryTill int64, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (mdl *Treasury) Query(queryTill int64) {
 	queryFrom := mdl.GetLastSync() + 1
-	if queryFrom > queryTill {
-		return
-	}
 	tokenAddrs := mdl.Repo.GetTokens()
 	hexAddrs := []common.Address{}
 
-	topics := [][]common.Hash{
-		{
-			core.Topic("Transfer(address,address,uint256)"),
-		},
-	}
 	treasuryAddrTopic := []common.Hash{
 		common.HexToHash(mdl.Address),
 	}
-	otherAddrTopic := []common.Hash{}
 	for _, tokenAddr := range tokenAddrs {
 		hexAddrs = append(hexAddrs, common.HexToAddress(tokenAddr))
 	}
-	// from treasury to other address
-	logs, err := mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, treasuryAddrTopic, otherAddrTopic))
+	logs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, treasuryAddrTopic)
 	log.CheckFatal(err)
 	for _, log := range logs {
 		mdl.OnLog(log)
 	}
-	// from other address to treasury
-	logs, err = mdl.node.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, otherAddrTopic, treasuryAddrTopic))
-	log.CheckFatal(err)
-	for _, log := range logs {
-		mdl.OnLog(log)
-	}
-	// after sync
-	mdl.AfterSyncHook(queryTill)
 }

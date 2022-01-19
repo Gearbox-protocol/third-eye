@@ -64,5 +64,5 @@ func NewPoolFromAdapter(adapter *core.SyncAdapter) *Pool {
 
 func (mdl *Pool) AfterSyncHook(syncTill int64) {
 	mdl.createPoolStat()
-	mdl.SetLastSync(syncTill)
+	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }

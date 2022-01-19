@@ -97,7 +97,7 @@ func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
 	mdl.onBlockChange()
-	mdl.SetLastSync(syncTill)
+	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }
 
 func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *mainnet.DataTypesCreditAccountDataExtended {
