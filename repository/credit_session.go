@@ -64,6 +64,9 @@ func (repo *Repository) loadAccountToCreditManager() {
 		log.Fatal(err)
 	}
 	for _, entry := range data {
+		if entry.Account == "0x9C612Ca218fB8F40Fc0369BD59E11a4e279C5339" {
+			log.Info(entry)
+		}
 		repo.accountManager.AddAccountDetails(entry)
 	}
 }

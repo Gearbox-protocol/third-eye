@@ -87,6 +87,7 @@ func (repo *Repository) AfterSync(syncTill int64) {
 			repo.setAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
 		}
 	}
+	repo.accountManager.Clear()
 }
 func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)

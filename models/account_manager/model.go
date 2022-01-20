@@ -78,6 +78,7 @@ func (mdl *AccountManager) Query(queryTill int64) {
 		hexAddrs = append(hexAddrs, common.HexToAddress(tokenAddr))
 	}
 	logs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
+	log.Infof("len of logs: %d", len(logs))
 	log.CheckFatal(err)
 	for _, log := range logs {
 		mdl.OnLog(log)
@@ -102,9 +103,28 @@ func (mdl *AccountManager) getAccountAddrs() []string {
 	if mdl.Details == nil {
 		mdl.Details = make(map[string]interface{})
 	}
-	accountAddrs, ok := mdl.Details["accounts"].([]string)
-	if !ok {
-		log.Fatal("parsing accounts list for token transfer failed")
+	var accountAddrs []string
+	if mdl.Details["accounts"] != nil {
+		switch mdl.Details["accounts"].(type) {
+		case []interface{}:
+			accountList, ok := mdl.Details["accounts"].([]interface{})
+			if !ok {
+				panic("parsing accounts list for token transfer failed")
+			}
+			for _, account := range accountList {
+				accountAddr, ok := account.(string)
+				if !ok {
+					log.Fatalf("parsing single account for token transfer failed %v", account)
+				}
+				accountAddrs = append(accountAddrs, accountAddr)
+			}
+		case []string:
+			accountList, ok := mdl.Details["accounts"].([]string)
+			if !ok {
+				panic("parsing accounts list for token transfer failed")
+			}
+			accountAddrs = accountList
+		}
 	}
 	return accountAddrs
 }

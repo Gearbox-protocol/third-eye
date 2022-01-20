@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"sort"
 	"sync"
 )
@@ -17,14 +18,14 @@ type SessionData struct {
 
 type AccountData struct {
 	blockNums    []int64
-	blockToIndex map[int64]int
+	blockPresent map[int64]bool
 	transfers    map[int64]map[string][]*TokenTransfer
 	Details      []*SessionData
 }
 
 func newAccountData() *AccountData {
 	return &AccountData{
-		blockToIndex: map[int64]int{},
+		blockPresent: map[int64]bool{},
 		transfers:    map[int64]map[string][]*TokenTransfer{},
 	}
 }
@@ -35,10 +36,10 @@ func (ad *AccountData) process(tt *TokenTransfer) {
 		ad.transfers[tt.BlockNum] = make(map[string][]*TokenTransfer)
 	}
 	ad.transfers[tt.BlockNum][txHash] = append(ad.transfers[tt.BlockNum][txHash], tt)
-	if ad.blockToIndex[tt.BlockNum] == 0 {
+	if !ad.blockPresent[tt.BlockNum] {
 		ad.blockNums = append(ad.blockNums, tt.BlockNum)
 	}
-	ad.blockToIndex[tt.BlockNum] = 1
+	ad.blockPresent[tt.BlockNum] = true
 }
 
 func (ad *AccountData) deleteTxHash(blockNum int64, txHash string) {
@@ -47,11 +48,14 @@ func (ad *AccountData) deleteTxHash(blockNum int64, txHash string) {
 	}
 }
 
+func (ad *AccountData) Clear() {
+	ad.blockNums = []int64{}
+	ad.blockPresent = make(map[int64]bool)
+	ad.transfers = make(map[int64]map[string][]*TokenTransfer)
+}
+
 func (ad *AccountData) init() {
 	sort.Slice(ad.blockNums, func(i, j int) bool { return ad.blockNums[i] < ad.blockNums[j] })
-	for i, blockNum := range ad.blockNums {
-		ad.blockToIndex[blockNum] = i
-	}
 }
 
 func (ad *AccountData) AddDetails(sd *SessionData) {
@@ -59,6 +63,7 @@ func (ad *AccountData) AddDetails(sd *SessionData) {
 }
 
 func (ad *AccountData) SetStatus(since int64, status int, closedAt int64) {
+	log.Info(utils.ToJson(ad.Details))
 	for _, details := range ad.Details {
 		if since == details.Since {
 			details.Status = status
@@ -84,7 +89,12 @@ func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) (map[int6
 
 		}
 		if detailsInd < 0 {
-			log.Fatal("Token transferred to account before anyone is assigned")
+			log.Fatalf(`Token transferred to account before anyone is assigned. 
+				CreditManager With Since/closed details: %s. 
+				BlockNum with transfers: %v`,
+				utils.ToJson(ad.Details),
+				ad.blockNums,
+			)
 		}
 		details := ad.Details[detailsInd]
 		if details.CreditManager != cm {
@@ -124,6 +134,7 @@ func NewAccountTokenManager() *AccountTokenManager {
 	return &AccountTokenManager{
 		accountToData: make(map[string]*AccountData),
 		mu:            &sync.Mutex{},
+		txToTransfers: make(map[string][]*TokenTransfer),
 	}
 }
 
@@ -158,6 +169,7 @@ func (mgr *AccountTokenManager) AddAccountDetails(sessionData *SessionData) {
 func (mgr *AccountTokenManager) CloseAccountDetails(account string, status int, since, closedAt int64) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
+	log.Info(account, status, since, closedAt)
 	mgr.accountToData[account].SetStatus(since, status, closedAt)
 }
 
@@ -166,9 +178,9 @@ func (mgr *AccountTokenManager) CheckTokenTransfer(cm string, from, to int64) ma
 	defer mgr.mu.Unlock()
 	result := map[int64]map[string][]*TokenTransfer{}
 	for _, dataMdl := range mgr.accountToData {
-		answer, noSessionTxs := dataMdl.GetRemainingTransfer(cm, from, to)
+		remainingTransfers, noSessionTxs := dataMdl.GetRemainingTransfer(cm, from, to)
 		mgr.NoSessionTxs = append(mgr.NoSessionTxs, noSessionTxs...)
-		for blockNum, data := range answer {
+		for blockNum, data := range remainingTransfers {
 			if result[blockNum] == nil {
 				result[blockNum] = make(map[string][]*TokenTransfer)
 			}
@@ -191,8 +203,12 @@ func (mgr *AccountTokenManager) DeleteTxHash(blockNum int64, txHash string) {
 func (mgr *AccountTokenManager) Clear() {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
-	mgr.accountToData = make(map[string]*AccountData)
+	for _, data := range mgr.accountToData {
+		data.Clear()
+	}
 	mgr.txHashToAccounts = make(map[string][]string)
+	mgr.txToTransfers = make(map[string][]*TokenTransfer)
+	mgr.NoSessionTxs = []string{}
 }
 
 func (mgr *AccountTokenManager) Init() {
@@ -207,5 +223,6 @@ func (mgr *AccountTokenManager) GetNoSessionTxs() (tts map[string][]*TokenTransf
 	for _, txHash := range mgr.NoSessionTxs {
 		tts[txHash] = mgr.txToTransfers[txHash]
 	}
+	log.Infof("len of nosessionTxs %d", len(tts))
 	return
 }

@@ -68,8 +68,8 @@ type TokenTransfer struct {
 	LogID    uint    `gorm:"column:log_id;primaryKey"`
 	TxHash   string  `gorm:"column:tx_hash"`
 	Token    string  `gorm:"column:token"`
-	From     string  `gorm:"column:from"`
-	To       string  `gorm:"column:to"`
+	From     string  `gorm:"column:source"`
+	To       string  `gorm:"column:destination"`
 	Amount   *BigInt `gorm:"column:amount"`
 }
 

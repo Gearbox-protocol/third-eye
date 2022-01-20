@@ -35,8 +35,8 @@ create table treasury_transfers (
 create table no_session_transfers (
     amount varchar(80),
     token varchar(42),
-    from varchar(42),
-    to varchar(42),
+    source varchar(42),
+    desination varchar(42),
     block_num integer,
     log_id integer,
     tx_hash varchar(66));

@@ -68,7 +68,8 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 		}
 	}
 }
-// works for newBlockNum >= mdl.lastEventBlock
+
+// works for newBlockNum > mdl.lastEventBlock
 func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
