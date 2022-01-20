@@ -120,7 +120,7 @@ func (e *Engine) sync(syncTill int64) {
 		kit.Reset(lvlIndex)
 		wg.Wait()
 	}
-	e.repo.CalCurrentTreasuryValue(syncTill)
+	e.repo.AfterSync(syncTill)
 	e.FlushAndDebt(syncTill)
 }
 

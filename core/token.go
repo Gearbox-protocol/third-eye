@@ -62,3 +62,17 @@ func CompareBalance(a, b *BigInt, token *CumIndexAndUToken) bool {
 	precision := utils.GetPrecision(token.Symbol)
 	return utils.AlmostSameBigInt(a.Convert(), b.Convert(), token.Decimals-precision)
 }
+
+type TokenTransfer struct {
+	BlockNum int64   `gorm:"column:block_num;primaryKey"`
+	LogID    uint    `gorm:"column:log_id;primaryKey"`
+	TxHash   string  `gorm:"column:tx_hash"`
+	Token    string  `gorm:"column:token"`
+	From     string  `gorm:"column:from"`
+	To       string  `gorm:"column:to"`
+	Amount   *BigInt `gorm:"column:amount"`
+}
+
+func (TokenTransfer) TableName() string {
+	return "no_session_transfers"
+}

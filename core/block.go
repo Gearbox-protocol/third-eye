@@ -7,24 +7,25 @@ import (
 
 type (
 	Block struct {
-		BlockNumber       int64                     `gorm:"primaryKey;column:id"` // Block Number
-		Timestamp         uint64                    `gorm:"column:timestamp"`
-		AccountOperations []*AccountOperation       `gorm:"foreignKey:block_num"`
-		TokenOracles      []*TokenOracle            `gorm:"foreignKey:block_num"`
-		PriceFeeds        []*PriceFeed              `gorm:"foreignKey:block_num"`
-		Protocols         []*Protocol               `gorm:"foreignKey:block_num"`
-		CSS               []*CreditSessionSnapshot  `gorm:"foreignKey:block_num"`
-		PoolStats         []*PoolStat               `gorm:"foreignKey:block_num"`
-		PoolLedgers       []*PoolLedger             `gorm:"foreignKey:block_num"`
-		CMStats           []*CreditManagerStat      `gorm:"foreignKey:block_num"`
-		AllowedTokens     []*AllowedToken           `gorm:"foreignKey:block_num"`
-		DAOOperations     []*DAOOperation           `gorm:"foreignKey:block_num"`
-		Params            []*Parameters             `gorm:"foreignKey:block_num"`
-		FastCheckParams   []*FastCheckParams        `gorm:"foreignKey:block_num"`
-		eventBalances     SortedEventbalances       `gorm:"-"`
-		pnlOnCM           map[string]*PnlOnRepay    `gorm:"-"`
-		TreasuryTransfers []*TreasuryTransfer       `gorm:"foreignKey:block_num"`
-		TreasurySnapshots []*TreasurySnapshotModel2 `gorm:"foreignKey:block_num"`
+		BlockNumber             int64                     `gorm:"primaryKey;column:id"` // Block Number
+		Timestamp               uint64                    `gorm:"column:timestamp"`
+		AccountOperations       []*AccountOperation       `gorm:"foreignKey:block_num"`
+		TokenOracles            []*TokenOracle            `gorm:"foreignKey:block_num"`
+		PriceFeeds              []*PriceFeed              `gorm:"foreignKey:block_num"`
+		Protocols               []*Protocol               `gorm:"foreignKey:block_num"`
+		CSS                     []*CreditSessionSnapshot  `gorm:"foreignKey:block_num"`
+		PoolStats               []*PoolStat               `gorm:"foreignKey:block_num"`
+		PoolLedgers             []*PoolLedger             `gorm:"foreignKey:block_num"`
+		CMStats                 []*CreditManagerStat      `gorm:"foreignKey:block_num"`
+		AllowedTokens           []*AllowedToken           `gorm:"foreignKey:block_num"`
+		DAOOperations           []*DAOOperation           `gorm:"foreignKey:block_num"`
+		Params                  []*Parameters             `gorm:"foreignKey:block_num"`
+		FastCheckParams         []*FastCheckParams        `gorm:"foreignKey:block_num"`
+		eventBalances           SortedEventbalances       `gorm:"-"`
+		pnlOnCM                 map[string]*PnlOnRepay    `gorm:"-"`
+		TreasuryTransfers       []*TreasuryTransfer       `gorm:"foreignKey:block_num"`
+		TreasurySnapshots       []*TreasurySnapshotModel2 `gorm:"foreignKey:block_num"`
+		NoSessionTokenTransfers []*TokenTransfer          `gorm:"foreignKey:block_num"`
 	}
 )
 
@@ -105,6 +106,10 @@ func (b *Block) AddParameters(params *Parameters) {
 
 func (b *Block) AddFastCheckParams(params *FastCheckParams) {
 	b.FastCheckParams = append(b.FastCheckParams, params)
+}
+
+func (b *Block) AddNoSessionTx(tt *TokenTransfer) {
+	b.NoSessionTokenTransfers = append(b.NoSessionTokenTransfers, tt)
 }
 
 func (b *Block) GetCSS() []*CreditSessionSnapshot {

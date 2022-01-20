@@ -18,6 +18,7 @@ type SessionCloseDetails struct {
 	LogId            uint
 	AccountOperation *core.AccountOperation
 }
+
 type CreditManager struct {
 	*core.SyncAdapter
 	contractETH     *creditManager.CreditManager
@@ -96,7 +97,7 @@ func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
-	mdl.onBlockChange()
+	mdl.onBlockChange(syncTill)
 	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }
 

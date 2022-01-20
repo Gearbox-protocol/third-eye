@@ -13,4 +13,5 @@ const (
 	CreditFilter       = "CreditFilter"
 	GearToken          = "GearToken"
 	Treasury           = "Treasury"
+	AccountManager     = "AccountManager"
 )

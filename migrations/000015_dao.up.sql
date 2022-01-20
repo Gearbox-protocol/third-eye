@@ -31,3 +31,12 @@ create table treasury_transfers (
     log_id integer,
     block_num integer,
     PRIMARY KEY (block_num, log_id));
+
+create table no_session_transfers (
+    amount varchar(80),
+    token varchar(42),
+    from varchar(42),
+    to varchar(42),
+    block_num integer,
+    log_id integer,
+    tx_hash varchar(66));

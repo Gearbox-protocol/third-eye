@@ -43,6 +43,7 @@ type SyncAdapterI interface {
 	HasUnderlyingState() bool
 	GetUnderlyingState() interface{}
 	SetUnderlyingState(obj interface{})
+	SetDetails(obj interface{})
 	GetAdapterState() *SyncAdapter
 	OnlyQueryAllowed() bool
 	Query(queryTill int64)
@@ -50,6 +51,9 @@ type SyncAdapterI interface {
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
 	GetDiscoveredAt() int64
+}
+
+func (s *SyncAdapter) SetDetails(obj interface{}) {
 }
 
 func (s *SyncAdapter) DisableOnBlock(currentBlock int64) {

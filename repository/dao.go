@@ -80,6 +80,14 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.Tr
 	tss.ValueInUSD = totalValueInUSD
 }
 
+func (repo *Repository) AfterSync(syncTill int64) {
+	repo.CalCurrentTreasuryValue(syncTill)
+	for _, txs := range repo.accountManager.GetNoSessionTxs() {
+		for _, tx := range txs {
+			repo.setAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
+		}
+	}
+}
 func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
 }
