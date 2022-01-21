@@ -107,7 +107,7 @@ func (repo *Repository) GetMask(blockNum int64, cmAddr, accountAddr string) *big
 	return mask
 }
 
-func (repo *Repository) AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *core.FastCheckParams) {
+func (repo *Repository) AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *core.FastCheckParams) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.setAndGetBlock(fcParams.BlockNum).AddFastCheckParams(fcParams)
@@ -117,6 +117,7 @@ func (repo *Repository) AddFastCheckParams(logID uint, txHash, creditFilter stri
 		oldFCParams = core.NewFastCheckParams()
 	}
 	args := oldFCParams.Diff(fcParams)
+	(*args)["creditManager"] = cm
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: fcParams.BlockNum,
 		LogID:       logID,

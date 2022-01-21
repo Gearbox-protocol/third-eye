@@ -43,7 +43,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("NewFastCheckParameters(uint256,uint256)"):
 		fcParams, err := mdl.contractETH.ParseNewFastCheckParameters(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddFastCheckParams(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &core.FastCheckParams{
+		mdl.Repo.AddFastCheckParams(txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.GetAddress(), &core.FastCheckParams{
 			BlockNum:        blockNum,
 			CreditManager:   creditManager,
 			ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),

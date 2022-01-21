@@ -50,7 +50,7 @@ func (mdl *ACL) OnLog(txLog types.Log) {
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.PausableAdminRemoved,
+			Type:        core.UnpausableAdminRemoved,
 			Args:        &core.Json{"admin": unpausableAdminRemovedEvent.Admin.Hex()},
 		})
 	case core.Topic("OwnershipTransferred(address,address)"):
@@ -61,7 +61,7 @@ func (mdl *ACL) OnLog(txLog types.Log) {
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.PausableAdminRemoved,
+			Type:        core.OwnershipTransferred,
 			Args: &core.Json{
 				"oldOwner": transferEvent.PreviousOwner.Hex(),
 				"newOwner": transferEvent.NewOwner.Hex(),

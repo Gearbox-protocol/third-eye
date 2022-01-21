@@ -79,7 +79,7 @@ type RepositoryI interface {
 	AddRepayOnCM(blockNum int64, cm string, pnl PnlOnRepay)
 	GetRepayOnCM(blockNum int64, cm string) *PnlOnRepay
 	AddParameters(logID uint, txHash string, params *Parameters, token string)
-	AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *FastCheckParams)
+	AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *FastCheckParams)
 	AfterSync(blockNum int64)
 	GetAccountManager() *AccountTokenManager
 	AddAccountAddr(account string)

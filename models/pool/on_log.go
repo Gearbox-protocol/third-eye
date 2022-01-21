@@ -109,7 +109,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.BorrowForbidden,
+			Type:        core.NewWithdrawFee,
 			Args: &core.Json{
 				"token":  mdl.State.UnderlyingToken,
 				"oldFee": withdrawFee.Fee,
@@ -125,7 +125,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.BorrowForbidden,
+			Type:        core.NewExpectedLiquidityLimit,
 			Args: &core.Json{
 				"oldLimit": mdl.State.ExpectedLiquidityLimit,
 				"newLimit": (*core.BigInt)(expectedLiq.NewLimit),

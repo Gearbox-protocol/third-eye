@@ -89,7 +89,7 @@ func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Pa
 		BlockNumber: params.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,
-		Type:  core.EventNewParameters,
+		Type:        core.EventNewParameters,
 		Contract:    params.CreditManager,
 		Args:        args,
 	})
