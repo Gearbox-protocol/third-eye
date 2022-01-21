@@ -43,6 +43,7 @@ type Repository struct {
 	lastTreasureTime time.Time
 	BlockDatePairs   map[int64]*core.BlockDate
 	dieselTokens     map[string]*core.UTokenAndPool
+	accountManager   *core.AccountTokenManager
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
@@ -65,6 +66,7 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		cmFastCheckParams:     make(map[string]*core.FastCheckParams),
 		BlockDatePairs:        make(map[int64]*core.BlockDate),
 		dieselTokens:          make(map[string]*core.UTokenAndPool),
+		accountManager:        core.NewAccountTokenManager(),
 	}
 	r.init()
 	return r
@@ -102,6 +104,8 @@ func (repo *Repository) init() {
 	repo.loadBlockDatePair()
 	repo.loadLastTreasuryTs()
 	repo.loadTreasurySnapshot()
+	// for direct token transfer
+	repo.loadAccountLastSession()
 	// credit_sessions
 	repo.loadCreditSessions(lastDebtSync)
 }
@@ -137,4 +141,11 @@ func (repo *Repository) CallRankingProcedure() {
 		log.CheckFatal(err)
 	}
 	log.Info("Refreshed rankings by 7/20 days")
+}
+
+func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
+	ts := eng.SetAndGetBlock(blockNum).Timestamp
+	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
+		log.Msgf(msg, args...)
+	}
 }

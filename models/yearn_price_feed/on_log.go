@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -21,18 +20,12 @@ func (mdl *YearnPriceFeed) OnLog(txLog types.Log) {
 
 const interval = 25
 
-func (mdl *YearnPriceFeed) Query(queryTill int64, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (mdl *YearnPriceFeed) Query(queryTill int64) {
 	queryFrom := mdl.GetLastSync() + interval
-	if mdl.GetLastSync() > queryTill {
-		return
-	}
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), queryFrom, queryTill)
 	rounds := 0
 	loopStartTime := time.Now()
 	roundStartTime := time.Now()
-	queryTill = utils.Min(mdl.GetBlockToDisableOn(), queryTill)
-	// if disable block is set disable after that.
 	for blockNum := queryFrom; blockNum <= queryTill; blockNum += interval {
 		mdl.queryHandler(blockNum)
 		if rounds%100 == 0 {
@@ -44,8 +37,6 @@ func (mdl *YearnPriceFeed) Query(queryTill int64, wg *sync.WaitGroup) {
 		}
 		rounds++
 	}
-	// after sync
-	mdl.AfterSyncHook(queryTill)
 }
 
 func (mdl *YearnPriceFeed) query(blockNum int64) (*core.PriceFeed, error) {

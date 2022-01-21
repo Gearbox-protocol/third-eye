@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/account_factory"
+	"github.com/Gearbox-protocol/third-eye/models/account_manager"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
@@ -65,6 +66,8 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		return gear_token.NewGearTokenFromAdapter(adapter)
 	case core.Treasury:
 		return treasury.NewTreasuryFromAdapter(adapter)
+	case core.AccountManager:
+		return account_manager.NewAccountManagerFromAdapter(adapter)
 	case core.CreditFilter:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)

@@ -5,6 +5,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
+	"sort"
 )
 
 func (mdl *CreditManager) processExecuteEvents() {
@@ -14,11 +16,79 @@ func (mdl *CreditManager) processExecuteEvents() {
 	}
 }
 
-func (mdl *CreditManager) onBlockChange() {
+func (mdl *CreditManager) ProcessDirectTokenTransfer(oldBlockNum, newBlockNum int64) {
+	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), oldBlockNum, newBlockNum)
+	blockNums := []int64{}
+	for blockNum, _ := range data {
+		blockNums = append(blockNums, blockNum)
+	}
+	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
+	for _, blockNum := range blockNums {
+		mdl.ProcessDirectTransfersOnBlock(blockNum, data[blockNum])
+	}
+}
+
+func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
+	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), mdl.lastEventBlock, newBlockNum)
+	blockNums := []int64{}
+	for blockNum, _ := range data {
+		blockNums = append(blockNums, blockNum)
+	}
+	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
+	if len(blockNums) == 0 || blockNums[0] != mdl.lastEventBlock {
+		mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
+	}
+	for _, blockNum := range blockNums {
+		mdl.ProcessDirectTransfersOnBlock(blockNum, data[blockNum])
+		if blockNum == mdl.lastEventBlock {
+			mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
+		}
+	}
+}
+
+func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*core.TokenTransfer) {
+	for sessionID, txs := range sessionIDToTxs {
+		session := mdl.Repo.GetCreditSession(sessionID)
+		for _, tx := range txs {
+			var amount *big.Int
+			switch session.Account {
+			case tx.From:
+				amount = new(big.Int).Neg(tx.Amount.Convert())
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Withdrawn %v, id: %s", tx, sessionID)
+				log.Fatalf("Token withdrawn directly from account %v", tx)
+			case tx.To:
+				amount = tx.Amount.Convert()
+				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, amount)
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Deposit %v", tx)
+			}
+			if blockNum == mdl.lastEventBlock {
+				mdl.UpdatedSessions[sessionID]++
+			}
+			mdl.Repo.AddAccountOperation(&core.AccountOperation{
+				TxHash:      tx.TxHash,
+				BlockNumber: tx.BlockNum,
+				LogId:       tx.LogID,
+				Borrower:    session.Borrower,
+				SessionId:   sessionID,
+				Dapp:        tx.Token,
+				Action:      "DirectTokenTransfer",
+				Args:        &core.Json{"amount": amount, "to": tx.To, "from": tx.From},
+				AdapterCall: false,
+				Transfers:   &core.Transfers{tx.Token: amount},
+			})
+			if blockNum != mdl.lastEventBlock {
+				mdl.CreateCreditSessionSnapshot(blockNum, sessionID)
+			}
+		}
+	}
+}
+
+// works for newBlockNum > mdl.lastEventBlock
+func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
-		mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
+		mdl.ProcessAccountEvents(newBlockNum)
 		mdl.calculateCMStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
 	}
@@ -34,9 +104,10 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	// for credit manager stats
 	blockNum := int64(txLog.BlockNumber)
 	if mdl.lastEventBlock != blockNum {
-		mdl.onBlockChange()
+		mdl.onBlockChange(blockNum)
 	}
 	mdl.lastEventBlock = blockNum
+	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
 	//-- for credit manager stats
 	switch txLog.Topics[0] {
 	case core.Topic("OpenCreditAccount(address,address,address,uint256,uint256,uint256)"):

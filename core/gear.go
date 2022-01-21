@@ -69,6 +69,7 @@ type RepositoryI interface {
 	GetWETHAddr() string
 	GetUSDCAddr() string
 	// credit manager
+	AddAccountTokenTransfer(tt *TokenTransfer, isFromAccount, isToAccount bool)
 	AddCreditManagerToFilter(cmAddr, cfAddr string)
 	GetMask(blockNum int64, cmAddr, accountAddr string) *big.Int
 	AddCreditManagerStats(cms *CreditManagerStat)
@@ -78,10 +79,13 @@ type RepositoryI interface {
 	GetRepayOnCM(blockNum int64, cm string) *PnlOnRepay
 	AddParameters(logID uint, txHash string, params *Parameters)
 	AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *FastCheckParams)
-	CalCurrentTreasuryValue(blockNum int64)
+	AfterSync(blockNum int64)
+	GetAccountManager() *AccountTokenManager
+	AddAccountAddr(account string)
 	// dao
 	AddDAOOperation(operation *DAOOperation)
 	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)
+	RecentEventMsg(blockNum int64, msg string, args ...interface{})
 	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64

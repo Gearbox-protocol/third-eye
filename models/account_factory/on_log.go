@@ -4,6 +4,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/core/types"
+
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func (mdl *AccountFactory) OnLog(txLog types.Log) {
@@ -23,5 +25,8 @@ func (mdl *AccountFactory) OnLog(txLog types.Log) {
 				"to":            takeForeverEvent.To.Hex(),
 			},
 		})
+	case core.Topic("NewCreditAccount(address)"):
+		accountAddr := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
+		mdl.Repo.AddAccountAddr(accountAddr)
 	}
 }

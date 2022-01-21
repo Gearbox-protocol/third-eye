@@ -7,7 +7,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
-	"time"
 )
 
 type NetworkUI struct {
@@ -37,7 +36,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			if eng.liquidableBlockTracker[debt.SessionId] != nil &&
 				(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
-				eng.ValidLiqMsg(debt.BlockNumber, `HealthFactor safe again: 
+				eng.repo.RecentEventMsg(debt.BlockNumber, `HealthFactor safe again: 
 				SessionId:%s
 				HF: %s@(block:%d) -> %s@(block:%d)`,
 					debt.SessionId,
@@ -57,7 +56,7 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 		!eng.liquidableBlockTracker[debt.SessionId].NotifiedIfLiquidable {
 		urls := eng.networkUIUrl()
 		eng.notifiedIfLiquidable(debt.SessionId, true)
-		eng.ValidLiqMsg(debt.BlockNumber, `HealthFactor low:
+		eng.repo.RecentEventMsg(debt.BlockNumber, `HealthFactor low:
 				Session: %s
 				HF: %s
 				CreditManager: %s/address/%s
@@ -69,13 +68,6 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 			utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
 			urls.ChartUrl, cmAddr, borrower,
 		)
-	}
-}
-
-func (eng *DebtEngine) ValidLiqMsg(blockNum int64, msg string, args ...interface{}) {
-	ts := eng.repo.SetAndGetBlock(blockNum).Timestamp
-	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
-		log.Msgf(msg, args...)
 	}
 }
 

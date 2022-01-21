@@ -119,7 +119,7 @@ func (eng *DebtEngine) ifAccountClosed(sessionId, cmAddr string, closedAt int64,
 			log.Warnf("Session(%s) liquidated at block:%d, but liquidable since block not stored", sessionId, closedAt)
 		}
 		urls := eng.networkUIUrl()
-		eng.ValidLiqMsg(closedAt-1, `Liquidation Alert:
+		eng.repo.RecentEventMsg(closedAt-1, `Liquidation Alert:
 		CreditManager: %s/address/%s
 		Tx: %s/tx/%s
 		Borrower: %s

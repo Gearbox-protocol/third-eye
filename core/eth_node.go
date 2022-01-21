@@ -91,3 +91,24 @@ func (lf *Node) GetReceipt(txHash common.Hash) *types.Receipt {
 	log.CheckFatal(err)
 	return receipt
 }
+
+func (lf *Node) GetLogsForTransfer(queryFrom, queryTill int64, hexAddrs []common.Address, treasuryAddrTopic []common.Hash) ([]types.Log, error) {
+	topics := [][]common.Hash{
+		{
+			Topic("Transfer(address,address,uint256)"),
+		},
+	}
+	otherAddrTopic := []common.Hash{}
+	// from treasury to other address
+	logs, err := lf.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, treasuryAddrTopic, otherAddrTopic))
+	if err != nil {
+		return logs, err
+	}
+
+	// from other address to treasury
+	newLogs, err := lf.GetLogs(queryFrom, queryTill, hexAddrs, append(topics, otherAddrTopic, treasuryAddrTopic))
+	if err != nil {
+		return logs, err
+	}
+	return append(newLogs, logs...), nil
+}

@@ -18,6 +18,7 @@ type SessionCloseDetails struct {
 	LogId            uint
 	AccountOperation *core.AccountOperation
 }
+
 type CreditManager struct {
 	*core.SyncAdapter
 	contractETH     *creditManager.CreditManager
@@ -96,8 +97,15 @@ func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
-	mdl.onBlockChange()
-	mdl.SetLastSync(syncTill)
+	// no logs where detected for current sync
+	if mdl.lastEventBlock == 0 {
+		mdl.ProcessDirectTokenTransfer(mdl.GetLastSync()+1, syncTill+1)
+	}
+	// try with blocknum greater than syncTill
+	// so that if there is direct transfer and some credit manager event
+	// at synctill == mdl.LasteventBlock it is processed
+	mdl.onBlockChange(syncTill + 1)
+	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }
 
 func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *mainnet.DataTypesCreditAccountDataExtended {
