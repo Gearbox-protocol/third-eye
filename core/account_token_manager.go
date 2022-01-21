@@ -63,7 +63,7 @@ func (ad *AccountData) AddDetails(sd *SessionData) {
 }
 
 func (ad *AccountData) SetStatus(since int64, status int, closedAt int64) {
-	log.Info(utils.ToJson(ad.Details))
+	// log.Info(utils.ToJson(ad.Details))
 	for _, details := range ad.Details {
 		if since == details.Since {
 			details.Status = status

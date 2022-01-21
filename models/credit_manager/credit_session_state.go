@@ -134,7 +134,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 
 func (mdl *CreditManager) CreateCreditSessionSnapshot(blockNum int64, sessionId string) {
 	session := mdl.Repo.GetCreditSession(sessionId)
-	data := mdl.GetCreditSessionData(blockNum, sessionId)
+	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
 	css := core.CreditSessionSnapshot{}
 	mdl.Repo.SetBlock(blockNum)
 	css.BlockNum = blockNum

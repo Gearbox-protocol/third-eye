@@ -97,6 +97,10 @@ func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
+	// no logs where detected for current sync
+	if mdl.lastEventBlock == 0 {
+		mdl.ProcessDirectTokenTransfer(mdl.GetLastSync()+1, syncTill+1)
+	}
 	// try with blocknum greater than syncTill
 	// so that if there is direct transfer and some credit manager event
 	// at synctill == mdl.LasteventBlock it is processed

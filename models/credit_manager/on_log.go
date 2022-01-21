@@ -16,6 +16,18 @@ func (mdl *CreditManager) processExecuteEvents() {
 	}
 }
 
+func (mdl *CreditManager) ProcessDirectTokenTransfer(oldBlockNum, newBlockNum int64) {
+	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), oldBlockNum, newBlockNum)
+	blockNums := []int64{}
+	for blockNum, _ := range data {
+		blockNums = append(blockNums, blockNum)
+	}
+	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
+	for _, blockNum := range blockNums {
+		mdl.ProcessDirectTransfersOnBlock(blockNum, data[blockNum])
+	}
+}
+
 func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), mdl.lastEventBlock, newBlockNum)
 	blockNums := []int64{}

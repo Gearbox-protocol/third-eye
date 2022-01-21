@@ -56,7 +56,8 @@ func (repo *Repository) GetSessions() map[string]*core.CreditSession {
 	return repo.sessions
 }
 
-func (repo *Repository) loadAccountToCreditManager() {
+// for account manager
+func (repo *Repository) loadAccountLastSession() {
 	data := []*core.SessionData{}
 	err := repo.db.Raw(`SELECT DISTINCT ON (account) credit_manager, since, status, id, closed_at, account 
 		FROM credit_sessions ORDER BY account, since DESC`).Find(&data).Error
@@ -64,9 +65,6 @@ func (repo *Repository) loadAccountToCreditManager() {
 		log.Fatal(err)
 	}
 	for _, entry := range data {
-		if entry.Account == "0x9C612Ca218fB8F40Fc0369BD59E11a4e279C5339" {
-			log.Info(entry)
-		}
 		repo.accountManager.AddAccountDetails(entry)
 	}
 }

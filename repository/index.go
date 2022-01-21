@@ -105,7 +105,7 @@ func (repo *Repository) init() {
 	repo.loadLastTreasuryTs()
 	repo.loadTreasurySnapshot()
 	// for direct token transfer
-	repo.loadAccountToCreditManager()
+	repo.loadAccountLastSession()
 	// credit_sessions
 	repo.loadCreditSessions(lastDebtSync)
 }

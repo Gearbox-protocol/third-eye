@@ -94,6 +94,7 @@ func (mdl *AccountManager) AddAccount(addr string) {
 func (mdl *AccountManager) populateInternalData() {
 	accountHashes := []common.Hash{}
 	for _, accountAddr := range mdl.getAccountAddrs() {
+		mdl.isAccount[accountAddr] = true
 		accountHashes = append(accountHashes, common.HexToHash(accountAddr))
 	}
 	mdl.AccountHashes = accountHashes
