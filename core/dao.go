@@ -67,4 +67,7 @@ const (
 	UnpausableAdminAdded
 	UnpausableAdminRemoved
 	OwnershipTransferred
+	// for every contract
+	Paused
+	UnPaused
 )

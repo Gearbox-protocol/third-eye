@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"sync"
 	"time"
 )
@@ -141,7 +142,9 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 			break
 		}
 		e.repo.SetBlock(blockNum)
-		mdl.OnLog(txLog)
+		if !e.isEventPausedOrUnParsed(txLog) {
+			mdl.OnLog(txLog)
+		}
 	}
 	// after sync
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
@@ -150,4 +153,29 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 func (e *Engine) FlushAndDebt(to int64) {
 	e.repo.Flush()
 	e.debtEng.CalculateDebtAndClear(to)
+}
+
+func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
+	switch txLog.Topics[0] {
+	case core.Topic("Paused"):
+		e.repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Type:        core.Paused,
+		})
+		return true
+	case core.Topic("UnPaused"):
+		e.repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Type:        core.UnPaused,
+		})
+		return true
+	default:
+		return false
+	}
 }

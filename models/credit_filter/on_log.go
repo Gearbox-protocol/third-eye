@@ -58,7 +58,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("TransferPluginAllowed(address,bool)"):
 		transferPlugin, err := mdl.contractETH.ParseTransferPluginAllowed(txLog)
 		log.CheckFatal(err)
-		args := &core.Json{"plugin": transferPlugin.Pugin, "state": transferPlugin.State}
+		args := &core.Json{"plugin": transferPlugin.Pugin, "state": transferPlugin.State, "creditManager": creditManager}
 		mdl.Repo.AddDAOOperation(&core.DAOOperation{
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),

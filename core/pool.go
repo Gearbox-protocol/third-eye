@@ -1,10 +1,12 @@
 package core
 
 type PoolState struct {
-	Address         string `gorm:"primaryKey"`
-	UnderlyingToken string `gorm:"column:underlying_token"`
-	DieselToken     string `gorm:"column:diesel_token"`
-	IsWETH          bool   `gorm:"column:is_weth"`
+	Address                string  `gorm:"primaryKey"`
+	UnderlyingToken        string  `gorm:"column:underlying_token"`
+	DieselToken            string  `gorm:"column:diesel_token"`
+	IsWETH                 bool    `gorm:"column:is_weth"`
+	ExpectedLiquidityLimit *BigInt `gorm:"column:expected_liq_limit"`
+	WithdrawFee            *BigInt `gorm:"column:withdraw_fee"`
 }
 
 func (PoolState) TableName() string {
