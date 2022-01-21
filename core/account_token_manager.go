@@ -17,14 +17,16 @@ type SessionData struct {
 }
 
 type AccountData struct {
+	Address      string
 	blockNums    []int64
 	blockPresent map[int64]bool
 	transfers    map[int64]map[string][]*TokenTransfer
 	Details      []*SessionData
 }
 
-func newAccountData() *AccountData {
+func newAccountData(addr string) *AccountData {
 	return &AccountData{
+		Address:      addr,
 		blockPresent: map[int64]bool{},
 		transfers:    map[int64]map[string][]*TokenTransfer{},
 	}
@@ -72,6 +74,14 @@ func (ad *AccountData) SetStatus(since int64, status int, closedAt int64) {
 	}
 }
 
+func (ad *AccountData) detailsAssigned() bool {
+	// if the account details is not assigned then
+	// for some other credit manager, when getting remaining transfers
+	// we should skip for this account as it can be different credit manager
+	// that detail is missing currently
+	return len(ad.Details) != 0
+}
+
 // process the transfer events for from <= block < to
 func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) (map[int64]map[string][]*TokenTransfer, []string) {
 	// blockNum => sessionID => tokentranfers
@@ -89,10 +99,13 @@ func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) (map[int6
 
 		}
 		if detailsInd < 0 {
-			log.Fatalf(`Token transferred to account before anyone is assigned. 
+			log.Fatalf(`Token transferred to account(%s) before borrower is assigned.
 				CreditManager With Since/closed details: %s. 
+				session transfers: %v
 				BlockNum with transfers: %v`,
+				ad.Address,
 				utils.ToJson(ad.Details),
+				ad.transfers[blockNum],
 				ad.blockNums,
 			)
 		}
@@ -132,9 +145,10 @@ type AccountTokenManager struct {
 
 func NewAccountTokenManager() *AccountTokenManager {
 	return &AccountTokenManager{
-		accountToData: make(map[string]*AccountData),
-		mu:            &sync.Mutex{},
-		txToTransfers: make(map[string][]*TokenTransfer),
+		accountToData:    make(map[string]*AccountData),
+		mu:               &sync.Mutex{},
+		txToTransfers:    make(map[string][]*TokenTransfer),
+		txHashToAccounts: make(map[string][]string),
 	}
 }
 
@@ -143,14 +157,16 @@ func (mgr *AccountTokenManager) AddTokenTransfer(tt *TokenTransfer, isFromAccoun
 	defer mgr.mu.Unlock()
 	if isFromAccount {
 		if mgr.accountToData[tt.From] == nil {
-			mgr.accountToData[tt.From] = newAccountData()
+			mgr.accountToData[tt.From] = newAccountData(tt.From)
 		}
+		mgr.txHashToAccounts[tt.TxHash] = append(mgr.txHashToAccounts[tt.TxHash], tt.From)
 		mgr.accountToData[tt.From].process(tt)
 	}
 	if isToAccount {
 		if mgr.accountToData[tt.To] == nil {
-			mgr.accountToData[tt.To] = newAccountData()
+			mgr.accountToData[tt.To] = newAccountData(tt.To)
 		}
+		mgr.txHashToAccounts[tt.TxHash] = append(mgr.txHashToAccounts[tt.TxHash], tt.To)
 		mgr.accountToData[tt.To].process(tt)
 	}
 	mgr.txToTransfers[tt.TxHash] = append(mgr.txToTransfers[tt.TxHash], tt)
@@ -161,7 +177,7 @@ func (mgr *AccountTokenManager) AddAccountDetails(sessionData *SessionData) {
 	defer mgr.mu.Unlock()
 	account := sessionData.Account
 	if mgr.accountToData[account] == nil {
-		mgr.accountToData[account] = newAccountData()
+		mgr.accountToData[account] = newAccountData(account)
 	}
 	mgr.accountToData[account].AddDetails(sessionData)
 }
@@ -178,6 +194,9 @@ func (mgr *AccountTokenManager) CheckTokenTransfer(cm string, from, to int64) ma
 	defer mgr.mu.Unlock()
 	result := map[int64]map[string][]*TokenTransfer{}
 	for _, dataMdl := range mgr.accountToData {
+		if !dataMdl.detailsAssigned() {
+			continue
+		}
 		remainingTransfers, noSessionTxs := dataMdl.GetRemainingTransfer(cm, from, to)
 		mgr.NoSessionTxs = append(mgr.NoSessionTxs, noSessionTxs...)
 		for blockNum, data := range remainingTransfers {

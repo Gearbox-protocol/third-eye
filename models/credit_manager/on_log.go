@@ -54,10 +54,12 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 			switch session.Account {
 			case tx.From:
 				amount = new(big.Int).Neg(tx.Amount.Convert())
-				log.Fatal("Token withdrawn directly from account")
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Withdrawn %v, id: %s", tx, sessionID)
+				log.Fatalf("Token withdrawn directly from account %v", tx)
 			case tx.To:
 				amount = tx.Amount.Convert()
 				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, amount)
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Deposit %v", tx)
 			}
 			if blockNum == mdl.lastEventBlock {
 				mdl.UpdatedSessions[sessionID]++

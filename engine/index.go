@@ -21,7 +21,7 @@ type Engine struct {
 	debtEng core.DebtEngineI
 }
 
-var syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
+var syncBlockBatchSize = 100 * core.NoOfBlocksPerMin
 
 func NewEngine(config *config.Config,
 	ec *ethclient.Client,
@@ -111,9 +111,9 @@ func (e *Engine) sync(syncTill int64) {
 			if !adapter.IsDisabled() {
 				wg.Add(1)
 				if adapter.OnlyQueryAllowed() {
-					go e.QueryModel(adapter, syncTill, wg)
+					e.QueryModel(adapter, syncTill, wg)
 				} else {
-					go e.SyncModel(adapter, syncTill, wg)
+					e.SyncModel(adapter, syncTill, wg)
 				}
 			}
 		}

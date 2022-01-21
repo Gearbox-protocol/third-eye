@@ -85,6 +85,7 @@ type RepositoryI interface {
 	// dao
 	AddDAOOperation(operation *DAOOperation)
 	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)
+	RecentEventMsg(blockNum int64, msg string, args ...interface{})
 	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64

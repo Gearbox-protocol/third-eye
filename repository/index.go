@@ -142,3 +142,10 @@ func (repo *Repository) CallRankingProcedure() {
 	}
 	log.Info("Refreshed rankings by 7/20 days")
 }
+
+func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
+	ts := eng.SetAndGetBlock(blockNum).Timestamp
+	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
+		log.Msgf(msg, args...)
+	}
+}
