@@ -161,7 +161,7 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 				Token:           tokenAddr,
 				Symbol:          token.Symbol,
 				Decimals:        token.Decimals,
-				Price: eng.GetTokenLastPrice(tokenAddr),
+				Price:           eng.GetTokenLastPrice(tokenAddr),
 			}
 			// log.Infof("blockNum%d newInterest:%s tsDiff:%s cumIndexDecimal:%s predicate:%s cumIndex:%s",blockNum ,newInterest, tsDiff, cumIndexNormalized, predicate, cumIndex)
 		}

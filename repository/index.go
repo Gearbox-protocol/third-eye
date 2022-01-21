@@ -4,11 +4,14 @@ import (
 	"sync"
 	"time"
 
+	"fmt"
+
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm"
 )
 
@@ -147,5 +150,41 @@ func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interf
 	ts := eng.SetAndGetBlock(blockNum).Timestamp
 	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
 		log.Msgf(msg, args...)
+	}
+}
+
+type LastSyncAndType struct {
+	Type     string `gorm:"column:type"`
+	LastSync int64  `gorm:"column:last_sync"`
+	Address  string `gorm:"column:address"`
+}
+
+func (obj *LastSyncAndType) String() string {
+	return fmt.Sprintf("%s(%s):%d", obj.Type, obj.Address, obj.LastSync)
+
+}
+func (eng *Repository) InitChecks() {
+	data := []*LastSyncAndType{}
+	err := eng.db.Raw(`SELECT type, address,  last_sync AS last_calculated_at 
+		FROM sync_adapters 
+		WHERE type IN ('AccountManager', 'CreditManager','AccountFactory')`).Find(&data).Error
+	log.CheckFatal(err)
+	var accountManagerLastSync, accountFactoryLastSync int64
+	var cmLastSync int64
+	var str string
+	for _, entry := range data {
+		str += entry.String()
+		switch entry.Type {
+		case core.AccountFactory:
+			accountFactoryLastSync = entry.LastSync
+		case core.AccountManager:
+			accountManagerLastSync = entry.LastSync
+		case core.CreditManager:
+			cmLastSync = utils.Min(entry.LastSync, cmLastSync)
+		}
+	}
+	if accountFactoryLastSync != accountManagerLastSync ||
+		cmLastSync < accountManagerLastSync {
+		log.Fatal("Account manager/credit manager/AccountFactory are not synchronised: ", str)
 	}
 }

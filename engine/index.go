@@ -44,6 +44,7 @@ func NewEngine(config *config.Config,
 
 func (e *Engine) init() {
 	// debt engine initialisation
+	e.repo.InitChecks()
 	e.debtEng.ProcessBackLogs()
 }
 
