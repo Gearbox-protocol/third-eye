@@ -191,3 +191,28 @@ func (e *Engine) FlushAndDebt(to int64) {
 	e.repo.Flush()
 	e.debtEng.CalculateDebtAndClear(to)
 }
+
+func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
+	switch txLog.Topics[0] {
+	case core.Topic("Paused"):
+		e.repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Type:        core.Paused,
+		})
+		return true
+	case core.Topic("UnPaused"):
+		e.repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Type:        core.UnPaused,
+		})
+		return true
+	default:
+		return false
+	}
+}
