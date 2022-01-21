@@ -18,7 +18,7 @@ func (mdl *ACL) OnLog(txLog types.Log) {
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
 			Type:        core.PausableAdminAdded,
-			Args:        &core.Json{"newAdmin": pausableAdminAddedEvent.NewAdmin.Hex()},
+			Args:        &core.Json{"admin": pausableAdminAddedEvent.NewAdmin.Hex()},
 		})
 	case core.Topic("PausableAdminRemoved(address)"):
 		pausableAdminRemovedEvent, err := mdl.contractETH.ParsePausableAdminRemoved(txLog)
@@ -40,7 +40,7 @@ func (mdl *ACL) OnLog(txLog types.Log) {
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
 			Type:        core.UnpausableAdminAdded,
-			Args:        &core.Json{"newAdmin": unpausableAdminAddedEvent.NewAdmin.Hex()},
+			Args:        &core.Json{"admin": unpausableAdminAddedEvent.NewAdmin.Hex()},
 		})
 	case core.Topic("UnpausableAdminRemoved(address)"):
 		unpausableAdminRemovedEvent, err := mdl.contractETH.ParseUnpausableAdminRemoved(txLog)

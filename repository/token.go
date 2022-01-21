@@ -90,6 +90,13 @@ func (repo *Repository) addAllowedTokenState(entry *core.AllowedToken) {
 	tokensForCM[entry.Token] = entry
 }
 
+func (repo *Repository) GetPreviousLiqThreshold(cm, token string) *core.BigInt {
+	if repo.allowedTokens[cm] == nil || repo.allowedTokens[cm][token] == nil {
+		return (*core.BigInt)(new(big.Int))
+	}
+	return repo.allowedTokens[cm][token].LiquidityThreshold
+}
+
 func (repo *Repository) GetActivePriceOracle() (string, error) {
 	oracles := repo.kit.GetAdapterAddressByName(core.PriceOracle)
 	for _, addr := range oracles {

@@ -2,7 +2,9 @@ CREATE TABLE pools (
     address varchar(42) PRIMARY KEY,
     underlying_token varchar(42),
     diesel_token varchar(42),
-    is_weth boolean
+    is_weth boolean,
+    expected_liq_limit varchar(80),
+    withdraw_fee varchar(80)
 );
 
 CREATE TABLE pool_stats (

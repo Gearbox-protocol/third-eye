@@ -14,7 +14,7 @@ func (repo *Repository) AddAllowedProtocol(logID uint, txHash, creditFilter stri
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.blocks[p.BlockNumber].AddAllowedProtocol(p)
-	args := core.Json{"adapter": p.Adapter, "protocol": p.Protocol}
+	args := core.Json{"adapter": p.Adapter, "protocol": p.Protocol, "creditManager": p.CreditManager}
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: p.BlockNumber,
 		LogID:       logID,
@@ -28,7 +28,7 @@ func (repo *Repository) AddAllowedProtocol(logID uint, txHash, creditFilter stri
 func (repo *Repository) DisableProtocol(blockNum int64, logID uint, txHash, cm, creditFilter, protocol string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	args := core.Json{"protocol": protocol}
+	args := core.Json{"protocol": protocol, "creditManager": cm}
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: blockNum,
 		LogID:       logID,
@@ -42,9 +42,15 @@ func (repo *Repository) DisableProtocol(blockNum int64, logID uint, txHash, cm, 
 func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string, atoken *core.AllowedToken) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.addAllowedTokenState(atoken)
 	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
-	args := core.Json{"liqThreshold": atoken.LiquidityThreshold}
+	prevLiqThreshold := repo.GetPreviousLiqThreshold(atoken.CreditManager, atoken.Token)
+	args := core.Json{
+		"liquidityThreshold":       atoken.LiquidityThreshold,
+		"token":                    atoken.Token,
+		"creditManager":            atoken.CreditManager,
+		"prevLiquidationThreshold": prevLiqThreshold,
+	}
+	repo.addAllowedTokenState(atoken)
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: atoken.BlockNumber,
 		LogID:       logID,
@@ -61,6 +67,10 @@ func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, 
 	atoken := repo.allowedTokens[creditManager][token]
 	atoken.DisableBlock = blockNum
 	repo.disabledTokens = append(repo.disabledTokens, atoken)
+	args := core.Json{
+		"token":         token,
+		"creditManager": creditManager,
+	}
 	delete(repo.allowedTokens[creditManager], token)
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: atoken.DisableBlock,
@@ -68,6 +78,7 @@ func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, 
 		TxHash:      txHash,
 		Contract:    creditFilter,
 		Type:        core.TokenAllowed,
+		Args:        &args,
 	})
 }
 

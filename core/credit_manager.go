@@ -68,22 +68,22 @@ func NewParameters() *Parameters {
 
 func (old *Parameters) Diff(new *Parameters) *Json {
 	obj := Json{}
-	if old.MinAmount != new.MinAmount {
+	if old.MinAmount.Cmp(new.MinAmount) != 0 {
 		obj["minAmount"] = []*BigInt{old.MinAmount, new.MinAmount}
 	}
-	if old.MaxAmount != new.MaxAmount {
+	if old.MaxAmount.Cmp(new.MaxAmount) != 0 {
 		obj["maxAmount"] = []*BigInt{old.MaxAmount, new.MaxAmount}
 	}
-	if old.MaxLeverage != new.MaxLeverage {
+	if old.MaxLeverage.Cmp(new.MaxLeverage) != 0 {
 		obj["maxLeverage"] = []*BigInt{old.MaxLeverage, new.MaxLeverage}
 	}
-	if old.FeeInterest != new.FeeInterest {
+	if old.FeeInterest.Cmp(new.FeeInterest) != 0 {
 		obj["feeInterest"] = []*BigInt{old.FeeInterest, new.FeeInterest}
 	}
-	if old.FeeLiquidation != new.FeeLiquidation {
+	if old.FeeLiquidation.Cmp(new.FeeLiquidation) != 0 {
 		obj["feeLiquidation"] = []*BigInt{old.FeeLiquidation, new.FeeLiquidation}
 	}
-	if old.LiquidationDiscount != new.LiquidationDiscount {
+	if old.LiquidationDiscount.Cmp(new.LiquidationDiscount) != 0 {
 		obj["LiquidationDiscount"] = []*BigInt{old.LiquidationDiscount, new.LiquidationDiscount}
 	}
 	return &obj
@@ -104,11 +104,11 @@ func NewFastCheckParams() *FastCheckParams {
 }
 func (old *FastCheckParams) Diff(new *FastCheckParams) *Json {
 	obj := Json{}
-	if old.ChiThreshold != new.ChiThreshold {
+	if old.ChiThreshold.Cmp(new.ChiThreshold) != 0 {
 		obj["chiThreshold"] = []*BigInt{old.ChiThreshold, new.ChiThreshold}
 	}
-	if old.HFCheckInterval != new.HFCheckInterval {
-		obj["hfCheckInterval"] = []*BigInt{old.HFCheckInterval, new.HFCheckInterval}
+	if old.HFCheckInterval.Cmp(new.HFCheckInterval) != 0 {
+		obj["fastDelay"] = []*BigInt{old.HFCheckInterval, new.HFCheckInterval}
 	}
 	return &obj
 }

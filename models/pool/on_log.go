@@ -110,8 +110,13 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
 			Type:        core.BorrowForbidden,
-			Args:        &core.Json{"fee": (*core.BigInt)(withdrawFee.Fee)},
+			Args: &core.Json{
+				"token":  mdl.State.UnderlyingToken,
+				"oldFee": withdrawFee.Fee,
+				"newFee": (*core.BigInt)(withdrawFee.Fee),
+			},
 		})
+		mdl.State.WithdrawFee = (*core.BigInt)(withdrawFee.Fee)
 	case core.Topic("NewExpectedLiquidityLimit(uint256)"):
 		expectedLiq, err := mdl.contractETH.ParseNewExpectedLiquidityLimit(txLog)
 		log.CheckFatal(err)
@@ -121,7 +126,12 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
 			Type:        core.BorrowForbidden,
-			Args:        &core.Json{"newLimit": (*core.BigInt)(expectedLiq.NewLimit)},
+			Args: &core.Json{
+				"oldLimit": mdl.State.ExpectedLiquidityLimit,
+				"newLimit": (*core.BigInt)(expectedLiq.NewLimit),
+				"token":    mdl.State.UnderlyingToken,
+			},
 		})
+		mdl.State.ExpectedLiquidityLimit = (*core.BigInt)(expectedLiq.NewLimit)
 	}
 }

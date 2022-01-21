@@ -42,6 +42,10 @@ func NewBigInt(bi *BigInt) *BigInt {
 	return (*BigInt)(obj)
 }
 
+func (a *BigInt) Cmp(b *BigInt) int {
+	return a.Convert().Cmp(b.Convert())
+}
+
 func DiffMoreThanFraction(oldValue, newValue *BigInt, diff *big.Float) bool {
 	newFloat := new(big.Float).SetInt(newValue.Convert())
 	oldFloat := new(big.Float).SetInt(oldValue.Convert())
