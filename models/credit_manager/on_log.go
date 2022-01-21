@@ -192,7 +192,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 			FeeInterest:         (*core.BigInt)(params.FeeInterest),
 			FeeLiquidation:      (*core.BigInt)(params.FeeLiquidation),
 			LiquidationDiscount: (*core.BigInt)(params.LiquidationDiscount),
-		})
+		}, mdl.State.UnderlyingToken)
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.contractETH.ParseTransferAccount(txLog)

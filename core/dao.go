@@ -70,4 +70,5 @@ const (
 	// for every contract
 	Paused
 	UnPaused
+	EventNewParameters
 )

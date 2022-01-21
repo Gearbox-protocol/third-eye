@@ -74,7 +74,7 @@ func (repo *Repository) GetRepayOnCM(blockNum int64, cmAddr string) *core.PnlOnR
 	return repo.blocks[blockNum].GetRepayOnCM(cmAddr)
 }
 
-func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Parameters) {
+func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Parameters, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.setAndGetBlock(params.BlockNum).AddParameters(params)
@@ -83,13 +83,15 @@ func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Pa
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
 	}
-
+	args := oldCMParams.Diff(params)
+	(*args)["token"] = token
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: params.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,
+		Type:  core.EventNewParameters,
 		Contract:    params.CreditManager,
-		Args:        oldCMParams.Diff(params),
+		Args:        args,
 	})
 	//
 	repo.cmParams[params.CreditManager] = params

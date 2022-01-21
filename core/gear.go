@@ -78,7 +78,7 @@ type RepositoryI interface {
 	GetUnderlyingDecimal(cmAddr string) int8
 	AddRepayOnCM(blockNum int64, cm string, pnl PnlOnRepay)
 	GetRepayOnCM(blockNum int64, cm string) *PnlOnRepay
-	AddParameters(logID uint, txHash string, params *Parameters)
+	AddParameters(logID uint, txHash string, params *Parameters, token string)
 	AddFastCheckParams(logID uint, txHash, creditFilter string, fcParams *FastCheckParams)
 	AfterSync(blockNum int64)
 	GetAccountManager() *AccountTokenManager
