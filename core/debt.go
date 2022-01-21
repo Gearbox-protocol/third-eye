@@ -69,6 +69,7 @@ type DebtProfile struct {
 type CumIndexAndUToken struct {
 	CumulativeIndex *big.Int
 	Token           string
+	Price           *big.Int
 	Decimals        int8
 	Symbol          string
 }

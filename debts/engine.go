@@ -133,8 +133,8 @@ func (eng *DebtEngine) ifAccountClosed(sessionId, cmAddr string, closedAt int64,
 			urls.ChartUrl, cmAddr, sessionSnapshot.Borrower)
 	} else if status != core.Active {
 		// comment deletion form map
-		// this way if the account is liquidable and liquidated in the smae debt calculation cycl
-		// we can store in db which last block it became liquidable
+		// this way if the account is liquidable and liquidated in the same debt calculation cycle
+		// we will be able to store in db at which block it became liquidable
 		// delete(eng.liquidableBlockTracker, sessionId)
 	}
 }
@@ -161,6 +161,7 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 				Token:           tokenAddr,
 				Symbol:          token.Symbol,
 				Decimals:        token.Decimals,
+				Price: eng.GetTokenLastPrice(tokenAddr),
 			}
 			// log.Infof("blockNum%d newInterest:%s tsDiff:%s cumIndexDecimal:%s predicate:%s cumIndex:%s",blockNum ,newInterest, tsDiff, cumIndexNormalized, predicate, cumIndex)
 		}
@@ -240,7 +241,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 
 	}
 	// the value of credit account is in terms of underlying asset
-	underlyingPrice := eng.GetTokenLastPrice(cumIndexAndUToken.Token)
+	underlyingPrice := cumIndexAndUToken.Price
 	calThresholdValue = new(big.Int).Quo(calThresholdValue, underlyingPrice)
 	calTotalValue = new(big.Int).Quo(calTotalValue, underlyingPrice)
 	// borrowed + interest and normalized threshold value

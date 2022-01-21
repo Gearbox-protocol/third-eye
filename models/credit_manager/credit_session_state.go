@@ -131,30 +131,3 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
-
-func (mdl *CreditManager) CreateCreditSessionSnapshot(blockNum int64, sessionId string) {
-	session := mdl.Repo.GetCreditSession(sessionId)
-	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
-	css := core.CreditSessionSnapshot{}
-	mdl.Repo.SetBlock(blockNum)
-	css.BlockNum = blockNum
-	css.SessionId = sessionId
-	css.CollateralInUSD = session.CollateralInUSD
-	css.Borrower = session.Borrower
-	css.HealthFactor = session.HealthFactor
-	css.TotalValueBI = core.NewBigInt(session.TotalValueBI)
-	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
-	// set balances
-	var err error
-	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
-	if err != nil {
-		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
-	}
-	session.Balances = css.Balances
-	//
-	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
-	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
-	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
-	mdl.Repo.AddCreditSessionSnapshot(&css)
-}
