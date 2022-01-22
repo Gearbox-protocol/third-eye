@@ -43,7 +43,6 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 		Since:         session.Since,
 		Account:       session.Account,
 		CreditManager: session.CreditManager,
-		Status:        session.Status,
 		SessionID:     session.ID,
 	})
 }
@@ -59,7 +58,7 @@ func (repo *Repository) GetSessions() map[string]*core.CreditSession {
 // for account manager
 func (repo *Repository) loadAccountLastSession() {
 	data := []*core.SessionData{}
-	err := repo.db.Raw(`SELECT DISTINCT ON (account) credit_manager, since, status, id, closed_at, account 
+	err := repo.db.Raw(`SELECT DISTINCT ON (account) credit_manager, since, id, closed_at, account 
 		FROM credit_sessions ORDER BY account, since DESC`).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)

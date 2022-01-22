@@ -94,6 +94,7 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{RemainingFunds: remainingFunds, Status: core.Closed}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
+	mdl.closeAccount(sessionId, blockNum)
 	return nil
 }
 
@@ -126,6 +127,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 	session.Liquidator = liquidator
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
+	mdl.closeAccount(sessionId, blockNum)
 	return nil
 }
 
@@ -156,7 +158,13 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 	}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
+	mdl.closeAccount(sessionId, blockNum)
 	return nil
+}
+
+func (mdl *CreditManager) closeAccount(sessionID string, blockNum int64) {
+	session := mdl.Repo.GetCreditSession(sessionID)
+	mdl.Repo.GetAccountManager().CloseAccountDetails(session.Account, session.Since, blockNum)
 }
 
 func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token string, value *big.Int) error {

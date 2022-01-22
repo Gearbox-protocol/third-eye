@@ -106,7 +106,9 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 	case OLDKOVAN:
 		dcw.setOldKovan()
 		data, err := dcw.dcOldKovan.GetCreditAccountDataExtended(opts, creditManager, borrower)
-		log.CheckFatal(err)
+		if err != nil {
+			log.Fatal(err)
+		}
 		latestFormat := mainnet.DataTypesCreditAccountDataExtended{
 			Addr:                       data.Addr,
 			Borrower:                   data.Borrower,

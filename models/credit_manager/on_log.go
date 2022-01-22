@@ -76,9 +76,9 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 				AdapterCall: false,
 				Transfers:   &core.Transfers{tx.Token: amount},
 			})
-			if blockNum != mdl.lastEventBlock {
-				mdl.updateSession(sessionID, blockNum)
-			}
+		}
+		if blockNum != mdl.lastEventBlock {
+			mdl.updateSession(sessionID, blockNum)
 		}
 	}
 }

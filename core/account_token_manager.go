@@ -11,9 +11,8 @@ type SessionData struct {
 	Account       string `gorm:"column:account"`
 	Since         int64  `gorm:"column:since"`
 	CreditManager string `gorm:"column:credit_manager"`
-	Status        int    `gorm:"column:status"`
 	SessionID     string `gorm:"column:id"`
-	ClosedAt      int64  `json:"column:closed_at"`
+	ClosedAt      int64  `gorm:"column:closed_at"`
 }
 
 type AccountData struct {
@@ -64,11 +63,10 @@ func (ad *AccountData) AddDetails(sd *SessionData) {
 	ad.Details = append(ad.Details, sd)
 }
 
-func (ad *AccountData) SetStatus(since int64, status int, closedAt int64) {
+func (ad *AccountData) SetStatus(since int64, closedAt int64) {
 	// log.Info(utils.ToJson(ad.Details))
 	for _, details := range ad.Details {
 		if since == details.Since {
-			details.Status = status
 			details.ClosedAt = closedAt
 		}
 	}
@@ -113,7 +111,7 @@ func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) (map[int6
 		if details.CreditManager != cm {
 			continue
 		}
-		if blockNum >= details.Since && (details.Status == 0 || details.ClosedAt > blockNum) {
+		if blockNum >= details.Since && (details.ClosedAt == 0 || details.ClosedAt > blockNum) {
 			if extraTokenTransfers[blockNum] == nil {
 				extraTokenTransfers[blockNum] = make(map[string][]*TokenTransfer)
 			}
@@ -182,11 +180,10 @@ func (mgr *AccountTokenManager) AddAccountDetails(sessionData *SessionData) {
 	mgr.accountToData[account].AddDetails(sessionData)
 }
 
-func (mgr *AccountTokenManager) CloseAccountDetails(account string, status int, since, closedAt int64) {
+func (mgr *AccountTokenManager) CloseAccountDetails(account string, since, closedAt int64) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
-	log.Info(account, status, since, closedAt)
-	mgr.accountToData[account].SetStatus(since, status, closedAt)
+	mgr.accountToData[account].SetStatus(since, closedAt)
 }
 
 func (mgr *AccountTokenManager) CheckTokenTransfer(cm string, from, to int64) map[int64]map[string][]*TokenTransfer {
@@ -239,6 +236,7 @@ func (mgr *AccountTokenManager) Init() {
 }
 
 func (mgr *AccountTokenManager) GetNoSessionTxs() (tts map[string][]*TokenTransfer) {
+	tts = make(map[string][]*TokenTransfer)
 	for _, txHash := range mgr.NoSessionTxs {
 		tts[txHash] = mgr.txToTransfers[txHash]
 	}

@@ -30,6 +30,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	session := mdl.Repo.GetCreditSession(sessionId)
 	// set session fields
 	session.ClosedAt = blockNum
+	session.Status = closeDetails.Status
 	session.IsDirty = true
 	// this checks prevent getting data for credit session that exist only within a block
 	// datacompressor query will fail
@@ -37,7 +38,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 		return
 	}
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
-	session.Status = closeDetails.Status
 	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	session.TotalValueBI = (*core.BigInt)(data.TotalValue)
@@ -93,7 +93,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
 	mdl.Repo.AddCreditSessionSnapshot(&css)
-	mdl.Repo.GetAccountManager().CloseAccountDetails(session.Account, closeDetails.Status, session.Since, session.ClosedAt)
 }
 
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
