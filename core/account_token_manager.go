@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
 	"sort"
 	"sync"
 )
@@ -81,10 +80,9 @@ func (ad *AccountData) detailsAssigned() bool {
 }
 
 // process the transfer events for from <= block < to
-func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) (map[int64]map[string][]*TokenTransfer, []string) {
+func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) map[int64]map[string][]*TokenTransfer {
 	// blockNum => sessionID => tokentranfers
 	extraTokenTransfers := map[int64]map[string][]*TokenTransfer{}
-	noSessionTxs := []string{}
 	detailsInd := len(ad.Details) - 1
 	blockInd := len(ad.blockNums) - 1
 	// find first blockNum less than to
@@ -97,16 +95,20 @@ func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) (map[int6
 
 		}
 		if detailsInd < 0 {
-			log.Fatalf(`Token transferred to account(%s) before borrower is assigned.
-				CreditManager With Since/closed details: %s. 
-				session transfers: %v
-				BlockNum with transfers: %v`,
-				ad.Address,
-				utils.ToJson(ad.Details),
-				ad.transfers[blockNum],
-				ad.blockNums,
-			)
+			break
 		}
+		// 	log.Fatalf(`Token transferred to account(%s) before borrower is assigned.
+		// 		CreditManager:%s from:%d to:%d
+		// 		CreditManager With Since/closed details: %s.
+		// 		session transfers: %v
+		// 		BlockNum with transfers: %v`,
+		// 		ad.Address,
+		// 		cm, from, to,
+		// 		utils.ToJson(ad.Details),
+		// 		ad.transfers[blockNum],
+		// 		ad.blockNums,
+		// 	)
+		// }
 		details := ad.Details[detailsInd]
 		if details.CreditManager != cm {
 			continue
@@ -115,19 +117,23 @@ func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) (map[int6
 			if extraTokenTransfers[blockNum] == nil {
 				extraTokenTransfers[blockNum] = make(map[string][]*TokenTransfer)
 			}
-			for _, txs := range ad.transfers[blockNum] {
+			for txHash, txs := range ad.transfers[blockNum] {
 				extraTokenTransfers[blockNum][details.SessionID] = append(
 					extraTokenTransfers[blockNum][details.SessionID], txs...)
-			}
-		} else {
-			for _, txs := range ad.transfers[blockNum] {
-				for _, tx := range txs {
-					noSessionTxs = append(noSessionTxs, tx.TxHash)
-				}
+				delete(ad.transfers[blockNum], txHash)
 			}
 		}
 	}
-	return extraTokenTransfers, noSessionTxs
+	return extraTokenTransfers
+}
+
+func (ad *AccountData) GetNoSessionTxs() (noSessionTxs []string) {
+	for _, txs := range ad.transfers {
+		for txHash := range txs {
+			noSessionTxs = append(noSessionTxs, txHash)
+		}
+	}
+	return
 }
 
 //
@@ -137,7 +143,6 @@ type AccountTokenManager struct {
 	// txhash to account which transferred asset
 	txHashToAccounts map[string][]string
 	mu               *sync.Mutex
-	NoSessionTxs     []string
 	txToTransfers    map[string][]*TokenTransfer
 }
 
@@ -194,12 +199,11 @@ func (mgr *AccountTokenManager) CheckTokenTransfer(cm string, from, to int64) ma
 		if !dataMdl.detailsAssigned() {
 			continue
 		}
-		remainingTransfers, noSessionTxs := dataMdl.GetRemainingTransfer(cm, from, to)
+		remainingTransfers := dataMdl.GetRemainingTransfer(cm, from, to)
 		// if len(noSessionTxs) > 0{
 		// 	log.Info(cm, dataMdl.Address, from, to, noSessionTxs)
 		// 	log.Info(utils.ToJson(dataMdl.Details))
 		// }
-		mgr.NoSessionTxs = append(mgr.NoSessionTxs, noSessionTxs...)
 		for blockNum, data := range remainingTransfers {
 			if result[blockNum] == nil {
 				result[blockNum] = make(map[string][]*TokenTransfer)
@@ -228,7 +232,6 @@ func (mgr *AccountTokenManager) Clear() {
 	}
 	mgr.txHashToAccounts = make(map[string][]string)
 	mgr.txToTransfers = make(map[string][]*TokenTransfer)
-	mgr.NoSessionTxs = []string{}
 }
 
 func (mgr *AccountTokenManager) Init() {
@@ -241,8 +244,10 @@ func (mgr *AccountTokenManager) Init() {
 
 func (mgr *AccountTokenManager) GetNoSessionTxs() (tts map[string][]*TokenTransfer) {
 	tts = make(map[string][]*TokenTransfer)
-	for _, txHash := range mgr.NoSessionTxs {
-		tts[txHash] = mgr.txToTransfers[txHash]
+	for _, dataMdl := range mgr.accountToData {
+		for _, txHash := range dataMdl.GetNoSessionTxs() {
+			tts[txHash] = mgr.txToTransfers[txHash]
+		}
 	}
 	log.Infof("len of nosessionTxs %d", len(tts))
 	return
