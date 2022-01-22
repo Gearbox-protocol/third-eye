@@ -129,6 +129,9 @@ func (repo *Repository) GetWETHAddr() string {
 func (repo *Repository) GetUSDCAddr() string {
 	return repo.USDCAddr
 }
+func (repo *Repository) GetGearTokenAddr() string {
+	return repo.GearTokenAddr
+}
 
 // redundant
 func (repo *Repository) AddEventBalance(eb core.EventBalance) {

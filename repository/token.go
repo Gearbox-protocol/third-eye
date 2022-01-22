@@ -72,6 +72,7 @@ func (repo *Repository) addTokenObj(t *core.Token) {
 func (repo *Repository) loadAllowedTokensState() {
 	data := []*core.AllowedToken{}
 	err := repo.db.Raw("SELECT * FROM allowed_tokens where disable_block = 0 order by block_num").Find(&data).Error
+	// err := repo.db.Raw("SELECT * FROM allowed_tokens where disable_block = 0 order by block_num").Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
 		repo.addAllowedTokenState(entry)

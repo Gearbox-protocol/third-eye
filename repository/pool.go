@@ -21,6 +21,10 @@ func (repo *Repository) loadPool() {
 	}
 }
 
+func (repo *Repository) IsDieselToken(token string) bool {
+	return repo.dieselTokens != nil
+}
+
 func (repo *Repository) loadPoolUniqueUsers() {
 	query := "select distinct pool,address from pool_ledger;"
 	data := []*core.PoolLedger{}

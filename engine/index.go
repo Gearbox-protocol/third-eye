@@ -21,7 +21,7 @@ type Engine struct {
 	debtEng core.DebtEngineI
 }
 
-var syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
+var syncBlockBatchSize = 100 * core.NoOfBlocksPerMin
 
 func NewEngine(config *config.Config,
 	ec *ethclient.Client,

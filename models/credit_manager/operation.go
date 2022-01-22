@@ -196,9 +196,11 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 }
 
 func (mdl *CreditManager) AddCollateralToSession(blockNum int64, sessionId, token string, amount *big.Int) {
-	session := mdl.Repo.GetCreditSession(sessionId)
-	valueInUSD := mdl.Repo.GetValueInUSD(blockNum, token, amount)
-	session.CollateralInUSD = core.AddCoreAndInt(session.CollateralInUSD, valueInUSD)
+	if !mdl.Repo.IsDieselToken(token) && mdl.Repo.GetGearTokenAddr() != token {
+		session := mdl.Repo.GetCreditSession(sessionId)
+		valueInUSD := mdl.Repo.GetValueInUSD(blockNum, token, amount)
+		session.CollateralInUSD = core.AddCoreAndInt(session.CollateralInUSD, valueInUSD)
+	}
 }
 
 func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower string, amount *big.Int) error {

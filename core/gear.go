@@ -65,10 +65,12 @@ type RepositoryI interface {
 	AddPoolStat(ps *PoolStat)
 	AddPoolLedger(pl *PoolLedger)
 	GetPoolUniqueUserLen(pool string) int
+	IsDieselToken(token string) bool
 	// weth
 	SetWETHAddr(address string)
 	GetWETHAddr() string
 	GetUSDCAddr() string
+	GetGearTokenAddr() string
 	// credit manager
 	AddAccountTokenTransfer(tt *TokenTransfer, isFromAccount, isToAccount bool)
 	AddCreditManagerToFilter(cmAddr, cfAddr string)
