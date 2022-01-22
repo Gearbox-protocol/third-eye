@@ -58,13 +58,15 @@ func (mdl *AccountManager) OnLog(txLog types.Log) {
 			log.Fatal("Failed parsing value")
 		}
 		tt := &core.TokenTransfer{
-			BlockNum: int64(txLog.BlockNumber),
-			LogID:    txLog.Index,
-			Token:    txLog.Address.Hex(),
-			TxHash:   txLog.TxHash.Hex(),
-			From:     from,
-			To:       to,
-			Amount:   (*core.BigInt)(value),
+			BlockNum:      int64(txLog.BlockNumber),
+			LogID:         txLog.Index,
+			Token:         txLog.Address.Hex(),
+			TxHash:        txLog.TxHash.Hex(),
+			From:          from,
+			To:            to,
+			Amount:        (*core.BigInt)(value),
+			IsFromAccount: mdl.isAccount[from],
+			IsToAccount:   mdl.isAccount[to],
 		}
 		mdl.Repo.AddAccountTokenTransfer(tt, mdl.isAccount[from], mdl.isAccount[to])
 	}

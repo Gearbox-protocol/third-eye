@@ -195,6 +195,10 @@ func (mgr *AccountTokenManager) CheckTokenTransfer(cm string, from, to int64) ma
 			continue
 		}
 		remainingTransfers, noSessionTxs := dataMdl.GetRemainingTransfer(cm, from, to)
+		// if len(noSessionTxs) > 0{
+		// 	log.Info(cm, dataMdl.Address, from, to, noSessionTxs)
+		// 	log.Info(utils.ToJson(dataMdl.Details))
+		// }
 		mgr.NoSessionTxs = append(mgr.NoSessionTxs, noSessionTxs...)
 		for blockNum, data := range remainingTransfers {
 			if result[blockNum] == nil {

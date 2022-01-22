@@ -27,7 +27,7 @@ func GetCreditManagerEventIds() []string {
 	var ids []string
 	if a, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
 		for _, event := range a.Events {
-			// fmt.Println(event.RawName, event.ID.Hex())
+			// log.Info(event.RawName, event.ID.Hex())
 			// if event.RawName != "ExecuteOrder" {
 			ids = append(ids, event.ID.Hex())
 			// }

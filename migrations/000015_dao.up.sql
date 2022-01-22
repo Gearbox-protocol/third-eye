@@ -36,7 +36,10 @@ create table no_session_transfers (
     amount varchar(80),
     token varchar(42),
     source varchar(42),
-    desination varchar(42),
+    destination varchar(42),
     block_num integer,
     log_id integer,
-    tx_hash varchar(66));
+    tx_hash varchar(66),
+    isfrom_account boolean,
+    isto_account boolean,
+    PRIMARY KEY (block_num, log_id));

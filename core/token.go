@@ -64,13 +64,15 @@ func CompareBalance(a, b *BigInt, token *CumIndexAndUToken) bool {
 }
 
 type TokenTransfer struct {
-	BlockNum int64   `gorm:"column:block_num;primaryKey"`
-	LogID    uint    `gorm:"column:log_id;primaryKey"`
-	TxHash   string  `gorm:"column:tx_hash"`
-	Token    string  `gorm:"column:token"`
-	From     string  `gorm:"column:source"`
-	To       string  `gorm:"column:destination"`
-	Amount   *BigInt `gorm:"column:amount"`
+	BlockNum      int64   `gorm:"column:block_num;primaryKey"`
+	LogID         uint    `gorm:"column:log_id;primaryKey"`
+	TxHash        string  `gorm:"column:tx_hash"`
+	Token         string  `gorm:"column:token"`
+	From          string  `gorm:"column:source"`
+	To            string  `gorm:"column:destination"`
+	Amount        *BigInt `gorm:"column:amount"`
+	IsFromAccount bool    `gorm:"column:isfrom_account"`
+	IsToAccount   bool    `gorm:"column:isto_account"`
 }
 
 func (TokenTransfer) TableName() string {
