@@ -60,7 +60,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		Profit:         (*core.BigInt)(big.NewInt(0)),
 		IsDirty:        true,
 	}
-	mdl.Repo.AddCreditSession(newSession, false)
+	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
 	mdl.AddCollateralToSession(blockNum, sessionId, mdl.State.UnderlyingToken, amount)
 	return nil
 }
@@ -94,7 +94,7 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{RemainingFunds: remainingFunds, Status: core.Closed}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
-	mdl.closeAccount(sessionId, blockNum)
+	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
 }
 
@@ -127,7 +127,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 	session.Liquidator = liquidator
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
-	mdl.closeAccount(sessionId, blockNum)
+	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
 }
 
@@ -158,13 +158,13 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 	}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
-	mdl.closeAccount(sessionId, blockNum)
+	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
 }
 
-func (mdl *CreditManager) closeAccount(sessionID string, blockNum int64) {
+func (mdl *CreditManager) closeAccount(sessionID string, blockNum int64, txHash string, logID uint) {
 	session := mdl.Repo.GetCreditSession(sessionID)
-	mdl.Repo.GetAccountManager().CloseAccountDetails(session.Account, session.Since, blockNum)
+	mdl.Repo.GetAccountManager().CloseAccountDetails(session.Account, session.Since, blockNum, txHash, logID)
 }
 
 func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token string, value *big.Int) error {

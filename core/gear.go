@@ -50,7 +50,7 @@ type RepositoryI interface {
 	GetTokens() []string
 	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*JsonBalance, error)
 	// credit session funcs
-	AddCreditSession(session *CreditSession, loadedFromDB bool)
+	AddCreditSession(session *CreditSession, loadedFromDB bool, txHash string, logID uint)
 	GetCreditSession(sessionId string) *CreditSession
 	GetSessions() map[string]*CreditSession
 	GetValueInUSD(blockNum int64, token string, amount *big.Int) *big.Int

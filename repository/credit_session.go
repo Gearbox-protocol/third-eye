@@ -35,7 +35,7 @@ func (repo *Repository) addCreditSession(session *core.CreditSession, loadedFrom
 	}
 }
 
-func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFromDB bool) {
+func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFromDB bool, txHash string, logID uint) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.addCreditSession(session, loadedFromDB)
@@ -44,6 +44,8 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 		Account:       session.Account,
 		CreditManager: session.CreditManager,
 		SessionID:     session.ID,
+		OpenTxHash:    txHash,
+		OpenLogId:     logID,
 	})
 }
 
@@ -58,8 +60,16 @@ func (repo *Repository) GetSessions() map[string]*core.CreditSession {
 // for account manager
 func (repo *Repository) loadAccountLastSession() {
 	data := []*core.SessionData{}
-	err := repo.db.Raw(`SELECT DISTINCT ON (account) credit_manager, since, id, closed_at, account 
-		FROM credit_sessions ORDER BY account, since DESC`).Find(&data).Error
+	err := repo.db.Raw(`SELECT t1.*,t2.*, t3.closed_tx_hash, t3.closed_log_id 
+		FROM (SELECT DISTINCT ON (account) credit_manager, since, id, closed_at, account 
+				FROM credit_sessions ORDER BY account, since DESC) t1 JOIN 
+			(SELECT session_id, tx_hash open_tx_hash, log_id open_log_id
+				FROM account_operations WHERE action like 'OpenCreditAccount%') t2 ON t1.id = t2.session_id
+		LEFT JOIN (SELECT session_id, tx_hash closed_tx_hash, log_id closed_log_id
+			FROM account_operations 
+			WHERE (action like 'CloseCreditAccount%' 
+			or action like 'LiquidateCreditAccount%' 
+			or action like 'RepayCreditAccount%')) t3 ON t1.id = t3.session_id`).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}

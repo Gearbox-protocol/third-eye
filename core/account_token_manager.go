@@ -12,6 +12,10 @@ type SessionData struct {
 	CreditManager string `gorm:"column:credit_manager"`
 	SessionID     string `gorm:"column:id"`
 	ClosedAt      int64  `gorm:"column:closed_at"`
+	OpenTxHash    string `gorm:"column:open_tx_hash"`
+	OpenLogId     uint   `gorm:"column:open_log_id"`
+	ClosedTxHash  string `gorm:"column:closed_tx_hash"`
+	ClosedLogId   uint   `gorm:"column:closed_log_id"`
 }
 
 type AccountData struct {
@@ -62,11 +66,13 @@ func (ad *AccountData) AddDetails(sd *SessionData) {
 	ad.Details = append(ad.Details, sd)
 }
 
-func (ad *AccountData) SetStatus(since int64, closedAt int64) {
+func (ad *AccountData) SetClose(since int64, closedAt int64, closeTxHash string, closeLogID uint) {
 	// log.Info(utils.ToJson(ad.Details))
 	for _, details := range ad.Details {
 		if since == details.Since {
 			details.ClosedAt = closedAt
+			details.ClosedTxHash = closeTxHash
+			details.ClosedLogId = closeLogID
 		}
 	}
 }
@@ -97,30 +103,32 @@ func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) map[int64
 		if detailsInd < 0 {
 			break
 		}
-		// 	log.Fatalf(`Token transferred to account(%s) before borrower is assigned.
-		// 		CreditManager:%s from:%d to:%d
-		// 		CreditManager With Since/closed details: %s.
-		// 		session transfers: %v
-		// 		BlockNum with transfers: %v`,
-		// 		ad.Address,
-		// 		cm, from, to,
-		// 		utils.ToJson(ad.Details),
-		// 		ad.transfers[blockNum],
-		// 		ad.blockNums,
-		// 	)
-		// }
 		details := ad.Details[detailsInd]
 		if details.CreditManager != cm {
 			continue
 		}
-		if blockNum >= details.Since && (details.ClosedAt == 0 || details.ClosedAt > blockNum) {
+		if blockNum >= details.Since && (details.ClosedAt == 0 || details.ClosedAt >= blockNum) {
 			if extraTokenTransfers[blockNum] == nil {
 				extraTokenTransfers[blockNum] = make(map[string][]*TokenTransfer)
 			}
 			for txHash, txs := range ad.transfers[blockNum] {
-				extraTokenTransfers[blockNum][details.SessionID] = append(
-					extraTokenTransfers[blockNum][details.SessionID], txs...)
-				delete(ad.transfers[blockNum], txHash)
+				deleteTxHash := false
+				for _, transfer := range txs {
+					// transfer is less than the txhash for open of credit account
+					if (transfer.BlockNum == details.Since &&
+						(transfer.LogID < details.OpenLogId && transfer.TxHash != details.OpenTxHash)) ||
+						// transfer is more than the txhash for open of credit account
+						(details.ClosedAt != 0 && transfer.BlockNum == details.ClosedAt &&
+							(transfer.LogID > details.ClosedLogId && transfer.TxHash != details.ClosedTxHash)) {
+						continue
+					}
+					extraTokenTransfers[blockNum][details.SessionID] = append(
+						extraTokenTransfers[blockNum][details.SessionID], transfer)
+					deleteTxHash = true
+				}
+				if deleteTxHash {
+					delete(ad.transfers[blockNum], txHash)
+				}
 			}
 		}
 	}
@@ -185,10 +193,10 @@ func (mgr *AccountTokenManager) AddAccountDetails(sessionData *SessionData) {
 	mgr.accountToData[account].AddDetails(sessionData)
 }
 
-func (mgr *AccountTokenManager) CloseAccountDetails(account string, since, closedAt int64) {
+func (mgr *AccountTokenManager) CloseAccountDetails(account string, since, closedAt int64, closeTxHash string, logID uint) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
-	mgr.accountToData[account].SetStatus(since, closedAt)
+	mgr.accountToData[account].SetClose(since, closedAt, closeTxHash, logID)
 }
 
 func (mgr *AccountTokenManager) CheckTokenTransfer(cm string, from, to int64) map[int64]map[string][]*TokenTransfer {
