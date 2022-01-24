@@ -22,7 +22,7 @@ func (repo *Repository) loadPool() {
 }
 
 func (repo *Repository) IsDieselToken(token string) bool {
-	return repo.dieselTokens != nil
+	return repo.dieselTokens[token] != nil
 }
 
 func (repo *Repository) loadPoolUniqueUsers() {

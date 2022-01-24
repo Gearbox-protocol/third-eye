@@ -22,7 +22,7 @@ BEGIN
 			JOIN (SELECT * FROM blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) b 
 			ON b.id = d1.block_num group by d1.session_id)
 		SELECT *, (t2.new_profit-t1.old_profit) profit_usd, t1.old_collateral collateral_usd, 
-			(t2.new_profit-t1.old_profit)/(t1.old_collateral+1) apy  FROM
+			(t2.new_profit-t1.old_profit)/(t1.old_collateral) apy  FROM
 		(SELECT 
 			d.collateral_usd old_collateral, d.profit_usd as old_profit, d.total_value_usd old_total,
 			d.session_id sid
