@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/account_manager"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
@@ -15,7 +16,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
-	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
 )
 
 func (repo *Repository) loadSyncAdapters() {
@@ -59,7 +59,7 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	case core.ChainlinkPriceFeed:
 		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter, false)
 	case core.YearnPriceFeed:
-		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
+		return aggregated_block_feed.NewYearnPriceFeedFromAdapter(adapter)
 	case core.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case core.GearToken:
@@ -86,7 +86,11 @@ func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 	if repo.config.ROLLBACK == "1" {
 		return
 	}
-	repo.addSyncAdapter(adapterI)
+	if adapterI.GetName() == core.YearnPriceFeed {
+		repo.aggregatedFeed.AddYearnFeed(adapterI)
+	} else {
+		repo.addSyncAdapter(adapterI)
+	}
 }
 
 func (repo *Repository) addSyncAdapter(adapterI core.SyncAdapterI) {

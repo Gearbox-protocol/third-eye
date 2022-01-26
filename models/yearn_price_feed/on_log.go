@@ -100,27 +100,3 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 		PriceETH:   utils.GetFloat64Decimal(newAnswer, 18),
 	}
 }
-
-func (mdl *YearnPriceFeed) setContracts(blockNum int64) {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-	// set the price feed contract
-	priceFeedAddr, err := mdl.contractETH.PriceFeed(opts)
-	log.CheckFatal(err)
-	priceFeedContract, err := priceFeed.NewPriceFeed(priceFeedAddr, mdl.Client)
-	log.CheckFatal(err)
-	mdl.PriceFeedContract = priceFeedContract
-
-	// set the yvault contract
-	yVaultAddr, err := mdl.contractETH.YVault(opts)
-	log.CheckFatal(err)
-	yVaultContract, err := yVault.NewYVault(yVaultAddr, mdl.Client)
-	log.CheckFatal(err)
-	mdl.YVaultContract = yVaultContract
-
-	// set the decimals
-	decimals, err := yVaultContract.Decimals(opts)
-	log.CheckFatal(err)
-	mdl.DecimalDivider = utils.GetExpInt(int8(decimals))
-}

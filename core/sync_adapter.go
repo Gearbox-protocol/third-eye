@@ -24,6 +24,7 @@ type SyncAdapter struct {
 	Repo                   RepositoryI `gorm:"-"`
 	OnlyQuery              bool        `gorm:"-"`
 	blockToDisableOn       int64       `gorm:"-"`
+	HasOnLogs              bool        `gorm:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -32,6 +33,8 @@ func (SyncAdapter) TableName() string {
 
 type SyncAdapterI interface {
 	OnLog(txLog types.Log)
+	OnLogs(txLog []types.Log)
+	GetHasOnLogs() bool
 	GetLastSync() int64
 	SetLastSync(int64)
 	GetAddress() string
@@ -54,6 +57,13 @@ type SyncAdapterI interface {
 }
 
 func (s *SyncAdapter) SetDetails(obj interface{}) {
+}
+func (s *SyncAdapter) GetHasOnLogs() bool {
+	return s.HasOnLogs
+}
+
+func (s *SyncAdapter) OnLogs(txLog []types.Log) {
+
 }
 
 func (s *SyncAdapter) DisableOnBlock(currentBlock int64) {

@@ -11,8 +11,8 @@ func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})
 	kit.AddLevel([]string{Pool, AccountManager})
-	kit.AddLevel([]string{CreditManager, ChainlinkPriceFeed, YearnPriceFeed})
-	kit.AddLevel([]string{CreditFilter, Treasury})
+	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed})
+	kit.AddLevel([]string{CreditFilter, Treasury, ChainlinkPriceFeed})
 }
 
 func (kit *AdapterKit) AddLevel(lvl []string) {

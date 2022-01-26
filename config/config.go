@@ -39,4 +39,6 @@ type Config struct {
 	ThrottleByHrs        int64
 	MiningAddr           string `env:"MINING_ADDR"`
 	ROLLBACK             string `env:"ROLLBACK"`
+	Uniswapv2Router      string `env:"UNISWAPV2_ROUTER"`
+	Uniswapv3Router      string `env:"UNISWAPV3_ROUTER"`
 }

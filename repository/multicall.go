@@ -20,7 +20,7 @@ type PriceCallParams struct {
 	Address common.Address
 }
 
-func (repo *Repository) makeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
+func (repo *Repository) MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
 	contract := getMultiCallContract(repo.client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
@@ -58,7 +58,7 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		})
 	}
 	// call
-	result := repo.makeMultiCall(blockNum, successRequired, calls)
+	result := repo.MakeMultiCall(blockNum, successRequired, calls)
 
 	for i, entry := range result {
 		// token price

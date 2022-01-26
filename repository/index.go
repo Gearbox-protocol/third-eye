@@ -11,6 +11,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm"
 )
@@ -28,6 +29,7 @@ type Repository struct {
 	kit                   *core.AdapterKit
 	executeParser         core.ExecuteParserI
 	dcWrapper             *core.DataCompressorWrapper
+	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
 	allowedTokens         map[string]map[string]*core.AllowedToken
 	disabledTokens        []*core.AllowedToken
@@ -71,6 +73,8 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		dieselTokens:          make(map[string]*core.UTokenAndPool),
 		accountManager:        core.NewAccountTokenManager(),
 	}
+	r.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, r)
+	r.kit.Add(r.aggregatedFeed)
 	r.init()
 	return r
 }

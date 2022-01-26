@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
 	"math/big"
 )
 
@@ -94,6 +95,10 @@ type RepositoryI interface {
 	LoadLastAdapterSync() int64
 	Clear()
 	CallRankingProcedure()
+	// multicall
+	MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result
+	GetUniPricesByToken(token string) []*PoolPrices
+	AddPoolsForToken(blockNum int64, token string)
 }
 
 type GearBalance struct {
