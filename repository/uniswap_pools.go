@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
+func (repo *Repository) AddPoolsForToken(blockNum int64, token string, lastSync int64) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.config.ChainId != 1 {
@@ -32,7 +32,12 @@ func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
 	log.CheckFatal(err)
 	tokenObj, err := repo.getTokenWithError(token)
 	log.CheckFatal(err)
-	repo.aggregatedFeed.AddPools(token, poolv2Addr.Hex(), poolv3Addr.Hex(), tokenObj.Decimals)
+	repo.aggregatedFeed.AddPools(token, &core.UniswapPools{
+		V2:       poolv2Addr.Hex(),
+		V3:       poolv3Addr.Hex(),
+		Decimals: tokenObj.Decimals,
+		LastSync: lastSync,
+	})
 }
 
 func (repo *Repository) GetFactoryv2Address(blockNum int64) common.Address {

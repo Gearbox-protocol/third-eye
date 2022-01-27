@@ -19,6 +19,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapv2Router"
 	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapv3Pool"
 	"github.com/Gearbox-protocol/third-eye/artifacts/wETHGateway"
+	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -82,7 +83,8 @@ func GetAbi(contractName string) *abi.ABI {
 		"WETHGateway":   wETHGateway.WETHGatewayMetaData,
 
 		// Oracle
-		PriceOracle: priceOracle.PriceOracleMetaData,
+		PriceOracle:    priceOracle.PriceOracleMetaData,
+		YearnPriceFeed: &bind.MetaData{ABI: yearnPriceFeed.YearnPriceFeedABI},
 
 		// Pool
 		CreditManager:             creditManager.CreditManagerMetaData,

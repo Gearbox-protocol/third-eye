@@ -1,23 +1,29 @@
 package aggregated_block_feed
 
 import (
+	"math/big"
+	"strings"
+	"time"
+
 	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
-	"strings"
-	"time"
 	// "fmt"
 )
 
 const interval = 25
 
 func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
+	if len(mdl.UniPoolByToken) == 0 && len(mdl.YearnFeeds) == 0 {
+		return
+	}
+	// msg
 	queryFrom := mdl.GetLastSync() + interval
 	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, queryTill)
+	// timer with query of block
 	rounds := 0
 	loopStartTime := time.Now()
 	roundStartTime := time.Now()
@@ -62,6 +68,7 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 	pricesByToken := map[string]*core.PoolPrices{}
 	weth := mdl.Repo.GetWETHAddr()
 	for i, entry := range result {
+		log.Info(utils.ToJson(entry))
 		if i < yearnFeedLen {
 			mdl.processPriceData(blockNum, queryAbleAdapters[i], entry)
 		} else {
@@ -73,6 +80,10 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 			if pricesByToken[token] != nil {
 				prices = pricesByToken[token]
 			}
+			// ignore if failed
+			if !entry.Success {
+				continue
+			}
 			pricesByToken[token] = prices
 			switch callInd {
 			case 0:
@@ -82,11 +93,13 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 				r1 := value[1].(*big.Int)
 				uniswapv2Price := priceInWETH(token, weth, pools.Decimals, r0, r1)
 				prices.PriceV2 = utils.GetFloat64Decimal(uniswapv2Price, 18)
+				prices.PriceV2Success = true
 			case 1:
 				value, err := v3ABI.Unpack("slot0", entry.ReturnData)
 				log.CheckFatal(err)
 				uniswapv3Price := squareIt(value[0].(*big.Int))
 				prices.PriceV3 = utils.GetFloat64Decimal(uniswapv3Price, 18)
+				prices.PriceV3Success = true
 			case 2:
 				value, err := v3ABI.Unpack("observe", entry.ReturnData)
 				log.CheckFatal(err)
@@ -95,6 +108,7 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 				sqrtPrice := pow(tickDiff)
 				twapV3 := squareIt(sqrtPrice)
 				prices.TwapV3 = utils.GetFloat64Decimal(twapV3, 18)
+				prices.TwapV3Success = true
 			}
 		}
 	}
@@ -121,6 +135,10 @@ func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64) (calls []mul
 	v2ABI := core.GetAbi("Uniswapv2Pool")
 	v3ABI := core.GetAbi("Uniswapv3Pool")
 	for token, pools := range mdl.UniPoolByToken {
+		// only sync uniswap pool price for token that have last sync
+		if pools.LastSync >= blockNum {
+			continue
+		}
 		uniswapv2Price, err := v2ABI.Pack("getReserves")
 		log.CheckFatal(err)
 		calls = append(calls, multicall.Multicall2Call{
@@ -133,7 +151,7 @@ func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64) (calls []mul
 			Target:   common.HexToAddress(pools.V3),
 			CallData: uniswapv3Price,
 		})
-		uniswapv3Twap, err := v3ABI.Pack("observe", []int32{0, 600})
+		uniswapv3Twap, err := v3ABI.Pack("observe", []uint32{0, 600})
 		log.CheckFatal(err)
 		calls = append(calls, multicall.Multicall2Call{
 			Target:   common.HexToAddress(pools.V3),

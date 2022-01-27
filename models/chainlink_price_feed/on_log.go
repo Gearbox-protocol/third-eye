@@ -16,6 +16,10 @@ func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
 func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 	uniPrices := mdl.Repo.GetUniPricesByToken(mdl.Token)
 	uniPricesInd := 0
+	// filter uniswapool prices that were before the lastsync of contract
+	for uniPricesInd < len(uniPrices) && mdl.GetLastSync() >= uniPrices[uniPricesInd].BlockNum {
+		uniPricesInd++
+	}
 	var prevPriceFeed *core.PriceFeed
 	for _, txLog := range txLogs {
 		var priceFeed *core.PriceFeed
@@ -67,12 +71,14 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 }
 
 func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPrices *core.PoolPrices) {
+	// previous pricefeed can be nil
 	if pf == nil {
 		return
 	}
-	if !mdl.isNotified() && (greaterFluctuation(pf.Uniswapv2Price, pf.PriceETH) ||
-		greaterFluctuation(pf.Uniswapv3Price, pf.PriceETH) ||
-		greaterFluctuation(pf.Uniswapv3Twap, pf.PriceETH)) {
+	if !mdl.isNotified() && 
+		((uniPrices.PriceV2Success && greaterFluctuation(uniPrices.PriceV2, pf.PriceETH)) ||
+		(uniPrices.PriceV3Success && greaterFluctuation(uniPrices.PriceV3, pf.PriceETH)) ||
+		(uniPrices.TwapV3Success && greaterFluctuation(uniPrices.TwapV3, pf.PriceETH))) {
 		mdl.uniPriceVariationNotify(pf, uniPrices)
 		mdl.Details["notified"] = true
 	} else {

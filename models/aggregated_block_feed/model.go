@@ -9,16 +9,11 @@ import (
 	"math"
 )
 
-type UniswapPools struct {
-	V2       string
-	V3       string
-	Decimals int8
-}
 type AggregatedBlockFeed struct {
 	*core.SyncAdapter
 	YearnFeeds        []*YearnPriceFeed
 	UniswapPools      []string
-	UniPoolByToken    map[string]*UniswapPools
+	UniPoolByToken    map[string]*core.UniswapPools
 	UniPricesByTokens map[string][]*core.PoolPrices
 }
 
@@ -36,7 +31,7 @@ func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI) *Ag
 		OnlyQuery: true,
 	}
 	return &AggregatedBlockFeed{
-		UniPoolByToken:    map[string]*UniswapPools{},
+		UniPoolByToken:    map[string]*core.UniswapPools{},
 		UniPricesByTokens: map[string][]*core.PoolPrices{},
 		SyncAdapter:       syncAdapter,
 	}
@@ -58,9 +53,7 @@ func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
 	return mdl.YearnFeeds
 }
 
-func (mdl *AggregatedBlockFeed) AddPools(token, poolv2Addr, poolv3Addr string, decimals int8) {
-	mdl.UniPoolByToken[token] = &UniswapPools{
-		V2: poolv2Addr,
-		V3: poolv3Addr,
-	}
+func (mdl *AggregatedBlockFeed) AddPools(token string, uniswapPools *core.UniswapPools) {
+	mdl.LastSync = utils.Min(uniswapPools.LastSync, mdl.LastSync)
+	mdl.UniPoolByToken[token] = uniswapPools
 }

@@ -86,16 +86,16 @@ func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
 	if repo.config.ROLLBACK == "1" {
 		return
 	}
-	if adapterI.GetName() == core.YearnPriceFeed {
-		repo.aggregatedFeed.AddYearnFeed(adapterI)
-	} else {
-		repo.addSyncAdapter(adapterI)
-	}
+	repo.addSyncAdapter(adapterI)
 }
 
 func (repo *Repository) addSyncAdapter(adapterI core.SyncAdapterI) {
 	if core.GearToken == adapterI.GetName() {
 		repo.GearTokenAddr = adapterI.GetAddress()
 	}
-	repo.kit.Add(adapterI)
+	if adapterI.GetName() == core.YearnPriceFeed {
+		repo.aggregatedFeed.AddYearnFeed(adapterI)
+	} else {
+		repo.kit.Add(adapterI)
+	}
 }
