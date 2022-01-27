@@ -5,7 +5,11 @@ CREATE TABLE price_feeds (
     feed character varying(42),
     price_eth_bi character varying(80),
     round_id integer,
-    price_eth double precision
+    price_eth double precision,
+    uniswapv2_price double precision,
+    uniswapv3_twap double precision,
+    uniswapv3_price double precision,
+    uni_price_fetch_block double precision,
 );
 
 
