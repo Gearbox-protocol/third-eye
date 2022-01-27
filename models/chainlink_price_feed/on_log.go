@@ -46,11 +46,11 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			uniPricesInd++
 		}
 		lastUniPrice := uniPricesInd
-		if lastUniPrice == len(uniPrices) {
+		if lastUniPrice == len(uniPrices) && lastUniPrice > 0 {
 			lastUniPrice = lastUniPrice - 1
 		}
 		if len(uniPrices) != 0 {
-			uniPoolPrices := uniPrices[uniPricesInd]
+			uniPoolPrices := uniPrices[lastUniPrice]
 			priceFeed.Uniswapv2Price = uniPoolPrices.PriceV2
 			priceFeed.Uniswapv3Price = uniPoolPrices.PriceV3
 			priceFeed.Uniswapv3Twap = uniPoolPrices.TwapV3

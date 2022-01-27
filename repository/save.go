@@ -31,7 +31,9 @@ func (repo *Repository) Flush() error {
 	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
 		for repo.kit.Next(lvlIndex) {
 			adapter := repo.kit.Get(lvlIndex)
-			adapters = append(adapters, adapter.GetAdapterState())
+			if adapter.GetName() != core.AggregatedBlockFeed {
+				adapters = append(adapters, adapter.GetAdapterState())
+			}
 			if adapter.HasUnderlyingState() {
 				err := tx.Clauses(clause.OnConflict{
 					// err := repo.db.Clauses(clause.OnConflict{
@@ -42,16 +44,10 @@ func (repo *Repository) Flush() error {
 		}
 		repo.kit.Reset(lvlIndex)
 	}
-	pfs := repo.aggregatedFeed.GetYearnFeeds()
 	// save yearnPriceFeeds
-	if len(pfs) > 0 {
-		err := tx.Clauses(clause.OnConflict{
-			// err := repo.db.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).Create(pfs).Error
-		log.CheckFatal(err)
+	for _, adapter := range repo.aggregatedFeed.GetYearnFeeds() {
+		adapters = append(adapters, adapter.GetAdapterState())
 	}
-
 	err := tx.Clauses(clause.OnConflict{
 		// err := repo.db.Clauses(clause.OnConflict{
 		UpdateAll: true,

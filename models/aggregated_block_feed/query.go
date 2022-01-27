@@ -17,7 +17,7 @@ const interval = 25
 
 func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	queryFrom := mdl.GetLastSync() + interval
-	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), queryFrom, queryTill)
+	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, queryTill)
 	rounds := 0
 	loopStartTime := time.Now()
 	roundStartTime := time.Now()
@@ -51,13 +51,11 @@ func pow(a *big.Int) *big.Int {
 func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 	mdl.Repo.SetBlock(blockNum)
 	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
-	var uniTokens []string
-	if mdl.Repo.GetChainId() == 1 {
-		poolCalls, tokensToFetchUniPrices := mdl.getUniswapPoolCalls(blockNum)
-		calls = append(calls, poolCalls...)
-		uniTokens = append(uniTokens, tokensToFetchUniPrices...)
-	}
+	poolCalls, uniTokens := mdl.getUniswapPoolCalls(blockNum)
+	calls = append(calls, poolCalls...)
+	//
 	result := mdl.Repo.MakeMultiCall(blockNum, false, calls)
+	//
 	yearnFeedLen := len(queryAbleAdapters)
 	v2ABI := core.GetAbi("Uniswapv2Pool")
 	v3ABI := core.GetAbi("Uniswapv3Pool")
@@ -87,7 +85,7 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 			case 1:
 				value, err := v3ABI.Unpack("slot0", entry.ReturnData)
 				log.CheckFatal(err)
-				uniswapv3Price := sqrt(value[0].(*big.Int))
+				uniswapv3Price := squareIt(value[0].(*big.Int))
 				prices.PriceV3 = utils.GetFloat64Decimal(uniswapv3Price, 18)
 			case 2:
 				value, err := v3ABI.Unpack("observe", entry.ReturnData)
@@ -95,7 +93,7 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 				ticks := value[0].([]*big.Int)
 				tickDiff := new(big.Int).Sub(ticks[1], ticks[0])
 				sqrtPrice := pow(tickDiff)
-				twapV3 := sqrt(sqrtPrice)
+				twapV3 := squareIt(sqrtPrice)
 				prices.TwapV3 = utils.GetFloat64Decimal(twapV3, 18)
 			}
 		}
@@ -116,7 +114,7 @@ func priceInWETH(token, weth string, tokenDecimals int8, r0, r1 *big.Int) *big.I
 	denom := new(big.Int).Add(r0, amountIn)
 	return new(big.Int).Quo(nom, denom)
 }
-func sqrt(a *big.Int) *big.Int {
+func squareIt(a *big.Int) *big.Int {
 	return new(big.Int).Mul(a, a)
 }
 func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64) (calls []multicall.Multicall2Call, tokens []string) {

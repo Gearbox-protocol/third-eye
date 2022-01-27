@@ -16,6 +16,9 @@ import (
 func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	if repo.config.ChainId != 1 {
+		return
+	}
 	v2FactoryAddr := repo.GetFactoryv2Address(blockNum)
 	v3FactoryAddr := repo.GetFactoryv3Address(blockNum)
 	v2Factory, err := uniswapv2Factory.NewUniswapv2Factory(v2FactoryAddr, repo.client)
