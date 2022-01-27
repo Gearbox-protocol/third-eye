@@ -60,6 +60,16 @@ func NewYearnPriceFeedFromAdapter(adapter *core.SyncAdapter) *YearnPriceFeed {
 func (mdl *YearnPriceFeed) OnLog(txLog types.Log) {
 
 }
+func (mdl *YearnPriceFeed) isNotified() bool {
+	if mdl.Details == nil || mdl.Details["notified"] == nil {
+		return false
+	}
+	value, ok := mdl.Details["notified"].(bool)
+	if !ok {
+		log.Fatal("Notified not parsed")
+	}
+	return value
+}
 
 func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.PriceFeed {
 	if mdl.YVaultContract == nil || mdl.PriceFeedContract == nil || mdl.DecimalDivider == nil {
@@ -78,7 +88,8 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 	log.CheckFatal(err)
 	uppwerBound, err := mdl.contractETH.UpperBound(opts)
 	log.CheckFatal(err)
-	if pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0 {
+	if !mdl.isNotified() && !(pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0) {
+		mdl.Details["notified"] = true
 		log.Warnf("PricePerShare(%d) is not btw lower limit(%d) and upper limit(%d).", pricePerShare, lowerBound, uppwerBound)
 	}
 

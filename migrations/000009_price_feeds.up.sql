@@ -9,8 +9,7 @@ CREATE TABLE price_feeds (
     uniswapv2_price double precision,
     uniswapv3_twap double precision,
     uniswapv3_price double precision,
-    uni_price_fetch_block double precision,
-);
+    uni_price_fetch_block integer);
 
 
 CREATE TABLE token_oracle (

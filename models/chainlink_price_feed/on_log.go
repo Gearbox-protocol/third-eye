@@ -8,7 +8,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
-	// "github.com/Gearbox-protocol/third-eye/models/price_feed"
+	"math"
 )
 
 func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
@@ -70,15 +70,18 @@ func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPrices *core.P
 	if pf == nil {
 		return
 	}
-	if greaterFluctuation(pf.Uniswapv2Price, pf.PriceETH) ||
+	if !mdl.isNotified() && (greaterFluctuation(pf.Uniswapv2Price, pf.PriceETH) ||
 		greaterFluctuation(pf.Uniswapv3Price, pf.PriceETH) ||
-		greaterFluctuation(pf.Uniswapv3Twap, pf.PriceETH) {
+		greaterFluctuation(pf.Uniswapv3Twap, pf.PriceETH)) {
 		mdl.uniPriceVariationNotify(pf, uniPrices)
+		mdl.Details["notified"] = true
+	} else {
+		mdl.Details["notified"] = false
 	}
 }
 
 func greaterFluctuation(a, b float64) bool {
-	return (a-b)/a > 0.03
+	return math.Abs((a-b)/a) > 0.03
 }
 
 func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPrices *core.PoolPrices) {
@@ -91,4 +94,15 @@ func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPr
 	Uniswapv3 Twap: %f`, symbol, mdl.Token,
 		pf.BlockNumber, pf.PriceETH,
 		uniPrices.BlockNum, uniPrices.PriceV2, uniPrices.PriceV3, uniPrices.TwapV3)
+}
+
+func (mdl *ChainlinkPriceFeed) isNotified() bool {
+	if mdl.Details == nil || mdl.Details["notified"] == nil {
+		return false
+	}
+	value, ok := mdl.Details["notified"].(bool)
+	if !ok {
+		log.Fatal("Notified not parsed")
+	}
+	return value
 }
