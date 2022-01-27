@@ -54,6 +54,10 @@ func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter core.SyncAdapterI) {
 func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
 }
 
+func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
+	return mdl.YearnFeeds
+}
+
 func (mdl *AggregatedBlockFeed) AddPools(token, poolv2Addr, poolv3Addr string, decimals int8) {
 	mdl.UniPoolByToken[token] = &UniswapPools{
 		V2: poolv2Addr,

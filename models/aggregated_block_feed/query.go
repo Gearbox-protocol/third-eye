@@ -51,8 +51,12 @@ func pow(a *big.Int) *big.Int {
 func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 	mdl.Repo.SetBlock(blockNum)
 	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
-	poolCalls, uniTokens := mdl.getUniswapPoolCalls(blockNum)
-	calls = append(calls, poolCalls...)
+	var uniTokens []string
+	if mdl.Repo.GetChainId() == 1 {
+		poolCalls, tokensToFetchUniPrices := mdl.getUniswapPoolCalls(blockNum)
+		calls = append(calls, poolCalls...)
+		uniTokens = append(uniTokens, tokensToFetchUniPrices...)
+	}
 	result := mdl.Repo.MakeMultiCall(blockNum, false, calls)
 	yearnFeedLen := len(queryAbleAdapters)
 	v2ABI := core.GetAbi("Uniswapv2Pool")

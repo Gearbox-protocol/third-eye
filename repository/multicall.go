@@ -25,8 +25,20 @@ func (repo *Repository) MakeMultiCall(blockNum int64, successRequired bool, call
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	result, err := contract.TryAggregate(opts, successRequired, calls)
-	log.CheckFatal(err)
+	var result []multicall.Multicall2Result
+	var tmpCalls []multicall.Multicall2Call
+	callsInd := 0
+	callsLen := len(calls)
+	for callsInd < callsLen {
+		for i := 0; i < 10 && callsInd < callsLen; i++ {
+			tmpCalls = append(tmpCalls, calls[callsInd])
+			callsInd++
+		}
+		tmpResult, err := contract.TryAggregate(opts, successRequired, tmpCalls)
+		log.CheckFatal(err)
+		result = append(result, tmpResult...)
+		tmpCalls = []multicall.Multicall2Call{}
+	}
 	return result
 }
 

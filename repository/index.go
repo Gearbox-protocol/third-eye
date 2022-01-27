@@ -195,3 +195,7 @@ func (eng *Repository) InitChecks() {
 		log.Fatal("Account manager/credit manager/AccountFactory are not synchronised: ", str)
 	}
 }
+
+func (repo *Repository) GetChainId() uint {
+	return repo.config.ChainId
+}
