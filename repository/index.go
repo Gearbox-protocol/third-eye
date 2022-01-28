@@ -144,15 +144,6 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.setAndGetBlock(eb.BlockNumber).AddEventBalance(&eb)
 }
 
-func (repo *Repository) CallRankingProcedure() {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	if err := repo.db.Raw("CALL rankings()").Error; err != nil {
-		log.CheckFatal(err)
-	}
-	log.Info("Refreshed rankings by 7/20 days")
-}
-
 func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
 	ts := eng.SetAndGetBlock(blockNum).Timestamp
 	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
@@ -198,4 +189,8 @@ func (eng *Repository) InitChecks() {
 
 func (repo *Repository) GetChainId() uint {
 	return repo.config.ChainId
+}
+
+func (repo *Repository) AddUniswapPrices(prices *core.UniPoolPrices) {
+	repo.setAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
 }

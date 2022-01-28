@@ -12,14 +12,21 @@ type LatestRounData struct {
 	AnsweredInRound *big.Int
 }
 
-type PoolPrices struct {
-	PriceV2  float64
-	TwapV3   float64
-	PriceV3  float64
-	PriceV2Success bool
-	TwapV3Success  bool
-	PriceV3Success bool
-	BlockNum int64
+type UniPoolPrices struct {
+	ID                   int64   `gorm:"primaryKey;column:id;autoIncrement:true"`
+	PriceV2              float64 `gorm:"column:uniswapv2_price"`
+	TwapV3               float64 `gorm:"column:uniswapv3_price"`
+	PriceV3              float64 `gorm:"column:uniswapv3_twap"`
+	PriceV2Success       bool    `gorm:"-"`
+	TwapV3Success        bool    `gorm:"-"`
+	PriceV3Success       bool    `gorm:"-"`
+	BlockNum             int64   `gorm:"column:block_num"`
+	ChainlinkBlockNumber int64   `gorm:"column:chainlink_block_num"`
+	Token                string  `gorm:"column:token"`
+}
+
+func (UniPoolPrices) TableName() string {
+	return "uniswap_pool_prices"
 }
 
 type UniswapPools struct {

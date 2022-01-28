@@ -30,7 +30,7 @@ func (repo *Repository) MakeMultiCall(blockNum int64, successRequired bool, call
 	callsInd := 0
 	callsLen := len(calls)
 	for callsInd < callsLen {
-		for i := 0; i < 10 && callsInd < callsLen; i++ {
+		for i := 0; i < 20 && callsInd < callsLen; i++ {
 			tmpCalls = append(tmpCalls, calls[callsInd])
 			callsInd++
 		}
@@ -45,7 +45,16 @@ func (repo *Repository) MakeMultiCall(blockNum int64, successRequired bool, call
 func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	calls := []multicall.Multicall2Call{}
 
-	oracle, err := repo.GetActivePriceOracle()
+	oracle, err := repo.GetActivePriceOracle(blockNum)
+	if err.Error() == "Not Found" {
+		for _ = range tokenAddrs {
+			prices = append(prices, new(big.Int))
+		}
+		for _ = range poolForDieselRate {
+			dieselRates = append(dieselRates, new(big.Int))
+		}
+		return
+	}
 	log.CheckFatal(err)
 	oracleABI := core.GetAbi(core.PriceOracle)
 	for _, token := range tokenAddrs {
@@ -75,6 +84,7 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 	for i, entry := range result {
 		// token price
 		if i < len(tokenAddrs) {
+			log.Info(tokenAddrs[i], entry)
 			price := big.NewInt(0)
 			if entry.Success {
 				value, err := oracleABI.Unpack("convert", entry.ReturnData)

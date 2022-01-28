@@ -4,11 +4,12 @@ import (
 	"math/big"
 	"strconv"
 
+	"math"
+
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math"
 )
 
 func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
@@ -44,42 +45,53 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				PriceETHBI:  (*core.BigInt)(answerBI),
 				PriceETH:    utils.GetFloat64Decimal(answerBI, 18),
 			}
+			log.Info(uniPricesInd, blockNum)
+			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
+				mdl.compareDiff(prevPriceFeed, uniPrices[uniPricesInd])
+				log.Info(uniPrices[uniPricesInd].BlockNum, blockNum)
+				uniPricesInd++
+			}
+			if len(uniPrices) > 0 {
+				lastValidUniBlock := uniPricesInd
+				// if len overflow set value-1
+				if lastValidUniBlock == len(uniPrices) ||
+					// if the next blockNum for uni is not equal to txLog blockNum
+					!(lastValidUniBlock < len(uniPrices) && blockNum == uniPrices[lastValidUniBlock].BlockNum) {
+					lastValidUniBlock = lastValidUniBlock - 1
+				}
+				if lastValidUniBlock >= 0 {
+					uniPoolPrice := uniPrices[lastValidUniBlock]
+					priceFeed.Uniswapv2Price = uniPoolPrice.PriceV2
+					priceFeed.Uniswapv3Price = uniPoolPrice.PriceV3
+					priceFeed.Uniswapv3Twap = uniPoolPrice.TwapV3
+					priceFeed.UniPriceFetchBlock = uniPoolPrice.BlockNum
+				}
+			}
+			mdl.Repo.AddPriceFeed(blockNum, priceFeed)
+			prevPriceFeed = priceFeed
 		}
-		for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
-			mdl.compareDiff(prevPriceFeed, uniPrices[uniPricesInd])
-			uniPricesInd++
-		}
-		lastUniPrice := uniPricesInd
-		if lastUniPrice == len(uniPrices) && lastUniPrice > 0 {
-			lastUniPrice = lastUniPrice - 1
-		}
-		if len(uniPrices) != 0 {
-			uniPoolPrices := uniPrices[lastUniPrice]
-			priceFeed.Uniswapv2Price = uniPoolPrices.PriceV2
-			priceFeed.Uniswapv3Price = uniPoolPrices.PriceV3
-			priceFeed.Uniswapv3Twap = uniPoolPrices.TwapV3
-			priceFeed.UniPriceFetchBlock = uniPoolPrices.BlockNum
-		}
-		mdl.Repo.AddPriceFeed(blockNum, priceFeed)
-		prevPriceFeed = priceFeed
 	}
 	// remaining prices are filled
-	for uniPricesInd < len(uniPrices) {
+	for uniPricesInd < len(uniPrices) && uniPrices[uniPricesInd].BlockNum < mdl.GetBlockToDisableOn() {
 		mdl.compareDiff(prevPriceFeed, uniPrices[uniPricesInd])
 		uniPricesInd++
 	}
 }
 
-func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPrices *core.PoolPrices) {
+func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPoolPrices *core.UniPoolPrices) {
 	// previous pricefeed can be nil
 	if pf == nil {
 		return
 	}
-	if !mdl.isNotified() && 
-		((uniPrices.PriceV2Success && greaterFluctuation(uniPrices.PriceV2, pf.PriceETH)) ||
-		(uniPrices.PriceV3Success && greaterFluctuation(uniPrices.PriceV3, pf.PriceETH)) ||
-		(uniPrices.TwapV3Success && greaterFluctuation(uniPrices.TwapV3, pf.PriceETH))) {
-		mdl.uniPriceVariationNotify(pf, uniPrices)
+	// set the token and blocknumber of chainlink
+	uniPoolPrices.ChainlinkBlockNumber = pf.BlockNumber
+	uniPoolPrices.Token = pf.Token
+	mdl.Repo.AddUniswapPrices(uniPoolPrices)
+	if !mdl.isNotified() &&
+		((uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
+			(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
+			(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH))) {
+		mdl.uniPriceVariationNotify(pf, uniPoolPrices)
 		mdl.Details["notified"] = true
 	} else {
 		mdl.Details["notified"] = false
@@ -90,14 +102,14 @@ func greaterFluctuation(a, b float64) bool {
 	return math.Abs((a-b)/a) > 0.03
 }
 
-func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPrices *core.PoolPrices) {
+func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPrices *core.UniPoolPrices) {
 	symbol := mdl.Repo.GetToken(mdl.Token).Symbol
-	log.Info(`Token:%s(%s) =>
+	log.Infof(`Token:%s(%s) =>
 	Chainlink BlockNum:%d %f
 	Uni price at block number: %d
 	Uniswapv2 Price: %f
 	Uniswapv3 Price: %f
-	Uniswapv3 Twap: %f`, symbol, mdl.Token,
+	Uniswapv3 Twap: %f\n`, symbol, mdl.Token,
 		pf.BlockNumber, pf.PriceETH,
 		uniPrices.BlockNum, uniPrices.PriceV2, uniPrices.PriceV3, uniPrices.TwapV3)
 }

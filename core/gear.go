@@ -92,13 +92,14 @@ type RepositoryI interface {
 	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)
 	RecentEventMsg(blockNum int64, msg string, args ...interface{})
 	//
+	// oracle and uni
+	AddUniswapPrices(prices *UniPoolPrices)
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64
 	Clear()
-	CallRankingProcedure()
 	// multicall
 	MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result
-	GetUniPricesByToken(token string) []*PoolPrices
+	GetUniPricesByToken(token string) []*UniPoolPrices
 	AddPoolsForToken(blockNum int64, token string, lastSync int64)
 }
 

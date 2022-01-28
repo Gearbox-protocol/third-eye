@@ -64,6 +64,6 @@ func (repo *Repository) GetFactoryv3Address(blockNum int64) common.Address {
 	return v3Factory
 }
 
-func (repo *Repository) GetUniPricesByToken(token string) []*core.PoolPrices {
+func (repo *Repository) GetUniPricesByToken(token string) []*core.UniPoolPrices {
 	return repo.aggregatedFeed.GetUniPricesByToken(token)
 }

@@ -40,7 +40,7 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	}
 }
 
-func pow(a *big.Int) *big.Int {
+func powFloat(a *big.Int) *big.Float {
 	f := big.NewFloat(1.0001)
 	ans := big.NewFloat(1)
 	for i := 0; i < a.BitLen(); i++ {
@@ -49,9 +49,7 @@ func pow(a *big.Int) *big.Int {
 		}
 		f = new(big.Float).Mul(f, f)
 	}
-	integer := new(big.Int)
-	f.Int(integer)
-	return integer
+	return ans
 }
 
 func (mdl *AggregatedBlockFeed) query(blockNum int64) {
@@ -65,18 +63,19 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 	yearnFeedLen := len(queryAbleAdapters)
 	v2ABI := core.GetAbi("Uniswapv2Pool")
 	v3ABI := core.GetAbi("Uniswapv3Pool")
-	pricesByToken := map[string]*core.PoolPrices{}
+	pricesByToken := map[string]*core.UniPoolPrices{}
 	weth := mdl.Repo.GetWETHAddr()
 	for i, entry := range result {
-		log.Info(utils.ToJson(entry))
 		if i < yearnFeedLen {
 			mdl.processPriceData(blockNum, queryAbleAdapters[i], entry)
+			log.Info(i, entry.Success)
 		} else {
 			tokenInd := (i - yearnFeedLen) / 3
 			callInd := i - yearnFeedLen - tokenInd*3
 			token := uniTokens[tokenInd]
 			pools := mdl.UniPoolByToken[token]
-			prices := &core.PoolPrices{BlockNum: blockNum}
+			prices := &core.UniPoolPrices{BlockNum: blockNum}
+			log.Info(token, callInd, entry.Success, mdl.Repo.GetToken(token).Symbol)
 			if pricesByToken[token] != nil {
 				prices = pricesByToken[token]
 			}
@@ -93,21 +92,36 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 				r1 := value[1].(*big.Int)
 				uniswapv2Price := priceInWETH(token, weth, pools.Decimals, r0, r1)
 				prices.PriceV2 = utils.GetFloat64Decimal(uniswapv2Price, 18)
+				log.Info(prices.PriceV2)
 				prices.PriceV2Success = true
 			case 1:
 				value, err := v3ABI.Unpack("slot0", entry.ReturnData)
 				log.CheckFatal(err)
-				uniswapv3Price := squareIt(value[0].(*big.Int))
-				prices.PriceV3 = utils.GetFloat64Decimal(uniswapv3Price, 18)
+				//https://docs.uniswap.org/sdk/guides/fetching-prices#understanding-sqrtprice
+				price := utils.GetInt64(squareIt(value[0].(*big.Int)), -18)
+				normalizeFactor := new(big.Int).Exp(big.NewInt(2), big.NewInt(96*2), nil)
+				price = new(big.Int).Quo(price, normalizeFactor)
+				prices.PriceV3 = utils.GetFloat64Decimal(price, 18)
+				// if not sorted use resiprocal
+				if !areSorted(token, weth) {
+					prices.PriceV3 = 1 / prices.PriceV3
+				}
+				log.Info(prices.PriceV3)
 				prices.PriceV3Success = true
 			case 2:
 				value, err := v3ABI.Unpack("observe", entry.ReturnData)
 				log.CheckFatal(err)
 				ticks := value[0].([]*big.Int)
-				tickDiff := new(big.Int).Sub(ticks[1], ticks[0])
-				sqrtPrice := pow(tickDiff)
-				twapV3 := squareIt(sqrtPrice)
-				prices.TwapV3 = utils.GetFloat64Decimal(twapV3, 18)
+				// (t1-t0)/interval
+				tickDiff := new(big.Int).Quo(new(big.Int).Sub(ticks[1], ticks[0]), big.NewInt(600))
+				sqrtPrice := powFloat(tickDiff)
+				twapV3Price, _ := sqrtPrice.Float64()
+				prices.TwapV3 = twapV3Price
+				// if sorted use resiprocal
+				if areSorted(token, weth) {
+					prices.TwapV3 = 1 / prices.TwapV3
+				}
+				log.Info(prices.TwapV3)
 				prices.TwapV3Success = true
 			}
 		}
@@ -116,9 +130,11 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 		mdl.UniPricesByTokens[token] = append(mdl.UniPricesByTokens[token], prices)
 	}
 }
-
+func areSorted(token, weth string) bool {
+	return strings.Compare(strings.ToLower(token), strings.ToLower(weth)) == -1
+}
 func priceInWETH(token, weth string, tokenDecimals int8, r0, r1 *big.Int) *big.Int {
-	if strings.Compare(token, weth) == 1 {
+	if !areSorted(token, weth) {
 		tmp := r1
 		r1 = r0
 		r0 = tmp
@@ -128,6 +144,7 @@ func priceInWETH(token, weth string, tokenDecimals int8, r0, r1 *big.Int) *big.I
 	denom := new(big.Int).Add(r0, amountIn)
 	return new(big.Int).Quo(nom, denom)
 }
+
 func squareIt(a *big.Int) *big.Int {
 	return new(big.Int).Mul(a, a)
 }
@@ -214,9 +231,9 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 }
 
 func (mdl *AggregatedBlockFeed) Clear() {
-	mdl.UniPricesByTokens = map[string][]*core.PoolPrices{}
+	mdl.UniPricesByTokens = map[string][]*core.UniPoolPrices{}
 }
 
-func (mdl *AggregatedBlockFeed) GetUniPricesByToken(token string) []*core.PoolPrices {
+func (mdl *AggregatedBlockFeed) GetUniPricesByToken(token string) []*core.UniPoolPrices {
 	return mdl.UniPricesByTokens[token]
 }

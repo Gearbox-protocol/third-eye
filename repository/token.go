@@ -98,11 +98,11 @@ func (repo *Repository) GetPreviousLiqThreshold(cm, token string) *core.BigInt {
 	return repo.allowedTokens[cm][token].LiquidityThreshold
 }
 
-func (repo *Repository) GetActivePriceOracle() (string, error) {
+func (repo *Repository) GetActivePriceOracle(blockNum int64) (string, error) {
 	oracles := repo.kit.GetAdapterAddressByName(core.PriceOracle)
 	for _, addr := range oracles {
 		oracleAdapter := repo.kit.GetAdapter(addr)
-		if !oracleAdapter.IsDisabled() {
+		if !oracleAdapter.IsDisabled() && oracleAdapter.GetDiscoveredAt() <= blockNum {
 			return addr, nil
 		}
 	}
@@ -110,7 +110,7 @@ func (repo *Repository) GetActivePriceOracle() (string, error) {
 }
 
 func (repo *Repository) GetValueInUSD(blockNum int64, token string, amount *big.Int) *big.Int {
-	oracle, err := repo.GetActivePriceOracle()
+	oracle, err := repo.GetActivePriceOracle(blockNum)
 	log.CheckFatal(err)
 	poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
 	log.CheckFatal(err)
