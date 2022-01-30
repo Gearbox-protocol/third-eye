@@ -233,7 +233,7 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 			PriceETHBI: (*core.BigInt)(roundData.Answer),
 			PriceETH:   utils.GetFloat64Decimal(roundData.Answer, 18),
 		}
-		adapter.Details["notified"] = false
+		adapter.setNotified(false)
 	} else {
 		priceData = adapter.calculatePriceFeedInternally(blockNum)
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
+	"sync"
 )
 
 type YearnPriceFeed struct {
@@ -20,6 +21,7 @@ type YearnPriceFeed struct {
 	YVaultContract    *yVault.YVault
 	PriceFeedContract *priceFeed.PriceFeed
 	DecimalDivider    *big.Int
+	mu *sync.Mutex
 }
 
 func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *YearnPriceFeed {
@@ -52,6 +54,7 @@ func NewYearnPriceFeedFromAdapter(adapter *core.SyncAdapter) *YearnPriceFeed {
 	obj := &YearnPriceFeed{
 		SyncAdapter: adapter,
 		contractETH: yearnPFContract,
+		mu: &sync.Mutex{},
 	}
 	obj.OnlyQuery = true
 	return obj
@@ -61,6 +64,8 @@ func (mdl *YearnPriceFeed) OnLog(txLog types.Log) {
 
 }
 func (mdl *YearnPriceFeed) isNotified() bool {
+	mdl.mu.Lock()
+	defer mdl.mu.Unlock()
 	if mdl.Details == nil || mdl.Details["notified"] == nil {
 		return false
 	}
@@ -69,6 +74,12 @@ func (mdl *YearnPriceFeed) isNotified() bool {
 		log.Fatal("Notified not parsed")
 	}
 	return value
+}
+
+func (mdl *YearnPriceFeed) setNotified(notified bool) {
+	mdl.mu.Lock()
+	defer mdl.mu.Unlock()
+	mdl.Details["notified"] = notified
 }
 
 func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.PriceFeed {
@@ -90,7 +101,7 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 	log.CheckFatal(err)
 	if !(pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0) {
 		if !mdl.isNotified() {
-			mdl.Details["notified"] = true
+			mdl.setNotified(true)
 			log.Warnf("PricePerShare(%d) is not btw lower limit(%d) and upper limit(%d).", pricePerShare, lowerBound, uppwerBound)
 		}
 	} else {
