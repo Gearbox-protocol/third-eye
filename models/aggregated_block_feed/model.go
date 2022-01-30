@@ -16,9 +16,10 @@ type AggregatedBlockFeed struct {
 	UniPoolByToken    map[string]*core.UniswapPools
 	TokenLastSync     map[string]int64
 	UniPricesByTokens map[string][]*core.UniPoolPrices
+	Interval          int64
 }
 
-func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI) *AggregatedBlockFeed {
+func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			// Address:      oracle,
@@ -35,6 +36,8 @@ func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI) *Ag
 		UniPoolByToken:    map[string]*core.UniswapPools{},
 		UniPricesByTokens: map[string][]*core.UniPoolPrices{},
 		SyncAdapter:       syncAdapter,
+		TokenLastSync:     map[string]int64{},
+		Interval:          interval,
 	}
 }
 
@@ -44,7 +47,6 @@ func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter core.SyncAdapterI) {
 		log.Fatal("Failed in parsing yearn feed for aggregated yearn feed")
 	}
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
-	log.Info(adapter.GetName(), adapter.GetLastSync())
 	mdl.YearnFeeds = append(mdl.YearnFeeds, yearnFeed)
 }
 

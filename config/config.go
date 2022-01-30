@@ -41,4 +41,6 @@ type Config struct {
 	ROLLBACK             string `env:"ROLLBACK"`
 	Uniswapv2Router      string `env:"UNISWAPV2_ROUTER"`
 	Uniswapv3Router      string `env:"UNISWAPV3_ROUTER"`
+	Interval             int64
+	IntervalStr          string `env:"INTERVAL" default:"25"`
 }

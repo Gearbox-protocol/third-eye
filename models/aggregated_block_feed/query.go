@@ -14,20 +14,18 @@ import (
 	// "fmt"
 )
 
-const interval = 25
-
 func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	if len(mdl.UniPoolByToken) == 0 && len(mdl.YearnFeeds) == 0 {
 		return
 	}
 	// msg
-	queryFrom := mdl.GetLastSync() + interval
+	queryFrom := mdl.GetLastSync() + mdl.Interval
 	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, queryTill)
 	// timer with query of block
 	rounds := 0
 	loopStartTime := time.Now()
 	roundStartTime := time.Now()
-	for blockNum := queryFrom; blockNum <= queryTill; blockNum += interval {
+	for blockNum := queryFrom; blockNum <= queryTill; blockNum += mdl.Interval {
 		mdl.query(blockNum)
 		if rounds%100 == 0 {
 			timeLeft := (time.Now().Sub(loopStartTime).Seconds() * float64(queryTill-blockNum)) /

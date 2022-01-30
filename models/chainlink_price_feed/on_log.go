@@ -45,10 +45,8 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				PriceETHBI:  (*core.BigInt)(answerBI),
 				PriceETH:    utils.GetFloat64Decimal(answerBI, 18),
 			}
-			log.Info(uniPricesInd, blockNum)
 			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
 				mdl.compareDiff(prevPriceFeed, uniPrices[uniPricesInd])
-				log.Info(uniPrices[uniPricesInd].BlockNum, blockNum)
 				uniPricesInd++
 			}
 			if len(uniPrices) > 0 {
@@ -87,12 +85,13 @@ func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPoolPrices *co
 	uniPoolPrices.ChainlinkBlockNumber = pf.BlockNumber
 	uniPoolPrices.Token = pf.Token
 	mdl.Repo.AddUniswapPrices(uniPoolPrices)
-	if !mdl.isNotified() &&
-		((uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
-			(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
-			(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH))) {
-		mdl.uniPriceVariationNotify(pf, uniPoolPrices)
-		mdl.Details["notified"] = true
+	if (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
+		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
+		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
+		if !mdl.isNotified() {
+			mdl.uniPriceVariationNotify(pf, uniPoolPrices)
+			mdl.Details["notified"] = true
+		}
 	} else {
 		mdl.Details["notified"] = false
 	}
@@ -106,7 +105,7 @@ func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPr
 	symbol := mdl.Repo.GetToken(mdl.Token).Symbol
 	log.Infof(`Token:%s(%s) =>
 	Chainlink BlockNum:%d %f
-	Uni price at block number: %d
+	Uni pool prices are at block: %d
 	Uniswapv2 Price: %f
 	Uniswapv3 Price: %f
 	Uniswapv3 Twap: %f\n`, symbol, mdl.Token,

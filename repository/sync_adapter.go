@@ -40,13 +40,6 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		if ap.Details["dc"] != nil {
 			repo.dcWrapper.LoadMultipleDC(ap.Details["dc"])
 		}
-		if ap.Details["weth"] != nil {
-			weth, ok := (ap.Details["weth"]).(string)
-			if !ok {
-				log.Fatalf("weth is set in addressprovider sync adapter but it is not string %v", ap.Details["weth"])
-			}
-			repo.SetWETHAddr(weth)
-		}
 		return ap
 	case core.AccountFactory:
 		return account_factory.NewAccountFactoryFromAdapter(adapter)

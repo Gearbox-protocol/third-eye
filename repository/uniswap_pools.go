@@ -16,7 +16,7 @@ import (
 func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.config.ChainId != 1 {
+	if repo.config.ChainId != 1 || repo.aggregatedFeed.UniPoolByToken[token] != nil {
 		return
 	}
 	v2FactoryAddr := repo.GetFactoryv2Address(blockNum)
@@ -30,10 +30,15 @@ func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
 	log.CheckFatal(err)
 	poolv3Addr, err := v3Factory.GetPool(nil, common.HexToAddress(token), common.HexToAddress(repo.WETHAddr), big.NewInt(3000))
 	log.CheckFatal(err)
+	if poolv2Addr.Hex() == "0x0000000000000000000000000000000000000000" ||
+		poolv3Addr.Hex() == "0x0000000000000000000000000000000000000000" {
+		log.Fatalf("pool not fetched for v2/v3: %s/%s", token, repo.WETHAddr)
+	}
 	repo.aggregatedFeed.AddPools(token, &core.UniswapPools{
 		V2:      poolv2Addr.Hex(),
 		V3:      poolv3Addr.Hex(),
 		Updated: true,
+		Token:   token,
 	})
 }
 

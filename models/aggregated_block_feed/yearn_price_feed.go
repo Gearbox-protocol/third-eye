@@ -88,9 +88,13 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 	log.CheckFatal(err)
 	uppwerBound, err := mdl.contractETH.UpperBound(opts)
 	log.CheckFatal(err)
-	if !mdl.isNotified() && !(pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0) {
-		mdl.Details["notified"] = true
-		log.Warnf("PricePerShare(%d) is not btw lower limit(%d) and upper limit(%d).", pricePerShare, lowerBound, uppwerBound)
+	if !(pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0) {
+		if !mdl.isNotified() {
+			mdl.Details["notified"] = true
+			log.Warnf("PricePerShare(%d) is not btw lower limit(%d) and upper limit(%d).", pricePerShare, lowerBound, uppwerBound)
+		}
+	} else {
+		mdl.Details["notified"] = false
 	}
 
 	newAnswer := new(big.Int).Quo(

@@ -73,7 +73,8 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		dieselTokens:          make(map[string]*core.UTokenAndPool),
 		accountManager:        core.NewAccountTokenManager(),
 	}
-	r.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, r)
+
+	r.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, r, config.Interval)
 	r.kit.Add(r.aggregatedFeed)
 	r.init()
 	return r

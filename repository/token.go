@@ -55,6 +55,9 @@ func (repo *Repository) loadToken() {
 		log.Fatal(err)
 	}
 	for _, token := range data {
+		if token.Symbol == "WETH" {
+			repo.SetWETHAddr(token.Address)
+		}
 		repo.addTokenObj(token)
 	}
 }
