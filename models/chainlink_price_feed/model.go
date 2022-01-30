@@ -37,6 +37,7 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 		true,
 	)
 	repo.AddTokenOracle(token, oracle, feed, discoveredAt)
+	adapter.Repo.AddPoolsForToken(adapter.DiscoveredAt, token)
 	return adapter
 }
 
@@ -77,7 +78,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogB
 		}
 	}
 	obj.HasOnLogs = true
-	obj.Repo.AddPoolsForToken(obj.DiscoveredAt, token, obj.GetLastSync())
+	obj.Repo.AddLastSyncForToken(token, obj.GetLastSync())
 	return obj
 }
 

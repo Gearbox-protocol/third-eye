@@ -28,3 +28,8 @@ CREATE TABLE token_oracle (
     feed character varying(42),
     block_num integer NOT NULL,
     PRIMARY KEY (block_num, token));
+
+CREATE TABLE uniswap_pools (
+    token character varying(42) PRIMARY KEY,
+    pool_v2 character varying(42),
+    pool_v3 character varying(42));

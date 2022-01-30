@@ -30,8 +30,13 @@ func (UniPoolPrices) TableName() string {
 }
 
 type UniswapPools struct {
-	V2       string
-	V3       string
+	V2      string `gorm:"column:pool_v2"`
+	V3      string `gorm:"column:pool_v3"`
+	Token   string `gorm:"column:token;primaryKey"`
+	Updated bool   `gorm:"-"`
+}
+
+type TokenSyncDetails struct {
 	Decimals int8
 	LastSync int64
 }

@@ -54,7 +54,14 @@ func (repo *Repository) Flush() error {
 	}).CreateInBatches(adapters, 50).Error
 	log.CheckFatal(err)
 
-	log.Infof("created sync sql update in %f sec", time.Now().Sub(now).Seconds())
+	if uniPools := repo.aggregatedFeed.GetUniswapPools(); len(uniPools) > 0 {
+		err := tx.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(uniPools, 50).Error
+		log.CheckFatal(err)
+	}
+	log.Infof("created sync adapters sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
 	tokens := make([]*core.Token, 0, len(repo.tokens))

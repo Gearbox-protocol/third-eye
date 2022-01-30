@@ -14,6 +14,7 @@ type AggregatedBlockFeed struct {
 	YearnFeeds        []*YearnPriceFeed
 	UniswapPools      []string
 	UniPoolByToken    map[string]*core.UniswapPools
+	TokenLastSync     map[string]int64
 	UniPricesByTokens map[string][]*core.UniPoolPrices
 }
 
@@ -55,11 +56,26 @@ func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
 }
 
 func (mdl *AggregatedBlockFeed) AddPools(token string, uniswapPools *core.UniswapPools) {
-	mdl.LastSync = utils.Min(uniswapPools.LastSync, mdl.LastSync)
-	log.Info(token, uniswapPools.LastSync)
 	if mdl.UniPoolByToken[token] == nil {
 		mdl.UniPoolByToken[token] = uniswapPools
 	}
+}
+
+func (mdl *AggregatedBlockFeed) AddLastSyncForToken(token string, lastSync int64) {
+	mdl.LastSync = utils.Min(lastSync, mdl.LastSync)
 	// there is new oracle/feed added for a token
-	mdl.UniPoolByToken[token].LastSync = utils.Min(mdl.UniPoolByToken[token].LastSync, uniswapPools.LastSync)
+	if mdl.TokenLastSync[token] == 0 {
+		mdl.TokenLastSync[token] = lastSync
+	}
+	mdl.TokenLastSync[token] = utils.Min(mdl.TokenLastSync[token], lastSync)
+}
+
+func (mdl *AggregatedBlockFeed) GetUniswapPools() (updatedPools []*core.UniswapPools) {
+	for _, entry := range mdl.UniPoolByToken {
+		if entry.Updated {
+			updatedPools = append(updatedPools, entry)
+		}
+		entry.Updated = false
+	}
+	return
 }

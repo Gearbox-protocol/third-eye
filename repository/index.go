@@ -97,6 +97,8 @@ func (repo *Repository) init() {
 	repo.loadToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
+	//
+	repo.loadUniswapPools()
 	// for disabling previous token oracle if new oracle is set
 	repo.loadCurrentTokenOracle()
 	// load state for sync_adpters
@@ -161,9 +163,9 @@ func (obj *LastSyncAndType) String() string {
 	return fmt.Sprintf("%s(%s):%d", obj.Type, obj.Address, obj.LastSync)
 
 }
-func (eng *Repository) InitChecks() {
+func (repo *Repository) InitChecks() {
 	data := []*LastSyncAndType{}
-	err := eng.db.Raw(`SELECT type, address,  last_sync AS last_calculated_at 
+	err := repo.db.Raw(`SELECT type, address,  last_sync AS last_calculated_at 
 		FROM sync_adapters 
 		WHERE type IN ('AccountManager', 'CreditManager','AccountFactory')`).Find(&data).Error
 	log.CheckFatal(err)
@@ -193,4 +195,13 @@ func (repo *Repository) GetChainId() uint {
 
 func (repo *Repository) AddUniswapPrices(prices *core.UniPoolPrices) {
 	repo.setAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
+}
+
+func (repo *Repository) loadUniswapPools() {
+	data := []*core.UniswapPools{}
+	err := repo.db.Raw(`SELECT * from uniswap_pools`).Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		repo.aggregatedFeed.AddPools(entry.Token, entry)
+	}
 }

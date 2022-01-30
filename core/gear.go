@@ -100,7 +100,8 @@ type RepositoryI interface {
 	// multicall
 	MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result
 	GetUniPricesByToken(token string) []*UniPoolPrices
-	AddPoolsForToken(blockNum int64, token string, lastSync int64)
+	AddPoolsForToken(blockNum int64, token string)
+	AddLastSyncForToken(token string, lastSync int64)
 }
 
 type GearBalance struct {

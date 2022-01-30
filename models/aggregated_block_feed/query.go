@@ -76,7 +76,7 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 			tokenInd := (i - yearnFeedLen) / 3
 			callInd := i - yearnFeedLen - tokenInd*3
 			token := uniTokens[tokenInd]
-			tokenDetails := mdl.UniPoolByToken[token]
+			tokenDetails := mdl.Repo.GetToken(token)
 			prices := &core.UniPoolPrices{BlockNum: blockNum}
 			if pricesByToken[token] != nil {
 				prices = pricesByToken[token]
@@ -124,7 +124,7 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 				twapV3Price, _ := sqrtPrice.Float64()
 				prices.TwapV3 = twapV3Price
 				// if sorted use resiprocal
-				if mdl.Repo.GetToken(token).Symbol == "YFI" {
+				if tokenDetails.Symbol == "YFI" {
 					prices.TwapV3 = 1 / prices.TwapV3
 				}
 				prices.TwapV3Success = true
@@ -158,7 +158,7 @@ func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64) (calls []mul
 	v3ABI := core.GetAbi("Uniswapv3Pool")
 	for token, pools := range mdl.UniPoolByToken {
 		// only sync uniswap pool price for token that have last sync
-		if pools.LastSync >= blockNum {
+		if mdl.TokenLastSync[token] >= blockNum {
 			continue
 		}
 		uniswapv2Price, err := v2ABI.Pack("getReserves")
