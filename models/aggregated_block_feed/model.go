@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math"
+	"sync"
 )
 
 type AggregatedBlockFeed struct {
@@ -15,8 +16,9 @@ type AggregatedBlockFeed struct {
 	UniswapPools      []string
 	UniPoolByToken    map[string]*core.UniswapPools
 	TokenLastSync     map[string]int64
-	UniPricesByTokens map[string][]*core.UniPoolPrices
+	UniPricesByTokens map[string]core.SortedUniPoolPrices
 	Interval          int64
+	mu *sync.Mutex
 }
 
 func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
@@ -34,10 +36,11 @@ func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI, int
 	}
 	return &AggregatedBlockFeed{
 		UniPoolByToken:    map[string]*core.UniswapPools{},
-		UniPricesByTokens: map[string][]*core.UniPoolPrices{},
+		UniPricesByTokens: map[string]core.SortedUniPoolPrices{},
 		SyncAdapter:       syncAdapter,
 		TokenLastSync:     map[string]int64{},
 		Interval:          interval,
+		mu: &sync.Mutex{},
 	}
 }
 

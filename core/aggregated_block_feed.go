@@ -40,3 +40,18 @@ type TokenSyncDetails struct {
 	Decimals int8
 	LastSync int64
 }
+
+// sort event balances by block number/log id
+type SortedUniPoolPrices []*UniPoolPrices
+
+func (ts SortedUniPoolPrices) Len() int {
+	return len(ts)
+}
+func (ts SortedUniPoolPrices) Swap(i, j int) {
+	ts[i], ts[j] = ts[j], ts[i]
+}
+
+// sort in increasing order by blockNumber,index
+func (ts SortedUniPoolPrices) Less(i, j int) bool {
+	return ts[i].BlockNum < ts[i].BlockNum
+}
