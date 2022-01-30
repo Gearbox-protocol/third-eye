@@ -76,6 +76,9 @@ func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogB
 			}
 		}
 	}
+	obj.HasOnLogs = true
+	adapter.Repo.AddPoolsForToken(adapter.DiscoveredAt, token)
+	obj.Repo.AddLastSyncForToken(token, obj.GetLastSync())
 	return obj
 }
 

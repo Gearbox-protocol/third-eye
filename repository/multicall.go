@@ -20,20 +20,41 @@ type PriceCallParams struct {
 	Address common.Address
 }
 
-func (repo *Repository) makeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
+func (repo *Repository) MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
 	contract := getMultiCallContract(repo.client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	result, err := contract.TryAggregate(opts, successRequired, calls)
-	log.CheckFatal(err)
+	var result []multicall.Multicall2Result
+	var tmpCalls []multicall.Multicall2Call
+	callsInd := 0
+	callsLen := len(calls)
+	for callsInd < callsLen {
+		for i := 0; i < 20 && callsInd < callsLen; i++ {
+			tmpCalls = append(tmpCalls, calls[callsInd])
+			callsInd++
+		}
+		tmpResult, err := contract.TryAggregate(opts, successRequired, tmpCalls)
+		log.CheckFatal(err)
+		result = append(result, tmpResult...)
+		tmpCalls = []multicall.Multicall2Call{}
+	}
 	return result
 }
 
 func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	calls := []multicall.Multicall2Call{}
 
-	oracle, err := repo.GetActivePriceOracle()
+	oracle, err := repo.GetActivePriceOracle(blockNum)
+	if err != nil && err.Error() == "Not Found" {
+		for _ = range tokenAddrs {
+			prices = append(prices, new(big.Int))
+		}
+		for _ = range poolForDieselRate {
+			dieselRates = append(dieselRates, new(big.Int))
+		}
+		return
+	}
 	log.CheckFatal(err)
 	oracleABI := core.GetAbi(core.PriceOracle)
 	for _, token := range tokenAddrs {
@@ -58,11 +79,12 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		})
 	}
 	// call
-	result := repo.makeMultiCall(blockNum, successRequired, calls)
+	result := repo.MakeMultiCall(blockNum, successRequired, calls)
 
 	for i, entry := range result {
 		// token price
 		if i < len(tokenAddrs) {
+			log.Info(tokenAddrs[i], entry)
 			price := big.NewInt(0)
 			if entry.Success {
 				value, err := oracleABI.Unpack("convert", entry.ReturnData)

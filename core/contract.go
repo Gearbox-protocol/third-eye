@@ -15,7 +15,11 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/poolService"
 	"github.com/Gearbox-protocol/third-eye/artifacts/priceOracle"
 	"github.com/Gearbox-protocol/third-eye/artifacts/tokenMock"
+	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapv2Pool"
+	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapv2Router"
+	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapv3Pool"
 	"github.com/Gearbox-protocol/third-eye/artifacts/wETHGateway"
+	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -79,7 +83,8 @@ func GetAbi(contractName string) *abi.ABI {
 		"WETHGateway":   wETHGateway.WETHGatewayMetaData,
 
 		// Oracle
-		PriceOracle: priceOracle.PriceOracleMetaData,
+		PriceOracle:    priceOracle.PriceOracleMetaData,
+		YearnPriceFeed: &bind.MetaData{ABI: yearnPriceFeed.YearnPriceFeedABI},
 
 		// Pool
 		CreditManager:             creditManager.CreditManagerMetaData,
@@ -88,9 +93,12 @@ func GetAbi(contractName string) *abi.ABI {
 		Pool:                      poolService.PoolServiceMetaData,
 
 		// GetUnderlyingToken
-		"DieselToken": dieselToken.DieselTokenMetaData,
-		GearToken:     gearToken.GearTokenMetaData,
-		"TokenMock":   tokenMock.TokenMockMetaData,
+		"DieselToken":     dieselToken.DieselTokenMetaData,
+		GearToken:         gearToken.GearTokenMetaData,
+		"TokenMock":       tokenMock.TokenMockMetaData,
+		"Uniswapv2Pool":   &bind.MetaData{ABI: uniswapv2Pool.Uniswapv2PoolABI},
+		"Uniswapv3Pool":   &bind.MetaData{ABI: uniswapv3Pool.Uniswapv3PoolABI},
+		"Uniswapv2Router": &bind.MetaData{ABI: uniswapv2Router.Uniswapv2RouterABI},
 	}
 	abiStr, ok := metadataMap[contractName]
 	if !ok {

@@ -70,6 +70,9 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.Tr
 	var totalValueInUSD float64
 	var tokenAddrs []string
 	for token := range *tss.Balances {
+		if token == repo.GearTokenAddr || token == repo.WETHAddr {
+			continue
+		}
 		tokenAddrs = append(tokenAddrs, token)
 	}
 	prices := repo.GetPriceInUSD(blockNum, tokenAddrs)
@@ -89,6 +92,7 @@ func (repo *Repository) AfterSync(syncTill int64) {
 		}
 	}
 	repo.accountManager.Clear()
+	repo.aggregatedFeed.Clear()
 }
 func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
@@ -122,6 +126,7 @@ func (repo *Repository) GetPriceInUSD(blockNum int64, tokenAddrs []string) core.
 		}
 		priceByToken[token] = utils.GetFloat64Decimal(price, 8)
 	}
+	priceByToken[repo.WETHAddr] = 1
 	return priceByToken
 }
 

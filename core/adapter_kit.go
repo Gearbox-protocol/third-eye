@@ -11,8 +11,15 @@ func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})
 	kit.AddLevel([]string{Pool, AccountManager})
-	kit.AddLevel([]string{CreditManager, ChainlinkPriceFeed, YearnPriceFeed})
-	kit.AddLevel([]string{CreditFilter, Treasury})
+	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed})
+	kit.AddLevel([]string{CreditFilter, Treasury, ChainlinkPriceFeed})
+	// - AggregatedBlockFeed => ChainlinkPriceFeed; so that deviation btw uniswap pool and chainlink can be calculated.
+	//   Another reason being to get all the yearnPriceFeed in single go.
+	// - CreditManager => CreditFilter for creation only.
+	// - AccountFactory => AccountManager => CreditManager; factory gets the accounts address to accountmanager for getting
+	//   all token transfers, in CreditManager filter transfer related to events on creditmanager
+	// - Pool => CreditManager; for getting the session for borrow/repay event on Pool
+	// - Treasury, acl, PriceOracle and geartoken are independent
 }
 
 func (kit *AdapterKit) AddLevel(lvl []string) {

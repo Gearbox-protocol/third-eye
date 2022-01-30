@@ -31,7 +31,9 @@ func (repo *Repository) Flush() error {
 	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
 		for repo.kit.Next(lvlIndex) {
 			adapter := repo.kit.Get(lvlIndex)
-			adapters = append(adapters, adapter.GetAdapterState())
+			if adapter.GetName() != core.AggregatedBlockFeed {
+				adapters = append(adapters, adapter.GetAdapterState())
+			}
 			if adapter.HasUnderlyingState() {
 				err := tx.Clauses(clause.OnConflict{
 					// err := repo.db.Clauses(clause.OnConflict{
@@ -42,13 +44,24 @@ func (repo *Repository) Flush() error {
 		}
 		repo.kit.Reset(lvlIndex)
 	}
+	// save yearnPriceFeeds
+	for _, adapter := range repo.aggregatedFeed.GetYearnFeeds() {
+		adapters = append(adapters, adapter.GetAdapterState())
+	}
 	err := tx.Clauses(clause.OnConflict{
 		// err := repo.db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(adapters, 50).Error
 	log.CheckFatal(err)
 
-	log.Infof("created sync sql update in %f sec", time.Now().Sub(now).Seconds())
+	if uniPools := repo.aggregatedFeed.GetUniswapPools(); len(uniPools) > 0 {
+		err := tx.Clauses(clause.OnConflict{
+			// err := repo.db.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(uniPools, 50).Error
+		log.CheckFatal(err)
+	}
+	log.Infof("created sync adapters sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
 	tokens := make([]*core.Token, 0, len(repo.tokens))

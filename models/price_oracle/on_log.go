@@ -8,8 +8,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
-	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -51,7 +51,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(obj)
 		} else if priceFeedType == YearnPriceFeed {
-			obj := yearn_price_feed.NewYearnPriceFeed(token, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			obj := aggregated_block_feed.NewYearnPriceFeed(token, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(obj)
 		} else {
 			log.Fatal("Unknown PriceFeed type", priceFeedType)

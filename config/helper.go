@@ -55,8 +55,14 @@ func NewConfig() *Config {
 
 	chainId, err := strconv.Atoi(config.NetworkId)
 	if err != nil {
+		log.Fatal("Cant get interval")
+	}
+
+	interval, err := strconv.Atoi(config.IntervalStr)
+	if err != nil {
 		log.Fatal("Cant get chain id")
 	}
+	config.Interval = int64(interval)
 
 	if config.DebtDCMatchingStr == "1" {
 		config.DebtDCMatching = true

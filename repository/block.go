@@ -32,6 +32,9 @@ func (repo *Repository) setBlock(blockNum int64) {
 		// 	repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum}
 		// 	return
 		// }
+		if err != nil {
+			panic(err)
+		}
 		log.CheckFatal(err)
 		repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum, Timestamp: b.Time()}
 		repo.addBlockDate(&core.BlockDate{BlockNum: blockNum, Timestamp: int64(b.Time())})

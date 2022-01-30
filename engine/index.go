@@ -75,7 +75,6 @@ func (e *Engine) SyncHandler() {
 	for {
 		latestBlockNum = e.GetLatestBlockNumber()
 		e.sync(latestBlockNum)
-		e.repo.CallRankingProcedure()
 		log.Infof("Synced till %d sleeping for 5 mins", latestBlockNum)
 		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
 	}
@@ -133,18 +132,22 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
-	logs, err := e.GetLogs(syncFrom, syncTill, []common.Address{common.HexToAddress(mdl.GetAddress())}, [][]common.Hash{})
+	txLogs, err := e.GetLogs(syncFrom, syncTill, []common.Address{common.HexToAddress(mdl.GetAddress())}, [][]common.Hash{})
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, txLog := range logs {
-		blockNum := int64(txLog.BlockNumber)
-		if mdl.GetBlockToDisableOn() < blockNum {
-			break
-		}
-		e.repo.SetBlock(blockNum)
-		if !e.isEventPausedOrUnParsed(txLog) {
-			mdl.OnLog(txLog)
+	if mdl.GetHasOnLogs() {
+		mdl.OnLogs(txLogs)
+	} else {
+		for _, txLog := range txLogs {
+			blockNum := int64(txLog.BlockNumber)
+			if mdl.GetBlockToDisableOn() < blockNum {
+				break
+			}
+			e.repo.SetBlock(blockNum)
+			if !e.isEventPausedOrUnParsed(txLog) {
+				mdl.OnLog(txLog)
+			}
 		}
 	}
 	// after sync

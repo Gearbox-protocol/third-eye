@@ -11,6 +11,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm"
 )
@@ -28,6 +29,7 @@ type Repository struct {
 	kit                   *core.AdapterKit
 	executeParser         core.ExecuteParserI
 	dcWrapper             *core.DataCompressorWrapper
+	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
 	allowedTokens         map[string]map[string]*core.AllowedToken
 	disabledTokens        []*core.AllowedToken
@@ -71,6 +73,9 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		dieselTokens:          make(map[string]*core.UTokenAndPool),
 		accountManager:        core.NewAccountTokenManager(),
 	}
+
+	r.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, r, config.Interval)
+	r.kit.Add(r.aggregatedFeed)
 	r.init()
 	return r
 }
@@ -93,6 +98,8 @@ func (repo *Repository) init() {
 	repo.loadToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
+	//
+	repo.loadUniswapPools()
 	// for disabling previous token oracle if new oracle is set
 	repo.loadCurrentTokenOracle()
 	// load state for sync_adpters
@@ -140,15 +147,6 @@ func (repo *Repository) AddEventBalance(eb core.EventBalance) {
 	repo.setAndGetBlock(eb.BlockNumber).AddEventBalance(&eb)
 }
 
-func (repo *Repository) CallRankingProcedure() {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	if err := repo.db.Raw("CALL rankings()").Error; err != nil {
-		log.CheckFatal(err)
-	}
-	log.Info("Refreshed rankings by 7/20 days")
-}
-
 func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
 	ts := eng.SetAndGetBlock(blockNum).Timestamp
 	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
@@ -166,9 +164,9 @@ func (obj *LastSyncAndType) String() string {
 	return fmt.Sprintf("%s(%s):%d", obj.Type, obj.Address, obj.LastSync)
 
 }
-func (eng *Repository) InitChecks() {
+func (repo *Repository) InitChecks() {
 	data := []*LastSyncAndType{}
-	err := eng.db.Raw(`SELECT type, address,  last_sync AS last_calculated_at 
+	err := repo.db.Raw(`SELECT type, address,  last_sync AS last_calculated_at 
 		FROM sync_adapters 
 		WHERE type IN ('AccountManager', 'CreditManager','AccountFactory')`).Find(&data).Error
 	log.CheckFatal(err)
@@ -189,5 +187,22 @@ func (eng *Repository) InitChecks() {
 	if accountFactoryLastSync != accountManagerLastSync ||
 		cmLastSync < accountManagerLastSync {
 		log.Fatal("Account manager/credit manager/AccountFactory are not synchronised: ", str)
+	}
+}
+
+func (repo *Repository) GetChainId() uint {
+	return repo.config.ChainId
+}
+
+func (repo *Repository) AddUniswapPrices(prices *core.UniPoolPrices) {
+	repo.setAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
+}
+
+func (repo *Repository) loadUniswapPools() {
+	data := []*core.UniswapPools{}
+	err := repo.db.Raw(`SELECT * from uniswap_pools`).Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		repo.aggregatedFeed.AddPools(entry.Token, entry)
 	}
 }

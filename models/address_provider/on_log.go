@@ -42,7 +42,6 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})
 			}
-			mdl.Details["weth"] = address
 			mdl.Repo.SetWETHAddr(address)
 		case "GEAR_TOKEN":
 			gt := gear_token.NewGearToken(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)

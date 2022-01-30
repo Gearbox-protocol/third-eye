@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/account_manager"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
@@ -15,7 +16,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
-	"github.com/Gearbox-protocol/third-eye/models/yearn_price_feed"
 )
 
 func (repo *Repository) loadSyncAdapters() {
@@ -40,13 +40,6 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		if ap.Details["dc"] != nil {
 			repo.dcWrapper.LoadMultipleDC(ap.Details["dc"])
 		}
-		if ap.Details["weth"] != nil {
-			weth, ok := (ap.Details["weth"]).(string)
-			if !ok {
-				log.Fatalf("weth is set in addressprovider sync adapter but it is not string %v", ap.Details["weth"])
-			}
-			repo.SetWETHAddr(weth)
-		}
 		return ap
 	case core.AccountFactory:
 		return account_factory.NewAccountFactoryFromAdapter(adapter)
@@ -59,7 +52,7 @@ func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	case core.ChainlinkPriceFeed:
 		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter, false)
 	case core.YearnPriceFeed:
-		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
+		return aggregated_block_feed.NewYearnPriceFeedFromAdapter(adapter)
 	case core.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case core.GearToken:
@@ -93,5 +86,9 @@ func (repo *Repository) addSyncAdapter(adapterI core.SyncAdapterI) {
 	if core.GearToken == adapterI.GetName() {
 		repo.GearTokenAddr = adapterI.GetAddress()
 	}
-	repo.kit.Add(adapterI)
+	if adapterI.GetName() == core.YearnPriceFeed {
+		repo.aggregatedFeed.AddYearnFeed(adapterI)
+	} else {
+		repo.kit.Add(adapterI)
+	}
 }

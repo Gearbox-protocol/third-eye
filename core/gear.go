@@ -2,6 +2,7 @@ package core
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
 	"math/big"
 )
 
@@ -26,6 +27,7 @@ type RepositoryI interface {
 	GetKit() *AdapterKit
 	AddSyncAdapter(adapterI SyncAdapterI)
 	InitChecks()
+	GetChainId() uint
 	// saving to the db
 	Flush() error
 	// adding block/timestamp
@@ -90,10 +92,16 @@ type RepositoryI interface {
 	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)
 	RecentEventMsg(blockNum int64, msg string, args ...interface{})
 	//
+	// oracle and uni
+	AddUniswapPrices(prices *UniPoolPrices)
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64
 	Clear()
-	CallRankingProcedure()
+	// multicall
+	MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result
+	GetUniPricesByToken(token string) []*UniPoolPrices
+	AddPoolsForToken(blockNum int64, token string)
+	AddLastSyncForToken(token string, lastSync int64)
 }
 
 type GearBalance struct {
