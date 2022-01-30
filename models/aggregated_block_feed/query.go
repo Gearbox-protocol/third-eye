@@ -43,13 +43,17 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 func powFloat(a *big.Int) *big.Float {
 	f := big.NewFloat(1.0001)
 	ans := big.NewFloat(1)
-	for i := 0; i < a.BitLen(); i++ {
-		if a.Bit(i) == 1 {
+	absA := new(big.Int).Abs(a)
+	for i := 0; i < absA.BitLen(); i++ {
+		if absA.Bit(i) == 1 {
 			ans = new(big.Float).Mul(f, ans)
 		}
 		f = new(big.Float).Mul(f, f)
 	}
-	return ans
+	if absA == a {
+		return ans
+	}
+	return new(big.Float).Quo(big.NewFloat(1), ans)
 }
 
 func (mdl *AggregatedBlockFeed) query(blockNum int64) {
@@ -68,14 +72,12 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 	for i, entry := range result {
 		if i < yearnFeedLen {
 			mdl.processPriceData(blockNum, queryAbleAdapters[i], entry)
-			log.Info(i, entry.Success)
 		} else {
 			tokenInd := (i - yearnFeedLen) / 3
 			callInd := i - yearnFeedLen - tokenInd*3
 			token := uniTokens[tokenInd]
-			pools := mdl.UniPoolByToken[token]
+			tokenDetails := mdl.UniPoolByToken[token]
 			prices := &core.UniPoolPrices{BlockNum: blockNum}
-			log.Info(token, callInd, entry.Success, mdl.Repo.GetToken(token).Symbol)
 			if pricesByToken[token] != nil {
 				prices = pricesByToken[token]
 			}
@@ -90,15 +92,14 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 				log.CheckFatal(err)
 				r0 := value[0].(*big.Int)
 				r1 := value[1].(*big.Int)
-				uniswapv2Price := priceInWETH(token, weth, pools.Decimals, r0, r1)
+				uniswapv2Price := priceInWETH(token, weth, tokenDetails.Decimals, r0, r1)
 				prices.PriceV2 = utils.GetFloat64Decimal(uniswapv2Price, 18)
-				log.Info(prices.PriceV2)
 				prices.PriceV2Success = true
 			case 1:
 				value, err := v3ABI.Unpack("slot0", entry.ReturnData)
 				log.CheckFatal(err)
 				//https://docs.uniswap.org/sdk/guides/fetching-prices#understanding-sqrtprice
-				price := utils.GetInt64(squareIt(value[0].(*big.Int)), -18)
+				price := utils.GetInt64(squareIt(value[0].(*big.Int)), -tokenDetails.Decimals)
 				normalizeFactor := new(big.Int).Exp(big.NewInt(2), big.NewInt(96*2), nil)
 				price = new(big.Int).Quo(price, normalizeFactor)
 				prices.PriceV3 = utils.GetFloat64Decimal(price, 18)
@@ -106,22 +107,26 @@ func (mdl *AggregatedBlockFeed) query(blockNum int64) {
 				if !areSorted(token, weth) {
 					prices.PriceV3 = 1 / prices.PriceV3
 				}
-				log.Info(prices.PriceV3)
 				prices.PriceV3Success = true
 			case 2:
 				value, err := v3ABI.Unpack("observe", entry.ReturnData)
 				log.CheckFatal(err)
 				ticks := value[0].([]*big.Int)
+				// https://medium.com/blockchain-development-notes/a-guide-on-uniswap-v3-twap-oracle-2aa74a4a97c5
 				// (t1-t0)/interval
 				tickDiff := new(big.Int).Quo(new(big.Int).Sub(ticks[1], ticks[0]), big.NewInt(600))
 				sqrtPrice := powFloat(tickDiff)
+				decimal := 18 - tokenDetails.Decimals
+				if decimal != 0 {
+					sqrtPrice = new(big.Float).Mul(utils.GetExpFloat(decimal), sqrtPrice)
+					sqrtPrice = new(big.Float).Quo(big.NewFloat(1), sqrtPrice)
+				}
 				twapV3Price, _ := sqrtPrice.Float64()
 				prices.TwapV3 = twapV3Price
 				// if sorted use resiprocal
-				if areSorted(token, weth) {
+				if mdl.Repo.GetToken(token).Symbol == "YFI" {
 					prices.TwapV3 = 1 / prices.TwapV3
 				}
-				log.Info(prices.TwapV3)
 				prices.TwapV3Success = true
 			}
 		}

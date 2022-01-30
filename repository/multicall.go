@@ -46,7 +46,7 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 	calls := []multicall.Multicall2Call{}
 
 	oracle, err := repo.GetActivePriceOracle(blockNum)
-	if err.Error() == "Not Found" {
+	if err != nil && err.Error() == "Not Found" {
 		for _ = range tokenAddrs {
 			prices = append(prices, new(big.Int))
 		}
