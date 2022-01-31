@@ -21,7 +21,8 @@ type UniPoolPrices struct {
 	TwapV3Success        bool    `gorm:"-"`
 	PriceV3Success       bool    `gorm:"-"`
 	BlockNum             int64   `gorm:"column:block_num"`
-	ChainlinkBlockNumber int64   `gorm:"column:chainlink_block_num"`
+	ChainlinkBlockNumber int64   `gorm:"-"`
+	// ChainlinkBlockNumber int64   `gorm:"column:chainlink_block_num"`
 	Token                string  `gorm:"column:token"`
 }
 

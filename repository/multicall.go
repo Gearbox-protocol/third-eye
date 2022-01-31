@@ -84,7 +84,6 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 	for i, entry := range result {
 		// token price
 		if i < len(tokenAddrs) {
-			log.Info(tokenAddrs[i], entry)
 			price := big.NewInt(0)
 			if entry.Success {
 				value, err := oracleABI.Unpack("convert", entry.ReturnData)
