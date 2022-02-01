@@ -75,7 +75,7 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth string) ([]*core.
 	poolCalls, uniTokens := mdl.getUniswapPoolCalls(blockNum)
 	calls = append(calls, poolCalls...)
 	//
-	result := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
+	result := core.MakeMultiCall(mdl.Client, blockNum, true, calls)
 	//
 	yearnFeedLen := len(queryAbleAdapters)
 	v2ABI := core.GetAbi("Uniswapv2Pool")

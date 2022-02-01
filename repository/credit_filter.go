@@ -56,7 +56,7 @@ func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string,
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
-		Type:        core.TokenForbidden,
+		Type:        core.TokenAllowed,
 		Args:        &args,
 	})
 }
@@ -77,7 +77,7 @@ func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, 
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
-		Type:        core.TokenAllowed,
+		Type:        core.TokenForbidden,
 		Args:        &args,
 	})
 }

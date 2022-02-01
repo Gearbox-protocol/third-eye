@@ -52,3 +52,5 @@ END $$;
 -- drop MATERIALIZED VIEW ranking_30d;
 -- drop procedure rankings;
 -- drop FUNCTION ranking_by_period;
+
+-- SELECT array_to_json(array_agg(row_to_json(t))) FROM  (select distinct on(type) * from dao_operations order by type) t ;

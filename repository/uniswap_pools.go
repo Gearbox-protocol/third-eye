@@ -93,7 +93,7 @@ func (repo *Repository) loadUniswapPools() {
 
 func (repo *Repository) loadChainlinkPrevState() {
 	data := []*core.PriceFeed{}
-	err := repo.db.Raw(`SELECT distinct on (feed) from price_feeds order by feed, block_num DESC`).Find(&data).Error
+	err := repo.db.Raw(`SELECT distinct on (feed)* from price_feeds order by feed, block_num DESC`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
 		if adapter := repo.kit.GetAdapter(entry.Feed); adapter != nil && adapter.GetName() == core.ChainlinkPriceFeed {

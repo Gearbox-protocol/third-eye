@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
@@ -20,18 +21,19 @@ import (
 )
 
 type DBhandler struct {
-	client             *ethclient.Client
-	db                 *gorm.DB
-	Chainlinks         map[string]*core.SyncAdapter
-	ChainlinkPrices    map[string]core.SortedPriceFeed
-	UniPoolPrices      map[string]core.SortedUniPoolPrices
-	Relations          []*core.UniPriceAndChainlink
-	blocks             map[int64]*core.Block
-	lastBlockForToken  map[string]int64
-	ChainlinkFeedIndex map[string]int
-	StartFrom          int64
-	tokens             map[string]*core.Token
-	blockFeed          *aggregated_block_feed.AggregatedBlockFeed
+	client                  *ethclient.Client
+	db                      *gorm.DB
+	Chainlinks              map[string]*core.SyncAdapter
+	ChainlinkPrices         map[string]core.SortedPriceFeed
+	UniPoolPrices           map[string]core.SortedUniPoolPrices
+	Relations               []*core.UniPriceAndChainlink
+	blocks                  map[int64]*core.Block
+	lastBlockForToken       map[string]int64
+	ChainlinkFeedIndex      map[string]int
+	StartFrom               int64
+	tokens                  map[string]*core.Token
+	blockFeed               *aggregated_block_feed.AggregatedBlockFeed
+	UpdatesForUniPoolPrices []*core.UniPoolPrices
 }
 
 func (h *DBhandler) AddUniPrices(prices *core.UniPoolPrices) {
@@ -82,6 +84,8 @@ func NewDBhandler(db *gorm.DB, client *ethclient.Client) *DBhandler {
 	return obj
 }
 
+var WETHAddr string = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+
 func (handler *DBhandler) getChainlinkPrices() {
 	data := []*core.PriceFeed{}
 	err := handler.db.Raw(`SELECT * FROM price_feeds 
@@ -115,23 +119,37 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 	for _, entry := range data {
 		if entry.BlockNum == 1+handler.lastBlockForToken[entry.Token] || handler.lastBlockForToken[entry.Token] == 0 {
 		} else {
-			weth := "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+
 			startBlock := handler.lastBlockForToken[entry.Token] + 1
 			for ; startBlock < entry.BlockNum; startBlock++ {
-				_, uniPrices := handler.blockFeed.QueryData(startBlock, weth)
+				_, uniPrices := handler.blockFeed.QueryData(startBlock, WETHAddr)
 				for _, entry2 := range uniPrices {
 					handler.AddUniPrices(entry2)
-					handler.UniPoolPrices[entry2.Token] = append(handler.UniPoolPrices[entry2.Token], entry2)
+					handler.addUniPoolPrices(entry2)
 				}
 			}
 		}
 		handler.lastBlockForToken[entry.Token] = entry.BlockNum
-		handler.UniPoolPrices[entry.Token] = append(handler.UniPoolPrices[entry.Token], entry)
+		handler.addUniPoolPrices(entry)
 	}
 	for _, entries := range handler.UniPoolPrices {
 		sort.Sort(entries)
 	}
 	return len(data) > 0
+}
+
+func (handler *DBhandler) addUniPoolPrices(entry *core.UniPoolPrices) {
+	if entry.PriceV2 == 0 || entry.PriceV3 == 0 || entry.TwapV3 == 0 {
+		_, uniPrices := handler.blockFeed.QueryData(entry.BlockNum, WETHAddr)
+		log.Info(entry)
+		for _, newPrices := range uniPrices {
+			handler.UpdatesForUniPoolPrices = append(handler.UpdatesForUniPoolPrices, newPrices)
+			if newPrices.PriceV2 == 0 || newPrices.PriceV3 == 0 || newPrices.TwapV3 == 0 {
+				log.Fatal(uniPrices)
+			}
+		}
+	}
+	handler.UniPoolPrices[entry.Token] = append(handler.UniPoolPrices[entry.Token], entry)
 }
 
 func (handler *DBhandler) clearUniPrices() {
@@ -145,11 +163,13 @@ type LastBlock struct {
 }
 
 func (handler *DBhandler) setStartBlock() {
-	data := LastBlock{}
-	err := handler.db.Raw(`SELECT max(block_num) as block_num FROM uniswap_chainlink_relations`).Find(&data).Error
-	log.CheckFatal(err)
-	if data.BlockNum != 0 {
-		handler.StartFrom = utils.Max(handler.StartFrom, data.BlockNum+1)
+	if SaveRelations {
+		data := LastBlock{}
+		err := handler.db.Raw(`SELECT max(block_num) as block_num FROM uniswap_chainlink_relations`).Find(&data).Error
+		log.CheckFatal(err)
+		if data.BlockNum != 0 {
+			handler.StartFrom = utils.Max(handler.StartFrom, data.BlockNum+1)
+		}
 	}
 }
 
@@ -167,12 +187,12 @@ func (handler *DBhandler) Run() {
 			relations := handler.findRelations(adapter, handler.UniPoolPrices[token], handler.ChainlinkPrices[feed])
 			log.Info("Feed:", feed, handler.tokens[token].Symbol, "Comparsions: ", relations)
 		}
-		handler.saveRelations()
+		handler.save()
 		handler.clearUniPrices()
 	}
 }
 
-func (h *DBhandler) saveRelations() {
+func (h *DBhandler) save() {
 	tx := h.db.Begin()
 	//
 	now := time.Now()
@@ -189,11 +209,20 @@ func (h *DBhandler) saveRelations() {
 	log.Infof("created missing uniswap_pool_prices in %f sec in blocks: %d", time.Now().Sub(now).Seconds(), len(blocks))
 	now = time.Now()
 	//
-	err = tx.CreateInBatches(h.Relations, 4000).Error
+	if SaveRelations {
+		err = tx.CreateInBatches(h.Relations, 4000).Error
+		log.CheckFatal(err)
+	}
+	h.Relations = []*core.UniPriceAndChainlink{}
+
+	err = tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).CreateInBatches(h.UpdatesForUniPoolPrices, 100).Error
 	log.CheckFatal(err)
+	h.UpdatesForUniPoolPrices = []*core.UniPoolPrices{}
+	//
 	info := tx.Commit()
 	log.CheckFatal(info.Error)
-	h.Relations = []*core.UniPriceAndChainlink{}
 	log.Infof("created uniswap_chainlink_relations in %f sec", time.Now().Sub(now).Seconds())
 }
 
@@ -255,6 +284,8 @@ func greaterFluctuation(a, b float64) bool {
 	return math.Abs((a-b)/a) > 0.03
 }
 
+var SaveRelations bool
+
 func StartServer(lc fx.Lifecycle, handler *DBhandler, shutdowner fx.Shutdowner) {
 
 	// Starting server
@@ -266,7 +297,9 @@ func StartServer(lc fx.Lifecycle, handler *DBhandler, shutdowner fx.Shutdowner) 
 		OnStart: func(context.Context) error {
 			// In production, we'd want to separate the Listen and Serve phases for
 			// better error-handling.
+			flag.BoolVar(&SaveRelations, "save", false, "where to save relations or not.")
 			go func() {
+				flag.Parse()
 				handler.Run()
 				shutdowner.Shutdown()
 			}()

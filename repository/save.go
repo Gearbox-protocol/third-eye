@@ -59,13 +59,6 @@ func (repo *Repository) Flush() error {
 		log.CheckFatal(err)
 	}
 
-	if len(repo.relations) > 0 {
-		err := tx.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).CreateInBatches(repo.relations, 50).Error
-		log.CheckFatal(err)
-		repo.relations = []*core.UniPriceAndChainlink{}
-	}
 	log.Infof("created sync adapters sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
@@ -102,6 +95,12 @@ func (repo *Repository) Flush() error {
 		UpdateAll: true,
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
+
+	if len(repo.relations) > 0 {
+		err := tx.CreateInBatches(repo.relations, 3000).Error
+		log.CheckFatal(err)
+		repo.relations = []*core.UniPriceAndChainlink{}
+	}
 
 	// add disabled tokens after the block num is synced to db
 	if len(repo.disabledTokens) > 0 {
