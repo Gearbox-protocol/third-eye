@@ -237,12 +237,8 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 	} else {
 		priceData = adapter.calculatePriceFeedInternally(blockNum)
 	}
-	tokenAddr, ok := adapter.Details["token"].(string)
-	if !ok {
-		log.Fatal("Failing in asserting to string: %s", mdl.Details["token"])
-	}
 	priceData.BlockNumber = blockNum
-	priceData.Token = tokenAddr
+	priceData.Token = adapter.GetTokenAddr()
 	priceData.Feed = mdl.GetAddress()
 	mdl.Repo.AddPriceFeed(blockNum, priceData)
 }

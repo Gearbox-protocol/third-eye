@@ -82,6 +82,16 @@ func (mdl *YearnPriceFeed) setNotified(notified bool) {
 	mdl.Details["notified"] = notified
 }
 
+func (mdl *YearnPriceFeed) GetTokenAddr() string {
+	mdl.mu.Lock()
+	defer mdl.mu.Unlock()
+	tokenAddr, ok := mdl.Details["token"].(string)
+	if !ok {
+		log.Fatal("Failing in asserting to string: %s", mdl.Details["token"])
+	}
+	return tokenAddr
+}
+
 func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.PriceFeed {
 	if mdl.YVaultContract == nil || mdl.PriceFeedContract == nil || mdl.DecimalDivider == nil {
 		mdl.setContracts(blockNum)
