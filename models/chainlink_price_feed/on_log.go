@@ -103,7 +103,7 @@ func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPoolPrices *co
 }
 
 func greaterFluctuation(a, b float64) bool {
-	return math.Abs((a-b)/a) > 0.01
+	return math.Abs((a-b)/a) > 0.03
 }
 
 func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPrices *core.UniPoolPrices) {

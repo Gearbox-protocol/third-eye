@@ -60,7 +60,7 @@ func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.Aggregate
 	handler.tokens = tokenMap
 	log.CheckFatal(err)
 	uniswapPools := []*core.UniswapPools{}
-	err = handler.db.Raw(`SELECT * FROM tokens`).Find(&tokens).Error
+	err = handler.db.Raw(`SELECT * FROM uniswap_pools`).Find(&uniswapPools).Error
 	log.CheckFatal(err)
 	for _, entry := range uniswapPools {
 		obj.AddPools(tokenMap[entry.Token], entry)
@@ -122,7 +122,7 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 
 			startBlock := handler.lastBlockForToken[entry.Token] + 1
 			for ; startBlock < entry.BlockNum; startBlock++ {
-				_, uniPrices := handler.blockFeed.QueryData(startBlock, WETHAddr)
+				_, uniPrices := handler.blockFeed.QueryData(startBlock, WETHAddr, entry.Token)
 				for _, entry2 := range uniPrices {
 					handler.AddUniPrices(entry2)
 					handler.addUniPoolPrices(entry2)
@@ -139,16 +139,16 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 }
 
 func (handler *DBhandler) addUniPoolPrices(entry *core.UniPoolPrices) {
-	if entry.PriceV2 == 0 || entry.PriceV3 == 0 || entry.TwapV3 == 0 {
-		_, uniPrices := handler.blockFeed.QueryData(entry.BlockNum, WETHAddr)
-		log.Info(entry)
-		for _, newPrices := range uniPrices {
-			handler.UpdatesForUniPoolPrices = append(handler.UpdatesForUniPoolPrices, newPrices)
-			if newPrices.PriceV2 == 0 || newPrices.PriceV3 == 0 || newPrices.TwapV3 == 0 {
-				log.Fatal(uniPrices)
-			}
-		}
-	}
+	// if entry.PriceV2 == 0 || entry.PriceV3 == 0 || entry.TwapV3 == 0 {
+	// 	log.Infof("%+v\n", entry)
+	// 	_, allUniPrices := handler.blockFeed.QueryData(entry.BlockNum, WETHAddr, entry.Token)
+	// 	for _, newPrices := range allUniPrices {
+	// 		handler.UpdatesForUniPoolPrices = append(handler.UpdatesForUniPoolPrices, newPrices)
+	// 		if newPrices.PriceV2 == 0 || newPrices.PriceV3 == 0 || newPrices.TwapV3 == 0 {
+	// 			log.Fatalf("%+v\n", newPrices)
+	// 		}
+	// 	}
+	// }
 	handler.UniPoolPrices[entry.Token] = append(handler.UniPoolPrices[entry.Token], entry)
 }
 
@@ -265,9 +265,9 @@ func (h *DBhandler) compareDiff(pf *core.PriceFeed, uniPoolPrices *core.UniPoolP
 		Token:                pf.Token,
 		Feed:                 pf.Feed,
 	})
-	if (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
-		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
-		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
+	if (uniPoolPrices.PriceV2 != 0 && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
+		(uniPoolPrices.PriceV3 != 0 && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
+		(uniPoolPrices.TwapV3 != 0 && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
 		// if !mdl.isNotified() {
 		// mdl.uniPriceVariationNotify(pf, uniPoolPrices)
 		// mdl.Details["notified"] = true

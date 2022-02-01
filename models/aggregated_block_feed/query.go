@@ -62,7 +62,7 @@ func powFloat(a *big.Int) *big.Float {
 
 func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int) {
 	weth := mdl.Repo.GetWETHAddr()
-	pfs, pricesByToken := mdl.QueryData(blockNum, weth)
+	pfs, pricesByToken := mdl.QueryData(blockNum, weth, "all")
 	for _, pf := range pfs {
 		mdl.Repo.AddPriceFeed(pf.BlockNumber, pf)
 	}
@@ -70,12 +70,12 @@ func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int) {
 	<-ch
 }
 
-func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth string) ([]*core.PriceFeed, map[string]*core.UniPoolPrices) {
+func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery string) ([]*core.PriceFeed, map[string]*core.UniPoolPrices) {
 	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
-	poolCalls, uniTokens := mdl.getUniswapPoolCalls(blockNum)
+	poolCalls, uniTokens := mdl.getUniswapPoolCalls(blockNum, whatToQuery)
 	calls = append(calls, poolCalls...)
 	//
-	result := core.MakeMultiCall(mdl.Client, blockNum, true, calls)
+	result := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
 	//
 	yearnFeedLen := len(queryAbleAdapters)
 	v2ABI := core.GetAbi("Uniswapv2Pool")
@@ -176,10 +176,13 @@ func priceInWETH(token, weth string, tokenDecimals int8, r0, r1 *big.Int) *big.I
 func squareIt(a *big.Int) *big.Int {
 	return new(big.Int).Mul(a, a)
 }
-func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64) (calls []multicall.Multicall2Call, tokens []string) {
+func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery string) (calls []multicall.Multicall2Call, tokens []string) {
 	v2ABI := core.GetAbi("Uniswapv2Pool")
 	v3ABI := core.GetAbi("Uniswapv3Pool")
 	for token, pools := range mdl.UniPoolByToken {
+		if whatToQuery != "all" && whatToQuery != token {
+			continue
+		}
 		// only sync uniswap pool price for token that have last sync
 		if mdl.TokenLastSync[token] >= blockNum {
 			continue
