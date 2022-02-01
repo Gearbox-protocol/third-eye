@@ -2,7 +2,6 @@ package core
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
-	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
 	"math/big"
 )
 

@@ -32,7 +32,7 @@ type UniPriceAndChainlink struct {
 	ChainlinkBlockNumber int64  `gorm:"column:chainlink_block_num"`
 	Token                string `gorm:"column:token"`
 	UniBlockNum          int64  `gorm:"column:block_num"`
-	Feed                 string `gorm:"column:chainlink_feed"`
+	Feed                 string `gorm:"column:feed"`
 }
 
 func (UniPriceAndChainlink) TableName() string {

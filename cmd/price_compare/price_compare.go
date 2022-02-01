@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
-
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"gorm.io/gorm/clause"
 	"math"
+	"math/big"
 	"sort"
 	"time"
 
@@ -19,15 +20,32 @@ import (
 )
 
 type DBhandler struct {
+	client             *ethclient.Client
 	db                 *gorm.DB
 	Chainlinks         map[string]*core.SyncAdapter
 	ChainlinkPrices    map[string]core.SortedPriceFeed
 	UniPoolPrices      map[string]core.SortedUniPoolPrices
 	Relations          []*core.UniPriceAndChainlink
+	blocks             map[int64]*core.Block
 	lastBlockForToken  map[string]int64
 	ChainlinkFeedIndex map[string]int
 	StartFrom          int64
+	tokens             map[string]*core.Token
 	blockFeed          *aggregated_block_feed.AggregatedBlockFeed
+}
+
+func (h *DBhandler) AddUniPrices(prices *core.UniPoolPrices) {
+	log.Infof("%+v", prices)
+	blockNum := prices.BlockNum
+	if h.blocks[blockNum] == nil {
+		b, err := h.client.BlockByNumber(context.Background(), big.NewInt(blockNum))
+		if err != nil {
+			panic(err)
+		}
+		log.CheckFatal(err)
+		h.blocks[blockNum] = &core.Block{BlockNumber: blockNum, Timestamp: b.Time()}
+	}
+	h.blocks[blockNum].AddUniswapPrices(prices)
 }
 
 func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.AggregatedBlockFeed) {
@@ -37,6 +55,7 @@ func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.Aggregate
 	for _, entry := range tokens {
 		tokenMap[entry.Address] = entry
 	}
+	handler.tokens = tokenMap
 	log.CheckFatal(err)
 	uniswapPools := []*core.UniswapPools{}
 	err = handler.db.Raw(`SELECT * FROM tokens`).Find(&tokens).Error
@@ -55,6 +74,9 @@ func NewDBhandler(db *gorm.DB, client *ethclient.Client) *DBhandler {
 		ChainlinkFeedIndex: map[string]int{},
 		lastBlockForToken:  map[string]int64{},
 		blockFeed:          blockFeed,
+		client:             client,
+		StartFrom:          math.MaxInt64,
+		tokens:             map[string]*core.Token{},
 	}
 	obj.populateBlockFeed(blockFeed)
 	return obj
@@ -77,7 +99,7 @@ func (handler *DBhandler) getChainlinkPrices() {
 
 func (handler *DBhandler) getChainlinks() {
 	data := []*core.SyncAdapter{}
-	err := handler.db.Raw(`(SELECT address FROM sync_adapters where type='ChainlinkPriceFeed')`).Find(&data).Error
+	err := handler.db.Raw(`(SELECT * FROM sync_adapters where type='ChainlinkPriceFeed')`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
 		handler.Chainlinks[entry.Address] = entry
@@ -85,10 +107,10 @@ func (handler *DBhandler) getChainlinks() {
 }
 
 func (handler *DBhandler) getUniPrices(from, to int64) bool {
-	log.Info("loaded from %d to %d", from, to)
+	log.Infof("loaded from %d to %d", from, to)
 	data := []*core.UniPoolPrices{}
 	err := handler.db.Raw(`SELECT * FROM uniswap_pool_prices 
-		WHERE block_num >= ? AND block_num < to ORDER BY block_num`, from, to).Find(&data).Error
+		WHERE block_num >= ? AND block_num < ? ORDER BY block_num`, from, to).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
 		if entry.BlockNum == 1+handler.lastBlockForToken[entry.Token] || handler.lastBlockForToken[entry.Token] == 0 {
@@ -98,6 +120,7 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 			for ; startBlock < entry.BlockNum; startBlock++ {
 				_, uniPrices := handler.blockFeed.QueryData(startBlock, weth)
 				for _, entry2 := range uniPrices {
+					handler.AddUniPrices(entry2)
 					handler.UniPoolPrices[entry2.Token] = append(handler.UniPoolPrices[entry2.Token], entry2)
 				}
 			}
@@ -139,22 +162,42 @@ func (handler *DBhandler) Run() {
 		for feed, adapter := range handler.Chainlinks {
 			token, ok := adapter.Details["token"].(string)
 			if !ok {
-				log.Fatal("token parse failed", feed)
+				log.Fatal("token parse failed ", feed, utils.ToJson(adapter))
 			}
-			handler.findRelations(adapter, handler.UniPoolPrices[token], handler.ChainlinkPrices[feed])
+			relations := handler.findRelations(adapter, handler.UniPoolPrices[token], handler.ChainlinkPrices[feed])
+			log.Info("Feed:", feed, handler.tokens[token].Symbol, "Comparsions: ", relations)
 		}
+		handler.saveRelations()
+		handler.clearUniPrices()
 	}
-	handler.clearUniPrices()
-	handler.saveRelations()
 }
 
 func (h *DBhandler) saveRelations() {
-	err := h.db.CreateInBatches(h.Relations, 50).Error
+	tx := h.db.Begin()
+	//
+	now := time.Now()
+
+	blocks := []*core.Block{}
+	for _, block := range h.blocks {
+		blocks = append(blocks, block)
+	}
+	err := tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).CreateInBatches(blocks, 100).Error
 	log.CheckFatal(err)
+	h.blocks = map[int64]*core.Block{}
+	log.Infof("created missing uniswap_pool_prices in %f sec in blocks: %d", time.Now().Sub(now).Seconds(), len(blocks))
+	now = time.Now()
+	//
+	err = tx.CreateInBatches(h.Relations, 4000).Error
+	log.CheckFatal(err)
+	info := tx.Commit()
+	log.CheckFatal(info.Error)
 	h.Relations = []*core.UniPriceAndChainlink{}
+	log.Infof("created uniswap_chainlink_relations in %f sec", time.Now().Sub(now).Seconds())
 }
 
-func (h *DBhandler) findRelations(adapter *core.SyncAdapter, uniPrices core.SortedUniPoolPrices, chainlinkPrices core.SortedPriceFeed) {
+func (h *DBhandler) findRelations(adapter *core.SyncAdapter, uniPrices core.SortedUniPoolPrices, chainlinkPrices core.SortedPriceFeed) (relations int64) {
 	uniPriceInd := 0
 	feed := adapter.Address
 	chainlinkPriceInd := h.ChainlinkFeedIndex[feed]
@@ -175,9 +218,11 @@ func (h *DBhandler) findRelations(adapter *core.SyncAdapter, uniPrices core.Sort
 			uniPrices[uniPriceInd].BlockNum < adapter.GetBlockToDisableOn() &&
 			(chainCurrentPrices == nil ||
 				uniPrices[uniPriceInd].BlockNum < chainCurrentPrices.BlockNumber); uniPriceInd++ {
+			relations++
 			h.compareDiff(chainPrevPrices, uniPrices[uniPriceInd])
 		}
 	}
+	return
 }
 
 func (h *DBhandler) compareDiff(pf *core.PriceFeed, uniPoolPrices *core.UniPoolPrices) {
@@ -233,6 +278,7 @@ func StartServer(lc fx.Lifecycle, handler *DBhandler, shutdowner fx.Shutdowner) 
 func main() {
 	app := fx.New(
 		config.Module,
+		fx.NopLogger,
 		fx.Provide(
 			ethclient.NewEthClient,
 			NewDBhandler,
