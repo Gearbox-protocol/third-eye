@@ -29,3 +29,17 @@ type PriceFeed struct {
 func (PriceFeed) TableName() string {
 	return "price_feeds"
 }
+
+type SortedPriceFeed []*PriceFeed
+
+func (ts SortedPriceFeed) Len() int {
+	return len(ts)
+}
+func (ts SortedPriceFeed) Swap(i, j int) {
+	ts[i], ts[j] = ts[j], ts[i]
+}
+
+// sort in increasing order by blockNumber,index
+func (ts SortedPriceFeed) Less(i, j int) bool {
+	return ts[i].BlockNumber < ts[i].BlockNumber
+}

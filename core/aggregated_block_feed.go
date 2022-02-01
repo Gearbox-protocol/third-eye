@@ -13,21 +13,30 @@ type LatestRounData struct {
 }
 
 type UniPoolPrices struct {
-	ID                   int64   `gorm:"primaryKey;column:id;autoIncrement:true"`
-	PriceV2              float64 `gorm:"column:uniswapv2_price"`
-	TwapV3               float64 `gorm:"column:uniswapv3_price"`
-	PriceV3              float64 `gorm:"column:uniswapv3_twap"`
-	PriceV2Success       bool    `gorm:"-"`
-	TwapV3Success        bool    `gorm:"-"`
-	PriceV3Success       bool    `gorm:"-"`
-	BlockNum             int64   `gorm:"column:block_num"`
-	ChainlinkBlockNumber int64   `gorm:"-"`
-	// ChainlinkBlockNumber int64   `gorm:"column:chainlink_block_num"`
-	Token                string  `gorm:"column:token"`
+	ID             int64   `gorm:"primaryKey;column:id;autoIncrement:true"`
+	PriceV2        float64 `gorm:"column:uniswapv2_price"`
+	TwapV3         float64 `gorm:"column:uniswapv3_price"`
+	PriceV3        float64 `gorm:"column:uniswapv3_twap"`
+	PriceV2Success bool    `gorm:"-"`
+	TwapV3Success  bool    `gorm:"-"`
+	PriceV3Success bool    `gorm:"-"`
+	BlockNum       int64   `gorm:"column:block_num"`
+	Token          string  `gorm:"column:token"`
 }
 
 func (UniPoolPrices) TableName() string {
 	return "uniswap_pool_prices"
+}
+
+type UniPriceAndChainlink struct {
+	ChainlinkBlockNumber int64  `gorm:"column:chainlink_block_num"`
+	Token                string `gorm:"column:token"`
+	UniBlockNum          int64  `gorm:"column:block_num"`
+	Feed                 string `gorm:"column:chainlink_feed"`
+}
+
+func (UniPriceAndChainlink) TableName() string {
+	return "uniswap_chainlink_relations"
 }
 
 type UniswapPools struct {

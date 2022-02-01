@@ -18,10 +18,13 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 	uniPrices := mdl.Repo.GetUniPricesByToken(mdl.Token)
 	uniPricesInd := 0
 	// filter uniswapool prices that were before the lastsync of contract
-	for uniPricesInd < len(uniPrices) && mdl.GetLastSync() >= uniPrices[uniPricesInd].BlockNum {
+	startFrom := mdl.GetLastSync()
+	if mdl.prevPriceFeed != nil {
+		startFrom = utils.Min(startFrom, mdl.prevPriceFeed.BlockNumber)
+	}
+	for uniPricesInd < len(uniPrices) && startFrom >= uniPrices[uniPricesInd].BlockNum {
 		uniPricesInd++
 	}
-	var prevPriceFeed *core.PriceFeed
 	for _, txLog := range txLogs {
 		var priceFeed *core.PriceFeed
 		blockNum := int64(txLog.BlockNumber)
@@ -46,7 +49,7 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				PriceETH:    utils.GetFloat64Decimal(answerBI, 18),
 			}
 			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
-				mdl.compareDiff(prevPriceFeed, uniPrices[uniPricesInd])
+				mdl.compareDiff(mdl.prevPriceFeed, uniPrices[uniPricesInd])
 				uniPricesInd++
 			}
 			if len(uniPrices) > 0 {
@@ -66,12 +69,12 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				}
 			}
 			mdl.Repo.AddPriceFeed(blockNum, priceFeed)
-			prevPriceFeed = priceFeed
+			mdl.prevPriceFeed = priceFeed
 		}
 	}
 	// remaining prices are filled
 	for uniPricesInd < len(uniPrices) && uniPrices[uniPricesInd].BlockNum < mdl.GetBlockToDisableOn() {
-		mdl.compareDiff(prevPriceFeed, uniPrices[uniPricesInd])
+		mdl.compareDiff(mdl.prevPriceFeed, uniPrices[uniPricesInd])
 		uniPricesInd++
 	}
 }
@@ -81,10 +84,12 @@ func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPoolPrices *co
 	if pf == nil {
 		return
 	}
-	// set the token and blocknumber of chainlink
-	uniPoolPrices.ChainlinkBlockNumber = pf.BlockNumber
-	uniPoolPrices.Token = pf.Token
-	mdl.Repo.AddUniswapPrices(uniPoolPrices)
+	mdl.Repo.AddUniPriceAndChainlinkRelation(&core.UniPriceAndChainlink{
+		UniBlockNum:          uniPoolPrices.BlockNum,
+		ChainlinkBlockNumber: pf.BlockNumber,
+		Token:                pf.Token,
+		Feed:                 pf.Feed,
+	})
 	if (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
 		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
 		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
@@ -122,4 +127,14 @@ func (mdl *ChainlinkPriceFeed) isNotified() bool {
 		log.Fatal("Notified not parsed")
 	}
 	return value
+}
+
+func (mdl *ChainlinkPriceFeed) SetUnderlyingState(obj interface{}) {
+	switch obj.(type) {
+	case (*core.PriceFeed):
+		state := obj.(*core.PriceFeed)
+		mdl.prevPriceFeed = state
+	default:
+		log.Fatal("Type assertion for chainlink state failed")
+	}
 }

@@ -18,7 +18,8 @@ type AggregatedBlockFeed struct {
 	TokenLastSync     map[string]int64
 	UniPricesByTokens map[string]core.SortedUniPoolPrices
 	Interval          int64
-	mu *sync.Mutex
+	mu                *sync.Mutex
+	tokenInfos        map[string]*core.Token
 }
 
 func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
@@ -40,7 +41,8 @@ func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI, int
 		SyncAdapter:       syncAdapter,
 		TokenLastSync:     map[string]int64{},
 		Interval:          interval,
-		mu: &sync.Mutex{},
+		mu:                &sync.Mutex{},
+		tokenInfos:        map[string]*core.Token{},
 	}
 }
 
@@ -60,10 +62,11 @@ func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
 	return mdl.YearnFeeds
 }
 
-func (mdl *AggregatedBlockFeed) AddPools(token string, uniswapPools *core.UniswapPools) {
-	if mdl.UniPoolByToken[token] == nil {
-		mdl.UniPoolByToken[token] = uniswapPools
+func (mdl *AggregatedBlockFeed) AddPools(token *core.Token, uniswapPools *core.UniswapPools) {
+	if mdl.UniPoolByToken[uniswapPools.Token] == nil {
+		mdl.UniPoolByToken[uniswapPools.Token] = uniswapPools
 	}
+	mdl.tokenInfos[token.Address] = token
 }
 
 func (mdl *AggregatedBlockFeed) AddLastSyncForToken(token string, lastSync int64) {

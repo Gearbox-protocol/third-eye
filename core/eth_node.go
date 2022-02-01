@@ -2,9 +2,11 @@ package core
 
 import (
 	"context"
+	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -112,4 +114,36 @@ func (lf *Node) GetLogsForTransfer(queryFrom, queryTill int64, hexAddrs []common
 		return logs, err
 	}
 	return append(newLogs, logs...), nil
+}
+
+func getMultiCallAddr() string {
+	return "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
+}
+
+func getMultiCallContract(client *ethclient.Client) *multicall.Multicall {
+	contract, err := multicall.NewMulticall(common.HexToAddress(getMultiCallAddr()), client)
+	log.CheckFatal(err)
+	return contract
+}
+
+func MakeMultiCall(client *ethclient.Client, blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
+	contract := getMultiCallContract(client)
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
+	}
+	var result []multicall.Multicall2Result
+	var tmpCalls []multicall.Multicall2Call
+	callsInd := 0
+	callsLen := len(calls)
+	for callsInd < callsLen {
+		for i := 0; i < 20 && callsInd < callsLen; i++ {
+			tmpCalls = append(tmpCalls, calls[callsInd])
+			callsInd++
+		}
+		tmpResult, err := contract.TryAggregate(opts, successRequired, tmpCalls)
+		log.CheckFatal(err)
+		result = append(result, tmpResult...)
+		tmpCalls = []multicall.Multicall2Call{}
+	}
+	return result
 }

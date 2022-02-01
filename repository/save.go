@@ -36,7 +36,6 @@ func (repo *Repository) Flush() error {
 			}
 			if adapter.HasUnderlyingState() {
 				err := tx.Clauses(clause.OnConflict{
-					// err := repo.db.Clauses(clause.OnConflict{
 					UpdateAll: true,
 				}).Create(adapter.GetUnderlyingState()).Error
 				log.CheckFatal(err)
@@ -49,17 +48,23 @@ func (repo *Repository) Flush() error {
 		adapters = append(adapters, adapter.GetAdapterState())
 	}
 	err := tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(adapters, 50).Error
 	log.CheckFatal(err)
 
 	if uniPools := repo.aggregatedFeed.GetUniswapPools(); len(uniPools) > 0 {
 		err := tx.Clauses(clause.OnConflict{
-			// err := repo.db.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).CreateInBatches(uniPools, 50).Error
 		log.CheckFatal(err)
+	}
+
+	if len(repo.relations) > 0 {
+		err := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(repo.relations, 50).Error
+		log.CheckFatal(err)
+		repo.relations = []*core.UniPriceAndChainlink{}
 	}
 	log.Infof("created sync adapters sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
@@ -69,7 +74,6 @@ func (repo *Repository) Flush() error {
 		tokens = append(tokens, token)
 	}
 	err = tx.Clauses(clause.OnConflict{
-		// err := repo.db.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(tokens, 50).Error
 	log.CheckFatal(err)

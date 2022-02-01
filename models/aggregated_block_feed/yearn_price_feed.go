@@ -21,7 +21,7 @@ type YearnPriceFeed struct {
 	YVaultContract    *yVault.YVault
 	PriceFeedContract *priceFeed.PriceFeed
 	DecimalDivider    *big.Int
-	mu *sync.Mutex
+	mu                *sync.Mutex
 }
 
 func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *YearnPriceFeed {
@@ -54,7 +54,7 @@ func NewYearnPriceFeedFromAdapter(adapter *core.SyncAdapter) *YearnPriceFeed {
 	obj := &YearnPriceFeed{
 		SyncAdapter: adapter,
 		contractETH: yearnPFContract,
-		mu: &sync.Mutex{},
+		mu:          &sync.Mutex{},
 	}
 	obj.OnlyQuery = true
 	return obj

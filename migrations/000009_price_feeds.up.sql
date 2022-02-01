@@ -17,8 +17,14 @@ CREATE TABLE uniswap_pool_prices (
     uniswapv3_twap double precision,
     uniswapv3_price double precision,
     block_num integer,
-    chainlink_block_num integer,
     token character varying(42)
+);
+
+CREATE TABLE uniswap_chainlink_relations (
+    block_num integer,
+    chainlink_block_num integer,
+    token character varying(42),
+    feed character varying(42)
 );
 
 

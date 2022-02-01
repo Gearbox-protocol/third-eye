@@ -5,41 +5,13 @@ import (
 
 	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
 	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func getMultiCallAddr() string {
-	return "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
-}
-
 type PriceCallParams struct {
 	Address common.Address
-}
-
-func (repo *Repository) MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
-	contract := getMultiCallContract(repo.client)
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-	var result []multicall.Multicall2Result
-	var tmpCalls []multicall.Multicall2Call
-	callsInd := 0
-	callsLen := len(calls)
-	for callsInd < callsLen {
-		for i := 0; i < 20 && callsInd < callsLen; i++ {
-			tmpCalls = append(tmpCalls, calls[callsInd])
-			callsInd++
-		}
-		tmpResult, err := contract.TryAggregate(opts, successRequired, tmpCalls)
-		log.CheckFatal(err)
-		result = append(result, tmpResult...)
-		tmpCalls = []multicall.Multicall2Call{}
-	}
-	return result
 }
 
 func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
@@ -79,7 +51,7 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		})
 	}
 	// call
-	result := repo.MakeMultiCall(blockNum, successRequired, calls)
+	result := core.MakeMultiCall(repo.client, blockNum, successRequired, calls)
 
 	for i, entry := range result {
 		// token price
@@ -105,10 +77,4 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		}
 	}
 	return
-}
-
-func getMultiCallContract(client *ethclient.Client) *multicall.Multicall {
-	contract, err := multicall.NewMulticall(common.HexToAddress(getMultiCallAddr()), client)
-	log.CheckFatal(err)
-	return contract
 }

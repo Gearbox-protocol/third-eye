@@ -98,9 +98,9 @@ type RepositoryI interface {
 	LoadLastAdapterSync() int64
 	Clear()
 	// multicall
-	MakeMultiCall(blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result
 	GetUniPricesByToken(token string) []*UniPoolPrices
 	AddPoolsForToken(blockNum int64, token string)
+	AddUniPriceAndChainlinkRelation(relation *UniPriceAndChainlink)
 	AddLastSyncForToken(token string, lastSync int64)
 }
 

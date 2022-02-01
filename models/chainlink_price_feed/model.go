@@ -11,9 +11,10 @@ import (
 
 type ChainlinkPriceFeed struct {
 	*core.SyncAdapter
-	contractETH *priceFeed.PriceFeed
-	Token       string
-	Oracle      string
+	contractETH   *priceFeed.PriceFeed
+	Token         string
+	Oracle        string
+	prevPriceFeed *core.PriceFeed
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed

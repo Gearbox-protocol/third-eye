@@ -34,7 +34,9 @@ func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
 		poolv3Addr.Hex() == "0x0000000000000000000000000000000000000000" {
 		log.Fatalf("pool not fetched for v2/v3: %s/%s", token, repo.WETHAddr)
 	}
-	repo.aggregatedFeed.AddPools(token, &core.UniswapPools{
+	tokenInfo, err := repo.getTokenWithError(token)
+	log.CheckFatal(err)
+	repo.aggregatedFeed.AddPools(tokenInfo, &core.UniswapPools{
 		V2:      poolv2Addr.Hex(),
 		V3:      poolv3Addr.Hex(),
 		Updated: true,
@@ -72,6 +74,39 @@ func (repo *Repository) GetFactoryv3Address(blockNum int64) common.Address {
 	return v3Factory
 }
 
+func (repo *Repository) AddUniswapPrices(prices *core.UniPoolPrices) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.setAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
+}
+
+func (repo *Repository) loadUniswapPools() {
+	data := []*core.UniswapPools{}
+	err := repo.db.Raw(`SELECT * from uniswap_pools`).Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		tokenInfo, err := repo.getTokenWithError(entry.Token)
+		log.CheckFatal(err)
+		repo.aggregatedFeed.AddPools(tokenInfo, entry)
+	}
+}
+
+func (repo *Repository) loadChainlinkPrevState() {
+	data := []*core.PriceFeed{}
+	err := repo.db.Raw(`SELECT distinct on (feed) from price_feeds order by feed, block_num DESC`).Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		if adapter := repo.kit.GetAdapter(entry.Feed); adapter != nil && adapter.GetName() == core.ChainlinkPriceFeed {
+			adapter.SetUnderlyingState(entry)
+		}
+	}
+}
+
 func (repo *Repository) GetUniPricesByToken(token string) []*core.UniPoolPrices {
 	return repo.aggregatedFeed.GetUniPricesByToken(token)
+}
+func (repo *Repository) AddUniPriceAndChainlinkRelation(relation *core.UniPriceAndChainlink) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.relations = append(repo.relations, relation)
 }

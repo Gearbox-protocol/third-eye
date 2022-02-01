@@ -49,6 +49,7 @@ type Repository struct {
 	BlockDatePairs   map[int64]*core.BlockDate
 	dieselTokens     map[string]*core.UTokenAndPool
 	accountManager   *core.AccountTokenManager
+	relations        []*core.UniPriceAndChainlink
 }
 
 func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
@@ -98,6 +99,7 @@ func (repo *Repository) init() {
 	repo.loadToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
+	repo.loadChainlinkPrevState()
 	//
 	repo.loadUniswapPools()
 	// for disabling previous token oracle if new oracle is set
@@ -192,17 +194,4 @@ func (repo *Repository) InitChecks() {
 
 func (repo *Repository) GetChainId() uint {
 	return repo.config.ChainId
-}
-
-func (repo *Repository) AddUniswapPrices(prices *core.UniPoolPrices) {
-	repo.setAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
-}
-
-func (repo *Repository) loadUniswapPools() {
-	data := []*core.UniswapPools{}
-	err := repo.db.Raw(`SELECT * from uniswap_pools`).Find(&data).Error
-	log.CheckFatal(err)
-	for _, entry := range data {
-		repo.aggregatedFeed.AddPools(entry.Token, entry)
-	}
 }
