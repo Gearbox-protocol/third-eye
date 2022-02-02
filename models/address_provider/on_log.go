@@ -43,6 +43,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 				mdl.Details = make(map[string]interface{})
 			}
 			mdl.Repo.SetWETHAddr(address)
+			mdl.Repo.AddToken(address)
 		case "GEAR_TOKEN":
 			gt := gear_token.NewGearToken(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
 			mdl.Repo.AddSyncAdapter(gt)

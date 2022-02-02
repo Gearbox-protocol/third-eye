@@ -23,9 +23,9 @@ type (
 		InitialAmount          *BigInt      `json:"initialAmount"`
 		BorrowedAmount         *BigInt      `json:"borrowedAmount"`
 		Balances               *JsonBalance `gorm:"column:balances"`
-		CollateralInUSD        *BigInt      `gorm:"column:collateral_usd"`
 		RemainingFunds         *BigInt      `gorm:"column:remaining_funds"`
-		CollateralInUnderlying *BigInt      `gorm:"column:collateral_underlying"`
+		CollateralInUSD        float64      `gorm:"<-:false;column:collateral_usd"`
+		CollateralInUnderlying float64      `gorm:"<-:false;column:collateral_underlying"`
 		HealthFactor           *BigInt      `gorm:"column:health_factor" json:"healthFactor"`
 		IsDirty                bool         `gorm:"-"`
 		Liquidator             string       `gorm:"liquidator"`
@@ -62,8 +62,8 @@ type (
 		TotalValue             float64      `gorm:"column:total_value"`
 		Balances               *JsonBalance `gorm:"column:balances"`
 		Borrower               string       `gorm:"column:borrower"`
-		CollateralInUSD        *BigInt      `gorm:"column:collateral_in_usd"`
-		CollateralInUnderlying *BigInt      `gorm:"qcolumn:collateral_in_underlying"`
+		CollateralInUSD        float64      `gorm:"column:collateral_usd"`
+		CollateralInUnderlying float64      `gorm:"column:collateral_underlying"`
 		СumulativeIndexAtOpen  *BigInt      `gorm:"column:cumulative_index"`
 		HealthFactor           *BigInt      `gorm:"column:health_factor"`
 	}

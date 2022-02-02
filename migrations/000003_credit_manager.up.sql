@@ -2,7 +2,6 @@ CREATE EXTENSION hstore;
 CREATE TABLE credit_managers (
     address varchar(42) PRIMARY KEY,
     pool_address varchar(42),
-    allowed_contracts text,
     underlying_token varchar(42),
     max_leverage integer,
     sessions hstore,

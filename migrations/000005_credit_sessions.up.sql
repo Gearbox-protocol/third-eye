@@ -11,8 +11,6 @@ CREATE TABLE credit_sessions (
     balances jsonb,
     health_factor varchar(80),
     liquidator  varchar(42),
-    collateral_in_underlying varchar(80),
-    collateral_in_usd varchar(80),
     remaining_funds varchar(80)
 );
 ALTER TABLE ONLY credit_sessions
@@ -32,7 +30,8 @@ CREATE TABLE credit_session_snapshots (
     cumulative_index character varying(80),
     health_factor varchar(80),
     borrower character varying(42),
-    collateral_in_underlying varchar(80)
+    collateral_usd double precision,
+    collateral_underlying double precision,
 );
 
 

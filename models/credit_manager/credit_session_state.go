@@ -60,10 +60,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 			true,
 			mdl.GetAddress()))
 	}
-	// profit := new(big.Int).Sub(closeDetails.RemainingFunds, (*big.Int)(session.InitialAmount))
-	// session.Profit = (*core.BigInt)(profit)
-	// session.ProfitPercentage = float64(new(big.Int).Div(new(big.Int).
-	// 	Mul(profit, big.NewInt(100000)), (*big.Int)(session.InitialAmount)).Int64()) / 1000
 
 	// credit manager state
 	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, data.RepayAmount)
@@ -101,10 +97,6 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
 	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
-	extraFunds := new(big.Int).Sub(data.TotalValue, data.BorrowedAmountPlusInterest)
-	session.Profit = (*core.BigInt)(new(big.Int).Sub(extraFunds, (*big.Int)(session.InitialAmount)))
-	session.ProfitPercentage = float64(new(big.Int).Div(new(big.Int).
-		Mul((*big.Int)(session.Profit), big.NewInt(100000)), (*big.Int)(session.InitialAmount)).Int64()) / 1000
 
 	// create session snapshot
 	css := core.CreditSessionSnapshot{}

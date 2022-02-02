@@ -15,11 +15,13 @@ CREATE TABLE current_debts (
     cal_borrowed_amt_with_interest_bi varchar(80),
     cal_total_value DOUBLE PRECISION,
     cal_total_value_bi varchar(80),
-    liq_amount DOUBLE PRECISION,
-    profit DOUBLE PRECISION,
-    loss DOUBLE PRECISION,
-    profit_in_underlying DOUBLE PRECISION,
-    repay_amount DOUBLE PRECISION);
+    profit_usd DOUBLE PRECISION,
+    profit_underlying DOUBLE PRECISION,
+    amount_to_pool DOUBLE PRECISION,
+    amount_to_pool_bi varchar(80),
+    collateral_usd DOUBLE PRECISION,
+    collateral_underlying DOUBLE PRECISION);
+
 ALTER TABLE ONLY current_debts
     ADD CONSTRAINT current_debts_block_num_fkey FOREIGN KEY (block_num) REFERENCES blocks(id) ON DELETE CASCADE;
 
