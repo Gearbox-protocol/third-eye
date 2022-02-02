@@ -36,8 +36,7 @@ type DBhandler struct {
 	UpdatesForUniPoolPrices []*core.UniPoolPrices
 }
 
-func (h *DBhandler) AddUniPrices(prices *core.UniPoolPrices) {
-	log.Infof("%+v", prices)
+func (h *DBhandler) AddUniPricesToDB(prices *core.UniPoolPrices) {
 	blockNum := prices.BlockNum
 	if h.blocks[blockNum] == nil {
 		b, err := h.client.BlockByNumber(context.Background(), big.NewInt(blockNum))
@@ -79,6 +78,7 @@ func NewDBhandler(db *gorm.DB, client *ethclient.Client) *DBhandler {
 		client:             client,
 		StartFrom:          math.MaxInt64,
 		tokens:             map[string]*core.Token{},
+		blocks:             map[int64]*core.Block{},
 	}
 	obj.populateBlockFeed(blockFeed)
 	return obj
@@ -117,20 +117,28 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 		WHERE block_num >= ? AND block_num < ? ORDER BY block_num`, from, to).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
-		if entry.BlockNum == 1+handler.lastBlockForToken[entry.Token] || handler.lastBlockForToken[entry.Token] == 0 {
+		if entry.BlockNum == 1+handler.lastBlockForToken[entry.Token] ||
+			(handler.lastBlockForToken[entry.Token] == 0 && entry.BlockNum == from) {
 		} else {
-
+			log.Info(entry.Token, entry.BlockNum)
 			startBlock := handler.lastBlockForToken[entry.Token] + 1
+			// if the first log in from to to is not equal to the from
+			// this means that data is missing from `from` to first log.
+			if handler.lastBlockForToken[entry.Token] == 0 {
+				startBlock = from
+			}
+			log.Info(entry.Token, startBlock, entry.BlockNum)
 			for ; startBlock < entry.BlockNum; startBlock++ {
 				_, uniPrices := handler.blockFeed.QueryData(startBlock, WETHAddr, entry.Token)
 				for _, entry2 := range uniPrices {
-					handler.AddUniPrices(entry2)
+					entry2.Token = entry.Token
+					handler.AddUniPricesToDB(entry2)
 					handler.addUniPoolPrices(entry2)
 				}
 			}
 		}
-		handler.lastBlockForToken[entry.Token] = entry.BlockNum
 		handler.addUniPoolPrices(entry)
+		handler.lastBlockForToken[entry.Token] = entry.BlockNum
 	}
 	for _, entries := range handler.UniPoolPrices {
 		sort.Sort(entries)

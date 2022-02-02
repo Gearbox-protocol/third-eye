@@ -12,6 +12,8 @@ CREATE TABLE debts (
     borrowed_amt_with_interest character varying(80),
     cal_borrowed_amt_with_interest character varying(80),
     cal_total_value character varying(80),
-    total_value character varying(80)
+    total_value character varying(80),
+    profit_in_underlying DOUBLE PRECISION,
+     collateral_in_underlying DOUBLE PRECISION
 );
 create index debts_session_id_index on debts using BTREE (session_id,block_num);

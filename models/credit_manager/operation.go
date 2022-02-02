@@ -57,7 +57,6 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		Since:          blockNum,
 		InitialAmount:  (*core.BigInt)(amount),
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
-		Profit:         (*core.BigInt)(big.NewInt(0)),
 		IsDirty:        true,
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
@@ -70,6 +69,8 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 	mdl.State.TotalClosedAccounts++
 	cmAddr := txLog.Address.Hex()
 	sessionId := mdl.GetCreditOwnerSession(owner)
+	session := mdl.Repo.GetCreditSession(sessionId)
+	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("CloseCreditAccount", txLog)
 	// add account operation
@@ -125,6 +126,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{RemainingFunds: remainingFunds, Status: core.Liquidated}
 	session := mdl.Repo.GetCreditSession(sessionId)
 	session.Liquidator = liquidator
+	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
 	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
@@ -198,8 +200,10 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 func (mdl *CreditManager) AddCollateralToSession(blockNum int64, sessionId, token string, amount *big.Int) {
 	if !mdl.Repo.IsDieselToken(token) && mdl.Repo.GetGearTokenAddr() != token {
 		session := mdl.Repo.GetCreditSession(sessionId)
-		valueInUSD := mdl.Repo.GetValueInUSD(blockNum, token, amount)
+		valueInUSD := mdl.Repo.GetValueInCurrency(blockNum, token, "USDC", amount)
 		session.CollateralInUSD = core.AddCoreAndInt(session.CollateralInUSD, valueInUSD)
+		valueInUnderlyingAsset := mdl.Repo.GetValueInCurrency(blockNum, token, mdl.GetUnderlyingToken(), amount)
+		session.CollateralInUnderlying = core.AddCoreAndInt(session.CollateralInUnderlying, valueInUnderlyingAsset)
 	}
 }
 

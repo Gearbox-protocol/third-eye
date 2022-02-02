@@ -18,6 +18,7 @@ CREATE TABLE current_debts (
     liq_amount DOUBLE PRECISION,
     profit DOUBLE PRECISION,
     loss DOUBLE PRECISION,
+    profit_in_underlying DOUBLE PRECISION,
     repay_amount DOUBLE PRECISION);
 ALTER TABLE ONLY current_debts
     ADD CONSTRAINT current_debts_block_num_fkey FOREIGN KEY (block_num) REFERENCES blocks(id) ON DELETE CASCADE;

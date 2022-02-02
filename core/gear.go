@@ -54,7 +54,7 @@ type RepositoryI interface {
 	AddCreditSession(session *CreditSession, loadedFromDB bool, txHash string, logID uint)
 	GetCreditSession(sessionId string) *CreditSession
 	GetSessions() map[string]*CreditSession
-	GetValueInUSD(blockNum int64, token string, amount *big.Int) *big.Int
+	GetValueInCurrency(blockNum int64, token, currency string, amount *big.Int) *big.Int
 	AddDieselToken(dieselToken, underlyingToken, pool string)
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)

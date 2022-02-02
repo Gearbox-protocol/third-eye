@@ -21,6 +21,8 @@ type Debt struct {
 	ProfitInUSD                     float64 `gorm:"column:profit_usd"`
 	TotalValueInUSD                 float64 `gorm:"column:total_value_usd"`
 	CollateralInUSD                 float64 `gorm:"column:collateral_usd"`
+	CollateralInUnderlying          float64 `gorm:"column:collateral_in_underlying"`
+	ProfitInUnderlying              float64 `gorm:"column:profit_in_underlying"`
 }
 
 type CurrentDebt struct {
@@ -36,7 +38,7 @@ type CurrentDebt struct {
 	AmountToPoolBI                  *BigInt `gorm:"column:amount_to_pool_bi"`
 	AmountToPool                    float64 `gorm:"column:amount_to_pool"`
 	ProfitInUSD                     float64 `gorm:"column:profit_usd"`
-	CollateralInUSD                 float64 `gorm:"column:collateral_usd"`
+	ProfitInUnderlying              float64 `gorm:"column:profit_in_underlying"`
 }
 
 func (CurrentDebt) TableName() string {

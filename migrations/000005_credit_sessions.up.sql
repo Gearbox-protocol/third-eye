@@ -8,11 +8,12 @@ CREATE TABLE credit_sessions (
     initial_amount varchar(80),
     credit_manager varchar(42),
     borrowed_amount varchar(80),
-    profit varchar(80),
-    profit_percent double precision,
     balances jsonb,
     health_factor varchar(80),
-    liquidator  varchar(42)
+    liquidator  varchar(42),
+    collateral_in_underlying varchar(80),
+    collateral_in_usd varchar(80),
+    remaining_funds varchar(80)
 );
 ALTER TABLE ONLY credit_sessions
     ADD CONSTRAINT credit_sessions_credit_manager_fkey FOREIGN KEY (credit_manager) REFERENCES credit_managers(address);
@@ -30,7 +31,8 @@ CREATE TABLE credit_session_snapshots (
     balances jsonb,
     cumulative_index character varying(80),
     health_factor varchar(80),
-    borrower character varying(42)
+    borrower character varying(42),
+    collateral_in_underlying varchar(80)
 );
 
 

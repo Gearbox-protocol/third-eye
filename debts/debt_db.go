@@ -85,7 +85,7 @@ func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
 		AmountToPoolBI:                  debt.AmountToPoolBI,
 		AmountToPool:                    utils.GetFloat64Decimal(debt.AmountToPoolBI.Convert(), decimals),
 		ProfitInUSD:                     debt.ProfitInUSD,
-		CollateralInUSD:                 debt.CollateralInUSD,
+		ProfitInUnderlying:              debt.ProfitInUnderlying,
 	}
 	eng.currentDebts = append(eng.currentDebts, &curDebt)
 }

@@ -112,7 +112,7 @@ func (repo *Repository) GetActivePriceOracle(blockNum int64) (string, error) {
 	return "", fmt.Errorf("Not Found")
 }
 
-func (repo *Repository) GetValueInUSD(blockNum int64, token string, amount *big.Int) *big.Int {
+func (repo *Repository) GetValueInCurrency(blockNum int64, token, currency string, amount *big.Int) *big.Int {
 	oracle, err := repo.GetActivePriceOracle(blockNum)
 	log.CheckFatal(err)
 	poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
@@ -120,7 +120,11 @@ func (repo *Repository) GetValueInUSD(blockNum int64, token string, amount *big.
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), common.HexToAddress(repo.USDCAddr))
+	currencyAddr := common.HexToAddress(repo.USDCAddr)
+	if currency != "USDC" {
+		currencyAddr = common.HexToAddress(currency)
+	}
+	usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 	log.CheckFatal(err)
 	// convert to 8 decimals
 	return new(big.Int).Mul(usdcAmount, big.NewInt(100))

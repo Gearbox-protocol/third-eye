@@ -257,6 +257,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 		CalTotalValueBI:                 (*core.BigInt)(calTotalValue),
 		CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
 		CalThresholdValueBI:             (*core.BigInt)(calReducedThresholdValue),
+		CollateralInUnderlying:          utils.GetFloat64Decimal(sessionSnapshot.CollateralInUnderlying.Convert(), cumIndexAndUToken.Decimals),
 	}
 	var notMatched bool
 	profile := core.DebtProfile{}
@@ -320,9 +321,15 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.C
 	}
 	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)
 	// calculate profit
-	remainingFunds := new(big.Int).Sub(debt.CalTotalValueBI.Convert(), debt.AmountToPoolBI.Convert())
+	var remainingFunds *big.Int
+	if (session.ClosedAt == 0 || session.ClosedAt != debt.BlockNumber+1) || session.Status == core.Repaid {
+		remainingFunds = new(big.Int).Sub(debt.CalTotalValueBI.Convert(), debt.AmountToPoolBI.Convert())
+	} else {
+		remainingFunds = (*big.Int)(session.RemainingFunds)
+	}
 	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds)
 	profitInUSD := new(big.Int).Sub(remainingFundsInUSD, sessionSnapshot.CollateralInUSD.Convert())
+	debt.ProfitInUnderlying = utils.GetFloat64Decimal(remainingFunds, cumIndexAndUToken.Decimals) - debt.CollateralInUnderlying
 	// fields in USD
 	debt.CollateralInUSD = utils.GetFloat64Decimal(sessionSnapshot.CollateralInUSD.Convert(), 8)
 	debt.ProfitInUSD = utils.GetFloat64Decimal(profitInUSD, 8)

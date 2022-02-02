@@ -13,22 +13,22 @@ const (
 
 type (
 	CreditSession struct {
-		ID               string       `gorm:"primaryKey" json:"id"`
-		Status           int          `json:"status"`
-		Borrower         string       `json:"borrower"`
-		CreditManager    string       `json:"creditManager"`
-		Account          string       `json:"account"`
-		Since            int64        `json:"since"`
-		ClosedAt         int64        `json:"closedAt"`
-		InitialAmount    *BigInt      `json:"initialAmount"`
-		BorrowedAmount   *BigInt      `json:"borrowedAmount"`
-		Balances         *JsonBalance `gorm:"column:balances"`
-		Profit           *BigInt      `json:"profit"`
-		ProfitPercentage float64      `gorm:"column:profit_percent" json:"profitPercentage"`
-		CollateralInUSD  *BigInt      `gorm:"<-:false;column:collateral_in_usd"`
-		HealthFactor     *BigInt      `gorm:"column:health_factor" json:"healthFactor"`
-		IsDirty          bool         `gorm:"-"`
-		Liquidator       string       `gorm:"liquidator"`
+		ID                     string       `gorm:"primaryKey" json:"id"`
+		Status                 int          `json:"status"`
+		Borrower               string       `json:"borrower"`
+		CreditManager          string       `json:"creditManager"`
+		Account                string       `json:"account"`
+		Since                  int64        `json:"since"`
+		ClosedAt               int64        `json:"closedAt"`
+		InitialAmount          *BigInt      `json:"initialAmount"`
+		BorrowedAmount         *BigInt      `json:"borrowedAmount"`
+		Balances               *JsonBalance `gorm:"column:balances"`
+		CollateralInUSD        *BigInt      `gorm:"column:collateral_usd"`
+		RemainingFunds         *BigInt      `gorm:"column:remaining_funds"`
+		CollateralInUnderlying *BigInt      `gorm:"column:collateral_underlying"`
+		HealthFactor           *BigInt      `gorm:"column:health_factor" json:"healthFactor"`
+		IsDirty                bool         `gorm:"-"`
+		Liquidator             string       `gorm:"liquidator"`
 	}
 
 	CreditAccountData struct {
@@ -53,18 +53,19 @@ type (
 		Since                 int64
 	}
 	CreditSessionSnapshot struct {
-		ID                    int64        `gorm:"primaryKey;autoincrement:true"`
-		BlockNum              int64        `gorm:"column:block_num"`
-		SessionId             string       `gorm:"column:session_id"`
-		BorrowedAmountBI      *BigInt      `gorm:"column:borrowed_amount_bi"`
-		BorrowedAmount        float64      `gorm:"column:borrowed_amount"`
-		TotalValueBI          *BigInt      `gorm:"column:total_value_bi"`
-		TotalValue            float64      `gorm:"column:total_value"`
-		Balances              *JsonBalance `gorm:"column:balances"`
-		Borrower              string       `gorm:"column:borrower"`
-		CollateralInUSD       *BigInt      `gorm:"column:collateral_in_usd"`
-		СumulativeIndexAtOpen *BigInt      `gorm:"column:cumulative_index"`
-		HealthFactor          *BigInt      `gorm:"column:health_factor"`
+		ID                     int64        `gorm:"primaryKey;autoincrement:true"`
+		BlockNum               int64        `gorm:"column:block_num"`
+		SessionId              string       `gorm:"column:session_id"`
+		BorrowedAmountBI       *BigInt      `gorm:"column:borrowed_amount_bi"`
+		BorrowedAmount         float64      `gorm:"column:borrowed_amount"`
+		TotalValueBI           *BigInt      `gorm:"column:total_value_bi"`
+		TotalValue             float64      `gorm:"column:total_value"`
+		Balances               *JsonBalance `gorm:"column:balances"`
+		Borrower               string       `gorm:"column:borrower"`
+		CollateralInUSD        *BigInt      `gorm:"column:collateral_in_usd"`
+		CollateralInUnderlying *BigInt      `gorm:"qcolumn:collateral_in_underlying"`
+		СumulativeIndexAtOpen  *BigInt      `gorm:"column:cumulative_index"`
+		HealthFactor           *BigInt      `gorm:"column:health_factor"`
 	}
 	CreditSessionUpdate struct {
 		SessionId        string  `gorm:"column:id;primaryKey"`

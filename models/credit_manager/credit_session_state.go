@@ -60,10 +60,10 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 			true,
 			mdl.GetAddress()))
 	}
-	profit := new(big.Int).Sub(closeDetails.RemainingFunds, (*big.Int)(session.InitialAmount))
-	session.Profit = (*core.BigInt)(profit)
-	session.ProfitPercentage = float64(new(big.Int).Div(new(big.Int).
-		Mul(profit, big.NewInt(100000)), (*big.Int)(session.InitialAmount)).Int64()) / 1000
+	// profit := new(big.Int).Sub(closeDetails.RemainingFunds, (*big.Int)(session.InitialAmount))
+	// session.Profit = (*core.BigInt)(profit)
+	// session.ProfitPercentage = float64(new(big.Int).Div(new(big.Int).
+	// 	Mul(profit, big.NewInt(100000)), (*big.Int)(session.InitialAmount)).Int64()) / 1000
 
 	// credit manager state
 	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, data.RepayAmount)
@@ -75,6 +75,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.BlockNum = blockNum - 1
 	css.SessionId = sessionId
 	css.CollateralInUSD = session.CollateralInUSD
+	css.CollateralInUnderlying = session.CollateralInUnderlying
 	css.Borrower = session.Borrower
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
@@ -110,6 +111,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.BlockNum = blockNum
 	css.SessionId = sessionId
 	css.CollateralInUSD = session.CollateralInUSD
+	css.CollateralInUnderlying = session.CollateralInUnderlying
 	css.Borrower = session.Borrower
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
