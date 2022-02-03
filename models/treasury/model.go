@@ -81,3 +81,9 @@ func (mdl *Treasury) Query(queryTill int64) {
 		mdl.OnLog(log)
 	}
 }
+
+func (mdl *Treasury) AfterSyncHook(syncTill int64) {
+	// for treasury/dao
+	mdl.Repo.CalCurrentTreasuryValue(syncTill)
+	mdl.SyncAdapter.AfterSyncHook(syncTill)
+}

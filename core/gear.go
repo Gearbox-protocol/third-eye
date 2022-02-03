@@ -88,6 +88,7 @@ type RepositoryI interface {
 	AddAccountAddr(account string)
 	// dao
 	AddDAOOperation(operation *DAOOperation)
+	CalCurrentTreasuryValue(syncTill int64)
 	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)
 	RecentEventMsg(blockNum int64, msg string, args ...interface{})
 	//

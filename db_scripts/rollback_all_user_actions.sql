@@ -1,4 +1,5 @@
 update sync_adapters set last_sync = firstlog_at - 1 where type not in ('YearnPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
+-- update sync_adapters set last_sync = firstlog_at - 1 where type not in ('GearToken','Treasury','YearnPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
 update sync_adapters set details='{}' where type='AccountManager' ;
 delete from pool_ledger;
 delete from account_operations;

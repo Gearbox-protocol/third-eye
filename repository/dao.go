@@ -84,14 +84,16 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.Tr
 }
 
 func (repo *Repository) AfterSync(syncTill int64) {
-	repo.CalCurrentTreasuryValue(syncTill)
+	// for direct token transfer
 	for _, txs := range repo.accountManager.GetNoSessionTxs() {
 		for _, tx := range txs {
 			repo.RecentEventMsg(tx.BlockNum, "No session account token transfer: %v", tx)
 			repo.setAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
 		}
 	}
+	// for direct token transfer
 	repo.accountManager.Clear()
+	// chainlink and uniswap prices
 	repo.aggregatedFeed.Clear()
 }
 func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
