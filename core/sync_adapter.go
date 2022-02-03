@@ -23,7 +23,7 @@ type SyncAdapter struct {
 	Error                  string      `gorm:"column:error"`
 	Repo                   RepositoryI `gorm:"-"`
 	OnlyQuery              bool        `gorm:"-"`
-	blockToDisableOn       int64       `gorm:"-"`
+	blockToDisableOn       int64       `gorm:"column:disabled_at"`
 	HasOnLogs              bool        `gorm:"-"`
 }
 

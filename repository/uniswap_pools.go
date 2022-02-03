@@ -110,3 +110,11 @@ func (repo *Repository) AddUniPriceAndChainlinkRelation(relation *core.UniPriceA
 	defer repo.mu.Unlock()
 	repo.relations = append(repo.relations, relation)
 }
+
+func (repo *Repository) GetYearnFeedAddrs() (addrs []string) {
+	feeds := repo.aggregatedFeed.GetYearnFeeds()
+	for _, adapter := range feeds {
+		addrs = append(addrs, adapter.GetAddress())
+	}
+	return
+}

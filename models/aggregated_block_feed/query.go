@@ -253,7 +253,7 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 	}
 	priceData.BlockNumber = blockNum
 	priceData.Token = adapter.GetTokenAddr()
-	priceData.Feed = mdl.GetAddress()
+	priceData.Feed = adapter.GetAddress()
 	return priceData
 }
 

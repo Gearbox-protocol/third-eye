@@ -94,6 +94,7 @@ type RepositoryI interface {
 	//
 	// oracle and uni
 	AddUniswapPrices(prices *UniPoolPrices)
+	GetYearnFeedAddrs() []string
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64
 	Clear()

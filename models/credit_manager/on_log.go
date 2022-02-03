@@ -36,7 +36,7 @@ func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 	}
 	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
 	// no direct token transfer or the first token transfer is after the mdl.lastEventBlock
-	// or start block of range for check token tranafer 
+	// or start block of range for check token tranafer
 	if len(blockNums) == 0 || blockNums[0] > mdl.lastEventBlock {
 		mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
 	}

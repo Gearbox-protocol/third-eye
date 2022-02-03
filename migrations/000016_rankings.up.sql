@@ -63,3 +63,7 @@ END $$;
 -- drop FUNCTION ranking_by_period;
 
 -- SELECT array_to_json(array_agg(row_to_json(t))) FROM  (select distinct on(type) * from dao_operations order by type) t ;
+
+-- update price_feeds set feed=address from 
+-- (select address, details->>'token' as token, type from sync_adapters where type='YearnPriceFeed' and disabled='f') t
+-- WHERE t.token=price_feeds.token;

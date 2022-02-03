@@ -178,15 +178,15 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *core.CreditSe
 	// yearn price feed might be stale as a result difference btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
 	if profile != nil {
-		kit := eng.repo.GetKit()
-		yearnFeeds := kit.GetAdapterAddressByName(core.YearnPriceFeed)
+		yearnFeeds := eng.repo.GetYearnFeedAddrs()
 		for tokenAddr := range *sessionSnapshot.Balances {
 			lastPriceEvent := eng.tokenLastPrice[tokenAddr]
 			// for weth price feed is null
-			if lastPriceEvent != nil {
-				feed := lastPriceEvent.Feed
-				eng.requestPriceFeed(blockNum, feed, tokenAddr)
-			}
+			// if lastPriceEvent != nil {
+			// 	log.Infof("%+v\n",lastPriceEvent)
+			// 	feed := lastPriceEvent.Feed
+			// 	eng.requestPriceFeed(blockNum, feed, tokenAddr)
+			// }
 			if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
 				feed := lastPriceEvent.Feed
 				if utils.Contains(yearnFeeds, feed) {
@@ -372,7 +372,6 @@ func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string
 }
 
 func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
-	log.Info(feed, token)
 	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(feed), eng.client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
