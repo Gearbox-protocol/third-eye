@@ -372,6 +372,7 @@ func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string
 }
 
 func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
+	log.Info(feed, token)
 	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(feed), eng.client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
