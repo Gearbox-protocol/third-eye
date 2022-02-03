@@ -68,7 +68,7 @@ func (mdl *AccountManager) OnLog(txLog types.Log) {
 			IsFromAccount: mdl.isAccount[from],
 			IsToAccount:   mdl.isAccount[to],
 		}
-		mdl.Repo.AddAccountTokenTransfer(tt, mdl.isAccount[from], mdl.isAccount[to])
+		mdl.Repo.AddAccountTokenTransfer(tt)
 	}
 }
 

@@ -20,3 +20,16 @@ delete from debts; delete from liquidable_accounts; delete from profiles;delete 
 delete from no_session_transfers;
 
 -- delete from gear_balances;delete from treasury_snapshots;delete from treasury_transfers;
+
+-- update sync_adapters set last_sync = 14047535 - 1 where type not in ('YearnPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
+-- delete from pool_ledger where block_num >= 14047535;
+-- delete from account_operations where block_num >= 14047535;
+-- delete from allowed_protocols where block_num >= 14047535;
+-- delete from allowed_tokens where block_num >= 14047535;
+-- delete from credit_manager_stats where block_num >= 14047535;
+-- delete from credit_session_snapshots where block_num >= 14047535;
+-- delete from parameters where block_num >= 14047535;
+-- delete from credit_sessions where since >= 14047535;
+-- delete from pool_stats where block_num >= 14047535;
+-- delete from dao_operations where block_num >= 14047535;delete from fast_check_params where block_num >= 14047535;
+-- delete from no_session_transfers where block_num >= 14047535;

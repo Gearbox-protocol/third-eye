@@ -73,7 +73,7 @@ type RepositoryI interface {
 	GetUSDCAddr() string
 	GetGearTokenAddr() string
 	// credit manager
-	AddAccountTokenTransfer(tt *TokenTransfer, isFromAccount, isToAccount bool)
+	AddAccountTokenTransfer(tt *TokenTransfer)
 	AddCreditManagerToFilter(cmAddr, cfAddr string)
 	GetMask(blockNum int64, cmAddr, accountAddr string) *big.Int
 	AddCreditManagerStats(cms *CreditManagerStat)

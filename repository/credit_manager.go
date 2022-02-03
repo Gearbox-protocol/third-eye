@@ -117,9 +117,9 @@ func (repo *Repository) loadAllParams() {
 	}
 }
 
-func (repo *Repository) AddAccountTokenTransfer(tt *core.TokenTransfer, isFromAccount, isToAccount bool) {
+func (repo *Repository) AddAccountTokenTransfer(tt *core.TokenTransfer) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.setBlock(tt.BlockNum)
-	repo.accountManager.AddTokenTransfer(tt, isFromAccount, isToAccount)
+	repo.accountManager.AddTokenTransfer(tt)
 }

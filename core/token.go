@@ -75,6 +75,18 @@ type TokenTransfer struct {
 	IsToAccount   bool    `gorm:"column:isto_account"`
 }
 
+func (a *TokenTransfer) equal(b *TokenTransfer) bool {
+	return a.BlockNum == b.BlockNum &&
+		a.LogID == b.LogID &&
+		a.TxHash == b.TxHash &&
+		a.Token == b.Token &&
+		a.From == b.From &&
+		a.To == b.To &&
+		a.Amount == b.Amount &&
+		a.IsFromAccount == b.IsFromAccount &&
+		a.IsToAccount == b.IsToAccount
+}
+
 func (TokenTransfer) TableName() string {
 	return "no_session_transfers"
 }

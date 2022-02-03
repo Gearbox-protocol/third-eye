@@ -67,9 +67,11 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		} else {
 			dieselRate := big.NewInt(0)
 			if entry.Success {
-				value, err := poolABI.Unpack("getDieselRate_RAY", entry.ReturnData)
-				log.CheckFatal(err)
-				dieselRate = (value[0]).(*big.Int)
+				if len(entry.ReturnData) != 0 {
+					value, err := poolABI.Unpack("getDieselRate_RAY", entry.ReturnData)
+					log.CheckFatal(err)
+					dieselRate = (value[0]).(*big.Int)
+				}
 			} else {
 				log.Fatal("dieselRates fetching failed")
 			}

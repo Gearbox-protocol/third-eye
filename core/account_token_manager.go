@@ -81,7 +81,7 @@ func (ad *AccountData) detailsAssigned() bool {
 	// if the account details is not assigned then
 	// for some other credit manager, when getting remaining transfers
 	// we should skip for this account as it can be different credit manager
-	// that detail is missing currently
+	// for which detail might be missing currently
 	return len(ad.Details) != 0
 }
 
@@ -91,7 +91,7 @@ func (ad *AccountData) GetRemainingTransfer(cm string, from, to int64) map[int64
 	extraTokenTransfers := map[int64]map[string][]*TokenTransfer{}
 	detailsInd := len(ad.Details) - 1
 	blockInd := len(ad.blockNums) - 1
-	// find first blockNum less than to
+	// find first blockNum less than `to`
 	for ; blockInd >= 0 && ad.blockNums[blockInd] >= to; blockInd-- {
 	}
 	for ; blockInd >= 0 && ad.blockNums[blockInd] >= from; blockInd-- {
@@ -163,17 +163,17 @@ func NewAccountTokenManager() *AccountTokenManager {
 	}
 }
 
-func (mgr *AccountTokenManager) AddTokenTransfer(tt *TokenTransfer, isFromAccount, isToAccount bool) {
+func (mgr *AccountTokenManager) AddTokenTransfer(tt *TokenTransfer) {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()
-	if isFromAccount {
+	if tt.IsFromAccount {
 		if mgr.accountToData[tt.From] == nil {
 			mgr.accountToData[tt.From] = newAccountData(tt.From)
 		}
 		mgr.txHashToAccounts[tt.TxHash] = append(mgr.txHashToAccounts[tt.TxHash], tt.From)
 		mgr.accountToData[tt.From].process(tt)
 	}
-	if isToAccount {
+	if tt.IsToAccount {
 		if mgr.accountToData[tt.To] == nil {
 			mgr.accountToData[tt.To] = newAccountData(tt.To)
 		}
