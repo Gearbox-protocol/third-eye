@@ -26,6 +26,7 @@ type DBhandler struct {
 	Chainlinks              map[string]*core.SyncAdapter
 	ChainlinkPrices         map[string]core.SortedPriceFeed
 	UniPoolPrices           map[string]core.SortedUniPoolPrices
+	tokenStartBlock         map[string]int64
 	Relations               []*core.UniPriceAndChainlink
 	blocks                  map[int64]*core.Block
 	lastBlockForToken       map[string]int64
@@ -79,6 +80,7 @@ func NewDBhandler(db *gorm.DB, client *ethclient.Client) *DBhandler {
 		StartFrom:          math.MaxInt64,
 		tokens:             map[string]*core.Token{},
 		blocks:             map[int64]*core.Block{},
+		tokenStartBlock:    map[string]int64{},
 	}
 	obj.populateBlockFeed(blockFeed)
 	return obj
@@ -95,6 +97,10 @@ func (handler *DBhandler) getChainlinkPrices() {
 	for _, entry := range data {
 		handler.ChainlinkPrices[entry.Feed] = append(handler.ChainlinkPrices[entry.Feed], entry)
 		handler.StartFrom = utils.Min(handler.StartFrom, entry.BlockNumber)
+		if handler.tokenStartBlock[entry.Token] == 0 {
+			handler.tokenStartBlock[entry.Token] = entry.BlockNumber
+		}
+		handler.tokenStartBlock[entry.Token] = utils.Min(handler.tokenStartBlock[entry.Token], entry.BlockNumber)
 	}
 	for _, entries := range handler.ChainlinkPrices {
 		sort.Sort(entries)
@@ -117,7 +123,11 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 		WHERE block_num >= ? AND block_num < ? ORDER BY block_num`, from, to).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
-		if entry.BlockNum == 1+handler.lastBlockForToken[entry.Token] ||
+		// don't get uni prices before the first token price from chainlink
+		if handler.tokenStartBlock[entry.Token] >= entry.BlockNum ||
+			// the next uni price is in increment of 1
+			entry.BlockNum == 1+handler.lastBlockForToken[entry.Token] ||
+			// if the lastBlock is not set check that it is equal to from for this batch
 			(handler.lastBlockForToken[entry.Token] == 0 && entry.BlockNum == from) {
 		} else {
 			log.Info(entry.Token, entry.BlockNum)
@@ -127,7 +137,7 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 			if handler.lastBlockForToken[entry.Token] == 0 {
 				startBlock = from
 			}
-			log.Info(entry.Token, startBlock, entry.BlockNum)
+			log.Info(entry.Token, startBlock, entry.BlockNum, handler.tokenStartBlock[entry.Token])
 			for ; startBlock < entry.BlockNum; startBlock++ {
 				_, uniPrices := handler.blockFeed.QueryData(startBlock, WETHAddr, entry.Token)
 				for _, entry2 := range uniPrices {
@@ -201,6 +211,9 @@ func (handler *DBhandler) Run() {
 }
 
 func (h *DBhandler) save() {
+	if !SaveAtAll {
+		return
+	}
 	tx := h.db.Begin()
 	//
 	now := time.Now()
@@ -292,7 +305,7 @@ func greaterFluctuation(a, b float64) bool {
 	return math.Abs((a-b)/a) > 0.03
 }
 
-var SaveRelations bool
+var SaveRelations, SaveAtAll bool
 
 func StartServer(lc fx.Lifecycle, handler *DBhandler, shutdowner fx.Shutdowner) {
 
@@ -305,7 +318,8 @@ func StartServer(lc fx.Lifecycle, handler *DBhandler, shutdowner fx.Shutdowner) 
 		OnStart: func(context.Context) error {
 			// In production, we'd want to separate the Listen and Serve phases for
 			// better error-handling.
-			flag.BoolVar(&SaveRelations, "save", false, "where to save relations or not.")
+			flag.BoolVar(&SaveRelations, "relations", false, "where to save relations or not.")
+			flag.BoolVar(&SaveAtAll, "save", false, "where to save relations or not.")
 			go func() {
 				flag.Parse()
 				handler.Run()
