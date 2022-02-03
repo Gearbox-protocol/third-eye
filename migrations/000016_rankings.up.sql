@@ -1,3 +1,7 @@
+drop MATERIALIZED VIEW ranking_7d;
+drop MATERIALIZED VIEW ranking_30d;
+drop procedure rankings;
+drop FUNCTION ranking_by_period;
 create OR REPLACE FUNCTION ranking_by_period(BIGINT)
 returns table (
 		old_collateral DOUBLE PRECISION,
@@ -57,10 +61,7 @@ BEGIN
     REFRESH MATERIALIZED VIEW ranking_30d;
 END $$;
 
--- drop MATERIALIZED VIEW ranking_7d;
--- drop MATERIALIZED VIEW ranking_30d;
--- drop procedure rankings;
--- drop FUNCTION ranking_by_period;
+
 
 -- SELECT array_to_json(array_agg(row_to_json(t))) FROM  (select distinct on(type) * from dao_operations order by type) t ;
 
