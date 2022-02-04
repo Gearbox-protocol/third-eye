@@ -104,8 +104,10 @@ func (repo *Repository) init() {
 	repo.loadUniswapPools()
 	// for disabling previous token oracle if new oracle is set
 	repo.loadCurrentTokenOracle()
-	// load state for sync_adpters
+	// load state for sync_adapters
 	repo.loadPool()
+	repo.loadPoolUniqueUsers()
+	// load credit manager
 	repo.loadCreditManagers()
 	repo.loadGearBalances()
 	// required for disabling allowed tokens

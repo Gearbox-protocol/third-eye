@@ -26,7 +26,7 @@ func (repo *Repository) IsDieselToken(token string) bool {
 }
 
 func (repo *Repository) loadPoolUniqueUsers() {
-	query := "select distinct pool,address from pool_ledger;"
+	query := "select distinct pool, user_address from pool_ledger WHERE event = 'AddLiquidity';"
 	data := []*core.PoolLedger{}
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
@@ -53,7 +53,9 @@ func (repo *Repository) AddPoolStat(ps *core.PoolStat) {
 func (repo *Repository) AddPoolLedger(pl *core.PoolLedger) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.addPoolUniqueUser(pl.Pool, pl.User)
+	if "AddLiquidity" == pl.Event {
+		repo.addPoolUniqueUser(pl.Pool, pl.User)
+	}
 	repo.setAndGetBlock(pl.BlockNumber).AddPoolLedger(pl)
 }
 
