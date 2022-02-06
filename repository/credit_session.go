@@ -85,7 +85,7 @@ func (repo *Repository) GetAccountManager() *core.AccountTokenManager {
 func (repo *Repository) AddAccountAddr(account string) {
 	addrs := repo.kit.GetAdapterAddressByName(core.AccountManager)
 	if len(addrs) == 1 {
-		adapter := repo.kit.GetAdapter(addrs[0])
+		adapter := repo.GetAdapter(addrs[0])
 		adapter.SetDetails(account)
 	} else {
 		log.Fatalf("%d account manager model available in adapter kit", len(addrs))

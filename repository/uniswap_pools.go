@@ -96,7 +96,7 @@ func (repo *Repository) loadChainlinkPrevState() {
 	err := repo.db.Raw(`SELECT distinct on (feed)* from price_feeds order by feed, block_num DESC`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
-		if adapter := repo.kit.GetAdapter(entry.Feed); adapter != nil && adapter.GetName() == core.ChainlinkPriceFeed {
+		if adapter := repo.GetAdapter(entry.Feed); adapter != nil && adapter.GetName() == core.ChainlinkPriceFeed {
 			adapter.SetUnderlyingState(entry)
 		}
 	}
@@ -117,4 +117,18 @@ func (repo *Repository) GetYearnFeedAddrs() (addrs []string) {
 		addrs = append(addrs, adapter.GetAddress())
 	}
 	return
+}
+
+
+func (repo *Repository) GetAdapter(addr string) core.SyncAdapterI {
+	adapter := repo.kit.GetAdapter(addr)
+	if adapter == nil {
+		feeds := repo.aggregatedFeed.GetYearnFeeds()
+		for _, feed := range feeds {
+			if feed.GetAddress() == addr {
+				return feed
+			}
+		}
+	}
+	return adapter
 }

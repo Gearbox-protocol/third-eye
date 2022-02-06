@@ -13,7 +13,7 @@ func (repo *Repository) loadGearBalances() {
 	}
 	geartokenAddr := repo.kit.GetAdapterAddressByName(core.GearToken)
 	if len(geartokenAddr) > 0 {
-		if adapter := repo.kit.GetAdapter(geartokenAddr[0]); adapter != nil {
+		if adapter := repo.GetAdapter(geartokenAddr[0]); adapter != nil {
 			adapter.SetUnderlyingState(data)
 		}
 	}

@@ -12,7 +12,7 @@ func (repo *Repository) loadPool() {
 		log.Fatal(err)
 	}
 	for _, pool := range data {
-		adapter := repo.kit.GetAdapter(pool.Address)
+		adapter := repo.GetAdapter(pool.Address)
 		adapter.SetUnderlyingState(pool)
 		repo.dieselTokens[pool.DieselToken] = &core.UTokenAndPool{
 			Pool:   pool.Address,

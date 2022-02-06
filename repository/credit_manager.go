@@ -12,7 +12,7 @@ func (repo *Repository) loadCreditManagers() {
 		log.Fatal(err)
 	}
 	for _, cm := range data {
-		adapter := repo.kit.GetAdapter(cm.Address)
+		adapter := repo.GetAdapter(cm.Address)
 		if adapter != nil && adapter.GetName() == "CreditManager" {
 			cm.Sessions = map[string]string{}
 			adapter.SetUnderlyingState(cm)
@@ -35,7 +35,7 @@ func (repo *Repository) loadSessionIdToBorrower() {
 		hstore[cs.Borrower] = cs.ID
 	}
 	for cm, hstore := range borrowerToSession {
-		adapter := repo.kit.GetAdapter(cm)
+		adapter := repo.GetAdapter(cm)
 		if adapter != nil && adapter.GetName() == "CreditManager" {
 			adapter.SetUnderlyingState(hstore)
 		}
@@ -43,7 +43,7 @@ func (repo *Repository) loadSessionIdToBorrower() {
 }
 
 func (repo *Repository) GetCMState(cmAddr string) *core.CreditManagerState {
-	state := repo.kit.GetAdapter(cmAddr).GetUnderlyingState()
+	state := repo.GetAdapter(cmAddr).GetUnderlyingState()
 	cm, ok := state.(*core.CreditManagerState)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")

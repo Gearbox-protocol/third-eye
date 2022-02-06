@@ -37,7 +37,7 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 		syncAdapter,
 		true,
 	)
-	repo.AddTokenOracle(token, oracle, feed, discoveredAt)
+	repo.AddTokenOracle(token, adapter.Oracle, adapter.Address, discoveredAt)
 	return adapter
 }
 

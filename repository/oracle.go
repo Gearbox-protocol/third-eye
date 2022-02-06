@@ -30,7 +30,7 @@ func (repo *Repository) AddTokenOracle(token, oracle, feed string, blockNum int6
 	if repo.tokensCurrentOracle[token] != nil {
 		currentFeed := repo.tokensCurrentOracle[token].Feed
 		log.Warnf("New feed(%s) discovered at %d for token(%s) old feed: %s", feed, blockNum, token, currentFeed)
-		repo.kit.GetAdapter(currentFeed).SetBlockToDisableOn(blockNum)
+		repo.GetAdapter(currentFeed).SetBlockToDisableOn(blockNum)
 	}
 	// set current state of oracle for token.
 	repo.addTokenCurrentOracle(

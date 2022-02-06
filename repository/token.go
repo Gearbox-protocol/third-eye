@@ -104,7 +104,7 @@ func (repo *Repository) GetPreviousLiqThreshold(cm, token string) *core.BigInt {
 func (repo *Repository) GetActivePriceOracle(blockNum int64) (string, error) {
 	oracles := repo.kit.GetAdapterAddressByName(core.PriceOracle)
 	for _, addr := range oracles {
-		oracleAdapter := repo.kit.GetAdapter(addr)
+		oracleAdapter := repo.GetAdapter(addr)
 		if !oracleAdapter.IsDisabled() && oracleAdapter.GetDiscoveredAt() <= blockNum {
 			return addr, nil
 		}

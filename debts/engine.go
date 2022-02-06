@@ -82,7 +82,10 @@ func (eng *DebtEngine) calculateDebt() {
 			eng.addLastParameters(params)
 		}
 		// get pool cumulative interest rate
-		cmAddrToCumIndex := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
+		var cmAddrToCumIndex map[string]*core.CumIndexAndUToken
+		if len(sessionsToUpdate) > 0 {
+			cmAddrToCumIndex = eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
+		}
 		// calculate each session debt
 		for sessionId := range sessionsToUpdate {
 			session := sessions[sessionId]
@@ -108,7 +111,7 @@ func (eng *DebtEngine) calculateDebt() {
 	// }
 }
 
-func (eng *DebtEngine) ifAccountClosed(sessionId, cmAddr string, closedAt int64, status int) {
+func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt int64, status int) {
 	sessionSnapshot := eng.lastCSS[sessionId]
 	if status == core.Liquidated {
 		account := eng.liquidableBlockTracker[sessionId]
@@ -204,7 +207,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *core.CreditSe
 	// check if data compressor and calculated values match
 	eng.liquidationCheck(debt, cmAddr, sessionSnapshot.Borrower, cumIndexAndUToken)
 	if session.ClosedAt == blockNum+1 {
-		eng.ifAccountClosed(sessionId, cmAddr, session.ClosedAt, session.Status)
+		eng.ifAccountLiquidated(sessionId, cmAddr, session.ClosedAt, session.Status)
 		eng.addCurrentDebt(debt, cumIndexAndUToken.Decimals)
 	}
 	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
