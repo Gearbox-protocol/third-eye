@@ -39,6 +39,12 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 		}
 		rounds++
 	}
+	for _, adapter := range mdl.YearnFeeds {
+		if queryTill <= adapter.GetLastSync() || adapter.IsDisabled() {
+			continue
+		}
+		adapter.AfterSyncHook(queryTill)
+	}
 	for _, prices := range mdl.UniPricesByTokens {
 		sort.Sort(prices)
 	}
