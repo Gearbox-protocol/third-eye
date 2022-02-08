@@ -21,7 +21,7 @@ import (
 )
 
 type DBhandler struct {
-	client                  *ethclient.Client
+	client                  ethclient.ClientI
 	db                      *gorm.DB
 	Chainlinks              map[string]*core.SyncAdapter
 	ChainlinkPrices         map[string]core.SortedPriceFeed

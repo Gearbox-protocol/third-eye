@@ -36,12 +36,12 @@ import (
 )
 
 type Contract struct {
-	DiscoveredAt int64             `gorm:"column:discovered_at"`
-	FirstLogAt   int64             `gorm:"column:firstlog_at"`
-	Address      string            `gorm:"primaryKey;column:address"`
-	Disabled     bool              `gorm:"column:disabled"`
-	ContractName string            `gorm:"column:type"`
-	Client       *ethclient.Client `gorm:"-"`
+	DiscoveredAt int64             `gorm:"column:discovered_at" json:"discoveredAt"`
+	FirstLogAt   int64             `gorm:"column:firstlog_at" json:"firstLogAt"`
+	Address      string            `gorm:"primaryKey;column:address" json:"address"`
+	Disabled     bool              `gorm:"column:disabled" json:"disabled"`
+	ContractName string            `gorm:"column:type" json:"type"`
+	Client       ethclient.ClientI `gorm:"-"`
 	ABI          *abi.ABI          `gorm:"-"`
 }
 
@@ -49,7 +49,7 @@ func (c *Contract) Disable() {
 	c.Disabled = true
 }
 
-func NewContract(address, contractName string, discoveredAt int64, client *ethclient.Client) *Contract {
+func NewContract(address, contractName string, discoveredAt int64, client ethclient.ClientI) *Contract {
 
 	con := &Contract{
 		ContractName: contractName,

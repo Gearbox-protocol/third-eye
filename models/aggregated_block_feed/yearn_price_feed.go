@@ -24,7 +24,7 @@ type YearnPriceFeed struct {
 	mu                *sync.Mutex
 }
 
-func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *YearnPriceFeed {
+func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *YearnPriceFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address:      oracle,

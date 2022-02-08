@@ -13,7 +13,7 @@ type ACL struct {
 	contractETH *aCL.ACL
 }
 
-func NewACL(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ACL {
+func NewACL(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *ACL {
 	return NewACLFromAdapter(
 		core.NewSyncAdapter(addr, core.ACL, discoveredAt, client, repo),
 	)

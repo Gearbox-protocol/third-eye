@@ -23,13 +23,13 @@ type DataCompressorWrapper struct {
 	dcOldKovan     *dataCompressor.DataCompressor
 	dcMainnet      *mainnet.DataCompressor
 	NameToAddr     map[string]string
-	client         *ethclient.Client
+	client         ethclient.ClientI
 }
 
 var OLDKOVAN = "OLDKOVAN"
 var MAINNET = "MAINNET"
 
-func NewDataCompressorWrapper(client *ethclient.Client) *DataCompressorWrapper {
+func NewDataCompressorWrapper(client ethclient.ClientI) *DataCompressorWrapper {
 	return &DataCompressorWrapper{
 		mu:             &sync.Mutex{},
 		BlockNumToName: make(map[int64]string),

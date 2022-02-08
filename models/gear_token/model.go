@@ -15,7 +15,7 @@ type GearToken struct {
 	arrayOfGearBalanceUpdates []*core.GearBalance
 }
 
-func NewGearToken(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *GearToken {
+func NewGearToken(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *GearToken {
 	pool := NewGearTokenFromAdapter(
 		core.NewSyncAdapter(addr, core.GearToken, discoveredAt, client, repo),
 	)

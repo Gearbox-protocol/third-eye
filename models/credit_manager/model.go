@@ -36,7 +36,7 @@ func (CreditManager) TableName() string {
 	return "sync_adapters"
 }
 
-func NewCreditManager(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *CreditManager {
+func NewCreditManager(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *CreditManager {
 	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(addr), client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(discoveredAt),

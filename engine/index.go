@@ -24,7 +24,7 @@ type Engine struct {
 var syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
 
 func NewEngine(config *config.Config,
-	ec *ethclient.Client,
+	ec ethclient.ClientI,
 	debtEng core.DebtEngineI,
 	repo core.RepositoryI) core.EngineI {
 	chaindId, err := ec.ChainID(context.TODO())

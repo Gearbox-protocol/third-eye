@@ -24,7 +24,7 @@ type Repository struct {
 	USDCAddr              string
 	GearTokenAddr         string
 	db                    *gorm.DB
-	client                *ethclient.Client
+	client                ethclient.ClientI
 	config                *config.Config
 	kit                   *core.AdapterKit
 	executeParser         core.ExecuteParserI
@@ -52,7 +52,7 @@ type Repository struct {
 	relations        []*core.UniPriceAndChainlink
 }
 
-func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
+func newRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config, ep core.ExecuteParserI) *Repository {
 	r := &Repository{
 		mu:                    &sync.Mutex{},
 		db:                    db,
@@ -74,9 +74,10 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		dieselTokens:          make(map[string]*core.UTokenAndPool),
 		accountManager:        core.NewAccountTokenManager(),
 	}
-
-	r.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, r, config.Interval)
-	r.kit.Add(r.aggregatedFeed)
+	return r
+}
+func NewRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
+	r := newRepository(db, client, config, ep)
 	r.init()
 	return r
 }

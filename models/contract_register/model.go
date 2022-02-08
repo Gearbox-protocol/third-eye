@@ -9,7 +9,7 @@ type ContractRegister struct {
 	*core.SyncAdapter
 }
 
-func NewContractRegister(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *ContractRegister {
+func NewContractRegister(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *ContractRegister {
 	return NewContractRegisterFromAdapter(
 		core.NewSyncAdapter(addr, core.ContractRegister, discoveredAt, client, repo),
 	)

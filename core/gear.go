@@ -27,6 +27,7 @@ type RepositoryI interface {
 	AddSyncAdapter(adapterI SyncAdapterI)
 	InitChecks()
 	GetChainId() uint
+	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
 	// saving to the db
 	Flush() error
 	// adding block/timestamp

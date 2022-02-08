@@ -14,7 +14,7 @@ type AccountFactory struct {
 	contractETH *accountFactory.AccountFactory
 }
 
-func NewAccountFactory(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *AccountFactory {
+func NewAccountFactory(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *AccountFactory {
 	adapter := account_manager.NewAccountManager(common.Address{}.Hex(), discoveredAt, client, repo)
 	repo.AddSyncAdapter(adapter)
 	return NewAccountFactoryFromAdapter(

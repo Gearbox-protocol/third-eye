@@ -9,7 +9,7 @@ type AddressProvider struct {
 	*core.SyncAdapter
 }
 
-func NewAddressProvider(addr string, client *ethclient.Client, repo core.RepositoryI) *AddressProvider {
+func NewAddressProvider(addr string, client ethclient.ClientI, repo core.RepositoryI) *AddressProvider {
 	return NewAddressProviderFromAdapter(
 		core.NewSyncAdapter(addr, core.AddressProvider, -1, client, repo),
 	)

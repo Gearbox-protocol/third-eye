@@ -12,14 +12,14 @@ type Token struct {
 	Address  string            `gorm:"primaryKey;column:address"`
 	Symbol   string            `gorm:"column:symbol"`
 	Decimals int8              `gorm:"column:decimals"`
-	client   *ethclient.Client `gorm:"-"`
+	client   ethclient.ClientI `gorm:"-"`
 }
 
 func (Token) TableName() string {
 	return "tokens"
 }
 
-func NewToken(addr string, client *ethclient.Client) (*Token, error) {
+func NewToken(addr string, client ethclient.ClientI) (*Token, error) {
 	token := &Token{
 		Address: addr,
 		client:  client,

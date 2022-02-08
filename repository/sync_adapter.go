@@ -19,6 +19,10 @@ import (
 )
 
 func (repo *Repository) loadSyncAdapters() {
+	// aggregated block feed
+	repo.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(repo.client, repo, repo.config.Interval)
+	repo.kit.Add(repo.aggregatedFeed)
+	//
 	data := []*core.SyncAdapter{}
 	err := repo.db.Find(&data, "disabled = ?", false).Error
 	if err != nil {
@@ -27,11 +31,11 @@ func (repo *Repository) loadSyncAdapters() {
 	for _, adapter := range data {
 		adapter.Client = repo.client
 		adapter.Repo = repo
-		repo.addSyncAdapter(repo.prepareSyncAdapter(adapter))
+		repo.addSyncAdapter(repo.PrepareSyncAdapter(adapter))
 	}
 }
 
-func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
+func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
 	switch adapter.ContractName {
 	case core.ACL:
 		return acl.NewACLFromAdapter(adapter)

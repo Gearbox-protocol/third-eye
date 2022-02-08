@@ -18,7 +18,7 @@ type AccountManager struct {
 	isAccount     map[string]bool
 }
 
-func NewAccountManager(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *AccountManager {
+func NewAccountManager(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *AccountManager {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address:      addr,

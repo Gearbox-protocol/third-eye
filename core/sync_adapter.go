@@ -17,9 +17,9 @@ const MaxUint = ^int64(0)
 
 type SyncAdapter struct {
 	*Contract
-	LastSync               int64       `gorm:"column:last_sync"`
-	Details                Json        `gorm:"column:details"`
-	UnderlyingStatePresent bool        `gorm:"-"`
+	LastSync               int64       `gorm:"column:last_sync" json:"lastSync"`
+	Details                Json        `gorm:"column:details" json:"details"`
+	UnderlyingStatePresent bool        `gorm:"-" json:"-"`
 	Error                  string      `gorm:"column:error"`
 	Repo                   RepositoryI `gorm:"-"`
 	OnlyQuery              bool        `gorm:"-"`
@@ -115,7 +115,7 @@ func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 func (s *SyncAdapter) Query(queryTill int64) {
 }
 
-func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client, repo RepositoryI) *SyncAdapter {
+func NewSyncAdapter(addr, name string, discoveredAt int64, client ethclient.ClientI, repo RepositoryI) *SyncAdapter {
 	obj := &SyncAdapter{
 		Contract: NewContract(addr, name, discoveredAt, client),
 		Repo:     repo,

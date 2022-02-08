@@ -2,8 +2,12 @@ package core
 
 import (
 	"database/sql/driver"
+	"github.com/Gearbox-protocol/third-eye/utils"
+	// "github.com/Gearbox-protocol/third-eye/log"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"testing"
 )
 
 type Json map[string]interface{}
@@ -106,4 +110,69 @@ func (z *JsonFloatMap) Scan(value interface{}) error {
 	default:
 		return fmt.Errorf("Could not scan type %T", t)
 	}
+}
+
+func (addrs AddressMap) checkIfAddress(v string) string {
+	if strings.HasPrefix(v, "#") {
+		key := strings.Trim(v, "#")
+		addr := utils.RandomAddr()
+		addrs[key] = addr
+		return addr
+	} else if strings.HasPrefix(v, "@") {
+		key := strings.Trim(v, "@")
+		return addrs[key]
+	} else if strings.HasPrefix(v, "!#") {
+		key := strings.Trim(v, "!#")
+		hash := utils.RandomHash()
+		addrs[key] = hash
+		return hash
+	} else if strings.HasPrefix(v, "!@") {
+		key := strings.Trim(v, "!@")
+		return addrs[key]
+	} else {
+		return v
+	}
+}
+
+type AddressMap map[string]string
+
+func (addrs AddressMap) checkInterface(data interface{}, t *testing.T) interface{} {
+	switch data.(type) {
+	case string:
+		value, ok := data.(string)
+		if !ok {
+			t.Error("string parsing failed")
+		}
+		return addrs.checkIfAddress(value)
+	case []interface{}:
+		value, ok := data.([]interface{})
+		if !ok {
+			t.Error("[]interface{} parsing failed")
+		}
+		for i, entry := range value {
+			value[i] = addrs.checkInterface(entry, t)
+		}
+		return value
+	case map[string]interface{}:
+		value, ok := data.(map[string]interface{})
+		if !ok {
+			t.Error("map[string]interface{} parsing failed")
+		}
+		for key, entry := range value {
+			value[key] = addrs.checkInterface(entry, t)
+		}
+		return value
+	default:
+		return data
+	}
+}
+
+func (z *Json) ParseAddress(t *testing.T, addrs AddressMap) {
+	for key, data := range *z {
+		(*z)[key] = addrs.checkInterface(data, t)
+	}
+}
+
+func (z *Json) UnmarshalJSON(b []byte) error {
+	return nil
 }

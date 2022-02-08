@@ -14,7 +14,7 @@ import (
 type DebtEngine struct {
 	repo           core.RepositoryI
 	db             *gorm.DB
-	client         *ethclient.Client
+	client         ethclient.ClientI
 	config         *config.Config
 	lastCSS        map[string]*core.CreditSessionSnapshot
 	tokenLastPrice map[string]*core.PriceFeed
@@ -29,7 +29,7 @@ type DebtEngine struct {
 	lastParameters map[string]*core.Parameters
 }
 
-func NewDebtEngine(db *gorm.DB, client *ethclient.Client, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
+func NewDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
 	return &DebtEngine{
 		repo:                   repo,
 		db:                     db,

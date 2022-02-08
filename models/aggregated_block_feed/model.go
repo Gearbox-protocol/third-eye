@@ -22,7 +22,7 @@ type AggregatedBlockFeed struct {
 	tokenInfos        map[string]*core.Token
 }
 
-func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
+func NewAggregatedBlockFeed(client ethclient.ClientI, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			// Address:      oracle,
