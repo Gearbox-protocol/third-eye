@@ -27,7 +27,7 @@ func (repo *Repository) addToken(addr string) (*core.Token, error) {
 		if err != nil {
 			return nil, err
 		}
-		repo.addTokenObj(token)
+		repo.AddTokenObj(token)
 	}
 	return repo.tokens[addr], nil
 }
@@ -55,17 +55,17 @@ func (repo *Repository) loadToken() {
 		log.Fatal(err)
 	}
 	for _, token := range data {
-		if token.Symbol == "WETH" {
-			repo.SetWETHAddr(token.Address)
-		}
-		repo.addTokenObj(token)
+		repo.AddTokenObj(token)
 	}
 }
 
-func (repo *Repository) addTokenObj(t *core.Token) {
+func (repo *Repository) AddTokenObj(t *core.Token) {
 	// set usdc addr in repo
 	if t.Symbol == "USDC" {
 		repo.USDCAddr = t.Address
+	}
+	if t.Symbol == "WETH" {
+		repo.SetWETHAddr(t.Address)
 	}
 	if repo.tokens[t.Address] == nil {
 		repo.tokens[t.Address] = t

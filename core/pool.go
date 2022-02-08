@@ -1,9 +1,9 @@
 package core
 
 type PoolState struct {
-	Address                string  `gorm:"primaryKey"`
-	UnderlyingToken        string  `gorm:"column:underlying_token"`
-	DieselToken            string  `gorm:"column:diesel_token"`
+	Address                string  `gorm:"primaryKey" json:"address"`
+	UnderlyingToken        string  `gorm:"column:underlying_token" json:"underlyingToken"`
+	DieselToken            string  `gorm:"column:diesel_token" json:"dieselToken"`
 	IsWETH                 bool    `gorm:"column:is_weth"`
 	ExpectedLiquidityLimit *BigInt `gorm:"column:expected_liq_limit"`
 	WithdrawFee            *BigInt `gorm:"column:withdraw_fee"`

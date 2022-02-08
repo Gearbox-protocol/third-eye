@@ -1,4 +1,4 @@
-package repository
+package tests
 
 import (
 	"encoding/json"
@@ -7,7 +7,10 @@ import (
 
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/debts"
+	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
@@ -44,7 +47,10 @@ type TestInput struct {
 }
 
 type SyncAdapterMock struct {
-	Data []*core.SyncAdapter `json:"adapters"`
+	Data      []*core.SyncAdapter        `json:"adapters"`
+	CMState   []*core.CreditManagerState `json:"cmState"`
+	PoolState []*core.PoolState          `json:"poolState"`
+	Tokens    []*core.Token              `json:"tokens"`
 }
 
 type MockRepo struct {
@@ -55,6 +61,7 @@ type MockRepo struct {
 	AddressMap   core.AddressMap
 	SyncAdapters []*core.SyncAdapter
 	t            *testing.T
+	eng          core.EngineI
 }
 
 func (m *MockRepo) init() {
@@ -71,20 +78,47 @@ func (m *MockRepo) handleMocks() {
 	for key, fileName := range tmpObj.MockFiles {
 		mockFilePath := fmt.Sprintf("../tests/%s", fileName)
 		if key == "syncAdapters" {
-			obj := &SyncAdapterMock{}
-			m.addAddressSetJson(mockFilePath, obj)
-			for _, adapter := range obj.Data {
-				if adapter.DiscoveredAt == 0 {
-					adapter.DiscoveredAt = adapter.LastSync
-					adapter.FirstLogAt = adapter.LastSync + 1
-				}
-			}
-			m.SyncAdapters = obj.Data
+			m.setSyncAdapters(mockFilePath)
 		}
 	}
 	//
 	m.addAddressSetJson(filePath, m.InputFile)
-	m.t.Fatal(utils.ToJson(m))
+
+}
+
+func (m *MockRepo) setSyncAdapters(mockFilePath string) {
+	obj := &SyncAdapterMock{}
+	kit := m.repo.GetKit()
+	m.addAddressSetJson(mockFilePath, obj)
+	for _, adapter := range obj.Data {
+		if adapter.DiscoveredAt == 0 {
+			adapter.DiscoveredAt = adapter.LastSync
+			adapter.FirstLogAt = adapter.LastSync + 1
+		}
+		switch adapter.GetName() {
+		case core.ChainlinkPriceFeed:
+			oracle := adapter.GetDetails("oracle")
+			token := adapter.GetDetails("token")
+			m.repo.AddTokenOracle(token, oracle, adapter.GetAddress(), adapter.DiscoveredAt)
+		case core.CreditManager:
+			for _, state := range obj.CMState {
+				if state.Address == adapter.GetAddress() {
+					adapter.SetUnderlyingState(state)
+				}
+			}
+		case core.Pool:
+			for _, state := range obj.PoolState {
+				if state.Address == adapter.GetAddress() {
+					adapter.SetUnderlyingState(state)
+				}
+			}
+		}
+		kit.Add(m.repo.PrepareSyncAdapter(adapter))
+	}
+	for _, tokenObj := range obj.Tokens {
+		m.repo.AddTokenObj(tokenObj)
+	}
+	m.SyncAdapters = obj.Data
 }
 
 func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
@@ -99,12 +133,16 @@ func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
 
 func TestRepo(t *testing.T) {
 	client := &ethclient.TestClient{}
-	repo := newRepository(nil, client, &config.Config{}, nil)
+	cfg := &config.Config{}
+	repo := repository.GetRepository(nil, client, cfg, nil)
+	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
+	eng := engine.NewEngine(cfg, client, debtEng, repo)
 	r := MockRepo{
 		repo:   repo,
 		client: client,
 		file:   "test1.json",
 		t:      t,
+		eng:    eng,
 	}
 	r.init()
 }

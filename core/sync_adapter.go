@@ -54,9 +54,21 @@ type SyncAdapterI interface {
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
 	GetDiscoveredAt() int64
+	GetDetails(key string) string
 }
 
 func (s *SyncAdapter) SetDetails(obj interface{}) {
+}
+
+func (s *SyncAdapter) GetDetails(key string) string {
+	if s.Details == nil {
+		return ""
+	}
+	value, ok := s.Details[key].(string)
+	if !ok {
+		log.Fatalf("Not able to parse detail field %s", key)
+	}
+	return value
 }
 func (s *SyncAdapter) GetHasOnLogs() bool {
 	return s.HasOnLogs
