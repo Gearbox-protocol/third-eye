@@ -17,7 +17,7 @@ func (BlockTmp) TableName() string {
 	return "blocks"
 }
 
-func (eng *DebtEngine) flushCurrentDebts(to int64) {
+func (eng *DebtEngine) CalCurrentDebts(to int64) {
 	// get timestamp of the block
 	b, err := eng.client.BlockByNumber(context.Background(), big.NewInt(to))
 	if err != nil {
@@ -40,6 +40,13 @@ func (eng *DebtEngine) flushCurrentDebts(to int64) {
 			}
 			eng.addCurrentDebt(debt, cumIndex.Decimals)
 		}
+	}
+}
+func (eng *DebtEngine) flushCurrentDebts(to int64) {
+	// get timestamp of the block
+	b, err := eng.client.BlockByNumber(context.Background(), big.NewInt(to))
+	if err != nil {
+		log.Fatal(err)
 	}
 	// sync the current debts
 	tx := eng.db.Begin()

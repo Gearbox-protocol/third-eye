@@ -19,7 +19,7 @@ func (eng *DebtEngine) SaveProfile(profile string) {
 	}
 }
 
-func (eng *DebtEngine) calculateDebt() {
+func (eng *DebtEngine) CalculateDebt() {
 	blocks := eng.repo.GetBlocks()
 	sessions := eng.repo.GetSessions()
 	noOfBlock := len(blocks)
@@ -104,7 +104,7 @@ func (eng *DebtEngine) calculateDebt() {
 		if len(sessionsToUpdate) > 0 {
 			log.Verbosef("Calculated %d debts for block %d", len(sessionsToUpdate), blockNum)
 		}
-		eng.flushDebt(blockNum)
+		// eng.flushDebt(blockNum)
 	}
 	// if noOfBlock > 0 {
 	// 	eng.flushDebt(blockNums[noOfBlock-1])

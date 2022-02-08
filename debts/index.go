@@ -85,7 +85,9 @@ func (eng *DebtEngine) processBlocksInBatch(from, to int64) {
 // called for the engine/index.go and the debt engine
 func (eng *DebtEngine) CalculateDebtAndClear(to int64) {
 	if !eng.config.DisableDebtEngine {
-		eng.calculateDebt()
+		eng.CalculateDebt()
+		eng.flushDebt(to)
+		eng.CalCurrentDebts(to)
 		eng.flushCurrentDebts(to)
 	}
 	eng.Clear()

@@ -98,6 +98,8 @@ type DebtEngineI interface {
 	Clear()
 	ProcessBackLogs()
 	CalculateDebtAndClear(to int64)
+	CalCurrentDebts(to int64)
+	CalculateDebt()
 }
 
 type LiquidableAccount struct {

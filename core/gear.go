@@ -7,6 +7,7 @@ import (
 
 type EngineI interface {
 	SyncHandler()
+	Sync(syncTill int64)
 }
 
 type Protocol struct {
@@ -27,7 +28,6 @@ type RepositoryI interface {
 	AddSyncAdapter(adapterI SyncAdapterI)
 	InitChecks()
 	GetChainId() uint
-	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
 	// saving to the db
 	Flush() error
 	// adding block/timestamp
@@ -104,6 +104,9 @@ type RepositoryI interface {
 	AddPoolsForToken(blockNum int64, token string)
 	AddUniPriceAndChainlinkRelation(relation *UniPriceAndChainlink)
 	AddLastSyncForToken(token string, lastSync int64)
+	// for testing
+	AddTokenObj(token *Token)
+	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
 }
 
 type GearBalance struct {

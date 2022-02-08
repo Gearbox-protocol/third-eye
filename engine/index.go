@@ -38,7 +38,6 @@ func NewEngine(config *config.Config,
 			ChainId: chaindId.Int64(),
 		},
 	}
-	eng.init()
 	return eng
 }
 
@@ -65,6 +64,7 @@ func (e *Engine) getLastSyncedTill() int64 {
 }
 
 func (e *Engine) SyncHandler() {
+	e.init()
 	latestBlockNum := e.GetLatestBlockNumber()
 	lastSyncedTill := e.getLastSyncedTill()
 	// only do batch sync if latestblock is far from currently synced block
@@ -74,7 +74,7 @@ func (e *Engine) SyncHandler() {
 	}
 	for {
 		latestBlockNum = e.GetLatestBlockNumber()
-		e.sync(latestBlockNum)
+		e.Sync(latestBlockNum)
 		log.Infof("Synced till %d sleeping for 5 mins", latestBlockNum)
 		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
 	}
@@ -86,7 +86,7 @@ func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 	loopStartTime := time.Now()
 	for syncTill <= latestBlockNum {
 		roundStartTime := time.Now()
-		e.sync(syncTill)
+		e.SyncAndFlush(syncTill)
 		syncedTill = syncTill
 		roundSyncDur := (time.Now().Sub(roundStartTime).Minutes())
 		timePerBlock := time.Now().Sub(loopStartTime).Minutes() / float64(syncedTill-loopStartBlock)
@@ -98,7 +98,12 @@ func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 	return syncedTill
 }
 
-func (e *Engine) sync(syncTill int64) {
+func (e *Engine) SyncAndFlush(syncTill int64) {
+	e.Sync(syncTill)
+	e.repo.Flush()
+	e.debtEng.CalculateDebtAndClear(syncTill)
+}
+func (e *Engine) Sync(syncTill int64) {
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
@@ -121,7 +126,6 @@ func (e *Engine) sync(syncTill int64) {
 		wg.Wait()
 	}
 	e.repo.AfterSync(syncTill)
-	e.FlushAndDebt(syncTill)
 }
 
 func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {
@@ -189,9 +193,4 @@ func (e *Engine) QueryModel(mdl core.SyncAdapterI, queryTill int64, wg *sync.Wai
 	mdl.Query(queryTill)
 	// after sync
 	mdl.AfterSyncHook(queryTill)
-}
-
-func (e *Engine) FlushAndDebt(to int64) {
-	e.repo.Flush()
-	e.debtEng.CalculateDebtAndClear(to)
 }
