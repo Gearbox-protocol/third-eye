@@ -3,8 +3,6 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
-	"testing"
-
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/debts"
@@ -12,6 +10,10 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"strings"
+	"testing"
+
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 func getTestAdapter(name string, lastSync int64, details core.Json) *core.SyncAdapter {
@@ -27,25 +29,6 @@ func getTestAdapter(name string, lastSync int64, details core.Json) *core.SyncAd
 	}
 }
 
-type call struct {
-	Func string   `json:"func"`
-	Data []string `json:"data"`
-	Args []string `json:"args"`
-}
-type event struct {
-	Address string   `json:"address"`
-	Data    []string `json:"data"`
-	Topics  []string `json:"topics"`
-}
-type BlockInput struct {
-	Events []event `json:"events"`
-	Calls  []call  `json:"calls"`
-}
-type TestInput struct {
-	Blocks    map[int64]BlockInput `json:"blocks"`
-	MockFiles map[string]string    `json:"mocks"`
-}
-
 type SyncAdapterMock struct {
 	Data      []*core.SyncAdapter        `json:"adapters"`
 	CMState   []*core.CreditManagerState `json:"cmState"`
@@ -54,18 +37,21 @@ type SyncAdapterMock struct {
 }
 
 type MockRepo struct {
-	file         string
-	repo         core.RepositoryI
-	client       ethclient.ClientI
-	InputFile    *TestInput
-	AddressMap   core.AddressMap
-	SyncAdapters []*core.SyncAdapter
-	t            *testing.T
-	eng          core.EngineI
+	file          string
+	repo          core.RepositoryI
+	client        *ethclient.TestClient
+	InputFile     *TestInput
+	AddressMap    core.AddressMap
+	SyncAdapters  []*core.SyncAdapter
+	t             *testing.T
+	eng           core.EngineI
+	addressToType map[string]string
 }
 
 func (m *MockRepo) init() {
 	m.handleMocks()
+	m.ProcessEvents()
+	m.ProcessCalls()
 }
 
 func (m *MockRepo) handleMocks() {
@@ -119,6 +105,14 @@ func (m *MockRepo) setSyncAdapters(mockFilePath string) {
 		m.repo.AddTokenObj(tokenObj)
 	}
 	m.SyncAdapters = obj.Data
+	for key, value := range m.AddressMap {
+		splits := strings.Split(key, "_")
+		if len(splits) == 2 {
+			m.addressToType[value] = splits[0]
+		} else {
+			m.t.Fatalf("Not properly formatted key: %s", key)
+		}
+	}
 }
 
 func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
@@ -132,7 +126,7 @@ func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
 }
 
 func TestRepo(t *testing.T) {
-	client := &ethclient.TestClient{}
+	client := ethclient.NewTestClient()
 	cfg := &config.Config{}
 	repo := repository.GetRepository(nil, client, cfg, nil)
 	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
@@ -145,4 +139,43 @@ func TestRepo(t *testing.T) {
 		eng:    eng,
 	}
 	r.init()
+	eng.Sync(10)
+	debtEng.CalculateDebt()
+}
+
+func (m *MockRepo) ProcessEvents() {
+	events := map[int64]map[string][]types.Log{}
+	for blockNum, block := range m.InputFile.Blocks {
+		if events[blockNum] == nil {
+			events[blockNum] = make(map[string][]types.Log)
+		}
+		for ind, event := range block.Events {
+			txLog := event.Process(m.addressToType[event.Address])
+			txLog.Index = uint(ind)
+			txLog.BlockNumber = uint64(blockNum)
+			events[blockNum][event.Address] = append(events[blockNum][event.Address], txLog)
+		}
+	}
+	m.client.SetEvents(events)
+}
+func (m *MockRepo) ProcessCalls() {
+	wrapper := m.repo.GetDCWrapper()
+	for blockNum, block := range m.InputFile.Blocks {
+		calls := core.NewDCCalls()
+		for _, poolCall := range block.Calls.Pools {
+			calls.Pools[poolCall.Addr.Hex()] = poolCall
+		}
+		for _, accountCall := range block.Calls.Accounts {
+			key := fmt.Sprintf("%s_%s", accountCall.CreditManager, accountCall.Borrower)
+			calls.Accounts[key] = accountCall
+		}
+		for _, accountCall := range block.Calls.Accounts {
+			key := fmt.Sprintf("%s_%s", accountCall.CreditManager, accountCall.Borrower)
+			calls.Accounts[key] = accountCall
+		}
+		for _, cmCall := range block.Calls.CMs {
+			calls.CMs[cmCall.Addr.Hex()] = cmCall
+		}
+		wrapper.SetCalls(blockNum, calls)
+	}
 }

@@ -9,10 +9,21 @@ import (
 )
 
 type TestClient struct {
+	// Blocks map[int64]BlockInput
+	blockNums []int64
+	events    map[int64]map[string][]types.Log
 }
 
+func NewTestClient() *TestClient {
+	return &TestClient{
+		events: make(map[int64]map[string][]types.Log),
+	}
+}
+func (t *TestClient) SetEvents(obj map[int64]map[string][]types.Log) {
+	t.events = obj
+}
 func (t *TestClient) ChainID(ctx context.Context) (*big.Int, error) {
-	return new(big.Int), nil
+	return big.NewInt(1337), nil
 }
 func (t *TestClient) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
 	return nil, nil

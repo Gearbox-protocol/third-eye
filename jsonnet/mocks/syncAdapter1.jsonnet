@@ -2,64 +2,64 @@
   adapters: [
     {
       type: 'AddressProvider',
-      address: '#AddressProvider1',
+      address: '#AddressProvider_1',
       lastSync: 1,
     },
     {
       type: 'Pool',
-      address: '#Pool1',
+      address: '#Pool_1',
       lastSync: 2,
     },
     {
       type: 'CreditManager',
-      address: '#CreditManager1',
+      address: '#CreditManager_1',
       lastSync: 2,
     },
     {
       type: 'CreditFilter',
-      address: '#CreditFilter1',
+      address: '#CreditFilter_1',
       details: {
-        creditManager: '@CreditManager1',
+        creditManager: '@CreditManager_1',
       },
       lastSync: 2,
     },
     {
       type: 'ChainlinkPriceFeed',
-      address: '#ChainlinkPriceFeed1',
+      address: '#ChainlinkPriceFeed_1',
       details: {
-        oracle: '#Oracle1',
-        token: '#Token1',
-        underlyingToken: '#UnderlyingToken1',
+        oracle: '#Oracle_1',
+        token: '#Token_1',
+        underlyingToken: '#Token_3',
       },
       lastSync: 2,
     },
     {
       type: 'ChainlinkPriceFeed',
-      address: '#ChainlinkPriceFeed2',
+      address: '#ChainlinkPriceFeed_2',
       details: {
-        oracle: '#Oracle2',
-        token: '#Token2',
+        oracle: '#Oracle_2',
+        token: '#Token_2',
       },
       lastSync: 2,
     },
   ],
   poolState: [
     {
-      address: '@Pool1',
-      dieselToken: '@Token1',
-      underlyingToken: '@UnderlyingToken1',
+      address: '@Pool_1',
+      dieselToken: '@Token_1',
+      underlyingToken: '@Token_3',
     },
   ],
   cmState: [
     {
-      underlyingToken: '@UnderlyingToken1',
-      pool: '@Pool1',
-      address: '@CreditManager1',
+      underlyingToken: '@Token_3',
+      pool: '@Pool_1',
+      address: '@CreditManager_1',
     },
   ],
   tokens: [
-    { address: '@Token1', symbol: 'USDC', decimals: 6 },
-    { address: '@Token2', symbol: 'DAI', decimals: 8 },
-    { address: '#Token3', symbol: 'WETH', decimals: 18 },
+    { address: '@Token_1', symbol: 'USDC', decimals: 6 },
+    { address: '@Token_2', symbol: 'DAI', decimals: 8 },
+    { address: '#Token_3', symbol: 'WETH', decimals: 18 },
   ],
 }
