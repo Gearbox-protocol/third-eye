@@ -24,10 +24,12 @@ type DataCompressorWrapper struct {
 	dcMainnet      *mainnet.DataCompressor
 	NameToAddr     map[string]string
 	client         ethclient.ClientI
+	testing        *DCTesting
 }
 
 var OLDKOVAN = "OLDKOVAN"
 var MAINNET = "MAINNET"
+var TESTING = "TESTING"
 
 func NewDataCompressorWrapper(client ethclient.ClientI) *DataCompressorWrapper {
 	return &DataCompressorWrapper{
@@ -35,7 +37,14 @@ func NewDataCompressorWrapper(client ethclient.ClientI) *DataCompressorWrapper {
 		BlockNumToName: make(map[int64]string),
 		NameToAddr:     make(map[string]string),
 		client:         client,
+		testing: &DCTesting{
+			calls: map[int64]*DCCalls{},
+		},
 	}
+}
+
+func (dcw *DataCompressorWrapper) SetCalls(blockNum int64, calls *DCCalls) {
+	dcw.testing.calls[blockNum] = calls
 }
 
 func (dcw *DataCompressorWrapper) getDataCompressorIndex(blockNum int64) string {
@@ -61,13 +70,15 @@ func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string)
 	var key string
 	if chainId.Int64() == 1 {
 		key = MAINNET
-	} else {
+	} else if chainId.Int64() == 42 {
 		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = OLDKOVAN
 		case 1:
 			key = MAINNET
 		}
+	} else {
+		key = TESTING
 	}
 	dcw.BlockNumToName[blockNum] = key
 	dcw.NameToAddr[key] = addr
@@ -137,6 +148,11 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 	case MAINNET:
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetCreditAccountDataExtended(opts, creditManager, borrower)
+	case MAINNET:
+		dcw.setMainnet()
+		return dcw.dcMainnet.GetCreditAccountDataExtended(opts, creditManager, borrower)
+	case TESTING:
+		return dcw.testing.getAccountData(opts.BlockNumber.Int64(), creditManager.Hex())
 	}
 	panic(fmt.Sprintf("data compressor number %s not found for credit account data", key))
 }
@@ -176,6 +192,8 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _cre
 	case MAINNET:
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetCreditManagerData(opts, _creditManager, borrower)
+	case TESTING:
+		return dcw.testing.getCMData(opts.BlockNumber.Int64(), fmt.Sprintf("%s_%s", _creditManager, borrower))
 	}
 	panic(fmt.Sprintf("data compressor number %s not found for credit manager data", key))
 }
@@ -213,6 +231,8 @@ func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.
 	case MAINNET:
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetPoolData(opts, _pool)
+	case TESTING:
+		return dcw.testing.getPoolData(opts.BlockNumber.Int64(), _pool.Hex())
 	}
 	panic(fmt.Sprintf("data compressor number %s not found for pool data", key))
 }
@@ -237,4 +257,32 @@ func (dcw *DataCompressorWrapper) setMainnet() {
 
 func (dcw *DataCompressorWrapper) ToJson() string {
 	return utils.ToJson(dcw)
+}
+
+type DCTesting struct {
+	calls map[int64]*DCCalls
+}
+
+type DCCalls struct {
+	Pools    map[string]mainnet.DataTypesPoolData
+	CMs      map[string]mainnet.DataTypesCreditManagerData
+	Accounts map[string]mainnet.DataTypesCreditAccountDataExtended
+}
+
+func NewDCCalls() *DCCalls {
+	return &DCCalls{
+		Pools:    make(map[string]mainnet.DataTypesPoolData),
+		CMs:      make(map[string]mainnet.DataTypesCreditManagerData),
+		Accounts: make(map[string]mainnet.DataTypesCreditAccountDataExtended),
+	}
+}
+
+func (t *DCTesting) getPoolData(blockNum int64, key string) (mainnet.DataTypesPoolData, error) {
+	return t.calls[blockNum].Pools[key], nil
+}
+func (t *DCTesting) getCMData(blockNum int64, key string) (mainnet.DataTypesCreditManagerData, error) {
+	return t.calls[blockNum].CMs[key], nil
+}
+func (t *DCTesting) getAccountData(blockNum int64, key string) (mainnet.DataTypesCreditAccountDataExtended, error) {
+	return t.calls[blockNum].Accounts[key], nil
 }
