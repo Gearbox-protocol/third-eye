@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
+func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.config.ChainId != 1 || repo.aggregatedFeed.UniPoolByToken[token] != nil {
@@ -36,7 +36,7 @@ func (repo *Repository) AddPoolsForToken(blockNum int64, token string) {
 	}
 	tokenInfo, err := repo.getTokenWithError(token)
 	log.CheckFatal(err)
-	repo.aggregatedFeed.AddPools(tokenInfo, &core.UniswapPools{
+	repo.aggregatedFeed.AddUniPools(tokenInfo, &core.UniswapPools{
 		V2:      poolv2Addr.Hex(),
 		V3:      poolv3Addr.Hex(),
 		Updated: true,
@@ -87,7 +87,7 @@ func (repo *Repository) loadUniswapPools() {
 	for _, entry := range data {
 		tokenInfo, err := repo.getTokenWithError(entry.Token)
 		log.CheckFatal(err)
-		repo.aggregatedFeed.AddPools(tokenInfo, entry)
+		repo.aggregatedFeed.AddUniPools(tokenInfo, entry)
 	}
 }
 

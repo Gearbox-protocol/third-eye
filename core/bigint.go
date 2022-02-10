@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
+	"strings"
 )
 
 func Topic(topic string) common.Hash {
@@ -97,7 +98,8 @@ func (z *BigInt) MarshalJSON() ([]byte, error) {
 }
 
 func (z *BigInt) UnmarshalJSON(b []byte) error {
-	value, ok := new(big.Int).SetString(string(b), 10)
+	str := strings.Trim(string(b), "\"")
+	value, ok := new(big.Int).SetString(str, 10)
 	if !ok {
 		return fmt.Errorf("can unmarshal BigInt")
 	}

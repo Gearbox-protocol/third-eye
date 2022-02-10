@@ -101,7 +101,7 @@ type RepositoryI interface {
 	Clear()
 	// multicall
 	GetUniPricesByToken(token string) []*UniPoolPrices
-	AddPoolsForToken(blockNum int64, token string)
+	AddUniPoolsForToken(blockNum int64, token string)
 	AddUniPriceAndChainlinkRelation(relation *UniPriceAndChainlink)
 	AddLastSyncForToken(token string, lastSync int64)
 	// for testing

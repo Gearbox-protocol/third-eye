@@ -36,6 +36,9 @@ func (repo *Repository) GetToken(addr string) *core.Token {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	token, err := repo.getTokenWithError(addr)
+	if err != nil {
+		panic(err)
+	}
 	log.CheckFatal(err)
 	return token
 }

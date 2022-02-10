@@ -62,7 +62,7 @@ func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
 	return mdl.YearnFeeds
 }
 
-func (mdl *AggregatedBlockFeed) AddPools(token *core.Token, uniswapPools *core.UniswapPools) {
+func (mdl *AggregatedBlockFeed) AddUniPools(token *core.Token, uniswapPools *core.UniswapPools) {
 	if mdl.UniPoolByToken[uniswapPools.Token] == nil {
 		mdl.UniPoolByToken[uniswapPools.Token] = uniswapPools
 	}

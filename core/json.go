@@ -2,10 +2,9 @@ package core
 
 import (
 	"database/sql/driver"
-	"github.com/Gearbox-protocol/third-eye/utils"
-	// "github.com/Gearbox-protocol/third-eye/log"
 	"encoding/json"
 	"fmt"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"strings"
 	"testing"
 )
@@ -168,11 +167,23 @@ func (addrs AddressMap) checkInterface(data interface{}, t *testing.T) interface
 }
 
 func (z *Json) ParseAddress(t *testing.T, addrs AddressMap) {
-	for key, data := range *z {
-		(*z)[key] = addrs.checkInterface(data, t)
+	if (*z)["_order"] != nil {
+		order := utils.ConvertToListOfString((*z)["_order"])
+		for _, key := range order {
+			(*z)[key] = addrs.checkInterface((*z)[key], t)
+		}
+	} else {
+		for key, data := range *z {
+			(*z)[key] = addrs.checkInterface(data, t)
+		}
 	}
 }
 
-func (z *Json) UnmarshalJSON(b []byte) error {
-	return nil
+func (z *Json) UnmarshalJSON(b []byte) (err error) {
+	tmpMap := map[string]interface{}{}
+	err = json.Unmarshal(b, &tmpMap)
+	if err == nil {
+		(*z) = tmpMap
+	}
+	return
 }

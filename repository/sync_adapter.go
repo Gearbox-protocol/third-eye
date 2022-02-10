@@ -19,9 +19,6 @@ import (
 )
 
 func (repo *Repository) loadSyncAdapters() {
-	// aggregated block feed
-	repo.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(repo.client, repo, repo.config.Interval)
-	repo.kit.Add(repo.aggregatedFeed)
 	//
 	data := []*core.SyncAdapter{}
 	err := repo.db.Find(&data, "disabled = ?", false).Error
@@ -29,13 +26,13 @@ func (repo *Repository) loadSyncAdapters() {
 		log.Fatal(err)
 	}
 	for _, adapter := range data {
-		adapter.Client = repo.client
-		adapter.Repo = repo
 		repo.addSyncAdapter(repo.PrepareSyncAdapter(adapter))
 	}
 }
 
 func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
+	adapter.Client = repo.client
+	adapter.Repo = repo
 	switch adapter.ContractName {
 	case core.ACL:
 		return acl.NewACLFromAdapter(adapter)

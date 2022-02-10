@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 
 	//
 	"github.com/ethereum/go-ethereum/common"
@@ -108,26 +109,7 @@ func (mdl *AccountManager) getAccountAddrs() []string {
 	}
 	var accountAddrs []string
 	if mdl.Details["accounts"] != nil {
-		switch mdl.Details["accounts"].(type) {
-		case []interface{}:
-			accountList, ok := mdl.Details["accounts"].([]interface{})
-			if !ok {
-				panic("parsing accounts list for token transfer failed")
-			}
-			for _, account := range accountList {
-				accountAddr, ok := account.(string)
-				if !ok {
-					log.Fatalf("parsing single account for token transfer failed %v", account)
-				}
-				accountAddrs = append(accountAddrs, accountAddr)
-			}
-		case []string:
-			accountList, ok := mdl.Details["accounts"].([]string)
-			if !ok {
-				panic("parsing accounts list for token transfer failed")
-			}
-			accountAddrs = accountList
-		}
+		accountAddrs = utils.ConvertToListOfString(mdl.Details["accounts"])
 	}
 	return accountAddrs
 }

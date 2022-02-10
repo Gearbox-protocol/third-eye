@@ -41,8 +41,8 @@ type Contract struct {
 	Address      string            `gorm:"primaryKey;column:address" json:"address"`
 	Disabled     bool              `gorm:"column:disabled" json:"disabled"`
 	ContractName string            `gorm:"column:type" json:"type"`
-	Client       ethclient.ClientI `gorm:"-"`
-	ABI          *abi.ABI          `gorm:"-"`
+	Client       ethclient.ClientI `gorm:"-" json:"-"`
+	ABI          *abi.ABI          `gorm:"-" json:"-"`
 }
 
 func (c *Contract) Disable() {

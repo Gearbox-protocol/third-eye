@@ -53,7 +53,7 @@ type Repository struct {
 }
 
 func GetRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config, ep core.ExecuteParserI) *Repository {
-	r := &Repository{
+	repo := &Repository{
 		mu:                    &sync.Mutex{},
 		db:                    db,
 		client:                client,
@@ -77,7 +77,10 @@ func GetRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config,
 		dieselTokens:   make(map[string]*core.UTokenAndPool),
 		accountManager: core.NewAccountTokenManager(),
 	}
-	return r
+	// aggregated block feed
+	repo.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(repo.client, repo, repo.config.Interval)
+	repo.kit.Add(repo.aggregatedFeed)
+	return repo
 }
 func NewRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
 	r := GetRepository(db, client, config, ep)
