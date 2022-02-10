@@ -148,11 +148,8 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 	case MAINNET:
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetCreditAccountDataExtended(opts, creditManager, borrower)
-	case MAINNET:
-		dcw.setMainnet()
-		return dcw.dcMainnet.GetCreditAccountDataExtended(opts, creditManager, borrower)
 	case TESTING:
-		return dcw.testing.getAccountData(opts.BlockNumber.Int64(), creditManager.Hex())
+		return dcw.testing.getAccountData(opts.BlockNumber.Int64(), fmt.Sprintf("%s_%s", creditManager, borrower))
 	}
 	panic(fmt.Sprintf("data compressor number %s not found for credit account data", key))
 }
@@ -193,7 +190,7 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _cre
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetCreditManagerData(opts, _creditManager, borrower)
 	case TESTING:
-		return dcw.testing.getCMData(opts.BlockNumber.Int64(), fmt.Sprintf("%s_%s", _creditManager, borrower))
+		return dcw.testing.getCMData(opts.BlockNumber.Int64(), _creditManager.Hex())
 	}
 	panic(fmt.Sprintf("data compressor number %s not found for credit manager data", key))
 }
@@ -257,32 +254,4 @@ func (dcw *DataCompressorWrapper) setMainnet() {
 
 func (dcw *DataCompressorWrapper) ToJson() string {
 	return utils.ToJson(dcw)
-}
-
-type DCTesting struct {
-	calls map[int64]*DCCalls
-}
-
-type DCCalls struct {
-	Pools    map[string]mainnet.DataTypesPoolData
-	CMs      map[string]mainnet.DataTypesCreditManagerData
-	Accounts map[string]mainnet.DataTypesCreditAccountDataExtended
-}
-
-func NewDCCalls() *DCCalls {
-	return &DCCalls{
-		Pools:    make(map[string]mainnet.DataTypesPoolData),
-		CMs:      make(map[string]mainnet.DataTypesCreditManagerData),
-		Accounts: make(map[string]mainnet.DataTypesCreditAccountDataExtended),
-	}
-}
-
-func (t *DCTesting) getPoolData(blockNum int64, key string) (mainnet.DataTypesPoolData, error) {
-	return t.calls[blockNum].Pools[key], nil
-}
-func (t *DCTesting) getCMData(blockNum int64, key string) (mainnet.DataTypesCreditManagerData, error) {
-	return t.calls[blockNum].CMs[key], nil
-}
-func (t *DCTesting) getAccountData(blockNum int64, key string) (mainnet.DataTypesCreditAccountDataExtended, error) {
-	return t.calls[blockNum].Accounts[key], nil
 }
