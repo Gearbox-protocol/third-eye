@@ -4,20 +4,20 @@
       type: 'AddressProvider',
       address: '#AddressProvider_1',
       details: {
-        dc: 
-        // data compressor should be deployed before it is used
-        {"1": "0x0050b1ABD1DD2D9b01ce954E663ff3DbCa9193B1"}
+        dc:
+          // data compressor should be deployed before it is used
+          { '1': '0x0050b1ABD1DD2D9b01ce954E663ff3DbCa9193B1' },
       },
       lastSync: 1,
     },
     {
-         // on usdc
+      // on usdc
       type: 'Pool',
       address: '#Pool_1',
       lastSync: 2,
     },
     {
-        // on usdc
+      // on usdc
       type: 'CreditManager',
       address: '#CreditManager_1',
       lastSync: 2,

@@ -18,6 +18,7 @@ type TestClient struct {
 	events    map[int64]map[string][]types.Log
 	prices    map[int64]map[string]*big.Int
 	masks     map[int64]map[string]*big.Int
+	state     *StateStore
 	USDCAddr  string
 	WETHAddr  string
 }
@@ -33,7 +34,7 @@ func NewTestClient() *TestClient {
 		events: make(map[int64]map[string][]types.Log),
 	}
 }
-func (t *TestClient) SetEvents(obj map[int64]map[string][]types.Log) {
+func (t *TestClient) setEvents(obj map[int64]map[string][]types.Log) {
 	t.events = obj
 	for blockNum := range obj {
 		t.blockNums = append(t.blockNums, blockNum)
@@ -41,12 +42,15 @@ func (t *TestClient) SetEvents(obj map[int64]map[string][]types.Log) {
 	sort.Slice(t.blockNums, func(i, j int) bool { return t.blockNums[i] < t.blockNums[j] })
 }
 
-func (t *TestClient) SetPrices(obj map[int64]map[string]*big.Int) {
+func (t *TestClient) setPrices(obj map[int64]map[string]*big.Int) {
 	t.prices = obj
 }
 
-func (t *TestClient) SetMasks(masks map[int64]map[string]*big.Int) {
+func (t *TestClient) setMasks(masks map[int64]map[string]*big.Int) {
 	t.masks = masks
+}
+func (t *TestClient) setState(state *StateStore) {
+	t.state = state
 }
 
 func (t *TestClient) ChainID(ctx context.Context) (*big.Int, error) {
@@ -113,6 +117,21 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		account := common.BytesToAddress(call.Data[s : s+32]).Hex()
 		mask := t.masks[blockNum][account]
 		return common.HexToHash(fmt.Sprintf("%x", mask)).Bytes(), nil
+		// phaseId
+	} else if sig == "58303b10" {
+		oracle := call.To.Hex()
+		index := t.state.Oracle.GetIndex(oracle, blockNum)
+		return common.HexToHash(fmt.Sprintf("%x", index)).Bytes(), nil
+		// current phase aggregator
+	} else if sig == "c1597304" {
+		s := 4
+		index, ok := new(big.Int).SetString(hex.EncodeToString(call.Data[s:s+32]), 16)
+		if !ok {
+			log.Fatal("oracle:%s data: %s", call.To, call.Data)
+		}
+		oracle := call.To.Hex()
+		feed := t.state.Oracle.GetState(oracle, int(index.Int64()))
+		return common.HexToHash(feed.Feed).Bytes(), nil
 	}
 	return nil, nil
 }

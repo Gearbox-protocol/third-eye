@@ -49,6 +49,7 @@ type MockRepo struct {
 
 func (m *MockRepo) init() {
 	m.handleMocks()
+	m.ProcessState()
 	m.ProcessEvents()
 	m.ProcessCalls()
 }
@@ -159,9 +160,9 @@ func (m *MockRepo) ProcessEvents() {
 			}
 		}
 	}
-	m.client.SetEvents(events)
+	m.client.setEvents(events)
 	// log.Info(utils.ToJson(prices))
-	m.client.SetPrices(prices)
+	m.client.setPrices(prices)
 }
 func (m *MockRepo) ProcessCalls() {
 	accountMask := make(map[int64]map[string]*big.Int)
@@ -187,5 +188,13 @@ func (m *MockRepo) ProcessCalls() {
 		}
 		wrapper.SetCalls(blockNum, calls)
 	}
-	m.client.SetMasks(accountMask)
+	m.client.setMasks(accountMask)
+}
+
+func (m *MockRepo) ProcessState() {
+	state := NewStateStore()
+	for _, oracle := range m.InputFile.States.Oracles {
+		state.Oracle.AddState(oracle)
+	}
+	m.client.setState(state)
 }

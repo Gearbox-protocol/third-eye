@@ -131,3 +131,13 @@ func ConvertToListOfString(list interface{}) (accountAddrs []string) {
 	}
 	return
 }
+
+func ReadFile(fileName string) []byte {
+	jsonFile, err := os.Open(fileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer jsonFile.Close()
+	byteValue, _ := ioutil.ReadAll(jsonFile)
+	return byteValue
+}

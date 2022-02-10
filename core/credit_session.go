@@ -53,19 +53,19 @@ type (
 		Since                 int64
 	}
 	CreditSessionSnapshot struct {
-		ID                     int64        `gorm:"primaryKey;autoincrement:true"`
-		BlockNum               int64        `gorm:"column:block_num"`
-		SessionId              string       `gorm:"column:session_id"`
-		BorrowedAmountBI       *BigInt      `gorm:"column:borrowed_amount_bi"`
-		BorrowedAmount         float64      `gorm:"column:borrowed_amount"`
-		TotalValueBI           *BigInt      `gorm:"column:total_value_bi"`
-		TotalValue             float64      `gorm:"column:total_value"`
-		Balances               *JsonBalance `gorm:"column:balances"`
-		Borrower               string       `gorm:"column:borrower"`
-		CollateralInUSD        float64      `gorm:"column:collateral_usd"`
-		CollateralInUnderlying float64      `gorm:"column:collateral_underlying"`
-		СumulativeIndexAtOpen  *BigInt      `gorm:"column:cumulative_index"`
-		HealthFactor           *BigInt      `gorm:"column:health_factor"`
+		ID                     int64        `gorm:"primaryKey;autoincrement:true" json:"-"`
+		BlockNum               int64        `gorm:"column:block_num" json:"blockNum"`
+		SessionId              string       `gorm:"column:session_id" json:"sessionId"`
+		BorrowedAmountBI       *BigInt      `gorm:"column:borrowed_amount_bi" json:"borrowedAmountBI"`
+		BorrowedAmount         float64      `gorm:"column:borrowed_amount" json:"borrowedAmount"`
+		TotalValueBI           *BigInt      `gorm:"column:total_value_bi" json:"totalValueBI"`
+		TotalValue             float64      `gorm:"column:total_value" json:"totalValue"`
+		Balances               *JsonBalance `gorm:"column:balances" json:"balance"`
+		Borrower               string       `gorm:"column:borrower" json:"borrower"`
+		CollateralInUSD        float64      `gorm:"column:collateral_usd" json:"collateralInUSD"`
+		CollateralInUnderlying float64      `gorm:"column:collateral_underlying" json:"collateralInUnderlying"`
+		СumulativeIndexAtOpen  *BigInt      `gorm:"column:cumulative_index" json:"cumulativeIndexAtOpen"`
+		HealthFactor           *BigInt      `gorm:"column:health_factor" json:"healthFactor"`
 	}
 	CreditSessionUpdate struct {
 		SessionId        string  `gorm:"column:id;primaryKey"`

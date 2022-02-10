@@ -26,11 +26,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-
 	"context"
 	"fmt"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"math/big"
 	"strings"
 )
@@ -297,5 +296,6 @@ func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, *Json
 	}
 	data["_order"] = argNames
 	jsonData := Json(data)
+	jsonData.FixAddress()
 	return c.ABI.Events[eventName].Sig, &jsonData
 }

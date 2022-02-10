@@ -11,11 +11,11 @@ type EngineI interface {
 }
 
 type Protocol struct {
-	Id            string `gorm:"primaryKey;column:id;autoincrement:true"`
-	Protocol      string `gorm:"column:protocol"`
-	Adapter       string `gorm:"column:adapter"`
-	BlockNumber   int64  `gorm:"column:block_num"`
-	CreditManager string `gorm:"column:credit_manager"`
+	Id            string `gorm:"primaryKey;column:id;autoincrement:true" json:"-"`
+	Protocol      string `gorm:"column:protocol" json:"protocol"`
+	Adapter       string `gorm:"column:adapter" json:"adapter"`
+	BlockNumber   int64  `gorm:"column:block_num" json:"blockNum"`
+	CreditManager string `gorm:"column:credit_manager" json:"creditManager"`
 }
 
 func (Protocol) TableName() string {

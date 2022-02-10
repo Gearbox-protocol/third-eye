@@ -187,3 +187,10 @@ func (eng *DebtEngine) GetLiquidationTx(sessionId string) string {
 	log.CheckFatal(err)
 	return data.TxHash
 }
+
+func (eng *DebtEngine) GetDebts() core.Json {
+	obj := core.Json{}
+	obj["debts"] = eng.debts
+	obj["currentDebts"] = eng.currentDebts
+	return obj
+}

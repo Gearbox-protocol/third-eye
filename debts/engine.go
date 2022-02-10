@@ -296,6 +296,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 			notMatched = true
 		}
 	}
+	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken)
 	if notMatched {
 		profile.CumIndexAndUToken = cumIndexAndUToken
 		profile.Debt = debt
@@ -304,7 +305,6 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 		profile.Tokens = tokenDetails
 		return debt, &profile
 	}
-	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken)
 	return debt, nil
 }
 

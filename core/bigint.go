@@ -94,7 +94,7 @@ func (z *BigInt) Scan(value interface{}) error {
 }
 
 func (z *BigInt) MarshalJSON() ([]byte, error) {
-	return []byte(z.String()), nil
+	return []byte("\"" + z.String() + "\""), nil
 }
 
 func (z *BigInt) UnmarshalJSON(b []byte) error {

@@ -4,7 +4,9 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"strings"
 	"testing"
 )
@@ -182,4 +184,108 @@ func (z *Json) UnmarshalJSON(b []byte) (err error) {
 		(*z) = tmpMap
 	}
 	return
+}
+
+func (addrs AddressMap) ReplaceWithVariable(key string, data interface{}) interface{} {
+	if key == "sessionId" {
+		value, ok := data.(string)
+		if !ok {
+			log.Error("string parsing failed")
+		}
+		splits := strings.Split(value, "_")
+		splits[0] = addrs[splits[0]]
+		return strings.Join(splits, "_")
+	}
+	switch data.(type) {
+	case string:
+		value, ok := data.(string)
+		if !ok {
+			log.Error("string parsing failed")
+		}
+		answer := addrs[value]
+		if answer != "" {
+			return answer
+		}
+	case []interface{}:
+		value, ok := data.([]interface{})
+		if !ok {
+			log.Error("[]interface{} parsing failed")
+		}
+		for i, entry := range value {
+			value[i] = addrs.ReplaceWithVariable(key, entry)
+		}
+		return value
+	case map[string]interface{}:
+		value, ok := data.(map[string]interface{})
+		if !ok {
+			log.Error("map[string]interface{} parsing failed")
+		}
+		obj := Json(value)
+		obj.ReplaceWithVariable(addrs)
+		return obj
+	default:
+		return data
+	}
+	return data
+}
+
+func (z *Json) ReplaceWithVariable(addrToVariable AddressMap) {
+	for key, value := range *z {
+		if value == nil {
+			delete(*z, key)
+			continue
+		}
+		if addrToVariable[key] != "" {
+			delete(*z, key)
+			variable := addrToVariable[key]
+			(*z)[variable] = addrToVariable.ReplaceWithVariable(key, value)
+		} else {
+			(*z)[key] = addrToVariable.ReplaceWithVariable(key, value)
+		}
+	}
+}
+
+func (z *Json) FixAddress() {
+	for key, value := range *z {
+		(*z)[key] = fixAddress(value)
+	}
+}
+
+func fixAddress(data interface{}) interface{} {
+	switch data.(type) {
+	case common.Address:
+		value, ok := data.(common.Address)
+		if !ok {
+			log.Error("common.Address parsing failed")
+		}
+		return value.Hex()
+	case string:
+		value, ok := data.(string)
+		if !ok {
+			log.Error("string parsing failed")
+		}
+		if len(value) == 42 && value[:2] == "0x" {
+			log.Info(value)
+			return common.HexToAddress(value).Hex()
+		}
+	case []interface{}:
+		value, ok := data.([]interface{})
+		if !ok {
+			log.Error("[]interface{} parsing failed")
+		}
+		for i, entry := range value {
+			value[i] = fixAddress(entry)
+		}
+		return value
+	case map[string]interface{}:
+		value, ok := data.(map[string]interface{})
+		if !ok {
+			log.Error("map[string]interface{} parsing failed")
+		}
+		for key, entry := range value {
+			value[key] = fixAddress(entry)
+		}
+		return value
+	}
+	return data
 }

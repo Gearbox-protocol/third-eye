@@ -101,4 +101,5 @@ type BlockInput struct {
 type TestInput struct {
 	Blocks    map[int64]BlockInput `json:"blocks"`
 	MockFiles map[string]string    `json:"mocks"`
+	States    TestState            `json:"states"`
 }
