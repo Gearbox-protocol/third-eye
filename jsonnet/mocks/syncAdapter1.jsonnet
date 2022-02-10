@@ -1,10 +1,4 @@
 {
-  _order:[
-    "adapters",
-    "poolState",
-    "cmState",
-    "tokens"
-  ],
   adapters: [
     {
       type: 'AddressProvider',
@@ -32,7 +26,7 @@
       type: 'CreditFilter',
       address: '#CreditFilter_1',
       details: {
-        creditManager: '@CreditManager_1',
+        creditManager: '#CreditManager_1',
       },
       lastSync: 2,
     },
@@ -63,21 +57,21 @@
   ],
   poolState: [
     {
-      address: '@Pool_1',
-      dieselToken: '@DieselToken_1',
-      underlyingToken: '@Token_1',
+      address: '#Pool_1',
+      dieselToken: '#DieselToken_1',
+      underlyingToken: '#Token_1',
     },
   ],
   cmState: [
     {
-      underlyingToken: '@Token_1',
-      pool: '@Pool_1',
-      address: '@CreditManager_1',
+      underlyingToken: '#Token_1',
+      pool: '#Pool_1',
+      address: '#CreditManager_1',
     },
   ],
   tokens: [
-    { address: '@Token_1', symbol: 'USDC', decimals: 6 },
-    { address: '@Token_2', symbol: 'DAI', decimals: 8 },
+    { address: '#Token_1', symbol: 'USDC', decimals: 6 },
+    { address: '#Token_2', symbol: 'DAI', decimals: 8 },
     { address: '#Token_3', symbol: 'WETH', decimals: 18 },
   ],
 }

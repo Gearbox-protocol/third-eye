@@ -114,19 +114,15 @@ func (z *JsonFloatMap) Scan(value interface{}) error {
 func (addrs AddressMap) checkIfAddress(v string) string {
 	if strings.HasPrefix(v, "#") {
 		key := strings.Trim(v, "#")
-		addr := utils.RandomAddr()
-		addrs[key] = addr
-		return addr
-	} else if strings.HasPrefix(v, "@") {
-		key := strings.Trim(v, "@")
+		if addrs[key] == "" {
+			addrs[key] = utils.RandomAddr()
+		}
 		return addrs[key]
 	} else if strings.HasPrefix(v, "!#") {
 		key := strings.Trim(v, "!#")
-		hash := utils.RandomHash()
-		addrs[key] = hash
-		return hash
-	} else if strings.HasPrefix(v, "!@") {
-		key := strings.Trim(v, "!@")
+		if addrs[key] == "" {
+			addrs[key] = utils.RandomHash()
+		}
 		return addrs[key]
 	} else {
 		return v
