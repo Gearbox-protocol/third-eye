@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"fmt"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
@@ -24,7 +25,21 @@ func (c *TestEvent) Process(contractName string) types.Log {
 	c.Topics[0] = topic0.Hex()
 	var topics []common.Hash
 	for _, value := range c.Topics {
-		topics = append(topics, common.HexToHash(value))
+		splits := strings.Split(value, ":")
+		var newTopic string
+		if len(splits) == 1 {
+			newTopic = value
+		} else {
+			switch splits[0] {
+			case "bigint":
+				arg, ok := new(big.Int).SetString(splits[1], 10)
+				if !ok {
+					log.Fatalf("bigint parsing failed for %s", value)
+				}
+				newTopic = fmt.Sprintf("%x", arg)
+			}
+		}
+		topics = append(topics, common.HexToHash(newTopic))
 	}
 	data, err := c.ParseData(contractName, topic0)
 	log.CheckFatal(err)
@@ -54,7 +69,7 @@ func (c *TestEvent) ParseData(contractName string, topic0 common.Hash) ([]byte, 
 				if !ok {
 					log.Fatalf("bigint parsing failed for %s", entry)
 				}
-			case "string":
+			case "addr":
 				arg = common.HexToAddress(entry).Hex()
 			}
 		} else {

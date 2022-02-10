@@ -169,10 +169,6 @@ func (m *MockRepo) ProcessCalls() {
 			key := fmt.Sprintf("%s_%s", accountCall.CreditManager, accountCall.Borrower)
 			calls.Accounts[key] = accountCall
 		}
-		for _, accountCall := range block.Calls.Accounts {
-			key := fmt.Sprintf("%s_%s", accountCall.CreditManager, accountCall.Borrower)
-			calls.Accounts[key] = accountCall
-		}
 		for _, cmCall := range block.Calls.CMs {
 			calls.CMs[cmCall.Addr.Hex()] = cmCall
 		}

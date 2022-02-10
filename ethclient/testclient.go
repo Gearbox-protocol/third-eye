@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
+	"sort"
 )
 
 type TestClient struct {
@@ -21,16 +22,39 @@ func NewTestClient() *TestClient {
 }
 func (t *TestClient) SetEvents(obj map[int64]map[string][]types.Log) {
 	t.events = obj
+	for blockNum := range obj {
+		t.blockNums = append(t.blockNums, blockNum)
+	}
+	sort.Slice(t.blockNums, func(i, j int) bool { return t.blockNums[i] < t.blockNums[j] })
 }
+
 func (t *TestClient) ChainID(ctx context.Context) (*big.Int, error) {
 	return big.NewInt(1337), nil
 }
 func (t *TestClient) BlockByNumber(ctx context.Context, number *big.Int) (*types.Block, error) {
-	return nil, nil
+	return types.NewBlock(&types.Header{Time: uint64(number.Int64()) * 86400},
+		[]*types.Transaction{},
+		[]*types.Header{},
+		[]*types.Receipt{}, nil), nil
 }
 func (t *TestClient) BlockNumber(ctx context.Context) (uint64, error) {
-	return 0, nil
+	if len(t.blockNums) == 0 {
+		return 1, nil
+	}
+	return uint64(t.blockNums[len(t.blockNums)-1]), nil
 }
+
+func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
+	toBlock := query.ToBlock.Int64()
+	txLogs := []types.Log{}
+	for i := query.FromBlock.Int64(); i < toBlock; i++ {
+		for _, address := range query.Addresses {
+			txLogs = append(txLogs, t.events[i][address.Hex()]...)
+		}
+	}
+	return txLogs, nil
+}
+
 func (t *TestClient) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
 	return nil, false, nil
 }
@@ -67,10 +91,6 @@ func (t *TestClient) EstimateGas(ctx context.Context, call ethereum.CallMsg) (ga
 }
 func (t *TestClient) SendTransaction(ctx context.Context, tx *types.Transaction) error {
 	return nil
-}
-
-func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
-	return nil, nil
 }
 
 func (t *TestClient) SubscribeFilterLogs(ctx context.Context, query ethereum.FilterQuery, ch chan<- types.Log) (ethereum.Subscription, error) {
