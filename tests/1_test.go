@@ -4,7 +4,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/debts"
 	"github.com/Gearbox-protocol/third-eye/engine"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	// "github.com/Gearbox-protocol/third-eye/log"
 	// "github.com/Gearbox-protocol/third-eye/utils"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestRepo(t *testing.T) {
-	client := ethclient.NewTestClient()
+	client := NewTestClient()
 	cfg := &config.Config{}
 	repo := repository.GetRepository(nil, client, cfg, nil)
 	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)

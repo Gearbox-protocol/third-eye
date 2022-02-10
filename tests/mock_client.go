@@ -1,4 +1,4 @@
-package ethclient
+package tests
 
 import (
 	"context"
@@ -89,9 +89,9 @@ func (t *TestClient) CodeAt(ctx context.Context, contract common.Address, blockN
 	return nil, nil
 }
 func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
-	// convert on priceOracle
 	sig := hex.EncodeToString(call.Data[:4])
 	blockNum := blockNumber.Int64()
+	// convert on priceOracle
 	if sig == "b66102df" {
 		s := 4
 		amount, ok := new(big.Int).SetString(hex.EncodeToString(call.Data[s:s+32]), 16)

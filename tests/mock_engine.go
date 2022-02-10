@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"math/big"
@@ -37,7 +36,7 @@ type SyncAdapterMock struct {
 type MockRepo struct {
 	file         string
 	repo         core.RepositoryI
-	client       *ethclient.TestClient
+	client       *TestClient
 	InputFile    *TestInput
 	AddressMap   core.AddressMap
 	SyncAdapters []*core.SyncAdapter
