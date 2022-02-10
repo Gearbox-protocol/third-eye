@@ -2,7 +2,6 @@ package tests
 
 import (
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/common"
@@ -11,10 +10,16 @@ import (
 	"strings"
 )
 
+type TestMask struct {
+	Mask    *core.BigInt `json:"mask"`
+	Account string       `json:"account"`
+}
+
 type TestCall struct {
-	Pools    []mainnet.DataTypesPoolData                  `json:"pools"`
-	CMs      []mainnet.DataTypesCreditManagerData         `json:"cms"`
-	Accounts []mainnet.DataTypesCreditAccountDataExtended `json:"accounts"`
+	Pools    []core.TestPoolCallData    `json:"pools"`
+	CMs      []core.TestCMCallData      `json:"cms"`
+	Accounts []core.TestAccountCallData `json:"accounts"`
+	Masks    []TestMask                 `json:"masks"`
 }
 
 func (c *TestCall) Process() {
@@ -52,6 +57,9 @@ func (c *TestEvent) Process(contractName string) types.Log {
 }
 
 func (c *TestEvent) ParseData(contractName string, topic0 common.Hash) ([]byte, error) {
+	if len(c.Data) == 0 {
+		return []byte{}, nil
+	}
 	abi := core.GetAbi(contractName)
 	event, err := abi.EventByID(topic0)
 	if err != nil {
@@ -77,7 +85,7 @@ func (c *TestEvent) ParseData(contractName string, topic0 common.Hash) ([]byte, 
 		}
 		args = append(args, arg)
 	}
-	return event.Inputs.Pack(args...)
+	return event.Inputs.NonIndexed().Pack(args...)
 }
 
 type TestEvent struct {

@@ -3,13 +3,11 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/debts"
-	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/repository"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"math/big"
 	"strings"
 	"testing"
 
@@ -30,21 +28,23 @@ func getTestAdapter(name string, lastSync int64, details core.Json) *core.SyncAd
 }
 
 type SyncAdapterMock struct {
-	Data      []*core.SyncAdapter        `json:"adapters"`
+	Adapters  []*core.SyncAdapter        `json:"adapters"`
 	CMState   []*core.CreditManagerState `json:"cmState"`
 	PoolState []*core.PoolState          `json:"poolState"`
 	Tokens    []*core.Token              `json:"tokens"`
 }
 
 type MockRepo struct {
-	file          string
-	repo          core.RepositoryI
-	client        *ethclient.TestClient
-	InputFile     *TestInput
-	AddressMap    core.AddressMap
-	SyncAdapters  []*core.SyncAdapter
-	t             *testing.T
-	eng           core.EngineI
+	file         string
+	repo         core.RepositoryI
+	client       *ethclient.TestClient
+	InputFile    *TestInput
+	AddressMap   core.AddressMap
+	SyncAdapters []*core.SyncAdapter
+	t            *testing.T
+	eng          core.EngineI
+	//oracle to token
+	feedToToken   map[string]string
 	addressToType map[string]string
 }
 
@@ -57,12 +57,12 @@ func (m *MockRepo) init() {
 func (m *MockRepo) handleMocks() {
 	m.InputFile = &TestInput{}
 	m.AddressMap = core.AddressMap{}
-	filePath := fmt.Sprintf("../tests/%s", m.file)
+	filePath := fmt.Sprintf("../inputs/%s", m.file)
 	//
 	tmpObj := TestInput{}
 	utils.ReadJsonAndSetInterface(filePath, &tmpObj)
 	for key, fileName := range tmpObj.MockFiles {
-		mockFilePath := fmt.Sprintf("../tests/%s", fileName)
+		mockFilePath := fmt.Sprintf("../inputs/%s", fileName)
 		if key == "syncAdapters" {
 			m.setSyncAdapters(mockFilePath)
 		}
@@ -76,35 +76,44 @@ func (m *MockRepo) setSyncAdapters(mockFilePath string) {
 	obj := &SyncAdapterMock{}
 	kit := m.repo.GetKit()
 	m.addAddressSetJson(mockFilePath, obj)
-	for _, adapter := range obj.Data {
+	for _, adapter := range obj.Adapters {
 		if adapter.DiscoveredAt == 0 {
 			adapter.DiscoveredAt = adapter.LastSync
 			adapter.FirstLogAt = adapter.LastSync + 1
 		}
-		switch adapter.GetName() {
+		actualAdapter := m.repo.PrepareSyncAdapter(adapter)
+		switch actualAdapter.GetName() {
 		case core.ChainlinkPriceFeed:
-			oracle := adapter.GetDetails("oracle")
-			token := adapter.GetDetails("token")
-			m.repo.AddTokenOracle(token, oracle, adapter.GetAddress(), adapter.DiscoveredAt)
+			oracle := actualAdapter.GetDetails("oracle")
+			token := actualAdapter.GetDetails("token")
+			m.repo.AddTokenOracle(token, oracle, actualAdapter.GetAddress(), actualAdapter.GetDiscoveredAt())
+			m.feedToToken[actualAdapter.GetAddress()] = token
 		case core.CreditManager:
 			for _, state := range obj.CMState {
-				if state.Address == adapter.GetAddress() {
-					adapter.SetUnderlyingState(state)
+				if state.Address == actualAdapter.GetAddress() {
+					state.Sessions = map[string]string{}
+					actualAdapter.SetUnderlyingState(state)
 				}
 			}
 		case core.Pool:
 			for _, state := range obj.PoolState {
-				if state.Address == adapter.GetAddress() {
-					adapter.SetUnderlyingState(state)
+				if state.Address == actualAdapter.GetAddress() {
+					actualAdapter.SetUnderlyingState(state)
 				}
 			}
 		}
-		kit.Add(m.repo.PrepareSyncAdapter(adapter))
+		kit.Add(actualAdapter)
 	}
 	for _, tokenObj := range obj.Tokens {
+		switch tokenObj.Symbol {
+		case "USDC":
+			m.client.SetUSDC(tokenObj.Address)
+		case "WETH":
+			m.client.SetWETH(tokenObj.Address)
+		}
 		m.repo.AddTokenObj(tokenObj)
 	}
-	m.SyncAdapters = obj.Data
+	m.SyncAdapters = obj.Adapters
 	for key, value := range m.AddressMap {
 		splits := strings.Split(key, "_")
 		if len(splits) == 2 {
@@ -118,6 +127,7 @@ func (m *MockRepo) setSyncAdapters(mockFilePath string) {
 func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
 	var mock core.Json = utils.ReadJson(filePath)
 	mock.ParseAddress(m.t, m.AddressMap)
+	// log.Info(utils.ToJson(mock))
 	b, err := json.Marshal(mock)
 	if err != nil {
 		m.t.Error(err)
@@ -125,26 +135,9 @@ func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
 	utils.SetJson(b, obj)
 }
 
-func TestRepo(t *testing.T) {
-	client := ethclient.NewTestClient()
-	cfg := &config.Config{}
-	repo := repository.GetRepository(nil, client, cfg, nil)
-	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
-	eng := engine.NewEngine(cfg, client, debtEng, repo)
-	r := MockRepo{
-		repo:   repo,
-		client: client,
-		file:   "test1.json",
-		t:      t,
-		eng:    eng,
-	}
-	r.init()
-	eng.Sync(10)
-	debtEng.CalculateDebt()
-}
-
 func (m *MockRepo) ProcessEvents() {
 	events := map[int64]map[string][]types.Log{}
+	prices := map[int64]map[string]*big.Int{}
 	for blockNum, block := range m.InputFile.Blocks {
 		if events[blockNum] == nil {
 			events[blockNum] = make(map[string][]types.Log)
@@ -154,24 +147,46 @@ func (m *MockRepo) ProcessEvents() {
 			txLog.Index = uint(ind)
 			txLog.BlockNumber = uint64(blockNum)
 			events[blockNum][event.Address] = append(events[blockNum][event.Address], txLog)
+			if event.Topics[0] == core.Topic("AnswerUpdated(int256,uint256,uint256)").Hex() {
+				price, ok := new(big.Int).SetString(txLog.Topics[2].Hex()[2:], 16)
+				if !ok {
+					log.Fatal("Failed in parsing price in answerupdated")
+				}
+				if prices[blockNum] == nil {
+					prices[blockNum] = make(map[string]*big.Int)
+				}
+				token := m.feedToToken[txLog.Address.Hex()]
+				prices[blockNum][token] = price
+			}
 		}
 	}
 	m.client.SetEvents(events)
+	// log.Info(utils.ToJson(prices))
+	m.client.SetPrices(prices)
 }
 func (m *MockRepo) ProcessCalls() {
+	accountMask := make(map[int64]map[string]*big.Int)
 	wrapper := m.repo.GetDCWrapper()
 	for blockNum, block := range m.InputFile.Blocks {
 		calls := core.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
-			calls.Pools[poolCall.Addr.Hex()] = poolCall
+			calls.Pools[poolCall.Addr] = poolCall
 		}
 		for _, accountCall := range block.Calls.Accounts {
 			key := fmt.Sprintf("%s_%s", accountCall.CreditManager, accountCall.Borrower)
 			calls.Accounts[key] = accountCall
 		}
 		for _, cmCall := range block.Calls.CMs {
-			calls.CMs[cmCall.Addr.Hex()] = cmCall
+			calls.CMs[cmCall.Addr] = cmCall
+		}
+		for _, maskDetails := range block.Calls.Masks {
+			if accountMask[blockNum] == nil {
+				accountMask[blockNum] = make(map[string]*big.Int)
+			}
+			accountMask[blockNum][maskDetails.Account] = maskDetails.Mask.Convert()
+
 		}
 		wrapper.SetCalls(blockNum, calls)
 	}
+	m.client.SetMasks(accountMask)
 }
