@@ -92,7 +92,12 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 		nil,
 		true,
 		cmAddr)
-	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{RemainingFunds: remainingFunds, Status: core.Closed}
+	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+		RemainingFunds: remainingFunds,
+		Status:         core.Closed,
+		TxHash:         txLog.TxHash.Hex(),
+		Borrower:       owner,
+	}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
 	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
@@ -123,7 +128,12 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 		nil,
 		true,
 		mdl.GetAddress())
-	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{RemainingFunds: remainingFunds, Status: core.Liquidated}
+	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+		RemainingFunds: remainingFunds,
+		Status:         core.Liquidated,
+		TxHash:         txLog.TxHash.Hex(),
+		Borrower:       owner,
+	}
 	session := mdl.Repo.GetCreditSession(sessionId)
 	session.Liquidator = liquidator
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
@@ -157,6 +167,8 @@ func (mdl *CreditManager) onRepayCreditAccount(txLog *types.Log, owner, to strin
 		Status:           core.Repaid,
 		LogId:            txLog.Index,
 		AccountOperation: accountOperation,
+		TxHash:           txLog.TxHash.Hex(),
+		Borrower:         owner,
 	}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)

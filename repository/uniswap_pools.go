@@ -119,7 +119,6 @@ func (repo *Repository) GetYearnFeedAddrs() (addrs []string) {
 	return
 }
 
-
 func (repo *Repository) GetAdapter(addr string) core.SyncAdapterI {
 	adapter := repo.kit.GetAdapter(addr)
 	if adapter == nil {

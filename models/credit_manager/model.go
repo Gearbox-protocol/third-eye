@@ -16,6 +16,8 @@ type SessionCloseDetails struct {
 	RemainingFunds   *big.Int
 	Status           int
 	LogId            uint
+	TxHash           string
+	Borrower         string
 	AccountOperation *core.AccountOperation
 }
 

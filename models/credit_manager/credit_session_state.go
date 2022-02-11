@@ -41,26 +41,26 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	// pool repay
-	mdl.PoolRepay(closeDetails.AccountOperation.BlockNumber,
-		closeDetails.AccountOperation.LogId,
-		closeDetails.AccountOperation.TxHash,
+	mdl.PoolRepay(blockNum,
+		closeDetails.LogId,
+		closeDetails.TxHash,
 		sessionId,
-		closeDetails.AccountOperation.Borrower,
+		closeDetails.Borrower,
 		data.RepayAmount)
 
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == core.Repaid {
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
 		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmount
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
-		mdl.Repo.AddEventBalance(core.NewEventBalance(blockNum,
-			closeDetails.LogId,
-			sessionId,
-			nil,
-			core.Transfers{
-				mdl.GetUnderlyingToken(): closeDetails.RemainingFunds,
-			},
-			true,
-			mdl.GetAddress()))
+		// mdl.Repo.AddEventBalance(core.NewEventBalance(blockNum,
+		// 	closeDetails.LogId,
+		// 	sessionId,
+		// 	nil,
+		// 	core.Transfers{
+		// 		mdl.GetUnderlyingToken(): closeDetails.RemainingFunds,
+		// 	},
+		// 	true,
+		// 	mdl.GetAddress()))
 	}
 
 	// credit manager state
