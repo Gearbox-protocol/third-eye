@@ -79,6 +79,12 @@ func (c *TestEvent) ParseData(contractName string, topic0 common.Hash) ([]byte, 
 				}
 			case "addr":
 				arg = common.HexToAddress(entry).Hex()
+			case "bool":
+				if splits[1] == "1" {
+					arg = true
+				} else {
+					arg = false
+				}
 			}
 		} else {
 			arg = common.HexToAddress(entry).Hex()

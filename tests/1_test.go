@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRepo(t *testing.T) {
+func Test1(t *testing.T) {
 	client := NewTestClient()
 	cfg := &config.Config{}
 	repo := repository.GetRepository(nil, client, cfg, nil)
@@ -34,7 +34,7 @@ func TestRepo(t *testing.T) {
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
 
-	r.check(t, repo.GetBlocks(), "test1_blocks.json")
+	r.check(t, repo.GetBlocks()[3], "test1_blocks.json")
 	debtEng.CalculateDebt()
 	r.check(t, debtEng.GetDebts(), "test1_debts.json")
 }
@@ -57,4 +57,10 @@ func (m *MockRepo) check(t *testing.T, value interface{}, fileName string) {
 	outputJson := m.replaceWithVariable(value)
 	fileName = fmt.Sprintf("../inputs/%s", fileName)
 	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
+}
+
+
+func (m *MockRepo) print(t *testing.T, value interface{}) {
+	outputJson := m.replaceWithVariable(value)
+	log.Fatal(utils.ToJson(outputJson))
 }

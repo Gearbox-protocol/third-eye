@@ -17,6 +17,16 @@
       lastSync: 2,
     },
     {
+      type: 'AccountFactory',
+      address: '#AccountFactory_1',
+      lastSync: 2,
+    },
+    {
+      type: 'ACL',
+      address: '#ACL_1',
+      lastSync: 2,
+    },
+    {
       // on usdc
       type: 'CreditManager',
       address: '#CreditManager_1',
@@ -73,5 +83,6 @@
     { address: '#Token_1', symbol: 'USDC', decimals: 6 },
     { address: '#Token_2', symbol: 'DAI', decimals: 8 },
     { address: '#Token_3', symbol: 'WETH', decimals: 18 },
+    { address: '#Token_4', symbol: 'YFI', decimals: 18 },
   ],
 }
