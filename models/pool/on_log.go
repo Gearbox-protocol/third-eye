@@ -112,8 +112,8 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Type:        core.NewWithdrawFee,
 			Args: &core.Json{
 				"token":  mdl.State.UnderlyingToken,
-				"oldFee": withdrawFee.Fee,
-				"newFee": (*core.BigInt)(withdrawFee.Fee),
+				"oldFee": mdl.State.WithdrawFee,
+				"newFee": withdrawFee.Fee,
 			},
 		})
 		mdl.State.WithdrawFee = (*core.BigInt)(withdrawFee.Fee)
