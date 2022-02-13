@@ -58,7 +58,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("TransferPluginAllowed(address,bool)"):
 		transferPlugin, err := mdl.contractETH.ParseTransferPluginAllowed(txLog)
 		log.CheckFatal(err)
-		args := &core.Json{"plugin": transferPlugin.Pugin, "state": transferPlugin.State, "creditManager": creditManager}
+		args := &core.Json{"plugin": transferPlugin.Pugin.Hex(), "state": transferPlugin.State, "creditManager": creditManager}
 		mdl.Repo.AddDAOOperation(&core.DAOOperation{
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
@@ -70,7 +70,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("PriceOracleUpdated(address)"):
 		po, err := mdl.contractETH.ParsePriceOracleUpdated(txLog)
 		log.CheckFatal(err)
-		args := &core.Json{"newPriceOracle": po.NewPriceOracle, "creditManager": creditManager}
+		args := &core.Json{"newPriceOracle": po.NewPriceOracle.Hex(), "creditManager": creditManager}
 		mdl.Repo.AddDAOOperation(&core.DAOOperation{
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),

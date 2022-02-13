@@ -156,7 +156,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 
 func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
 	switch txLog.Topics[0] {
-	case core.Topic("Paused"):
+	case core.Topic("Paused()"):
 		e.repo.AddDAOOperation(&core.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
@@ -165,7 +165,7 @@ func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
 			Type:        core.Paused,
 		})
 		return true
-	case core.Topic("UnPaused"):
+	case core.Topic("UnPaused()"):
 		e.repo.AddDAOOperation(&core.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,

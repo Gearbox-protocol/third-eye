@@ -5,6 +5,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
 )
 
 func (mdl *Pool) createPoolStat() {
@@ -102,6 +103,10 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Args:        &core.Json{"creditManager": borrowForbidden.CreditManager.Hex()},
 		})
 	case core.Topic("NewWithdrawFee(uint256)"):
+		oldFee := (*core.BigInt)(mdl.State.WithdrawFee)
+		if oldFee == nil {
+			oldFee = (*core.BigInt)(new(big.Int))
+		}
 		withdrawFee, err := mdl.contractETH.ParseNewWithdrawFee(txLog)
 		log.CheckFatal(err)
 		mdl.Repo.AddDAOOperation(&core.DAOOperation{
@@ -112,8 +117,8 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Type:        core.NewWithdrawFee,
 			Args: &core.Json{
 				"token":  mdl.State.UnderlyingToken,
-				"oldFee": mdl.State.WithdrawFee,
-				"newFee": withdrawFee.Fee,
+				"oldFee": oldFee,
+				"newFee": (*core.BigInt)(withdrawFee.Fee),
 			},
 		})
 		mdl.State.WithdrawFee = (*core.BigInt)(withdrawFee.Fee)
