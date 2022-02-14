@@ -16,9 +16,10 @@ import (
 
 type Engine struct {
 	*core.Node
-	config  *config.Config
-	repo    core.RepositoryI
-	debtEng core.DebtEngineI
+	config       *config.Config
+	repo         core.RepositoryI
+	debtEng      core.DebtEngineI
+	UsingThreads bool
 }
 
 var syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
@@ -39,6 +40,10 @@ func NewEngine(config *config.Config,
 		},
 	}
 	return eng
+}
+
+func (e *Engine) UseThreads() {
+	e.UsingThreads = true
 }
 
 func (e *Engine) init() {
@@ -116,9 +121,17 @@ func (e *Engine) Sync(syncTill int64) {
 			if !adapter.IsDisabled() {
 				wg.Add(1)
 				if adapter.OnlyQueryAllowed() {
-					e.QueryModel(adapter, syncTill, wg)
+					if e.UsingThreads {
+						go e.QueryModel(adapter, syncTill, wg)
+					} else {
+						e.QueryModel(adapter, syncTill, wg)
+					}
 				} else {
-					e.SyncModel(adapter, syncTill, wg)
+					if e.UsingThreads {
+						go e.SyncModel(adapter, syncTill, wg)
+					} else {
+						e.SyncModel(adapter, syncTill, wg)
+					}
 				}
 			}
 		}

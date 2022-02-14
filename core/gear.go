@@ -8,6 +8,7 @@ import (
 type EngineI interface {
 	SyncHandler()
 	Sync(syncTill int64)
+	UseThreads()
 }
 
 type Protocol struct {

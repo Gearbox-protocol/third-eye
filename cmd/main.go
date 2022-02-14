@@ -33,6 +33,7 @@ func StartServer(lc fx.Lifecycle, engine core.EngineI, config *config.Config) {
 			// In production, we'd want to separate the Listen and Serve phases for
 			// better error-handling.
 			go func() {
+				engine.UseThreads()
 				engine.SyncHandler()
 			}()
 			return nil

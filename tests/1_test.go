@@ -59,7 +59,6 @@ func (m *MockRepo) check(t *testing.T, value interface{}, fileName string) {
 	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
 }
 
-
 func (m *MockRepo) print(t *testing.T, value interface{}) {
 	outputJson := m.replaceWithVariable(value)
 	log.Fatal(utils.ToJson(outputJson))
