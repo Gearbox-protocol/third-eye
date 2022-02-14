@@ -26,30 +26,29 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-
 	"context"
 	"fmt"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
 	"math/big"
 	"strings"
 )
 
 type Contract struct {
-	DiscoveredAt int64             `gorm:"column:discovered_at"`
-	FirstLogAt   int64             `gorm:"column:firstlog_at"`
-	Address      string            `gorm:"primaryKey;column:address"`
-	Disabled     bool              `gorm:"column:disabled"`
-	ContractName string            `gorm:"column:type"`
-	Client       *ethclient.Client `gorm:"-"`
-	ABI          *abi.ABI          `gorm:"-"`
+	DiscoveredAt int64             `gorm:"column:discovered_at" json:"discoveredAt"`
+	FirstLogAt   int64             `gorm:"column:firstlog_at" json:"firstLogAt"`
+	Address      string            `gorm:"primaryKey;column:address" json:"address"`
+	Disabled     bool              `gorm:"column:disabled" json:"disabled"`
+	ContractName string            `gorm:"column:type" json:"type"`
+	Client       ethclient.ClientI `gorm:"-" json:"-"`
+	ABI          *abi.ABI          `gorm:"-" json:"-"`
 }
 
 func (c *Contract) Disable() {
 	c.Disabled = true
 }
 
-func NewContract(address, contractName string, discoveredAt int64, client *ethclient.Client) *Contract {
+func NewContract(address, contractName string, discoveredAt int64, client ethclient.ClientI) *Contract {
 
 	con := &Contract{
 		ContractName: contractName,
@@ -297,5 +296,6 @@ func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, *Json
 	}
 	data["_order"] = argNames
 	jsonData := Json(data)
+	jsonData.CheckSumAddress()
 	return c.ABI.Events[eventName].Sig, &jsonData
 }

@@ -9,17 +9,17 @@ import (
 )
 
 type Token struct {
-	Address  string            `gorm:"primaryKey;column:address"`
-	Symbol   string            `gorm:"column:symbol"`
-	Decimals int8              `gorm:"column:decimals"`
-	client   *ethclient.Client `gorm:"-"`
+	Address  string            `gorm:"primaryKey;column:address" json:"address"`
+	Symbol   string            `gorm:"column:symbol" json:"symbol"`
+	Decimals int8              `gorm:"column:decimals" json:"decimals"`
+	client   ethclient.ClientI `gorm:"-" json:"-"`
 }
 
 func (Token) TableName() string {
 	return "tokens"
 }
 
-func NewToken(addr string, client *ethclient.Client) (*Token, error) {
+func NewToken(addr string, client ethclient.ClientI) (*Token, error) {
 	token := &Token{
 		Address: addr,
 		client:  client,

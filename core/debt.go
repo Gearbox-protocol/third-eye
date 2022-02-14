@@ -7,40 +7,40 @@ import (
 )
 
 type Debt struct {
-	Id                              int64   `gorm:"primaryKey;column:id"`
-	BlockNumber                     int64   `gorm:"column:block_num"`
-	SessionId                       string  `gorm:"column:session_id"`
-	HealthFactor                    *BigInt `gorm:"-"`
-	TotalValueBI                    *BigInt `gorm:"-"`
-	BorrowedAmountPlusInterestBI    *BigInt `gorm:"-"`
-	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor"`
-	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value"`
-	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest"`
-	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value"`
-	AmountToPoolBI                  *BigInt `gorm:"-"`
-	ProfitInUSD                     float64 `gorm:"column:profit_usd"`
-	TotalValueInUSD                 float64 `gorm:"column:total_value_usd"`
-	CollateralInUSD                 float64 `gorm:"column:collateral_usd"`
-	CollateralInUnderlying          float64 `gorm:"column:collateral_underlying"`
-	ProfitInUnderlying              float64 `gorm:"column:profit_underlying"`
+	Id                              int64   `gorm:"primaryKey;column:id" json:"-"`
+	BlockNumber                     int64   `gorm:"column:block_num" json:"blockNum"`
+	SessionId                       string  `gorm:"column:session_id" json:"sessionId"`
+	HealthFactor                    *BigInt `gorm:"-" json:"-"`
+	TotalValueBI                    *BigInt `gorm:"-" json:"-"`
+	BorrowedAmountPlusInterestBI    *BigInt `gorm:"-" json:"-"`
+	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor" json:"calHealthFactor"`
+	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value" json:"calTotalValue"`
+	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest" json:"calBorrowedAmountWithInterest"`
+	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value" json:"calThresholdValue"`
+	AmountToPoolBI                  *BigInt `gorm:"-" json:"-"`
+	ProfitInUSD                     float64 `gorm:"column:profit_usd" json:"profitUSD"`
+	TotalValueInUSD                 float64 `gorm:"column:total_value_usd" json:"calHealthFactor"`
+	CollateralInUSD                 float64 `gorm:"column:collateral_usd" json:"collateralUSD"`
+	CollateralInUnderlying          float64 `gorm:"column:collateral_underlying" json:"collateralUnderlying"`
+	ProfitInUnderlying              float64 `gorm:"column:profit_underlying" json:"profitUnderlying"`
 }
 
 type CurrentDebt struct {
-	SessionId                       string  `gorm:"column:session_id;primaryKey"`
-	BlockNumber                     int64   `gorm:"column:block_num"`
-	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor"`
-	CalTotalValue                   float64 `gorm:"column:cal_total_value"`
-	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value_bi"`
-	CalBorrowedAmountPlusInterest   float64 `gorm:"column:cal_borrowed_amt_with_interest"`
-	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest_bi"`
-	CalThresholdValue               float64 `gorm:"column:cal_threshold_value"`
-	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value_bi"`
-	AmountToPoolBI                  *BigInt `gorm:"column:amount_to_pool_bi"`
-	AmountToPool                    float64 `gorm:"column:amount_to_pool"`
-	ProfitInUSD                     float64 `gorm:"column:profit_usd"`
-	ProfitInUnderlying              float64 `gorm:"column:profit_underlying"`
-	CollateralInUSD                 float64 `gorm:"column:collateral_usd"`
-	CollateralInUnderlying          float64 `gorm:"column:collateral_underlying"`
+	SessionId                       string  `gorm:"column:session_id;primaryKey" json:"sessionId"`
+	BlockNumber                     int64   `gorm:"column:block_num" json:"blockNum"`
+	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor" json:"calHealthFactor"`
+	CalTotalValue                   float64 `gorm:"column:cal_total_value" json:"calTotalValue"`
+	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value_bi" json:"-"`
+	CalBorrowedAmountPlusInterest   float64 `gorm:"column:cal_borrowed_amt_with_interest" json:"calBorrowedAmountPlusInterest"`
+	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest_bi" json:"-"`
+	CalThresholdValue               float64 `gorm:"column:cal_threshold_value" json:"calThresholdValue"`
+	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value_bi" json:"-"`
+	AmountToPoolBI                  *BigInt `gorm:"column:amount_to_pool_bi" json:"-"`
+	AmountToPool                    float64 `gorm:"column:amount_to_pool" json:"amountToPool"`
+	ProfitInUSD                     float64 `gorm:"column:profit_usd" json:"profitUSD"`
+	ProfitInUnderlying              float64 `gorm:"column:profit_underlying" json:"profitUnderlying"`
+	CollateralInUSD                 float64 `gorm:"column:collateral_usd" json:"collateralUSD"`
+	CollateralInUnderlying          float64 `gorm:"column:collateral_underlying" json:"collateralUnderlying"`
 }
 
 func (CurrentDebt) TableName() string {
@@ -98,6 +98,9 @@ type DebtEngineI interface {
 	Clear()
 	ProcessBackLogs()
 	CalculateDebtAndClear(to int64)
+	CalCurrentDebts(to int64)
+	CalculateDebt()
+	GetDebts() Json
 }
 
 type LiquidableAccount struct {

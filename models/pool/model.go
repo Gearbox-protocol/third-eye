@@ -21,7 +21,7 @@ func (Pool) TableName() string {
 	return "sync_adapters"
 }
 
-func NewPool(addr string, client *ethclient.Client, repo core.RepositoryI, discoveredAt int64) *Pool {
+func NewPool(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *Pool {
 	pool := NewPoolFromAdapter(
 		core.NewSyncAdapter(addr, core.Pool, discoveredAt, client, repo),
 	)

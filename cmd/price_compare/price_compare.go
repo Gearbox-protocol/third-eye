@@ -21,7 +21,7 @@ import (
 )
 
 type DBhandler struct {
-	client                  *ethclient.Client
+	client                  ethclient.ClientI
 	db                      *gorm.DB
 	Chainlinks              map[string]*core.SyncAdapter
 	ChainlinkPrices         map[string]core.SortedPriceFeed
@@ -63,7 +63,7 @@ func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.Aggregate
 	err = handler.db.Raw(`SELECT * FROM uniswap_pools`).Find(&uniswapPools).Error
 	log.CheckFatal(err)
 	for _, entry := range uniswapPools {
-		obj.AddPools(tokenMap[entry.Token], entry)
+		obj.AddUniPools(tokenMap[entry.Token], entry)
 	}
 }
 

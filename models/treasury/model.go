@@ -16,7 +16,7 @@ type Treasury struct {
 	node *core.Node
 }
 
-func NewTreasury(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *Treasury {
+func NewTreasury(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *Treasury {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address:      addr,

@@ -13,7 +13,7 @@ type PriceOracle struct {
 	contractETH *priceOracle.PriceOracle
 }
 
-func NewPriceOracle(addr string, discoveredAt int64, client *ethclient.Client, repo core.RepositoryI) *PriceOracle {
+func NewPriceOracle(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *PriceOracle {
 	return NewPriceOracleFromAdapter(
 		core.NewSyncAdapter(addr, core.PriceOracle, discoveredAt, client, repo),
 	)

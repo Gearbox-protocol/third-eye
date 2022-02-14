@@ -14,7 +14,7 @@ import (
 type DebtEngine struct {
 	repo           core.RepositoryI
 	db             *gorm.DB
-	client         *ethclient.Client
+	client         ethclient.ClientI
 	config         *config.Config
 	lastCSS        map[string]*core.CreditSessionSnapshot
 	tokenLastPrice map[string]*core.PriceFeed
@@ -29,7 +29,7 @@ type DebtEngine struct {
 	lastParameters map[string]*core.Parameters
 }
 
-func NewDebtEngine(db *gorm.DB, client *ethclient.Client, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
+func NewDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
 	return &DebtEngine{
 		repo:                   repo,
 		db:                     db,
@@ -85,7 +85,9 @@ func (eng *DebtEngine) processBlocksInBatch(from, to int64) {
 // called for the engine/index.go and the debt engine
 func (eng *DebtEngine) CalculateDebtAndClear(to int64) {
 	if !eng.config.DisableDebtEngine {
-		eng.calculateDebt()
+		eng.CalculateDebt()
+		eng.flushDebt(to)
+		eng.CalCurrentDebts(to)
 		eng.flushCurrentDebts(to)
 	}
 	eng.Clear()
@@ -184,4 +186,11 @@ func (eng *DebtEngine) GetLiquidationTx(sessionId string) string {
 	err := eng.db.Raw(query, sessionId).Find(&data).Error
 	log.CheckFatal(err)
 	return data.TxHash
+}
+
+func (eng *DebtEngine) GetDebts() core.Json {
+	obj := core.Json{}
+	obj["debts"] = eng.debts
+	obj["currentDebts"] = eng.currentDebts
+	return obj
 }

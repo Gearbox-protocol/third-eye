@@ -14,7 +14,7 @@ import (
 )
 
 type Node struct {
-	Client  *ethclient.Client
+	Client  ethclient.ClientI
 	ChainId int64
 }
 
@@ -120,13 +120,13 @@ func getMultiCallAddr() string {
 	return "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696"
 }
 
-func getMultiCallContract(client *ethclient.Client) *multicall.Multicall {
+func getMultiCallContract(client ethclient.ClientI) *multicall.Multicall {
 	contract, err := multicall.NewMulticall(common.HexToAddress(getMultiCallAddr()), client)
 	log.CheckFatal(err)
 	return contract
 }
 
-func MakeMultiCall(client *ethclient.Client, blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
+func MakeMultiCall(client ethclient.ClientI, blockNum int64, successRequired bool, calls []multicall.Multicall2Call) []multicall.Multicall2Result {
 	contract := getMultiCallContract(client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),

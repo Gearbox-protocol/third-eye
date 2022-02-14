@@ -24,7 +24,7 @@ type Repository struct {
 	USDCAddr              string
 	GearTokenAddr         string
 	db                    *gorm.DB
-	client                *ethclient.Client
+	client                ethclient.ClientI
 	config                *config.Config
 	kit                   *core.AdapterKit
 	executeParser         core.ExecuteParserI
@@ -52,8 +52,8 @@ type Repository struct {
 	relations        []*core.UniPriceAndChainlink
 }
 
-func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
-	r := &Repository{
+func GetRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config, ep core.ExecuteParserI) *Repository {
+	repo := &Repository{
 		mu:                    &sync.Mutex{},
 		db:                    db,
 		client:                client,
@@ -68,15 +68,22 @@ func NewRepository(db *gorm.DB, client *ethclient.Client, config *config.Config,
 		dcWrapper:             core.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
 		allowedTokens:         make(map[string]map[string]*core.AllowedToken),
-		cmParams:              make(map[string]*core.Parameters),
-		cmFastCheckParams:     make(map[string]*core.FastCheckParams),
-		BlockDatePairs:        make(map[int64]*core.BlockDate),
-		dieselTokens:          make(map[string]*core.UTokenAndPool),
-		accountManager:        core.NewAccountTokenManager(),
+		// for dao events to get diff
+		cmParams:          make(map[string]*core.Parameters),
+		cmFastCheckParams: make(map[string]*core.FastCheckParams),
+		// for treasury to get the date
+		BlockDatePairs: make(map[int64]*core.BlockDate),
+		// for getting the diesel tokens
+		dieselTokens:   make(map[string]*core.UTokenAndPool),
+		accountManager: core.NewAccountTokenManager(),
 	}
-
-	r.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, r, config.Interval)
-	r.kit.Add(r.aggregatedFeed)
+	// aggregated block feed
+	repo.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(repo.client, repo, repo.config.Interval)
+	repo.kit.Add(repo.aggregatedFeed)
+	return repo
+}
+func NewRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config, ep core.ExecuteParserI) core.RepositoryI {
+	r := GetRepository(db, client, config, ep)
 	r.init()
 	return r
 }

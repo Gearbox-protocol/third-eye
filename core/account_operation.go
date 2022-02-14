@@ -2,23 +2,23 @@ package core
 
 type AccountOperation struct {
 	// Input string
-	ID int64 `gorm:"primaryKey;autoIncrement:true"`
+	ID int64 `gorm:"primaryKey;autoIncrement:true" json:"-"`
 	// ordering data
-	TxHash      string `gorm:"column:tx_hash"`
-	BlockNumber int64  `gorm:"column:block_num"`
-	LogId       uint   `gorm:"column:log_id"`
+	TxHash      string `gorm:"column:tx_hash" json:"txHash"`
+	BlockNumber int64  `gorm:"column:block_num" json:"blockNum"`
+	LogId       uint   `gorm:"column:log_id" json:"logId"`
 	// owner/account data
-	Borrower  string
-	SessionId string `gorm:"column:session_id"`
+	Borrower  string `json:"borrower"`
+	SessionId string `gorm:"column:session_id" json:"sessionId"`
 	// application
-	Dapp string `gorm:"column:dapp"`
+	Dapp string `gorm:"column:dapp" json:"dapp"`
 	// call/events data
-	AdapterCall bool       `gorm:"column:adapter_call"`
-	Action      string     `gorm:"column:action"`
-	Args        *Json      `gorm:"column:args"`
-	Transfers   *Transfers `gorm:"column:transfers"`
+	AdapterCall bool       `gorm:"column:adapter_call" json:"adapterCall"`
+	Action      string     `gorm:"column:action" json:"action"`
+	Args        *Json      `gorm:"column:args" json:"args"`
+	Transfers   *Transfers `gorm:"column:transfers" json:"transfers"`
 	// extras
-	Depth uint8 `gorm:"column:depth"`
+	Depth uint8 `gorm:"column:depth" json:"depth"`
 }
 
 func (AccountOperation) TableName() string {

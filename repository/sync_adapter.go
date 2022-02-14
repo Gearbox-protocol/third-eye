@@ -19,19 +19,20 @@ import (
 )
 
 func (repo *Repository) loadSyncAdapters() {
+	//
 	data := []*core.SyncAdapter{}
 	err := repo.db.Find(&data, "disabled = ?", false).Error
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, adapter := range data {
-		adapter.Client = repo.client
-		adapter.Repo = repo
-		repo.addSyncAdapter(repo.prepareSyncAdapter(adapter))
+		repo.addSyncAdapter(repo.PrepareSyncAdapter(adapter))
 	}
 }
 
-func (repo *Repository) prepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
+func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
+	adapter.Client = repo.client
+	adapter.Repo = repo
 	switch adapter.ContractName {
 	case core.ACL:
 		return acl.NewACLFromAdapter(adapter)

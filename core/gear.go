@@ -7,14 +7,16 @@ import (
 
 type EngineI interface {
 	SyncHandler()
+	Sync(syncTill int64)
+	UseThreads()
 }
 
 type Protocol struct {
-	Id            string `gorm:"primaryKey;column:id;autoincrement:true"`
-	Protocol      string `gorm:"column:protocol"`
-	Adapter       string `gorm:"column:adapter"`
-	BlockNumber   int64  `gorm:"column:block_num"`
-	CreditManager string `gorm:"column:credit_manager"`
+	Id            string `gorm:"primaryKey;column:id;autoincrement:true" json:"-"`
+	Protocol      string `gorm:"column:protocol" json:"protocol"`
+	Adapter       string `gorm:"column:adapter" json:"adapter"`
+	BlockNumber   int64  `gorm:"column:block_num" json:"blockNum"`
+	CreditManager string `gorm:"column:credit_manager" json:"creditManager"`
 }
 
 func (Protocol) TableName() string {
@@ -100,9 +102,12 @@ type RepositoryI interface {
 	Clear()
 	// multicall
 	GetUniPricesByToken(token string) []*UniPoolPrices
-	AddPoolsForToken(blockNum int64, token string)
+	AddUniPoolsForToken(blockNum int64, token string)
 	AddUniPriceAndChainlinkRelation(relation *UniPriceAndChainlink)
 	AddLastSyncForToken(token string, lastSync int64)
+	// for testing
+	AddTokenObj(token *Token)
+	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
 }
 
 type GearBalance struct {

@@ -17,9 +17,9 @@ const MaxUint = ^int64(0)
 
 type SyncAdapter struct {
 	*Contract
-	LastSync               int64       `gorm:"column:last_sync"`
-	Details                Json        `gorm:"column:details"`
-	UnderlyingStatePresent bool        `gorm:"-"`
+	LastSync               int64       `gorm:"column:last_sync" json:"lastSync"`
+	Details                Json        `gorm:"column:details" json:"details"`
+	UnderlyingStatePresent bool        `gorm:"-" json:"-"`
 	Error                  string      `gorm:"column:error"`
 	Repo                   RepositoryI `gorm:"-"`
 	OnlyQuery              bool        `gorm:"-"`
@@ -54,9 +54,21 @@ type SyncAdapterI interface {
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
 	GetDiscoveredAt() int64
+	GetDetails(key string) string
 }
 
 func (s *SyncAdapter) SetDetails(obj interface{}) {
+}
+
+func (s *SyncAdapter) GetDetails(key string) string {
+	if s.Details == nil {
+		return ""
+	}
+	value, ok := s.Details[key].(string)
+	if !ok {
+		log.Fatalf("Not able to parse detail field %s", key)
+	}
+	return value
 }
 func (s *SyncAdapter) GetHasOnLogs() bool {
 	return s.HasOnLogs
@@ -115,7 +127,7 @@ func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 func (s *SyncAdapter) Query(queryTill int64) {
 }
 
-func NewSyncAdapter(addr, name string, discoveredAt int64, client *ethclient.Client, repo RepositoryI) *SyncAdapter {
+func NewSyncAdapter(addr, name string, discoveredAt int64, client ethclient.ClientI, repo RepositoryI) *SyncAdapter {
 	obj := &SyncAdapter{
 		Contract: NewContract(addr, name, discoveredAt, client),
 		Repo:     repo,

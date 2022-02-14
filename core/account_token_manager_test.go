@@ -1,27 +1,13 @@
 package core
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"math/big"
 	"testing"
 )
 
-func randomAddr() string {
-	return random(20)
-}
-func randomHash() string {
-	return random(32)
-}
-func random(n int) string {
-	bytes := make([]byte, n)
-	rand.Read(bytes)
-	return hex.EncodeToString(bytes)
-}
-
 func getAccountWithAddr(addr string, openBlock, closeBlock int64) *SessionData {
-	return getAccountWithAddrAndCM(addr, randomAddr(), openBlock, closeBlock)
+	return getAccountWithAddrAndCM(addr, utils.RandomAddr(), openBlock, closeBlock)
 }
 func getAccountWithAddrAndCM(addr, cm string, openBlock, closeBlock int64) *SessionData {
 	return &SessionData{
@@ -29,32 +15,32 @@ func getAccountWithAddrAndCM(addr, cm string, openBlock, closeBlock int64) *Sess
 		Account:       addr,
 		Since:         openBlock,
 		ClosedAt:      closeBlock,
-		OpenTxHash:    randomHash(),
-		ClosedTxHash:  randomHash(),
-		SessionID:     randomHash(),
+		OpenTxHash:    utils.RandomHash(),
+		ClosedTxHash:  utils.RandomHash(),
+		SessionID:     utils.RandomHash(),
 	}
 }
 func getAccount(openBlock, closeBlock int64) *SessionData {
-	return getAccountWithAddr(randomAddr(), openBlock, closeBlock)
+	return getAccountWithAddr(utils.RandomAddr(), openBlock, closeBlock)
 }
 func getAccountWithLogIds(addr string, openBlock int64, openLogID uint, closeBlock int64, closeLogID uint) *SessionData {
 	return &SessionData{
-		CreditManager: randomAddr(),
+		CreditManager: utils.RandomAddr(),
 		Account:       addr,
 		Since:         openBlock,
 		ClosedAt:      closeBlock,
 		OpenLogId:     openLogID,
 		ClosedLogId:   closeLogID,
-		OpenTxHash:    randomHash(),
-		ClosedTxHash:  randomHash(),
-		SessionID:     randomHash(),
+		OpenTxHash:    utils.RandomHash(),
+		ClosedTxHash:  utils.RandomHash(),
+		SessionID:     utils.RandomHash(),
 	}
 }
 
 func getTokenTransferWithLogId(account string, blockNum int64, logID uint) *TokenTransfer {
-	txHash := randomHash()
-	token := randomAddr()
-	tmpAddr := randomAddr()
+	txHash := utils.RandomHash()
+	token := utils.RandomAddr()
+	tmpAddr := utils.RandomAddr()
 	return &TokenTransfer{
 		BlockNum:      blockNum,
 		LogID:         logID,
@@ -112,7 +98,7 @@ func TestAccountManagerDetectTransferAtEndOfRange(t *testing.T) {
 func TestAccountManagerOpenCloseAccountWithDiffSession(t *testing.T) {
 	mgr := NewAccountTokenManager()
 
-	account1 := getAccountWithLogIds(randomAddr(), 1, 1000, 2, 1000)
+	account1 := getAccountWithLogIds(utils.RandomAddr(), 1, 1000, 2, 1000)
 	account2 := getAccountWithLogIds(account1.Account, 2, 1001, 3, 3000)
 	mgr.AddAccountDetails(account1)
 	mgr.AddAccountDetails(account2)
@@ -143,7 +129,7 @@ func TestAccountTokenManager(t *testing.T) {
 
 	account1 := getAccount(1, 3)
 	account2 := getAccountWithAddr(account1.Account, 4, 5)
-	account3 := getAccountWithAddrAndCM(randomAddr(), account1.CreditManager, 1, 10)
+	account3 := getAccountWithAddrAndCM(utils.RandomAddr(), account1.CreditManager, 1, 10)
 	transfer1 := getTokenTransfer(account1.Account, 2)
 	transfer2 := getTokenTransfer(account1.Account, 4)
 	transfer3 := getTokenTransfer(account3.Account, 5)

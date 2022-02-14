@@ -120,7 +120,7 @@ func (am *AccountMining) isMiningStarted(gearToken string) {
 	}
 }
 
-func StartServer(lc fx.Lifecycle, client *ethclient.Client, config *config.Config) {
+func StartServer(lc fx.Lifecycle, client ethclient.ClientI, config *config.Config) {
 
 	// Starting server
 	lc.Append(fx.Hook{

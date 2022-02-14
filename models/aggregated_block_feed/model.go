@@ -22,7 +22,7 @@ type AggregatedBlockFeed struct {
 	tokenInfos        map[string]*core.Token
 }
 
-func NewAggregatedBlockFeed(client *ethclient.Client, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
+func NewAggregatedBlockFeed(client ethclient.ClientI, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			// Address:      oracle,
@@ -62,7 +62,7 @@ func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
 	return mdl.YearnFeeds
 }
 
-func (mdl *AggregatedBlockFeed) AddPools(token *core.Token, uniswapPools *core.UniswapPools) {
+func (mdl *AggregatedBlockFeed) AddUniPools(token *core.Token, uniswapPools *core.UniswapPools) {
 	if mdl.UniPoolByToken[uniswapPools.Token] == nil {
 		mdl.UniPoolByToken[uniswapPools.Token] = uniswapPools
 	}

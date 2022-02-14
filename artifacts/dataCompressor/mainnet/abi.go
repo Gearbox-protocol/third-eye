@@ -50,64 +50,64 @@ type DataTypesCreditAccountData struct {
 
 // DataTypesCreditAccountDataExtended is an auto generated low-level Go binding around an user-defined struct.
 type DataTypesCreditAccountDataExtended struct {
-	Addr                       common.Address
-	Borrower                   common.Address
-	InUse                      bool
-	CreditManager              common.Address
-	UnderlyingToken            common.Address
-	BorrowedAmountPlusInterest *big.Int
-	TotalValue                 *big.Int
-	HealthFactor               *big.Int
-	BorrowRate                 *big.Int
-	Balances                   []DataTypesTokenBalance
-	RepayAmount                *big.Int
-	LiquidationAmount          *big.Int
-	CanBeClosed                bool
-	BorrowedAmount             *big.Int
-	CumulativeIndexAtOpen      *big.Int
-	Since                      *big.Int
+	Addr                       common.Address          `json:"address"`
+	Borrower                   common.Address          `json:"borrower"`
+	InUse                      bool                    `json:"inUse"`
+	CreditManager              common.Address          `json:"creditManager"`
+	UnderlyingToken            common.Address          `json:"underlyingToken"`
+	BorrowedAmountPlusInterest *big.Int                `json:"borrowAmountPlusInterest"`
+	TotalValue                 *big.Int                `json:"totalValue"`
+	HealthFactor               *big.Int                `json:"healthFactor"`
+	BorrowRate                 *big.Int                `json:"borrowRate"`
+	Balances                   []DataTypesTokenBalance `json:"balances"`
+	RepayAmount                *big.Int                `json:"repayAmount"`
+	LiquidationAmount          *big.Int                `json:"liquidationAmount"`
+	CanBeClosed                bool                    `json:"canBeClosed"`
+	BorrowedAmount             *big.Int                `json:"borrowedAmount"`
+	CumulativeIndexAtOpen      *big.Int                `json:"cumulativeIndexAtOpen"`
+	Since                      *big.Int                `json:"since"`
 }
 
 // DataTypesCreditManagerData is an auto generated low-level Go binding around an user-defined struct.
 type DataTypesCreditManagerData struct {
-	Addr               common.Address
-	HasAccount         bool
-	UnderlyingToken    common.Address
-	IsWETH             bool
-	CanBorrow          bool
-	BorrowRate         *big.Int
-	MinAmount          *big.Int
-	MaxAmount          *big.Int
-	MaxLeverageFactor  *big.Int
-	AvailableLiquidity *big.Int
+	Addr               common.Address `json:"address"`
+	HasAccount         bool           `json:"hasAddress"`
+	UnderlyingToken    common.Address `json:"underlyingToken"`
+	IsWETH             bool           `json:"isWETH"`
+	CanBorrow          bool           `json:"canBorrow"`
+	BorrowRate         *big.Int       `json:"borrowRate"`
+	MinAmount          *big.Int       `json:"minAmount"`
+	MaxAmount          *big.Int       `json:"maxAmount"`
+	MaxLeverageFactor  *big.Int       `json:"maxLeverageFactor"`
+	AvailableLiquidity *big.Int       `json:"availableLiquidity"`
 	AllowedTokens      []common.Address
 	Adapters           []DataTypesContractAdapter
 }
 
 // DataTypesPoolData is an auto generated low-level Go binding around an user-defined struct.
 type DataTypesPoolData struct {
-	Addr                   common.Address
-	IsWETH                 bool
-	UnderlyingToken        common.Address
-	DieselToken            common.Address
-	LinearCumulativeIndex  *big.Int
-	AvailableLiquidity     *big.Int
-	ExpectedLiquidity      *big.Int
-	ExpectedLiquidityLimit *big.Int
-	TotalBorrowed          *big.Int
-	DepositAPYRAY          *big.Int
-	BorrowAPYRAY           *big.Int
-	DieselRateRAY          *big.Int
-	WithdrawFee            *big.Int
-	CumulativeIndexRAY     *big.Int
-	TimestampLU            *big.Int
+	Addr                   common.Address `json:"address"`
+	IsWETH                 bool           `json:"isWETH"`
+	UnderlyingToken        common.Address `json:"underlyingToken"`
+	DieselToken            common.Address `json:"dieselToken"`
+	LinearCumulativeIndex  *big.Int       `json:"linearCumulativeIndex"`
+	AvailableLiquidity     *big.Int       `json:"availableLiquidity"`
+	ExpectedLiquidity      *big.Int       `json:"expectedLiquidity"`
+	ExpectedLiquidityLimit *big.Int       `json:"expectedLiquidityLimit"`
+	TotalBorrowed          *big.Int       `json:"totalBorrowed"`
+	DepositAPYRAY          *big.Int       `json:"depositAPY"`
+	BorrowAPYRAY           *big.Int       `json:"borrowAPY"`
+	DieselRateRAY          *big.Int       `json:"dieselRate"`
+	WithdrawFee            *big.Int       `json:"withdrawFee"`
+	CumulativeIndexRAY     *big.Int       `json:"cumulativeIndex"`
+	TimestampLU            *big.Int       `json:"-"`
 }
 
 // DataTypesTokenBalance is an auto generated low-level Go binding around an user-defined struct.
 type DataTypesTokenBalance struct {
-	Token     common.Address
-	Balance   *big.Int
-	IsAllowed bool
+	Token     common.Address `json:"token"`
+	Balance   *big.Int       `json:"balance"`
+	IsAllowed bool           `json:"isAllowed"`
 }
 
 // DataTypesTokenInfo is an auto generated low-level Go binding around an user-defined struct.
