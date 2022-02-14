@@ -43,6 +43,7 @@ func GetCreditManagerEventIds() []string {
 	return ids
 }
 
+// for testing and json file read methods
 func RandomAddr() string {
 	return common.HexToAddress(random(20)).Hex()
 }

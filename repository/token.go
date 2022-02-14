@@ -58,7 +58,8 @@ func (repo *Repository) loadToken() {
 		repo.AddTokenObj(token)
 	}
 }
-
+// not to be called directly
+// only exposed for testing framework
 func (repo *Repository) AddTokenObj(t *core.Token) {
 	// set usdc addr in repo
 	if t.Symbol == "USDC" {

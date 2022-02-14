@@ -245,7 +245,7 @@ func (z *Json) ReplaceWithVariable(addrToVariable AddressMap) {
 	}
 }
 
-func (z *Json) FixAddress() {
+func (z *Json) CheckSumAddress() {
 	for key, value := range *z {
 		(*z)[key] = fixAddress(value)
 	}
