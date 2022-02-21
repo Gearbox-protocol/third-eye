@@ -16,10 +16,11 @@ func TestLifecycleCreditAccount(t *testing.T) {
 	log.SetTestLogging(t)
 	client := framework.NewTestClient()
 	cfg := &config.Config{}
-	repo := repository.GetRepository(nil, client, cfg, nil)
+	ep := framework.NewMockExecuteParser()
+	repo := repository.GetRepository(nil, client, cfg, ep)
 	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
 	eng := engine.NewEngine(cfg, client, debtEng, repo)
-	r := framework.NewMockRepo(repo, client, "account_lifecycle/input.json", t, eng)
+	r := framework.NewMockRepo(repo, client, "account_lifecycle/input.json", t, eng, ep)
 	r.Init()
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)

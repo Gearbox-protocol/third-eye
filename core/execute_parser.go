@@ -19,10 +19,8 @@ type ExecuteParserI interface {
 
 type KnownCall struct {
 	// Input string
-	From      common.Address
-	To        common.Address
-	Depth     uint8
-	Name      string
-	Args      *Json
-	Transfers Transfers
+	Depth     uint8     `json:"depth"`
+	Name      string    `json:"name"`
+	Args      *Json     `json:"args"`
+	Transfers Transfers `json:"transfers"`
 }

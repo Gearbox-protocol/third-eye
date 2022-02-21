@@ -16,10 +16,11 @@ type TestMask struct {
 }
 
 type TestCall struct {
-	Pools    []core.TestPoolCallData    `json:"pools"`
-	CMs      []core.TestCMCallData      `json:"cms"`
-	Accounts []core.TestAccountCallData `json:"accounts"`
-	Masks    []TestMask                 `json:"masks"`
+	Pools       []core.TestPoolCallData      `json:"pools"`
+	CMs         []core.TestCMCallData        `json:"cms"`
+	Accounts    []core.TestAccountCallData   `json:"accounts"`
+	Masks       []TestMask                   `json:"masks"`
+	ExecuteOnCM map[string][]*core.KnownCall `json:"executeOnCM"`
 }
 
 func (c *TestCall) Process() {

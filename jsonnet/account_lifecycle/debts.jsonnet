@@ -26,5 +26,18 @@
       sessionId: '#Account_1_3_3',
       totalValueInUSD: 8500,
     },
+    {
+      blockNum: 5,
+      calBorrowedAmountWithInterest: '5000000000',
+      calHealthFactor: '13800',
+      calThresholdValue: '6900000000',
+      calTotalValue: '8500000000',
+      collateralUSD: 3500,
+      collateralUnderlying: 3500,
+      profitUSD: 0,
+      profitUnderlying: 0,
+      sessionId: '#Account_1_3_3',
+      totalValueInUSD: 8500,
+    },
   ],
 }

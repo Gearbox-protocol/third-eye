@@ -46,10 +46,11 @@ type MockRepo struct {
 	//oracle to token
 	feedToToken   map[string]string
 	addressToType map[string]string
+	executeParser *MockExecuteParser
 }
 
 func NewMockRepo(repo core.RepositoryI, client *TestClient,
-	inputFile string, t *testing.T, eng core.EngineI) MockRepo {
+	inputFile string, t *testing.T, eng core.EngineI, ep *MockExecuteParser) MockRepo {
 	return MockRepo{
 		repo:          repo,
 		client:        client,
@@ -58,6 +59,7 @@ func NewMockRepo(repo core.RepositoryI, client *TestClient,
 		eng:           eng,
 		addressToType: make(map[string]string),
 		feedToToken:   make(map[string]string),
+		executeParser: ep,
 	}
 }
 func (m *MockRepo) Init() {
@@ -193,6 +195,7 @@ func (m *MockRepo) ProcessCalls() {
 		for _, cmCall := range block.Calls.CMs {
 			calls.CMs[cmCall.Addr] = cmCall
 		}
+		m.executeParser.setCalls(block.Calls.ExecuteOnCM)
 		for _, maskDetails := range block.Calls.Masks {
 			if accountMask[blockNum] == nil {
 				accountMask[blockNum] = make(map[string]*big.Int)

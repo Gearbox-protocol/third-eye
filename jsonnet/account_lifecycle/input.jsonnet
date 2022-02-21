@@ -229,5 +229,71 @@ local newCollateral = 1;
         }],
       },
     },
+    // swap on uniswap v2
+    '5': {
+      events: [
+        {
+          // credit filter on usdc
+          address: '#CreditManager_1',
+          topics: [
+            'ExecuteOrder(address,address)',
+            '#User_1',
+            '#Uniswapv2_1',
+          ],
+          txHash: '!#Hash_8',
+        },
+      ],
+      calls: {
+        masks: [{
+          account: '#Account_1',
+          mask: '3',
+        }],
+        accounts: [{
+          address: '#Account_1',
+          creditManager: '#CreditManager_1',
+          borrower: '#User_1',
+          healthFactor: '13800',
+          totalValue: utils.bigInt(borrowedAmount + initialAmount + extraBorrowedAmount + newCollateral * 2500, 6),
+          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          cumulativeIndexAtOpen: utils.bigInt(1, 27),
+          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          balances: [{
+            token: '#Token_1',
+            balance: utils.bigInt(1000, 6),
+            isAllowed: true,
+          }, {
+            token: '#Token_3',
+            balance: utils.bigInt(3, 18),
+            isAllowed: true,
+          }],
+        }],
+        cms: [{
+          address: '#CreditManager_1',
+          isWETH: false,
+          minAmount: utils.bigInt(1000, 6),
+          maxAmount: utils.bigInt(5000, 6),
+          availableLiquidity: utils.bigInt(1000, 6),
+          borrowRate: '0',
+        }],
+        executeOnCM: {
+          '!#Hash_8': [{
+            name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+            args: {
+              _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
+              amountIn: utils.bigIntTopic(5000, 6),
+              amountOutMin: utils.bigIntTopic(2, 18),
+              path: ['#Token_1', '#Token_3'],
+              '': '#Account_1',
+              deadline: 0,
+            },
+            depth: 0,
+            transfers: {
+              '#Token_1': utils.bigInt(-5000, 6),
+              '#Token_3': utils.bigInt(2, 18),
+            },
+          }],
+        },
+      },
+    },
   },
 }

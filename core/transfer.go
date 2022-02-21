@@ -1,9 +1,13 @@
 package core
 
 import (
+	"bytes"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"math/big"
+	"strings"
 )
 
 type Transfers map[string]*big.Int
@@ -43,5 +47,25 @@ func (dst *Transfers) Scan(value interface{}) error {
 		}
 	}
 	*dst = (Transfers)(transfers)
+	return nil
+}
+
+func (z *Transfers) UnmarshalJSON(b []byte) error {
+	obj := Json{}
+	d := json.NewDecoder(bytes.NewReader(b))
+	d.UseNumber()
+	if err := d.Decode(&obj); err != nil {
+		fmt.Println("error:", err)
+	}
+	transfers := map[string]*big.Int{}
+	for token, amount := range obj {
+		value, ok := amount.(string)
+		if !ok {
+			return fmt.Errorf("can unmarshal BigInt")
+		}
+		bigAmount := strings.Trim(value, "\"")
+		transfers[token] = utils.StringToInt(bigAmount)
+	}
+	*z = transfers
 	return nil
 }

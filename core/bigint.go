@@ -53,7 +53,7 @@ func DiffMoreThanFraction(oldValue, newValue *BigInt, diff *big.Float) bool {
 	fractionalChange := new(big.Float).Quo(
 		new(big.Float).Sub(newFloat, oldFloat),
 		oldFloat)
-	return new(big.Float).Abs(fractionalChange).Cmp(diff) > 1
+	return new(big.Float).Abs(fractionalChange).Cmp(diff) >= 1
 }
 func ValueDifferSideOf10000(a, b *BigInt) bool {
 	return (IntGreaterThanEqualTo(a, 10000) != IntGreaterThanEqualTo(b, 10000))
