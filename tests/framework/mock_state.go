@@ -1,4 +1,4 @@
-package tests
+package framework
 
 type TestState struct {
 	Oracles []*OracleState `json:"oracles"`

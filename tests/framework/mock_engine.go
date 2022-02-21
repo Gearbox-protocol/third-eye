@@ -1,4 +1,4 @@
-package tests
+package framework
 
 import (
 	"encoding/json"
@@ -48,7 +48,19 @@ type MockRepo struct {
 	addressToType map[string]string
 }
 
-func (m *MockRepo) init() {
+func NewMockRepo(repo core.RepositoryI, client *TestClient, 
+	inputFile string, t *testing.T, eng core.EngineI) MockRepo {
+	return MockRepo{
+		repo:          repo,
+		client:        client,
+		file:          inputFile,
+		t:             t,
+		eng:           eng,
+		addressToType: make(map[string]string),
+		feedToToken:   make(map[string]string),
+	}
+}
+func (m *MockRepo) Init() {
 	m.handleMocks()
 	m.ProcessState()
 	m.ProcessEvents()
@@ -217,13 +229,13 @@ func (m *MockRepo) replaceWithVariable(obj interface{}) core.Json {
 	return outputJson
 }
 
-func (m *MockRepo) check(t *testing.T, value interface{}, fileName string) {
+func (m *MockRepo) Check(t *testing.T, value interface{}, fileName string) {
 	outputJson := m.replaceWithVariable(value)
 	fileName = fmt.Sprintf("../inputs/%s", fileName)
 	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
 }
 
-func (m *MockRepo) print(t *testing.T, value interface{}) {
+func (m *MockRepo) Print(t *testing.T, value interface{}) {
 	outputJson := m.replaceWithVariable(value)
 	log.Fatal(utils.ToJson(outputJson))
 }
