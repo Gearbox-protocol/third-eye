@@ -21,7 +21,7 @@ func TestDAOOperations(t *testing.T) {
 	r := MockRepo{
 		repo:          repo,
 		client:        client,
-		file:          "dao_operations_input.json",
+		file:          "dao_operations/input.json",
 		t:             t,
 		eng:           eng,
 		addressToType: make(map[string]string),
@@ -31,5 +31,6 @@ func TestDAOOperations(t *testing.T) {
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
 
-	r.check(t, map[string]interface{}{"data": repo.GetBlocks()[3].DAOOperations}, "dao_operations_blocks.json")
+	r.check(t, map[string]interface{}{"data": repo.GetBlocks()[3].DAOOperations}, "dao_operations/blocks.json")
 }
+

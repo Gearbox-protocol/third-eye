@@ -11,17 +11,17 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
-func Test1(t *testing.T) {
+func TestOpenCreditAccount(t *testing.T) {
+	log.SetTestLogging(t)
 	client := NewTestClient()
 	cfg := &config.Config{}
 	repo := repository.GetRepository(nil, client, cfg, nil)
 	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
-	log.SetTestLogging(t)
 	eng := engine.NewEngine(cfg, client, debtEng, repo)
 	r := MockRepo{
 		repo:          repo,
 		client:        client,
-		file:          "test1_input.json",
+		file:          "open_credit_account/input.json",
 		t:             t,
 		eng:           eng,
 		addressToType: make(map[string]string),
@@ -30,9 +30,8 @@ func Test1(t *testing.T) {
 	r.init()
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
-
-	r.check(t, repo.GetBlocks()[3], "test1_blocks.json")
+	r.check(t, repo.GetBlocks()[3], "open_credit_account/blocks.json")
 	debtEng.CalculateDebt()
-	r.check(t, debtEng.GetDebts(), "test1_debts.json")
+	r.check(t, debtEng.GetDebts(), "open_credit_account/debts.json")
 }
 

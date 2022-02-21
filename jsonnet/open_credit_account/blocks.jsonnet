@@ -1,5 +1,5 @@
 {
-  AccountOperations: [
+  accountOperations: [
     {
       action: 'OpenCreditAccount(address,address,address,uint256,uint256,uint256)',
       adapterCall: false,
@@ -31,7 +31,7 @@
       txHash: '#Hash_1',
     },
   ],
-  AllowedTokens: [
+  allowedTokens: [
     {
       BlockNumber: 3,
       CreditManager: '#CreditManager_1',
@@ -40,8 +40,8 @@
       Token: '#Token_1',
     },
   ],
-  BlockNumber: 3,
-  CMStats: [
+  blockNum: 3,
+  cmStats: [
     {
       Address: '#CreditManager_1',
       AvailableLiquidity: 1000,
@@ -67,7 +67,7 @@
       UniqueUsers: 0,
     },
   ],
-  CSS: [
+  css: [
     {
       balance: {
         '#Token_1': {
@@ -82,14 +82,14 @@
       borrower: '#User_1',
       collateralInUSD: 1000,
       collateralInUnderlying: 1000,
-      cumulativeIndexAtOpen: '1000000000000000013287555072',
+      cumulativeIndexAtOpen: '1000000000000000000000000000',
       healthFactor: '11250',
       sessionId: '#Account_1_3_0',
       totalValue: 5000,
       totalValueBI: '5000000000',
     },
   ],
-  DAOOperations: [
+  daoOperations: [
     {
       Args: {
         LiquidationDiscount: [
@@ -138,7 +138,7 @@
       Type: 0,
     },
   ],
-  Params: [
+  params: [
     {
       BlockNum: 3,
       CreditManager: '#CreditManager_1',
@@ -150,7 +150,7 @@
       MinAmount: '1000000000',
     },
   ],
-  PoolLedgers: [
+  poolLedgers: [
     {
       amount: 4000,
       blockNum: 3,
@@ -162,14 +162,14 @@
       user: '#User_1',
     },
   ],
-  PoolStats: [
+  poolStats: [
     {
       availableLiquidity: 1000,
       availableLiquidityBI: '1000000000',
       blockNum: 3,
       borrowAPY: 0,
       borrowAPYBI: '0',
-      cumulativeIndexRAY: '1000000000000000013287555072',
+      cumulativeIndexRAY: '1000000000000000000000000000',
       depositAPY: 0,
       depositAPYBI: '0',
       dieselRate: 0,
@@ -185,7 +185,7 @@
       withdrawFee: 0,
     },
   ],
-  PriceFeeds: [
+  priceFeeds: [
     {
       blockNum: 3,
       feed: '#ChainlinkPriceFeed_1',
@@ -199,5 +199,5 @@
       uniswapv3Twap: 0,
     },
   ],
-  Timestamp: 259200,
+  timestamp: 259200,
 }

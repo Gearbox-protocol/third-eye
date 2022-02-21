@@ -1,6 +1,6 @@
 {
   '3': {
-    AccountOperations: [
+    accountOperations: [
       {
         action: 'OpenCreditAccount(address,address,address,uint256,uint256,uint256)',
         adapterCall: false,
@@ -54,7 +54,7 @@
         txHash: '#Hash_6',
       },
     ],
-    AllowedTokens: [
+    allowedTokens: [
       {
         BlockNumber: 3,
         CreditManager: '#CreditManager_1',
@@ -63,8 +63,8 @@
         Token: '#Token_1',
       },
     ],
-    BlockNumber: 3,
-    CMStats: [
+    blockNum: 3,
+    cmStats: [
       {
         Address: '#CreditManager_1',
         AvailableLiquidity: 1000,
@@ -90,7 +90,7 @@
         UniqueUsers: 0,
       },
     ],
-    CSS: [
+    css: [
       {
         balance: {
           '#Token_1': {
@@ -105,14 +105,14 @@
         borrower: '#User_1',
         collateralInUSD: 1000,
         collateralInUnderlying: 1000,
-        cumulativeIndexAtOpen: '1000000000000000013287555072',
+        cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '10800',
         sessionId: '#Account_1_3_3',
         totalValue: 6000,
         totalValueBI: '6000000000',
       },
     ],
-    DAOOperations: [
+    daoOperations: [
       {
         Args: {
           LiquidationDiscount: [
@@ -161,7 +161,7 @@
         Type: 0,
       },
     ],
-    Params: [
+    params: [
       {
         BlockNum: 3,
         CreditManager: '#CreditManager_1',
@@ -173,7 +173,7 @@
         MinAmount: '1000000000',
       },
     ],
-    PoolLedgers: [
+    poolLedgers: [
       {
         amount: 4000,
         blockNum: 3,
@@ -195,14 +195,14 @@
         user: '#User_1',
       },
     ],
-    PoolStats: [
+    poolStats: [
       {
         availableLiquidity: 1000,
         availableLiquidityBI: '1000000000',
         blockNum: 3,
         borrowAPY: 0,
         borrowAPYBI: '0',
-        cumulativeIndexRAY: '1000000000000000013287555072',
+        cumulativeIndexRAY: '1000000000000000000000000000',
         depositAPY: 0,
         depositAPYBI: '0',
         dieselRate: 0,
@@ -218,7 +218,7 @@
         withdrawFee: 0,
       },
     ],
-    PriceFeeds: [
+    priceFeeds: [
       {
         blockNum: 3,
         feed: '#ChainlinkPriceFeed_1',
@@ -232,10 +232,10 @@
         uniswapv3Twap: 0,
       },
     ],
-    Timestamp: 259200,
+    timestamp: 259200,
   },
   '4': {
-    AccountOperations: [
+    accountOperations: [
       {
         action: 'AddCollateral(address,address,uint256)',
         adapterCall: false,
@@ -261,7 +261,7 @@
         txHash: '#Hash_9',
       },
     ],
-    AllowedTokens: [
+    allowedTokens: [
       {
         BlockNumber: 4,
         CreditManager: '#CreditManager_1',
@@ -270,8 +270,8 @@
         Token: '#Token_3',
       },
     ],
-    BlockNumber: 4,
-    CMStats: [
+    blockNum: 4,
+    cmStats: [
       {
         Address: '#CreditManager_1',
         AvailableLiquidity: 1000,
@@ -297,7 +297,7 @@
         UniqueUsers: 0,
       },
     ],
-    CSS: [
+    css: [
       {
         balance: {
           '#Token_1': {
@@ -317,14 +317,14 @@
         borrower: '#User_1',
         collateralInUSD: 3500,
         collateralInUnderlying: 3500,
-        cumulativeIndexAtOpen: '1000000000000000013287555072',
+        cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '14800',
         sessionId: '#Account_1_3_3',
         totalValue: 8500,
         totalValueBI: '8500000000',
       },
     ],
-    DAOOperations: [
+    daoOperations: [
       {
         Args: {
           creditManager: '#CreditManager_1',
@@ -339,6 +339,6 @@
         Type: 0,
       },
     ],
-    Timestamp: 345600,
+    timestamp: 345600,
   },
 }

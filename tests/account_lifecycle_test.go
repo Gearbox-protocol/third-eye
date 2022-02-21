@@ -21,7 +21,7 @@ func TestLifecycleCreditAccount(t *testing.T) {
 	r := MockRepo{
 		repo:          repo,
 		client:        client,
-		file:          "account_lifecycle_input.json",
+		file:          "account_lifecycle/input.json",
 		t:             t,
 		eng:           eng,
 		addressToType: make(map[string]string),
@@ -33,7 +33,7 @@ func TestLifecycleCreditAccount(t *testing.T) {
 
 	outputBlocks := repo.GetBlocks()
 	delete(outputBlocks, 2)
-	r.check(t, outputBlocks, "account_lifecycle_blocks.json")
+	r.check(t, outputBlocks, "account_lifecycle/blocks.json")
 	debtEng.CalculateDebt()
-	r.check(t, debtEng.GetDebts(), "account_lifecycle_debts.json")
+	r.check(t, debtEng.GetDebts(), "account_lifecycle/debts.json")
 }
