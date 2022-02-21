@@ -4,11 +4,12 @@ import (
 	"fmt"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
-	"testing"
 	"runtime"
+	"testing"
 )
 
 var testLogModule *testing.T
+
 func SetTestLogging(t *testing.T) {
 	testLogModule = t
 }
@@ -49,13 +50,13 @@ func Warn(v ...interface{}) {
 }
 
 func Infof(msg string, args ...interface{}) {
-	msg = "[Info]: "+detectFunc()+msg
+	msg = "[Info]: " + detectFunc() + msg
 	if testLogModule == nil {
 		log.Printf(msg, args...)
 	} else {
 		testLogModule.Logf(msg, args...)
 	}
-	
+
 }
 
 func Info(v ...interface{}) {

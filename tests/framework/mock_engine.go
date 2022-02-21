@@ -6,10 +6,10 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
 	"testing"
-	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -48,7 +48,7 @@ type MockRepo struct {
 	addressToType map[string]string
 }
 
-func NewMockRepo(repo core.RepositoryI, client *TestClient, 
+func NewMockRepo(repo core.RepositoryI, client *TestClient,
 	inputFile string, t *testing.T, eng core.EngineI) MockRepo {
 	return MockRepo{
 		repo:          repo,
@@ -229,13 +229,13 @@ func (m *MockRepo) replaceWithVariable(obj interface{}) core.Json {
 	return outputJson
 }
 
-func (m *MockRepo) Check(t *testing.T, value interface{}, fileName string) {
+func (m *MockRepo) Check(value interface{}, fileName string) {
 	outputJson := m.replaceWithVariable(value)
 	fileName = fmt.Sprintf("../inputs/%s", fileName)
-	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
+	require.JSONEq(m.t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
 }
 
-func (m *MockRepo) Print(t *testing.T, value interface{}) {
+func (m *MockRepo) Print(value interface{}) {
 	outputJson := m.replaceWithVariable(value)
-	log.Fatal(utils.ToJson(outputJson))
+	m.t.Fatal(utils.ToJson(outputJson))
 }

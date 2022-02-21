@@ -24,6 +24,5 @@ func TestDAOOperations(t *testing.T) {
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
 
-	r.Check(t, map[string]interface{}{"data": repo.GetBlocks()[3].DAOOperations}, "dao_operations/blocks.json")
+	r.Check(map[string]interface{}{"data": repo.GetBlocks()[3].DAOOperations}, "dao_operations/blocks.json")
 }
-

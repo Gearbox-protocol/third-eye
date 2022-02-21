@@ -23,7 +23,7 @@ type TestClient struct {
 	state     *StateStore
 	USDCAddr  string
 	WETHAddr  string
-	token  map[string]int8
+	token     map[string]int8
 }
 
 func (t *TestClient) SetUSDC(addr string) {
@@ -35,11 +35,11 @@ func (t *TestClient) SetWETH(addr string) {
 func NewTestClient() *TestClient {
 	return &TestClient{
 		events: make(map[int64]map[string][]types.Log),
-		token: map[string]int8{},
+		token:  map[string]int8{},
 	}
 }
 func (t *TestClient) AddToken(tokenAddr string, decimals int8) {
-	t.token[tokenAddr] =  decimals
+	t.token[tokenAddr] = decimals
 }
 func (t *TestClient) setEvents(obj map[int64]map[string][]types.Log) {
 	t.events = obj

@@ -19,12 +19,11 @@ func TestOpenCreditAccount(t *testing.T) {
 	repo := repository.GetRepository(nil, client, cfg, nil)
 	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
 	eng := engine.NewEngine(cfg, client, debtEng, repo)
-	 r := framework.NewMockRepo(repo, client,  "open_credit_account/input.json", t, eng)
+	r := framework.NewMockRepo(repo, client, "open_credit_account/input.json", t, eng)
 	r.Init()
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
-	r.Check(t, repo.GetBlocks()[3], "open_credit_account/blocks.json")
+	r.Check(repo.GetBlocks()[3], "open_credit_account/blocks.json")
 	debtEng.CalculateDebt()
-	r.Check(t, debtEng.GetDebts(), "open_credit_account/debts.json")
+	r.Check(debtEng.GetDebts(), "open_credit_account/debts.json")
 }
-
