@@ -2,7 +2,6 @@ package core
 
 import (
 	"math/big"
-	"sort"
 )
 
 type (
@@ -21,7 +20,6 @@ type (
 		DAOOperations           []*DAOOperation           `gorm:"foreignKey:block_num" json:"daoOperations"`
 		Params                  []*Parameters             `gorm:"foreignKey:block_num" json:"params"`
 		FastCheckParams         []*FastCheckParams        `gorm:"foreignKey:block_num" json:"fastCheckParams"`
-		eventBalances           SortedEventbalances       `gorm:"-" json:"-"`
 		pnlOnCM                 map[string]*PnlOnRepay    `gorm:"-" json:"-"`
 		TreasuryTransfers       []*TreasuryTransfer       `gorm:"foreignKey:block_num" json:"treasuryTransfers"`
 		TreasurySnapshots       []*TreasurySnapshotModel2 `gorm:"foreignKey:block_num" json:"treasurySnapshots"`
@@ -94,15 +92,6 @@ func (b *Block) GetAllowedTokens() []*AllowedToken {
 
 func (b *Block) GetPriceFeeds() []*PriceFeed {
 	return b.PriceFeeds
-}
-
-func (b *Block) AddEventBalance(eb *EventBalance) {
-	b.eventBalances = append(b.eventBalances, eb)
-}
-
-func (b *Block) GetEventBalances() []*EventBalance {
-	sort.Sort(b.eventBalances)
-	return b.eventBalances
 }
 
 func (b *Block) AddParameters(params *Parameters) {

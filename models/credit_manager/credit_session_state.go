@@ -52,15 +52,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
 		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmount
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
-		// mdl.Repo.AddEventBalance(core.NewEventBalance(blockNum,
-		// 	closeDetails.LogId,
-		// 	sessionId,
-		// 	nil,
-		// 	core.Transfers{
-		// 		mdl.GetUnderlyingToken(): closeDetails.RemainingFunds,
-		// 	},
-		// 	true,
-		// 	mdl.GetAddress()))
 	}
 
 	// credit manager state

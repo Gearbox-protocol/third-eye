@@ -40,10 +40,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalf
 		Dapp: cmAddr,
 	}
 	mdl.PoolBorrow(txLog, sessionId, onBehalfOf, borrowAmount)
-	mdl.AddEventBasedAccountOperationAndState(accountOperation,
-		borrowAmount,
-		false,
-		cmAddr)
+	mdl.AddAccountOperation(accountOperation)
 	mdl.UpdatedSessions[sessionId]++
 	// add session to manager object
 	mdl.AddCreditOwnerSession(onBehalfOf, sessionId)
@@ -88,10 +85,7 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 		},
 		Dapp: cmAddr,
 	}
-	mdl.AddEventBasedAccountOperationAndState(accountOperation,
-		nil,
-		true,
-		cmAddr)
+	mdl.AddAccountOperation(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		RemainingFunds: remainingFunds,
 		Status:         core.Closed,
@@ -124,10 +118,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 		},
 		Dapp: txLog.Address.Hex(),
 	}
-	mdl.AddEventBasedAccountOperationAndState(accountOperation,
-		nil,
-		true,
-		mdl.GetAddress())
+	mdl.AddAccountOperation(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		RemainingFunds: remainingFunds,
 		Status:         core.Liquidated,
@@ -200,10 +191,7 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 		},
 		Dapp: txLog.Address.Hex(),
 	}
-	mdl.AddEventBasedAccountOperationAndState(accountOperation,
-		nil,
-		false,
-		mdl.GetAddress())
+	mdl.AddAccountOperation(accountOperation)
 	mdl.AddCollateralToSession(blockNum, sessionId, token, value)
 	mdl.UpdatedSessions[sessionId]++
 	return nil
@@ -243,10 +231,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.PoolBorrow(txLog, sessionId, borrower, amount)
-	mdl.AddEventBasedAccountOperationAndState(accountOperation,
-		amount,
-		false,
-		mdl.GetAddress())
+	mdl.AddAccountOperation(accountOperation)
 	mdl.UpdatedSessions[sessionId]++
 	return nil
 }
@@ -317,29 +302,9 @@ func (mdl *CreditManager) handleExecuteEvents() {
 			// extras
 			Depth: call.Depth,
 		}
-		mdl.AddEventBasedAccountOperationAndState(accountOperation,
-			nil,
-			false,
-			mdl.GetAddress())
+		mdl.AddAccountOperation(accountOperation)
 		mdl.UpdatedSessions[params.SessionId]++
 	}
-}
-
-func (mdl *CreditManager) AddEventBasedAccountOperationAndState(
-	accountOperation *core.AccountOperation,
-	borrowAmount *big.Int,
-	clear bool,
-	cmAddr string) {
-	mdl.Repo.AddEventBalance(core.NewEventBalance(
-		accountOperation.BlockNumber,
-		accountOperation.LogId,
-		accountOperation.SessionId,
-		borrowAmount,
-		*accountOperation.Transfers,
-		false,
-		cmAddr,
-	))
-	mdl.AddAccountOperation(accountOperation)
 }
 
 func (mdl *CreditManager) AddAccountOperation(accountOperation *core.AccountOperation) {

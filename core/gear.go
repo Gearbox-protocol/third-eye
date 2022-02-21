@@ -60,7 +60,6 @@ type RepositoryI interface {
 	AddDieselToken(dieselToken, underlyingToken, pool string)
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
-	AddEventBalance(eb EventBalance)
 	// dc
 	GetDCWrapper() *DataCompressorWrapper
 	AddDataCompressor(blockNum int64, addr string)
