@@ -1,5 +1,4 @@
-local bigInt(x, decimals=0) = std.toString(x * std.pow(10, decimals));
-local bigIntTopic(x, decimals) = 'bigint:' + bigInt(x, decimals);
+local utils = import 'utils.libsonnet';
 local initialAmount = 1000;
 local borrowedAmount = 4000;
 {
@@ -122,7 +121,7 @@ local borrowedAmount = 4000;
             'NewExpectedLiquidityLimit(uint256)',
           ],
           data: [
-            bigIntTopic(10000, 6),
+            utils.bigIntTopic(10000, 6),
           ],
           txHash: '!#Hash_10',
         },
@@ -142,7 +141,7 @@ local borrowedAmount = 4000;
             'NewWithdrawFee(uint256)',
           ],
           data: [
-            bigIntTopic(100, 0),  //1%
+            utils.bigIntTopic(100, 0),  //1%
           ],
           txHash: '!#Hash_12',
         },
@@ -227,17 +226,17 @@ local borrowedAmount = 4000;
           ],
           data: [
             // minAnount
-            bigIntTopic(1000, 6),
+            utils.bigIntTopic(1000, 6),
             // maxAmount
-            bigIntTopic(5000, 6),
+            utils.bigIntTopic(5000, 6),
             // maxLeverage
-            bigIntTopic(400, 6),
+            utils.bigIntTopic(400, 6),
             // feeInterest
-            bigIntTopic(1000, 0),
+            utils.bigIntTopic(1000, 0),
             // feeLiquidation
-            bigIntTopic(200, 0),
+            utils.bigIntTopic(200, 0),
             // liquidationDiscount
-            bigIntTopic(9500, 0),
+            utils.bigIntTopic(9500, 0),
           ],
           txHash: '!#Hash_22',
         },
@@ -246,21 +245,21 @@ local borrowedAmount = 4000;
         {
           pools: [{
             address: '#Pool_1',
-            totalBorrowed: bigInt(borrowedAmount, 6),
-            expectedLiquidity: bigInt(borrowedAmount + 1000, 6),
-            availableLiquidity: bigInt(1000, 6),
-            depositAPY: bigInt(0),
-            borrowAPY: bigInt(0),
-            dieselRate: bigInt(0),
+            totalBorrowed: utils.bigInt(borrowedAmount, 6),
+            expectedLiquidity: utils.bigInt(borrowedAmount + 1000, 6),
+            availableLiquidity: utils.bigInt(1000, 6),
+            depositAPY: utils.bigInt(0),
+            borrowAPY: utils.bigInt(0),
+            dieselRate: utils.bigInt(0),
             withdrawFee: '0',
-            linearCumulativeIndex: bigInt(1, 27),
+            linearCumulativeIndex: utils.bigInt(1, 27),
           }],
           cms: [{
             address: '#CreditManager_1',
             isWETH: false,
-            minAmount: bigInt(1000, 6),
-            maxAmount: bigInt(5000, 6),
-            availableLiquidity: bigInt(1000, 6),
+            minAmount: utils.bigInt(1000, 6),
+            maxAmount: utils.bigInt(5000, 6),
+            availableLiquidity: utils.bigInt(1000, 6),
             borrowRate: '0',
           }],
         },

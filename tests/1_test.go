@@ -1,18 +1,14 @@
 package tests
 
 import (
-	"encoding/json"
 	"testing"
 
-	"fmt"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/debts"
 	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/stretchr/testify/require"
 )
 
 func Test1(t *testing.T) {
@@ -20,6 +16,7 @@ func Test1(t *testing.T) {
 	cfg := &config.Config{}
 	repo := repository.GetRepository(nil, client, cfg, nil)
 	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
+	log.SetTestLogging(t)
 	eng := engine.NewEngine(cfg, client, debtEng, repo)
 	r := MockRepo{
 		repo:          repo,
@@ -39,27 +36,3 @@ func Test1(t *testing.T) {
 	r.check(t, debtEng.GetDebts(), "test1_debts.json")
 }
 
-func (m *MockRepo) replaceWithVariable(obj interface{}) core.Json {
-	bytes, err := json.Marshal(obj)
-	log.CheckFatal(err)
-	addrToVariable := core.AddressMap{}
-	for variable, addr := range m.AddressMap {
-		addrToVariable[addr] = "#" + variable
-	}
-	outputJson := core.Json{}
-	err = json.Unmarshal(bytes, &outputJson)
-	log.CheckFatal(err)
-	outputJson.ReplaceWithVariable(addrToVariable)
-	return outputJson
-}
-
-func (m *MockRepo) check(t *testing.T, value interface{}, fileName string) {
-	outputJson := m.replaceWithVariable(value)
-	fileName = fmt.Sprintf("../inputs/%s", fileName)
-	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
-}
-
-func (m *MockRepo) print(t *testing.T, value interface{}) {
-	outputJson := m.replaceWithVariable(value)
-	log.Fatal(utils.ToJson(outputJson))
-}

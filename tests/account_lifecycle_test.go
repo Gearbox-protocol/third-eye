@@ -11,7 +11,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
-func TestDAOOperations(t *testing.T) {
+func TestLifecycleCreditAccount(t *testing.T) {
 	log.SetTestLogging(t)
 	client := NewTestClient()
 	cfg := &config.Config{}
@@ -21,7 +21,7 @@ func TestDAOOperations(t *testing.T) {
 	r := MockRepo{
 		repo:          repo,
 		client:        client,
-		file:          "dao_operations_input.json",
+		file:          "account_lifecycle_input.json",
 		t:             t,
 		eng:           eng,
 		addressToType: make(map[string]string),
@@ -31,5 +31,9 @@ func TestDAOOperations(t *testing.T) {
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
 
-	r.check(t, map[string]interface{}{"data": repo.GetBlocks()[3].DAOOperations}, "dao_operations_blocks.json")
+	outputBlocks := repo.GetBlocks()
+	delete(outputBlocks, 2)
+	r.check(t, outputBlocks, "account_lifecycle_blocks.json")
+	debtEng.CalculateDebt()
+	r.check(t, debtEng.GetDebts(), "account_lifecycle_debts.json")
 }

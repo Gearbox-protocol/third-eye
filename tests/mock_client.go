@@ -4,23 +4,26 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"sort"
+
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"sort"
 )
 
 type TestClient struct {
 	// Blocks map[int64]BlockInput
 	blockNums []int64
 	events    map[int64]map[string][]types.Log
-	prices    map[int64]map[string]*big.Int
+	prices    map[string]map[int64]*big.Int
 	masks     map[int64]map[string]*big.Int
 	state     *StateStore
 	USDCAddr  string
 	WETHAddr  string
+	token  map[string]int8
 }
 
 func (t *TestClient) SetUSDC(addr string) {
@@ -32,7 +35,11 @@ func (t *TestClient) SetWETH(addr string) {
 func NewTestClient() *TestClient {
 	return &TestClient{
 		events: make(map[int64]map[string][]types.Log),
+		token: map[string]int8{},
 	}
+}
+func (t *TestClient) AddToken(tokenAddr string, decimals int8) {
+	t.token[tokenAddr] =  decimals
 }
 func (t *TestClient) setEvents(obj map[int64]map[string][]types.Log) {
 	t.events = obj
@@ -42,7 +49,7 @@ func (t *TestClient) setEvents(obj map[int64]map[string][]types.Log) {
 	sort.Slice(t.blockNums, func(i, j int) bool { return t.blockNums[i] < t.blockNums[j] })
 }
 
-func (t *TestClient) setPrices(obj map[int64]map[string]*big.Int) {
+func (t *TestClient) setPrices(obj map[string]map[int64]*big.Int) {
 	t.prices = obj
 }
 
@@ -104,11 +111,14 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		}
 		s += 32
 		token0 := common.BytesToAddress(call.Data[s : s+32]).Hex()
+		decimalT0 := t.token[token0]
 		s += 32
 		token1 := common.BytesToAddress(call.Data[s : s+32]).Hex()
+		decimalT1 := t.token[token1]
 		price0 := t.getPrice(blockNum, token0)
 		price1 := t.getPrice(blockNum, token1)
 		newAmount := new(big.Int).Mul(amount, price0)
+		newAmount = utils.GetInt64(newAmount, decimalT0-decimalT1)
 		newAmount = new(big.Int).Quo(newAmount, price1)
 		return common.HexToHash(fmt.Sprintf("%x", newAmount)).Bytes(), nil
 		// enabledmask on creditfilter for account
@@ -135,13 +145,24 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	}
 	return nil, nil
 }
-func (t *TestClient) getPrice(blockNum int64, addr string) *big.Int {
-	if addr == "WETH" {
+func (t *TestClient) getPrice(blockNum int64, tokenAddr string) *big.Int {
+	if tokenAddr == t.WETHAddr {
 		value, _ := new(big.Int).SetString("1000000000000000000", 10)
 		return value
 	} else {
-		return t.prices[blockNum][addr]
+		if t.prices[tokenAddr] != nil {
+			var lastprice *big.Int
+			for currentNum, price := range t.prices[tokenAddr] {
+				if currentNum <= blockNum {
+					lastprice = price
+				}
+			}
+			return lastprice
+		} else {
+			log.Fatalf("token(%s) price not present", tokenAddr)
+		}
 	}
+	return nil
 }
 func (t *TestClient) PendingCodeAt(ctx context.Context, contract common.Address) ([]byte, error) {
 	return nil, nil

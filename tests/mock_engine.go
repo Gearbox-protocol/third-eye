@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"strings"
 	"testing"
+	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -112,6 +113,7 @@ func (m *MockRepo) setSyncAdapters(mockFilePath string) {
 			m.client.SetWETH(tokenObj.Address)
 		}
 		m.repo.AddTokenObj(tokenObj)
+		m.client.AddToken(tokenObj.Address, tokenObj.Decimals)
 	}
 	m.SyncAdapters = obj.Adapters
 	for key, value := range m.AddressMap {
@@ -137,7 +139,7 @@ func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
 
 func (m *MockRepo) ProcessEvents() {
 	events := map[int64]map[string][]types.Log{}
-	prices := map[int64]map[string]*big.Int{}
+	prices := map[string]map[int64]*big.Int{}
 	for blockNum, block := range m.InputFile.Blocks {
 		if events[blockNum] == nil {
 			events[blockNum] = make(map[string][]types.Log)
@@ -148,15 +150,15 @@ func (m *MockRepo) ProcessEvents() {
 			txLog.BlockNumber = uint64(blockNum)
 			events[blockNum][event.Address] = append(events[blockNum][event.Address], txLog)
 			if event.Topics[0] == core.Topic("AnswerUpdated(int256,uint256,uint256)").Hex() {
-				price, ok := new(big.Int).SetString(txLog.Topics[2].Hex()[2:], 16)
+				price, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
 				if !ok {
 					log.Fatal("Failed in parsing price in answerupdated")
 				}
-				if prices[blockNum] == nil {
-					prices[blockNum] = make(map[string]*big.Int)
-				}
 				token := m.feedToToken[txLog.Address.Hex()]
-				prices[blockNum][token] = price
+				if prices[token] == nil {
+					prices[token] = make(map[int64]*big.Int)
+				}
+				prices[token][blockNum] = price
 			}
 		}
 	}
@@ -197,4 +199,31 @@ func (m *MockRepo) ProcessState() {
 		state.Oracle.AddState(oracle)
 	}
 	m.client.setState(state)
+}
+
+// for matching state with the expected output
+func (m *MockRepo) replaceWithVariable(obj interface{}) core.Json {
+	bytes, err := json.Marshal(obj)
+	log.CheckFatal(err)
+	addrToVariable := core.AddressMap{}
+	// TODO: FIX FOR HASH
+	for variable, addr := range m.AddressMap {
+		addrToVariable[addr] = "#" + variable
+	}
+	outputJson := core.Json{}
+	err = json.Unmarshal(bytes, &outputJson)
+	log.CheckFatal(err)
+	outputJson.ReplaceWithVariable(addrToVariable)
+	return outputJson
+}
+
+func (m *MockRepo) check(t *testing.T, value interface{}, fileName string) {
+	outputJson := m.replaceWithVariable(value)
+	fileName = fmt.Sprintf("../inputs/%s", fileName)
+	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
+}
+
+func (m *MockRepo) print(t *testing.T, value interface{}) {
+	outputJson := m.replaceWithVariable(value)
+	log.Fatal(utils.ToJson(outputJson))
 }

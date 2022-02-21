@@ -36,7 +36,9 @@ func (z *Json) Scan(value interface{}) error {
 type BalanceType struct {
 	BI     *BigInt `json:"BI"`
 	F      float64 `json:"F"`
-	Linked bool    `json:"linked"`
+	// linked get fetched for data compressor is if this token is allowed on credit manager
+	// we change it to the mask bit
+	Linked bool    `json:"linked"` // there has been a credit manager event /swap/addcollateral/borrow for this token
 }
 
 type JsonBalance map[string]*BalanceType
