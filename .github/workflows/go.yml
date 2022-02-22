@@ -23,6 +23,6 @@ jobs:
        python-version: '3.6' # Version range or exact version of a Python version to use, using SemVer's version range syntax
        architecture: 'x64'
        cache: 'pip'
-    - run: pip install -r requirements.txt
+    - run: pip install jsonnet
     - name: Test
       run: ./generate-test.sh && go test ./tests && go test ./core
