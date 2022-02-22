@@ -36,28 +36,55 @@ func NewTestClient() *TestClient {
 	return &TestClient{
 		events: make(map[int64]map[string][]types.Log),
 		token:  map[string]int8{},
+		state:  NewStateStore(),
 	}
 }
 func (t *TestClient) AddToken(tokenAddr string, decimals int8) {
 	t.token[tokenAddr] = decimals
 }
+
+// blocknum => event address => txlogs
 func (t *TestClient) setEvents(obj map[int64]map[string][]types.Log) {
-	t.events = obj
-	for blockNum := range obj {
-		t.blockNums = append(t.blockNums, blockNum)
+	if t.events == nil {
+		t.events = map[int64]map[string][]types.Log{}
 	}
-	sort.Slice(t.blockNums, func(i, j int) bool { return t.blockNums[i] < t.blockNums[j] })
+	for blockNum, logs := range obj {
+		t.events[blockNum] = logs
+	}
+	blockNums := []int64{}
+	for blockNum := range t.events {
+		blockNums = append(blockNums, blockNum)
+	}
+	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
+	t.blockNums = blockNums
 }
 
+// token => block => prices
 func (t *TestClient) setPrices(obj map[string]map[int64]*big.Int) {
-	t.prices = obj
+	if t.prices == nil {
+		t.prices = map[string]map[int64]*big.Int{}
+	}
+	for token, block := range obj {
+		if t.prices[token] == nil {
+			t.prices[token] = map[int64]*big.Int{}
+		}
+		for blockNum, price := range block {
+			t.prices[token][blockNum] = price
+		}
+	}
 }
 
+// block => account => mask
 func (t *TestClient) setMasks(masks map[int64]map[string]*big.Int) {
-	t.masks = masks
+	if t.masks == nil {
+		t.masks = map[int64]map[string]*big.Int{}
+	}
+	for blockNum, mask := range masks {
+		t.masks[blockNum] = mask
+	}
 }
-func (t *TestClient) setState(state *StateStore) {
-	t.state = state
+func (t *TestClient) setOracleState(oracleState *OracleState) {
+	t.state.Oracle.AddState(oracleState)
 }
 
 func (t *TestClient) ChainID(ctx context.Context) (*big.Int, error) {
@@ -106,7 +133,7 @@ func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery)
 	}
 	txLogList := TxLogList(txLogs)
 	sort.Sort(txLogList)
-	return []types.Log(txLogList), nil
+	return ([]types.Log)(txLogList), nil
 }
 
 func (t *TestClient) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {

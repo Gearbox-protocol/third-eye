@@ -18,10 +18,10 @@ func TestDAOOperations(t *testing.T) {
 	cfg := &config.Config{}
 	ep := framework.NewMockExecuteParser()
 	repo := repository.GetRepository(nil, client, cfg, ep)
-	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
+	debtEng := debts.GetDebtEngine(nil, client, cfg, repo, true)
 	eng := engine.NewEngine(cfg, client, debtEng, repo)
-	r := framework.NewMockRepo(repo, client, "dao_operations/input.json", t, eng, ep)
-	r.Init()
+	r := framework.NewMockRepo(repo, client, t, eng, ep)
+	r.Init([]string{"dao_operations/input.json"})
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
 

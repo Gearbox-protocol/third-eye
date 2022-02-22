@@ -12,22 +12,17 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
-func TestLifecycleCreditAccount(t *testing.T) {
+func TestCloseCreditAccount(t *testing.T) {
 	log.SetTestLogging(t)
 	client := framework.NewTestClient()
 	cfg := &config.Config{}
 	ep := framework.NewMockExecuteParser()
 	repo := repository.GetRepository(nil, client, cfg, ep)
-	debtEng := debts.GetDebtEngine(nil, client, cfg, repo, false)
+	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
 	eng := engine.NewEngine(cfg, client, debtEng, repo)
 	r := framework.NewMockRepo(repo, client, t, eng, ep)
-	r.Init([]string{"account_lifecycle/input.json"})
+	r.Init([]string{"account_lifecycle/input.json", "close_credit_account/input.json"})
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
-
-	outputBlocks := repo.GetBlocks()
-	delete(outputBlocks, 2)
-	r.Check(outputBlocks, "account_lifecycle/blocks.json")
-	debtEng.CalculateDebt()
-	r.Check(debtEng.GetDebts(), "account_lifecycle/debts.json")
+	r.Check(repo.GetBlocks()[7], "close_credit_account/blocks.json")
 }

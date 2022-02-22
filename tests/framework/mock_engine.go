@@ -35,7 +35,6 @@ type SyncAdapterMock struct {
 }
 
 type MockRepo struct {
-	file         string
 	repo         core.RepositoryI
 	client       *TestClient
 	InputFile    *TestInput
@@ -50,11 +49,10 @@ type MockRepo struct {
 }
 
 func NewMockRepo(repo core.RepositoryI, client *TestClient,
-	inputFile string, t *testing.T, eng core.EngineI, ep *MockExecuteParser) MockRepo {
+	t *testing.T, eng core.EngineI, ep *MockExecuteParser) MockRepo {
 	return MockRepo{
 		repo:          repo,
 		client:        client,
-		file:          inputFile,
 		t:             t,
 		eng:           eng,
 		addressToType: make(map[string]string),
@@ -62,35 +60,30 @@ func NewMockRepo(repo core.RepositoryI, client *TestClient,
 		executeParser: ep,
 	}
 }
-func (m *MockRepo) Init() {
-	m.handleMocks()
-	m.ProcessState()
-	m.ProcessEvents()
-	m.ProcessCalls()
-}
 
-func (m *MockRepo) handleMocks() {
-	m.InputFile = &TestInput{}
+func (m *MockRepo) Init(files []string) {
 	m.AddressMap = core.AddressMap{}
-	filePath := fmt.Sprintf("../inputs/%s", m.file)
-	//
-	tmpObj := TestInput{}
-	utils.ReadJsonAndSetInterface(filePath, &tmpObj)
-	for key, fileName := range tmpObj.MockFiles {
-		mockFilePath := fmt.Sprintf("../inputs/%s", fileName)
-		if key == "syncAdapters" {
-			m.setSyncAdapters(mockFilePath)
-		}
+	for _, file := range files {
+		testInput := m.fetchInputTestFile(file)
+		m.ProcessState(testInput)
+		m.ProcessEvents(testInput)
+		m.ProcessCalls(testInput)
 	}
-	//
-	m.addAddressSetJson(filePath, m.InputFile)
+}
+
+func (m *MockRepo) fetchInputTestFile(inputFile string) *TestInput {
+	testInput := &TestInput{}
+	syncAdapterObj := testInput.Get(inputFile, m.AddressMap, m.t)
+	m.setSyncAdapters(syncAdapterObj)
+	return testInput
 
 }
 
-func (m *MockRepo) setSyncAdapters(mockFilePath string) {
-	obj := &SyncAdapterMock{}
+func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
+	if obj == nil {
+		return
+	}
 	kit := m.repo.GetKit()
-	m.addAddressSetJson(mockFilePath, obj)
 	for _, adapter := range obj.Adapters {
 		if adapter.DiscoveredAt == 0 {
 			adapter.DiscoveredAt = adapter.LastSync
@@ -140,21 +133,10 @@ func (m *MockRepo) setSyncAdapters(mockFilePath string) {
 	}
 }
 
-func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
-	var mock core.Json = utils.ReadJson(filePath)
-	mock.ParseAddress(m.t, m.AddressMap)
-	// log.Info(utils.ToJson(mock))
-	b, err := json.Marshal(mock)
-	if err != nil {
-		m.t.Error(err)
-	}
-	utils.SetJson(b, obj)
-}
-
-func (m *MockRepo) ProcessEvents() {
+func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
 	events := map[int64]map[string][]types.Log{}
 	prices := map[string]map[int64]*big.Int{}
-	for blockNum, block := range m.InputFile.Blocks {
+	for blockNum, block := range inputFile.Blocks {
 		if events[blockNum] == nil {
 			events[blockNum] = make(map[string][]types.Log)
 		}
@@ -180,10 +162,10 @@ func (m *MockRepo) ProcessEvents() {
 	// log.Info(utils.ToJson(prices))
 	m.client.setPrices(prices)
 }
-func (m *MockRepo) ProcessCalls() {
+func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 	accountMask := make(map[int64]map[string]*big.Int)
 	wrapper := m.repo.GetDCWrapper()
-	for blockNum, block := range m.InputFile.Blocks {
+	for blockNum, block := range inputFile.Blocks {
 		calls := core.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
 			calls.Pools[poolCall.Addr] = poolCall
@@ -208,12 +190,10 @@ func (m *MockRepo) ProcessCalls() {
 	m.client.setMasks(accountMask)
 }
 
-func (m *MockRepo) ProcessState() {
-	state := NewStateStore()
-	for _, oracle := range m.InputFile.States.Oracles {
-		state.Oracle.AddState(oracle)
+func (m *MockRepo) ProcessState(inputFile *TestInput) {
+	for _, oracle := range inputFile.States.Oracles {
+		m.client.setOracleState(oracle)
 	}
-	m.client.setState(state)
 }
 
 // for matching state with the expected output

@@ -142,6 +142,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 			closeCreditAccountEvent.To.Hex(),
 			closeCreditAccountEvent.RemainingFunds)
 	case core.Topic("LiquidateCreditAccount(address,address,uint256)"):
+		log.Info("liquidated")
 		liquidateCreditAccountEvent, err := mdl.contractETH.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack LiquidateCreditAccount event", err)
