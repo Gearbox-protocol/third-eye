@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dieselToken"
+	"github.com/Gearbox-protocol/third-eye/artifacts/eRC20"
 	"github.com/Gearbox-protocol/third-eye/artifacts/gearToken"
 	"github.com/Gearbox-protocol/third-eye/artifacts/linearInterestRateModel"
 	"github.com/Gearbox-protocol/third-eye/artifacts/poolService"
@@ -28,10 +29,11 @@ import (
 
 	"context"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"math/big"
 	"strings"
+
+	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/log"
 )
 
 type Contract struct {
@@ -95,6 +97,7 @@ func GetAbi(contractName string) *abi.ABI {
 		"DieselToken":     dieselToken.DieselTokenMetaData,
 		GearToken:         gearToken.GearTokenMetaData,
 		"TokenMock":       tokenMock.TokenMockMetaData,
+		"Token":           eRC20.ERC20MetaData,
 		"Uniswapv2Pool":   &bind.MetaData{ABI: uniswapv2Pool.Uniswapv2PoolABI},
 		"Uniswapv3Pool":   &bind.MetaData{ABI: uniswapv3Pool.Uniswapv3PoolABI},
 		"Uniswapv2Router": &bind.MetaData{ABI: uniswapv2Router.Uniswapv2RouterABI},

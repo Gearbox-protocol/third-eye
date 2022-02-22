@@ -75,6 +75,7 @@ func (mdl *AccountManager) OnLog(txLog types.Log) {
 
 func (mdl *AccountManager) Query(queryTill int64) {
 	queryFrom := mdl.GetLastSync() + 1
+	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, queryTill)
 	tokenAddrs := mdl.Repo.GetTokens()
 	hexAddrs := []common.Address{}
 	for _, tokenAddr := range tokenAddrs {

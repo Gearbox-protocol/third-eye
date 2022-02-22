@@ -432,4 +432,118 @@
     ],
     timestamp: 432000,
   },
+  '6': {
+    accountOperations: [
+      {
+        action: 'DirectTokenTransfer',
+        adapterCall: false,
+        args: {
+          amount: 1000000000,
+          from: '#User_3',
+          to: '#Account_1',
+        },
+        blockNum: 6,
+        borrower: '#User_1',
+        dapp: '#Token_1',
+        depth: 0,
+        logId: 2,
+        sessionId: '#Account_1_3_3',
+        transfers: {
+          '#Token_1': 1000000000,
+        },
+        txHash: '#Hash_10',
+      },
+      {
+        action: 'DirectTokenTransfer',
+        adapterCall: false,
+        args: {
+          amount: 100000000000000000,
+          from: '#User_3',
+          to: '#Account_1',
+        },
+        blockNum: 6,
+        borrower: '#User_1',
+        dapp: '#Token_2',
+        depth: 0,
+        logId: 3,
+        sessionId: '#Account_1_3_3',
+        transfers: {
+          '#Token_2': 100000000000000000,
+        },
+        txHash: '#Hash_11',
+      },
+    ],
+    allowedTokens: [
+      {
+        BlockNumber: 6,
+        CreditManager: '#CreditManager_1',
+        DisableBlock: 0,
+        LiquidityThreshold: '9000',
+        Token: '#Token_2',
+      },
+    ],
+    blockNum: 6,
+    css: [
+      {
+        balance: {
+          '#Token_1': {
+            BI: '2000000000',
+            F: 2000,
+            linked: true,
+          },
+          '#Token_2': {
+            BI: '100000000000000000',
+            F: 0.1,
+            linked: false,
+          },
+          '#Token_3': {
+            BI: '3000000000000000000',
+            F: 3,
+            linked: true,
+          },
+        },
+        blockNum: 6,
+        borrowedAmount: 5000,
+        borrowedAmountBI: '5000000000',
+        borrower: '#User_1',
+        collateralInUSD: 6500,
+        collateralInUnderlying: 6500,
+        cumulativeIndexAtOpen: '1000000000000000000000000000',
+        healthFactor: '15600',
+        sessionId: '#Account_1_3_3',
+        totalValue: 9500,
+        totalValueBI: '9500000000',
+      },
+    ],
+    daoOperations: [
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          liquidityThreshold: '9000',
+          prevLiquidationThreshold: '0',
+          token: '#Token_2',
+        },
+        BlockNumber: 6,
+        Contract: '#CreditFilter_1',
+        LogID: 0,
+        TxHash: '#Hash_1',
+        Type: 0,
+      },
+    ],
+    priceFeeds: [
+      {
+        blockNum: 6,
+        feed: '#ChainlinkPriceFeed_2',
+        priceETH: 8,
+        priceETHBI: '8000000000000000000',
+        roundId: 1,
+        token: '#Token_2',
+        uniPriceFetchBlock: 0,
+        uniswapv2Price: 0,
+        uniswapv3Price: 0,
+        uniswapv3Twap: 0,
+      },
+    ],
+    timestamp: 518400,
+  },
 }

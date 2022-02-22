@@ -295,5 +295,100 @@ local newCollateral = 1;
         },
       },
     },
+    // direct token transfer
+    '6': {
+      events: [
+        {
+          // credit filter for YFI allowed
+          address: '#CreditFilter_1',
+          topics: [
+            'TokenAllowed(address,uint256)',
+            '#Token_2',
+          ],
+          data: [
+            utils.bigIntTopic(9000, 0),
+          ],
+          txHash: '!#Hash_1',
+        },
+        {
+          // YFI price chainlink
+          address: '#ChainlinkPriceFeed_2',
+          txHash: '!#Hash_9',
+          topics: [
+            'AnswerUpdated(int256,uint256,uint256)',
+            // 8
+            utils.bigIntTopic(8, 18),
+            // roundid
+            utils.bigIntTopic(1, 0),
+          ],
+        },
+        {
+          // direc token transfer for USDC
+          address: '#Token_1',
+          topics: [
+            'Transfer(address,address,uint256)',
+            '#User_3',
+            '#Account_1',
+          ],
+          data: [
+            utils.bigIntTopic(1000, 6),
+          ],
+          txHash: '!#Hash_10',
+        },
+        {
+          // direc token transfer for YFI
+          address: '#Token_2',
+          topics: [
+            'Transfer(address,address,uint256)',
+            '#User_3',
+            '#Account_1',
+          ],
+          data: [
+            utils.bigIntTopic(0.1, 18),
+          ],
+          txHash: '!#Hash_11',
+        },
+      ],
+      calls: {
+        masks: [{
+          account: '#Account_1',
+          mask: '3',
+        }],
+        accounts: [{
+          address: '#Account_1',
+          creditManager: '#CreditManager_1',
+          borrower: '#User_1',
+          healthFactor: '15600',
+          // 1000 is for direct token transfer of token 1 usdc
+          // .1 YFI = 8*ETH *.1= 2000 USDC  // yfi is not linked so it not included in yfi
+          totalValue: utils.bigInt(borrowedAmount + initialAmount + extraBorrowedAmount + newCollateral * 2500 + 1000, 6),
+          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          cumulativeIndexAtOpen: utils.bigInt(1, 27),
+          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          balances: [{
+            token: '#Token_1',
+            balance: utils.bigInt(2000, 6),
+            isAllowed: true,
+          }, {
+            token: '#Token_3',
+            balance: utils.bigInt(3, 18),
+            isAllowed: true,
+          }, {
+            // token 2 yfi is allowed.but  its not linked to account
+            token: '#Token_2',
+            balance: utils.bigInt(0.1, 18),
+            isAllowed: true,
+          }],
+        }],
+        cms: [{
+          address: '#CreditManager_1',
+          isWETH: false,
+          minAmount: utils.bigInt(1000, 6),
+          maxAmount: utils.bigInt(5000, 6),
+          availableLiquidity: utils.bigInt(1000, 6),
+          borrowRate: '0',
+        }],
+      },
+    },
   },
 }

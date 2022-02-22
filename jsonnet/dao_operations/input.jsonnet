@@ -15,9 +15,9 @@ local borrowedAmount = 4000;
       block: 1,
       feed: '#ChainlinkPriceFeed_2',
     }, {
-      oracle: '#Oracle_3',
+      oracle: '#Oracle_4',
       block: 1,
-      feed: '#ChainlinkPriceFeed_3',
+      feed: '#ChainlinkPriceFeed_4',
     }],
   },
   blocks: {
@@ -150,7 +150,7 @@ local borrowedAmount = 4000;
           topics: [
             'NewPriceFeed(address,address)',
             '#Token_4',
-            '#Oracle_3',
+            '#Oracle_4',
           ],
           txHash: '!#Hash_13',
         },

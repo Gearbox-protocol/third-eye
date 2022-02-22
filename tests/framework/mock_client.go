@@ -4,14 +4,14 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"math/big"
-	"sort"
-
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
+	"math/big"
+	"sort"
 )
 
 type TestClient struct {
@@ -75,14 +75,32 @@ func (t *TestClient) BlockNumber(ctx context.Context) (uint64, error) {
 	}
 	return uint64(t.blockNums[len(t.blockNums)-1]), nil
 }
-
+func topic(v string) common.Hash {
+	return crypto.Keccak256Hash([]byte(v))
+}
+func ContainsHash(list []common.Hash, v common.Hash) bool {
+	for _, hash := range list {
+		if hash == v {
+			return true
+		}
+	}
+	return false
+}
 func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
 	toBlock := query.ToBlock.Int64()
 	txLogs := []types.Log{}
 	for i := query.FromBlock.Int64(); i < toBlock; i++ {
 		for _, address := range query.Addresses {
 			if t.events[i] != nil {
-				txLogs = append(txLogs, t.events[i][address.Hex()]...)
+				if len(query.Topics) > 0 && query.Topics[0][0] == topic("Transfer(address,address,uint256)") {
+					for _, txLog := range t.events[i][address.Hex()] {
+						if ContainsHash(query.Topics[2], txLog.Topics[2]) {
+							txLogs = append(txLogs, txLog)
+						}
+					}
+				} else {
+					txLogs = append(txLogs, t.events[i][address.Hex()]...)
+				}
 			}
 		}
 	}
