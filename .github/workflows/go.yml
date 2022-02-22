@@ -1,0 +1,28 @@
+name: Go
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.17
+    - name: Install jsonnet
+    - uses: actions/setup-python@v2
+      with:
+       python-version: '3.6' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+       architecture: 'x64'
+       cache: 'pip'
+    - run: pip install -r requirements.txt
+    - name: Test
+      run: ./generate-test.sh && go test ./tests && go test ./core
