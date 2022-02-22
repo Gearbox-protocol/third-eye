@@ -17,12 +17,13 @@ jobs:
       uses: actions/setup-go@v2
       with:
         go-version: 1.17
-    - name: Install jsonnet
-    - uses: actions/setup-python@v2
+    - name: Generate Test files
+      uses: actions/cache@v2
+      id: cache-packages  # give it a name for checking the cache hit-or-not
       with:
-       python-version: '3.6' # Version range or exact version of a Python version to use, using SemVer's version range syntax
-       architecture: 'x64'
-       cache: 'pip'
-    - run: pip install jsonnet
-    - name: Test
-      run: ./generate-test.sh && go test ./tests && go test ./core
+        path: ./inputs/  # what we cache: the folder
+        key: ${{ runner.os }}-${{ hashFiles('./jsonnet/**') }}
+    - run: go get github.com/google/go-jsonnet/cmd/jsonnet && ./generate-test.sh
+      if: steps.cache-packages.outputs.cache-hit != 'true'
+    - name: Run Test
+      run: go test ./tests && go test ./core

@@ -104,7 +104,9 @@ func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery)
 			}
 		}
 	}
-	return txLogs, nil
+	txLogList := TxLogList(txLogs)
+	sort.Sort(txLogList)
+	return []types.Log(txLogList), nil
 }
 
 func (t *TestClient) TransactionByHash(ctx context.Context, hash common.Hash) (tx *types.Transaction, isPending bool, err error) {
