@@ -14,7 +14,7 @@
       sessionId: '#Account_1_3_3',
     },
   ],
-  debts: {
+  debts: [{
     blockNum: 7,
     calBorrowedAmountWithInterest: '5000000000',
     calHealthFactor: '9600',
@@ -26,5 +26,5 @@
     profitUnderlying: 5750 - (5109.25 + 6500),
     sessionId: '#Account_1_3_3',
     totalValueInUSD: 5750,
-  },
+  }],
 }

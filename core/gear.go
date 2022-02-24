@@ -35,6 +35,8 @@ type RepositoryI interface {
 	SetBlock(blockNum int64)
 	SetAndGetBlock(blockNum int64) *Block
 	GetBlocks() map[int64]*Block
+	GetTokenOracles() map[string]*TokenOracle
+	GetAllowedTokens() map[string]map[string]*AllowedToken
 	LoadBlocks(from, to int64)
 	// credit account operations
 	AddAccountOperation(accountOperation *AccountOperation)

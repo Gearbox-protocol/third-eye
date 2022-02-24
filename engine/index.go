@@ -147,7 +147,7 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	if syncFrom > syncTill {
 		return
 	}
-
+	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
 	txLogs, err := e.GetLogs(syncFrom, syncTill, []common.Address{common.HexToAddress(mdl.GetAddress())}, [][]common.Hash{})
 	if err != nil {
@@ -158,9 +158,9 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	} else {
 		for _, txLog := range txLogs {
 			blockNum := int64(txLog.BlockNumber)
-			if mdl.GetBlockToDisableOn() < blockNum {
-				break
-			}
+			// if mdl.GetBlockToDisableOn() < blockNum {
+			// 	break
+			// }
 			e.repo.SetBlock(blockNum)
 			if !e.isEventPausedOrUnParsed(txLog) {
 				mdl.OnLog(txLog)
