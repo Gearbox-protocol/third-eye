@@ -154,6 +154,9 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 		log.Fatal(err)
 	}
 	if mdl.GetHasOnLogs() {
+		for _, txLog := range txLogs {
+			e.isEventPausedOrUnParsed(txLog)
+		}
 		mdl.OnLogs(txLogs)
 	} else {
 		for _, txLog := range txLogs {
