@@ -1,7 +1,7 @@
 { data: [
   {
     Args: {
-      priceFeed: '#Oracle_3',
+      priceFeed: '#Oracle_4',
       token: '#Token_4',
     },
     BlockNumber: 3,

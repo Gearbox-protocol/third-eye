@@ -5,8 +5,14 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 	"runtime"
+	"testing"
 )
 
+var testLogModule *testing.T
+
+func SetTestLogging(t *testing.T) {
+	testLogModule = t
+}
 func Verbosef(msg string, args ...interface{}) {
 	// log.Printf(msg, args...)
 }
@@ -24,38 +30,64 @@ func Debug(v ...interface{}) {
 
 func Warnf(msg string, args ...interface{}) {
 	msgFormat := "[Warn] " + detectFunc() + msg
-	log.Printf(msgFormat, args...)
 	amqpSendf(msgFormat, args)
+	if testLogModule == nil {
+		log.Printf(msgFormat, args...)
+	} else {
+		testLogModule.Logf(msgFormat, args...)
+	}
 }
 
 func Warn(v ...interface{}) {
 	args := []interface{}{"[Warn]: " + detectFunc()}
 	args = append(args, v...)
 	amqpSend(args)
-	log.Println(args...)
+	if testLogModule == nil {
+		log.Println(args...)
+	} else {
+		testLogModule.Log(args...)
+	}
 }
 
 func Infof(msg string, args ...interface{}) {
-	log.Printf("[Info]: "+detectFunc()+msg, args...)
+	msg = "[Info]: " + detectFunc() + msg
+	if testLogModule == nil {
+		log.Printf(msg, args...)
+	} else {
+		testLogModule.Logf(msg, args...)
+	}
+
 }
 
 func Info(v ...interface{}) {
 	args := []interface{}{"[Info]: " + detectFunc()}
 	args = append(args, v...)
-	log.Println(args...)
+	if testLogModule == nil {
+		log.Println(args...)
+	} else {
+		testLogModule.Log(args...)
+	}
 }
 
 func Errorf(msg string, args ...interface{}) {
 	msgFormat := "[Error]: " + detectFunc() + msg
 	amqpSendf(msgFormat, args)
-	log.Printf(msgFormat, args...)
+	if testLogModule == nil {
+		log.Printf(msgFormat, args...)
+	} else {
+		testLogModule.Logf(msgFormat, args...)
+	}
 }
 
 func Error(v ...interface{}) {
 	args := []interface{}{"[Error]: " + detectFunc()}
 	args = append(args, v...)
 	amqpSend(args)
-	log.Println(args...)
+	if testLogModule == nil {
+		log.Println(args...)
+	} else {
+		testLogModule.Log(args...)
+	}
 }
 
 func Msgf(msg string, args ...interface{}) {
@@ -74,14 +106,22 @@ func Msg(v ...interface{}) {
 func Fatalf(msg string, args ...interface{}) {
 	msgFormat := "[Fatal]: " + detectFunc() + msg
 	amqpSendf(msgFormat, args)
-	log.Fatalf(msgFormat, args...)
+	if testLogModule == nil {
+		log.Fatalf(msgFormat, args...)
+	} else {
+		testLogModule.Fatalf(msgFormat, args...)
+	}
 }
 
 func Fatal(v ...interface{}) {
 	args := []interface{}{"[Fatal]: " + detectFunc()}
 	args = append(args, v...)
 	amqpSend(args)
-	log.Fatal(args...)
+	if testLogModule == nil {
+		log.Fatal(args...)
+	} else {
+		testLogModule.Fatal(args...)
+	}
 }
 
 func detectFunc() string {

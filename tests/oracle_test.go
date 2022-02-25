@@ -12,18 +12,20 @@ import (
 	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
-func TestDAOOperations(t *testing.T) {
+func TestPriceOracle(t *testing.T) {
 	log.SetTestLogging(t)
 	client := framework.NewTestClient()
 	cfg := &config.Config{}
 	ep := framework.NewMockExecuteParser()
 	repo := repository.GetRepository(nil, client, cfg, ep)
-	debtEng := debts.GetDebtEngine(nil, client, cfg, repo, true)
+	debtEng := debts.NewDebtEngine(nil, client, cfg, repo)
 	eng := engine.NewEngine(cfg, client, debtEng, repo)
 	r := framework.NewMockRepo(repo, client, t, eng, ep)
-	r.Init([]string{"dao_operations/input.json"})
+	r.Init([]string{"oracle/input.json"})
 	log.Info(utils.ToJson(r.AddressMap))
 	eng.Sync(10)
-
-	r.Check(map[string]interface{}{"data": repo.GetBlocks()[3].DAOOperations}, "dao_operations/blocks.json")
+	blocks := repo.GetBlocks()
+	delete(blocks, 2)
+	r.Check(blocks, "oracle/blocks.json")
+	r.Check(repo.GetTokenOracles(), "oracle/token_oracle.json")
 }

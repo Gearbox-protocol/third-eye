@@ -1,4 +1,4 @@
-package tests
+package framework
 
 import (
 	"encoding/json"
@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
 	"testing"
@@ -34,7 +35,6 @@ type SyncAdapterMock struct {
 }
 
 type MockRepo struct {
-	file         string
 	repo         core.RepositoryI
 	client       *TestClient
 	InputFile    *TestInput
@@ -45,37 +45,45 @@ type MockRepo struct {
 	//oracle to token
 	feedToToken   map[string]string
 	addressToType map[string]string
+	executeParser *MockExecuteParser
 }
 
-func (m *MockRepo) init() {
-	m.handleMocks()
-	m.ProcessState()
-	m.ProcessEvents()
-	m.ProcessCalls()
-}
-
-func (m *MockRepo) handleMocks() {
-	m.InputFile = &TestInput{}
-	m.AddressMap = core.AddressMap{}
-	filePath := fmt.Sprintf("../inputs/%s", m.file)
-	//
-	tmpObj := TestInput{}
-	utils.ReadJsonAndSetInterface(filePath, &tmpObj)
-	for key, fileName := range tmpObj.MockFiles {
-		mockFilePath := fmt.Sprintf("../inputs/%s", fileName)
-		if key == "syncAdapters" {
-			m.setSyncAdapters(mockFilePath)
-		}
+func NewMockRepo(repo core.RepositoryI, client *TestClient,
+	t *testing.T, eng core.EngineI, ep *MockExecuteParser) MockRepo {
+	return MockRepo{
+		repo:          repo,
+		client:        client,
+		t:             t,
+		eng:           eng,
+		addressToType: make(map[string]string),
+		feedToToken:   make(map[string]string),
+		executeParser: ep,
 	}
-	//
-	m.addAddressSetJson(filePath, m.InputFile)
+}
+
+func (m *MockRepo) Init(files []string) {
+	m.AddressMap = core.AddressMap{}
+	for _, file := range files {
+		testInput := m.fetchInputTestFile(file)
+		m.ProcessState(testInput)
+		m.ProcessEvents(testInput)
+		m.ProcessCalls(testInput)
+	}
+}
+
+func (m *MockRepo) fetchInputTestFile(inputFile string) *TestInput {
+	testInput := &TestInput{}
+	syncAdapterObj := testInput.Get(inputFile, m.AddressMap, m.t)
+	m.setSyncAdapters(syncAdapterObj)
+	return testInput
 
 }
 
-func (m *MockRepo) setSyncAdapters(mockFilePath string) {
-	obj := &SyncAdapterMock{}
+func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
+	if obj == nil {
+		return
+	}
 	kit := m.repo.GetKit()
-	m.addAddressSetJson(mockFilePath, obj)
 	for _, adapter := range obj.Adapters {
 		if adapter.DiscoveredAt == 0 {
 			adapter.DiscoveredAt = adapter.LastSync
@@ -112,6 +120,7 @@ func (m *MockRepo) setSyncAdapters(mockFilePath string) {
 			m.client.SetWETH(tokenObj.Address)
 		}
 		m.repo.AddTokenObj(tokenObj)
+		m.client.AddToken(tokenObj.Address, tokenObj.Decimals)
 	}
 	m.SyncAdapters = obj.Adapters
 	for key, value := range m.AddressMap {
@@ -124,21 +133,10 @@ func (m *MockRepo) setSyncAdapters(mockFilePath string) {
 	}
 }
 
-func (m *MockRepo) addAddressSetJson(filePath string, obj interface{}) {
-	var mock core.Json = utils.ReadJson(filePath)
-	mock.ParseAddress(m.t, m.AddressMap)
-	// log.Info(utils.ToJson(mock))
-	b, err := json.Marshal(mock)
-	if err != nil {
-		m.t.Error(err)
-	}
-	utils.SetJson(b, obj)
-}
-
-func (m *MockRepo) ProcessEvents() {
+func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
 	events := map[int64]map[string][]types.Log{}
-	prices := map[int64]map[string]*big.Int{}
-	for blockNum, block := range m.InputFile.Blocks {
+	prices := map[string]map[int64]*big.Int{}
+	for blockNum, block := range inputFile.Blocks {
 		if events[blockNum] == nil {
 			events[blockNum] = make(map[string][]types.Log)
 		}
@@ -148,15 +146,15 @@ func (m *MockRepo) ProcessEvents() {
 			txLog.BlockNumber = uint64(blockNum)
 			events[blockNum][event.Address] = append(events[blockNum][event.Address], txLog)
 			if event.Topics[0] == core.Topic("AnswerUpdated(int256,uint256,uint256)").Hex() {
-				price, ok := new(big.Int).SetString(txLog.Topics[2].Hex()[2:], 16)
+				price, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
 				if !ok {
 					log.Fatal("Failed in parsing price in answerupdated")
 				}
-				if prices[blockNum] == nil {
-					prices[blockNum] = make(map[string]*big.Int)
-				}
 				token := m.feedToToken[txLog.Address.Hex()]
-				prices[blockNum][token] = price
+				if prices[token] == nil {
+					prices[token] = make(map[int64]*big.Int)
+				}
+				prices[token][blockNum] = price
 			}
 		}
 	}
@@ -164,10 +162,10 @@ func (m *MockRepo) ProcessEvents() {
 	// log.Info(utils.ToJson(prices))
 	m.client.setPrices(prices)
 }
-func (m *MockRepo) ProcessCalls() {
+func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 	accountMask := make(map[int64]map[string]*big.Int)
 	wrapper := m.repo.GetDCWrapper()
-	for blockNum, block := range m.InputFile.Blocks {
+	for blockNum, block := range inputFile.Blocks {
 		calls := core.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
 			calls.Pools[poolCall.Addr] = poolCall
@@ -179,6 +177,7 @@ func (m *MockRepo) ProcessCalls() {
 		for _, cmCall := range block.Calls.CMs {
 			calls.CMs[cmCall.Addr] = cmCall
 		}
+		m.executeParser.setCalls(block.Calls.ExecuteOnCM)
 		for _, maskDetails := range block.Calls.Masks {
 			if accountMask[blockNum] == nil {
 				accountMask[blockNum] = make(map[string]*big.Int)
@@ -191,10 +190,35 @@ func (m *MockRepo) ProcessCalls() {
 	m.client.setMasks(accountMask)
 }
 
-func (m *MockRepo) ProcessState() {
-	state := NewStateStore()
-	for _, oracle := range m.InputFile.States.Oracles {
-		state.Oracle.AddState(oracle)
+func (m *MockRepo) ProcessState(inputFile *TestInput) {
+	for _, oracle := range inputFile.States.Oracles {
+		m.client.setOracleState(oracle)
 	}
-	m.client.setState(state)
+}
+
+// for matching state with the expected output
+func (m *MockRepo) replaceWithVariable(obj interface{}) core.Json {
+	bytes, err := json.Marshal(obj)
+	log.CheckFatal(err)
+	addrToVariable := core.AddressMap{}
+	// TODO: FIX FOR HASH
+	for variable, addr := range m.AddressMap {
+		addrToVariable[addr] = "#" + variable
+	}
+	outputJson := core.Json{}
+	err = json.Unmarshal(bytes, &outputJson)
+	log.CheckFatal(err)
+	outputJson.ReplaceWithVariable(addrToVariable)
+	return outputJson
+}
+
+func (m *MockRepo) Check(value interface{}, fileName string) {
+	outputJson := m.replaceWithVariable(value)
+	fileName = fmt.Sprintf("../inputs/%s", fileName)
+	require.JSONEq(m.t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
+}
+
+func (m *MockRepo) Print(value interface{}) {
+	outputJson := m.replaceWithVariable(value)
+	m.t.Fatal(utils.ToJson(outputJson))
 }

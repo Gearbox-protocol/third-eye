@@ -35,6 +35,8 @@ type RepositoryI interface {
 	SetBlock(blockNum int64)
 	SetAndGetBlock(blockNum int64) *Block
 	GetBlocks() map[int64]*Block
+	GetTokenOracles() map[string]*TokenOracle
+	GetAllowedTokens() map[string]map[string]*AllowedToken
 	LoadBlocks(from, to int64)
 	// credit account operations
 	AddAccountOperation(accountOperation *AccountOperation)
@@ -60,7 +62,6 @@ type RepositoryI interface {
 	AddDieselToken(dieselToken, underlyingToken, pool string)
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *CreditSessionSnapshot)
-	AddEventBalance(eb EventBalance)
 	// dc
 	GetDCWrapper() *DataCompressorWrapper
 	AddDataCompressor(blockNum int64, addr string)

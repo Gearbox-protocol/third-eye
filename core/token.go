@@ -75,6 +75,19 @@ type TokenTransfer struct {
 	IsToAccount   bool    `gorm:"column:isto_account"`
 }
 
+type TokenTransferList []*TokenTransfer
+
+func (ts TokenTransferList) Len() int {
+	return len(ts)
+}
+func (ts TokenTransferList) Swap(i, j int) {
+	ts[i], ts[j] = ts[j], ts[i]
+}
+
+// sort in increasing order by blockNumber,index
+func (ts TokenTransferList) Less(i, j int) bool {
+	return ts[i].LogID < ts[j].LogID
+}
 func (a *TokenTransfer) equal(b *TokenTransfer) bool {
 	return a.BlockNum == b.BlockNum &&
 		a.LogID == b.LogID &&

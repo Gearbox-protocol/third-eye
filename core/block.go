@@ -2,31 +2,29 @@ package core
 
 import (
 	"math/big"
-	"sort"
 )
 
 type (
 	Block struct {
-		BlockNumber             int64                     `gorm:"primaryKey;column:id"` // Block Number
-		Timestamp               uint64                    `gorm:"column:timestamp"`
-		AccountOperations       []*AccountOperation       `gorm:"foreignKey:block_num"`
-		TokenOracles            []*TokenOracle            `gorm:"foreignKey:block_num"`
-		PriceFeeds              []*PriceFeed              `gorm:"foreignKey:block_num"`
-		Protocols               []*Protocol               `gorm:"foreignKey:block_num"`
-		CSS                     []*CreditSessionSnapshot  `gorm:"foreignKey:block_num"`
-		PoolStats               []*PoolStat               `gorm:"foreignKey:block_num"`
-		PoolLedgers             []*PoolLedger             `gorm:"foreignKey:block_num"`
-		CMStats                 []*CreditManagerStat      `gorm:"foreignKey:block_num"`
-		AllowedTokens           []*AllowedToken           `gorm:"foreignKey:block_num"`
-		DAOOperations           []*DAOOperation           `gorm:"foreignKey:block_num"`
-		Params                  []*Parameters             `gorm:"foreignKey:block_num"`
-		FastCheckParams         []*FastCheckParams        `gorm:"foreignKey:block_num"`
-		eventBalances           SortedEventbalances       `gorm:"-"`
-		pnlOnCM                 map[string]*PnlOnRepay    `gorm:"-"`
-		TreasuryTransfers       []*TreasuryTransfer       `gorm:"foreignKey:block_num"`
-		TreasurySnapshots       []*TreasurySnapshotModel2 `gorm:"foreignKey:block_num"`
-		NoSessionTokenTransfers []*TokenTransfer          `gorm:"foreignKey:block_num"`
-		UniswapPoolPrices       []*UniPoolPrices          `gorm:"foreignKey:block_num"`
+		BlockNumber             int64                     `gorm:"primaryKey;column:id" json:"blockNum"` // Block Number
+		Timestamp               uint64                    `gorm:"column:timestamp" json:"timestamp"`
+		AccountOperations       []*AccountOperation       `gorm:"foreignKey:block_num" json:"accountOperations"`
+		TokenOracles            []*TokenOracle            `gorm:"foreignKey:block_num" json:"tokenOracles"`
+		PriceFeeds              []*PriceFeed              `gorm:"foreignKey:block_num" json:"priceFeeds"`
+		Protocols               []*Protocol               `gorm:"foreignKey:block_num" json:"protocols"`
+		CSS                     []*CreditSessionSnapshot  `gorm:"foreignKey:block_num" json:"css"`
+		PoolStats               []*PoolStat               `gorm:"foreignKey:block_num" json:"poolStats"`
+		PoolLedgers             []*PoolLedger             `gorm:"foreignKey:block_num" json:"poolLedgers"`
+		CMStats                 []*CreditManagerStat      `gorm:"foreignKey:block_num" json:"cmStats"`
+		AllowedTokens           []*AllowedToken           `gorm:"foreignKey:block_num" json:"allowedTokens"`
+		DAOOperations           []*DAOOperation           `gorm:"foreignKey:block_num" json:"daoOperations"`
+		Params                  []*Parameters             `gorm:"foreignKey:block_num" json:"params"`
+		FastCheckParams         []*FastCheckParams        `gorm:"foreignKey:block_num" json:"fastCheckParams"`
+		pnlOnCM                 map[string]*PnlOnRepay    `gorm:"-" json:"-"`
+		TreasuryTransfers       []*TreasuryTransfer       `gorm:"foreignKey:block_num" json:"treasuryTransfers"`
+		TreasurySnapshots       []*TreasurySnapshotModel2 `gorm:"foreignKey:block_num" json:"treasurySnapshots"`
+		NoSessionTokenTransfers []*TokenTransfer          `gorm:"foreignKey:block_num" json:"noSessionTokenTransfers"`
+		UniswapPoolPrices       []*UniPoolPrices          `gorm:"foreignKey:block_num" json:"uniswapPoolPrices"`
 	}
 )
 
@@ -94,15 +92,6 @@ func (b *Block) GetAllowedTokens() []*AllowedToken {
 
 func (b *Block) GetPriceFeeds() []*PriceFeed {
 	return b.PriceFeeds
-}
-
-func (b *Block) AddEventBalance(eb *EventBalance) {
-	b.eventBalances = append(b.eventBalances, eb)
-}
-
-func (b *Block) GetEventBalances() []*EventBalance {
-	sort.Sort(b.eventBalances)
-	return b.eventBalances
 }
 
 func (b *Block) AddParameters(params *Parameters) {

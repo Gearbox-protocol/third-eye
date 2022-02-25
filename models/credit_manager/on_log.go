@@ -53,7 +53,9 @@ func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*core.TokenTransfer) {
 	for sessionID, txs := range sessionIDToTxs {
 		session := mdl.Repo.GetCreditSession(sessionID)
-		for _, tx := range txs {
+		txsList :=  core.TokenTransferList(txs)
+		sort.Sort(txsList)
+		for _, tx := range txsList {
 			var amount *big.Int
 			switch session.Account {
 			case tx.From:
@@ -81,6 +83,7 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 				Transfers:   &core.Transfers{tx.Token: amount},
 			})
 		}
+		// for blocks without credit manager events, update session
 		if blockNum != mdl.lastEventBlock {
 			mdl.updateSession(sessionID, blockNum)
 		}
@@ -101,8 +104,10 @@ func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 }
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
-	// storing execute order in a single tx and processing them  single go on next tx
+	// storing execute order in a single tx and processing them in a single go on next tx
 	// for credit session stats
+	//
+	// execute events are matched with tenderly response to get transfers for each events
 	if mdl.LastTxHash != txLog.TxHash.Hex() {
 		mdl.processExecuteEvents()
 		mdl.LastTxHash = txLog.TxHash.Hex()
@@ -139,6 +144,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 			closeCreditAccountEvent.To.Hex(),
 			closeCreditAccountEvent.RemainingFunds)
 	case core.Topic("LiquidateCreditAccount(address,address,uint256)"):
+		log.Info("liquidated")
 		liquidateCreditAccountEvent, err := mdl.contractETH.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack LiquidateCreditAccount event", err)

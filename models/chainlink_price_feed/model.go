@@ -84,7 +84,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogB
 }
 
 func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
-	newPriceFeed := mdl.GetPriceFeedAddr(mdl.LastSync)
+	newPriceFeed := mdl.GetPriceFeedAddr(syncedTill)
 	if newPriceFeed != mdl.Address && newPriceFeed != "" {
 		mdl.Repo.AddSyncAdapter(
 			NewChainlinkPriceFeed(mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo),

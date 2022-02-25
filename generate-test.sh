@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/bin/sh
 
 for i in `ls jsonnet/**/*.jsonnet`; do
     echo $i

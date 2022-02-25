@@ -151,13 +151,6 @@ func (repo *Repository) GetGearTokenAddr() string {
 	return repo.GearTokenAddr
 }
 
-// redundant
-func (repo *Repository) AddEventBalance(eb core.EventBalance) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(eb.BlockNumber).AddEventBalance(&eb)
-}
-
 func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
 	ts := eng.SetAndGetBlock(blockNum).Timestamp
 	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
@@ -203,4 +196,11 @@ func (repo *Repository) InitChecks() {
 
 func (repo *Repository) GetChainId() uint {
 	return repo.config.ChainId
+}
+
+func (repo *Repository) GetTokenOracles() map[string]*core.TokenOracle {
+	return repo.tokensCurrentOracle
+}
+func (repo *Repository) GetAllowedTokens() map[string]map[string]*core.AllowedToken {
+	return repo.allowedTokens
 }

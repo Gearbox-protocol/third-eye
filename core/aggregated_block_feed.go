@@ -63,5 +63,5 @@ func (ts SortedUniPoolPrices) Swap(i, j int) {
 
 // sort in increasing order by blockNumber,index
 func (ts SortedUniPoolPrices) Less(i, j int) bool {
-	return ts[i].BlockNum < ts[i].BlockNum
+	return ts[i].BlockNum < ts[j].BlockNum
 }

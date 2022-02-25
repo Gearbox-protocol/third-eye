@@ -48,8 +48,6 @@ func (call *Call) dappCall(dappAddr common.Address) *core.KnownCall {
 			log.Fatalf("%s %#v %#v\n", name, arguments, call)
 		}
 		return &core.KnownCall{
-			From: common.HexToAddress(call.From),
-			To:   common.HexToAddress(call.To),
 			Name: name,
 			Args: arguments,
 		}

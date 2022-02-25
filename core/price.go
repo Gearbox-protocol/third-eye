@@ -41,5 +41,5 @@ func (ts SortedPriceFeed) Swap(i, j int) {
 
 // sort in increasing order by blockNumber,index
 func (ts SortedPriceFeed) Less(i, j int) bool {
-	return ts[i].BlockNumber < ts[i].BlockNumber
+	return ts[i].BlockNumber < ts[j].BlockNumber
 }

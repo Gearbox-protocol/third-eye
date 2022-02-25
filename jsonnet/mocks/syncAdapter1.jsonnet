@@ -56,6 +56,14 @@
       lastSync: 2,
     },
     {
+      type: 'AccountManager',
+      address: '#AccountManager_1',
+      details: {
+        accounts: ['#Account_1'],
+      },
+      lastSync: 2,
+    },
+    {
       type: 'ChainlinkPriceFeed',
       address: '#ChainlinkPriceFeed_2',
       details: {
@@ -81,8 +89,8 @@
   ],
   tokens: [
     { address: '#Token_1', symbol: 'USDC', decimals: 6 },
-    { address: '#Token_2', symbol: 'DAI', decimals: 8 },
+    { address: '#Token_2', symbol: 'YFI', decimals: 18 },
     { address: '#Token_3', symbol: 'WETH', decimals: 18 },
-    { address: '#Token_4', symbol: 'YFI', decimals: 18 },
+    { address: '#Token_4', symbol: 'DAI', decimals: 8 },
   ],
 }

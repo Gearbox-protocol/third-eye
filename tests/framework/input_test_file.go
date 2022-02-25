@@ -1,13 +1,16 @@
-package tests
+package framework
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strings"
+	"testing"
 )
 
 type TestMask struct {
@@ -16,10 +19,11 @@ type TestMask struct {
 }
 
 type TestCall struct {
-	Pools    []core.TestPoolCallData    `json:"pools"`
-	CMs      []core.TestCMCallData      `json:"cms"`
-	Accounts []core.TestAccountCallData `json:"accounts"`
-	Masks    []TestMask                 `json:"masks"`
+	Pools       []core.TestPoolCallData      `json:"pools"`
+	CMs         []core.TestCMCallData        `json:"cms"`
+	Accounts    []core.TestAccountCallData   `json:"accounts"`
+	Masks       []TestMask                   `json:"masks"`
+	ExecuteOnCM map[string][]*core.KnownCall `json:"executeOnCM"`
 }
 
 func (c *TestCall) Process() {
@@ -62,9 +66,7 @@ func (c *TestEvent) ParseData(contractName string, topic0 common.Hash) ([]byte, 
 	}
 	abi := core.GetAbi(contractName)
 	event, err := abi.EventByID(topic0)
-	if err != nil {
-		log.CheckFatal(err)
-	}
+	log.CheckFatal(err)
 	var args []interface{}
 	for _, entry := range c.Data {
 		var arg interface{}
@@ -108,4 +110,32 @@ type TestInput struct {
 	Blocks    map[int64]BlockInput `json:"blocks"`
 	MockFiles map[string]string    `json:"mocks"`
 	States    TestState            `json:"states"`
+}
+
+func (testInput *TestInput) Get(file string, addressMap core.AddressMap, t *testing.T) *SyncAdapterMock {
+	filePath := fmt.Sprintf("../inputs/%s", file)
+	tmpObj := TestInput{}
+	utils.ReadJsonAndSetInterface(filePath, &tmpObj)
+	var syncAdapterObj *SyncAdapterMock
+
+	for key, fileName := range tmpObj.MockFiles {
+		mockFilePath := fmt.Sprintf("../inputs/%s", fileName)
+		if key == "syncAdapters" {
+			syncAdapterObj = &SyncAdapterMock{}
+			addAddressSetJson(mockFilePath, syncAdapterObj, addressMap, t)
+		}
+	}
+	addAddressSetJson(filePath, testInput, addressMap, t)
+	return syncAdapterObj
+}
+
+func addAddressSetJson(filePath string, obj interface{}, addressMap core.AddressMap, t *testing.T) {
+	var mock core.Json = utils.ReadJson(filePath)
+	mock.ParseAddress(t, addressMap)
+	// log.Info(utils.ToJson(mock))
+	b, err := json.Marshal(mock)
+	if err != nil {
+		t.Error(err)
+	}
+	utils.SetJson(b, obj)
 }

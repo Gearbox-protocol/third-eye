@@ -34,9 +34,11 @@ func (z *Json) Scan(value interface{}) error {
 }
 
 type BalanceType struct {
-	BI     *BigInt `json:"BI"`
-	F      float64 `json:"F"`
-	Linked bool    `json:"linked"`
+	BI *BigInt `json:"BI"`
+	F  float64 `json:"F"`
+	// linked get fetched for data compressor is if this token is allowed on credit manager
+	// we change it to the mask bit
+	Linked bool `json:"linked"` // there has been a credit manager event /swap/addcollateral/borrow for this token
 }
 
 type JsonBalance map[string]*BalanceType
@@ -156,6 +158,11 @@ func (addrs AddressMap) checkInterface(data interface{}, t *testing.T) interface
 			t.Error("map[string]interface{} parsing failed")
 		}
 		for key, entry := range value {
+			newKey := addrs.checkIfAddress(key)
+			if newKey != key {
+				delete(value, key)
+				key = newKey
+			}
 			value[key] = addrs.checkInterface(entry, t)
 		}
 		return value
@@ -165,15 +172,13 @@ func (addrs AddressMap) checkInterface(data interface{}, t *testing.T) interface
 }
 
 func (z *Json) ParseAddress(t *testing.T, addrs AddressMap) {
-	if (*z)["_order"] != nil {
-		order := utils.ConvertToListOfString((*z)["_order"])
-		for _, key := range order {
-			(*z)[key] = addrs.checkInterface((*z)[key], t)
+	for key, data := range *z {
+		newKey := addrs.checkIfAddress(key)
+		if newKey != key {
+			delete(*z, key)
+			key = newKey
 		}
-	} else {
-		for key, data := range *z {
-			(*z)[key] = addrs.checkInterface(data, t)
-		}
+		(*z)[key] = addrs.checkInterface(data, t)
 	}
 }
 

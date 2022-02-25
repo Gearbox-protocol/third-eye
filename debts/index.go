@@ -27,9 +27,10 @@ type DebtEngine struct {
 	liquidableBlockTracker map[string]*core.LiquidableAccount
 	// cm to paramters
 	lastParameters map[string]*core.Parameters
+	isTesting      bool
 }
 
-func NewDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
+func GetDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config, repo core.RepositoryI, testing bool) core.DebtEngineI {
 	return &DebtEngine{
 		repo:                   repo,
 		db:                     db,
@@ -42,7 +43,12 @@ func NewDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config,
 		lastDebts:              make(map[string]*core.Debt),
 		liquidableBlockTracker: make(map[string]*core.LiquidableAccount),
 		lastParameters:         make(map[string]*core.Parameters),
+		isTesting:              testing,
 	}
+}
+
+func NewDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
+	return GetDebtEngine(db, client, config, repo, false)
 }
 
 func (eng *DebtEngine) ProcessBackLogs() {
@@ -180,6 +186,9 @@ type LiquidationTx struct {
 }
 
 func (eng *DebtEngine) GetLiquidationTx(sessionId string) string {
+	if eng.isTesting {
+		return ""
+	}
 	data := LiquidationTx{}
 	query := `SELECT tx_hash from account_operations 
 		WHERE session_id = ?  AND action like 'LiquidateCreditAccount%'`
