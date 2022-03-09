@@ -3,7 +3,7 @@ CREATE TABLE debt_sync (
 );
 
 CREATE TABLE debts (
-    id SERIAL PRIMARY KEY,
+    id SERIAL NOT NULL,
     block_num integer,
     session_id character varying(100),
     cal_health_factor varchar(80),

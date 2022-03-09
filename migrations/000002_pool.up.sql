@@ -8,7 +8,7 @@ CREATE TABLE pools (
 );
 
 CREATE TABLE pool_stats (
-    id SERIAL PRIMARY KEY,
+    id SERIAL NOT NULL,
     pool varchar(42),
     block_num integer,
     unique_users integer,
@@ -40,7 +40,7 @@ ALTER TABLE ONLY pool_stats
 
 
 CREATE TABLE pool_ledger (
-    id SERIAL PRIMARY KEY,
+    id SERIAL NOT NULL,
     block_num integer,
     log_id integer,
     pool character varying(42),
