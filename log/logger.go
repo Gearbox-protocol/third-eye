@@ -146,19 +146,19 @@ func SetAMQP(_ch *amqp.Channel, name string) {
 }
 func amqpSend(v []interface{}) {
 	alert := fmt.Sprint(v...)
-	send(alert, "")
+	send(alert)
 }
 func amqpSendf(msg string, args []interface{}) {
 	alert := fmt.Sprintf(msg, args...)
-	send(alert, "")
+	send(alert)
 }
-func send(message string, routingKey string) {
+func send(message string) {
 	if ch == nil {
 		return
 	}
 	err := ch.Publish(
 		"TelegramBot", // exchange
-		routingKey,    // routing key
+		netName,    // routing key
 		false,         // mandatory
 		false,         // immediate
 		amqp.Publishing{
