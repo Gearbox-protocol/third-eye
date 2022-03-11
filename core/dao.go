@@ -71,4 +71,12 @@ const (
 	Paused
 	UnPaused
 	EventNewParameters
+	///////////
+	// v2 events
+	///////////
+	TokenAllowedV2
+	LimitsUpdated
+	FeesUpdated
+	CreditFacadeUpgraded
+	CreditConfiguratorUpgraded
 )

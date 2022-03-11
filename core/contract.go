@@ -88,7 +88,7 @@ func GetAbi(contractName string) *abi.ABI {
 		YearnPriceFeed: &bind.MetaData{ABI: yearnPriceFeed.YearnPriceFeedABI},
 
 		// Pool
-		CreditManager:             creditManager.CreditManagerMetaData,
+		CreditManager:             &bind.MetaData{ABI: creditManager.CreditManagerABI},
 		"LinearInterestRateModel": linearInterestRateModel.LinearInterestRateModelMetaData,
 		CreditFilter:              &bind.MetaData{ABI: creditFilter.CreditFilterABI},
 		Pool:                      poolService.PoolServiceMetaData,

@@ -97,6 +97,69 @@ func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Pa
 	repo.cmParams[params.CreditManager] = params
 }
 
+func (repo *Repository) paramsDAOV2(logID uint, txHash string, params *core.Parameters, fieldToRemove []string, daoEventType uint) {
+	oldCMParams := repo.cmParams[params.CreditManager]
+	if oldCMParams == nil {
+		oldCMParams = core.NewParameters()
+	}
+	args := oldCMParams.Diff(params)
+	for _, field := range fieldToRemove{
+		delete(*args, field)
+	}
+	repo.addDAOOperation(&core.DAOOperation{
+		BlockNumber: params.BlockNum,
+		LogID:       logID,
+		TxHash:      txHash,
+		Type:        daoEventType,
+		Contract:    params.CreditManager,
+		Args:        args,
+	})
+	//
+	repo.cmParams[params.CreditManager] = params
+}
+
+func (repo *Repository) UpdateLimits(logID uint, txHash string, params *core.Parameters) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	// cal dao action
+	oldCMParams := repo.cmParams[params.CreditManager]
+	if oldCMParams == nil {
+		oldCMParams = core.NewParameters()
+	}
+	repo.paramsDAOV2(logID, txHash, params, 
+		[]string{"feeLiquidation","LiquidationDiscount","feeInterest","maxLeverage"}, core.LimitsUpdated)
+	newParams := &core.Parameters{
+		MinAmount: params.MinAmount,
+		MaxAmount: params.MaxAmount,
+		FeeInterest: oldCMParams.FeeInterest,
+		FeeLiquidation: oldCMParams.FeeInterest,
+		LiquidationDiscount: oldCMParams.LiquidationDiscount,
+	}
+	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)
+	repo.cmParams[params.CreditManager] = newParams
+}
+
+func (repo *Repository) UpdateFees(logID uint, txHash string, params *core.Parameters) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	// cal dao action
+	oldCMParams := repo.cmParams[params.CreditManager]
+	if oldCMParams == nil {
+		oldCMParams = core.NewParameters()
+	}
+	repo.paramsDAOV2(logID, txHash, params,
+		[]string{"maxAmount","maxLeverage","minAmount"}, core.FeesUpdated)
+	newParams := &core.Parameters{
+		MinAmount: oldCMParams.MinAmount,
+		MaxAmount: oldCMParams.MaxAmount,
+		FeeInterest: params.FeeInterest,
+		FeeLiquidation: params.FeeInterest,
+		LiquidationDiscount: params.LiquidationDiscount,
+	}
+	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)
+	repo.cmParams[params.CreditManager] = newParams
+}
+
 func (repo *Repository) loadAllParams() {
 	// parameters
 	data := []*core.Parameters{}

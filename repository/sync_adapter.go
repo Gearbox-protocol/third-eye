@@ -62,7 +62,7 @@ func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		return treasury.NewTreasuryFromAdapter(adapter)
 	case core.AccountManager:
 		return account_manager.NewAccountManagerFromAdapter(adapter)
-	case core.CreditFilter:
+	case core.CreditFilter, core.CreditConfigurator:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)
 			repo.AddCreditManagerToFilter(cmAddr, adapter.GetAddress())

@@ -15,4 +15,5 @@ const (
 	Treasury            = "Treasury"
 	AccountManager      = "AccountManager"
 	AggregatedBlockFeed = "AggregatedBlockFeed"
+	CreditConfigurator = "CreditConfigurator"
 )

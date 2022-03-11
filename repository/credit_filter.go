@@ -50,13 +50,66 @@ func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string,
 		"creditManager":            atoken.CreditManager,
 		"prevLiquidationThreshold": prevLiqThreshold,
 	}
-	repo.addAllowedTokenState(atoken)
+	repo.addAllowedTokenState(atoken, false)
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: atoken.BlockNumber,
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
 		Type:        core.TokenAllowed,
+		Args:        &args,
+	})
+}
+
+// allowed token 
+
+// v1 logic
+// - token, threshold emitted.
+// Take the difference from the previous lt present for this token. 
+// Store dao operation, add allowed token state with new lt. Add allowed token to table.
+
+// v2 logic
+// - token emitted.
+// if the previous lt is not present only store dao operation.
+// if previous lt is present, set the old lt to new lt. store dao operation, update allowed token state and add allowed token to table.
+// - liquiditythreshold emitted.
+// store dao operation, update allowed token state and add allowed token to table.
+func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *core.AllowedToken) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	prevLiqThreshold := repo.GetPreviousLiqThreshold(atoken.CreditManager, atoken.Token)
+	if prevLiqThreshold.Convert().Int64() == 0 {
+		repo.addDAOOperation(&core.DAOOperation{
+			BlockNumber: atoken.BlockNumber,
+			LogID:       logID,
+			TxHash:      txHash,
+			Contract:    creditFilter,
+			Type:        core.TokenAllowedV2,
+			Args:        &core.Json{
+				"token":                    atoken.Token,
+				"creditManager":            atoken.CreditManager,
+			},
+		})
+		return
+	}
+	if atoken.LiquidityThreshold == nil {
+		atoken.LiquidityThreshold = prevLiqThreshold
+	}
+	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
+	args := core.Json{
+		"liquidityThreshold":       atoken.LiquidityThreshold,
+		"token":                    atoken.Token,
+		"creditManager":            atoken.CreditManager,
+		"prevLiquidationThreshold": prevLiqThreshold,
+		"type": "reEnabled",
+	}
+	repo.addAllowedTokenState(atoken, true)
+	repo.addDAOOperation(&core.DAOOperation{
+		BlockNumber: atoken.BlockNumber,
+		LogID:       logID,
+		TxHash:      txHash,
+		Contract:    creditFilter,
+		Type:        core.TokenAllowedV2,
 		Args:        &args,
 	})
 }
@@ -71,7 +124,8 @@ func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, 
 		"token":         token,
 		"creditManager": creditManager,
 	}
-	delete(repo.allowedTokens[creditManager], token)
+	// for v2 we shouldn't delete the previous state as it will be required for lt if only token is emitted.
+	// delete(repo.allowedTokens[creditManager], token)
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: atoken.DisableBlock,
 		LogID:       logID,
@@ -128,4 +182,26 @@ func (repo *Repository) AddFastCheckParams(logID uint, txHash, cm, creditFilter 
 	})
 	//
 	repo.cmFastCheckParams[fcParams.CreditManager] = fcParams
+}
+
+func (repo *Repository) AddConfiguratorUpdated(blockNum int64, logID uint, txHash, cm, oldconfigurator, configurator string) {
+	repo.addDAOOperation(&core.DAOOperation{
+		BlockNumber: blockNum,
+		LogID:       logID,
+		TxHash:      txHash,
+		Contract:    oldconfigurator,
+		Args:        &core.Json{"oldConfigurator": oldconfigurator, "configurator": configurator},
+		Type:        core.NewFastCheckParameters,
+	})
+}
+
+func (repo *Repository) AddFacadeUpdated(blockNum int64, logID uint, txHash, cm, oldconfigurator, facade string) {
+	repo.addDAOOperation(&core.DAOOperation{
+		BlockNumber: blockNum,
+		LogID:       logID,
+		TxHash:      txHash,
+		Contract:    oldconfigurator,
+		Args:        &core.Json{"facade": facade},
+		Type:        core.NewFastCheckParameters,
+	})
 }
