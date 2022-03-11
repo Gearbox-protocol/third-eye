@@ -50,7 +50,7 @@ func NewCreditManager(addr string, client ethclient.ClientI, repo core.Repositor
 
 	// credit manager
 	adapter := core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo)
-	adapter.Version = version.Int64()
+	adapter.SetVersion(version.Int64())
 	cm := NewCreditManagerFromAdapter(
 		adapter,
 	)
@@ -71,7 +71,7 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 	}
 	obj.GetAbi()
-	switch obj.Version {
+	switch obj.GetVersion() {
 	case 1:
 		cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
 		if err != nil {

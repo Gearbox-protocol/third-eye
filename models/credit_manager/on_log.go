@@ -118,7 +118,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	}
 	mdl.lastEventBlock = blockNum
 	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
-	switch mdl.Version {
+	switch mdl.GetVersion() {
 	case 1:
 		mdl.checkLogV1(txLog)
 	case 2:

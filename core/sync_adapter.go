@@ -25,14 +25,20 @@ type SyncAdapter struct {
 	OnlyQuery              bool        `gorm:"-"`
 	blockToDisableOn       int64       `gorm:"column:disabled_at"`
 	HasOnLogs              bool        `gorm:"-"`
-	Version                int64        `gorm:"column:version"`
+	_V                      int64        `gorm:"column:version"`
 }
 
 func (SyncAdapter) TableName() string {
 	return "sync_adapters"
 }
 func (s *SyncAdapter)GetVersion() int64 {
-	return s.Version
+	if s._V == 0 {
+		return 1
+	}
+	return s._V
+}
+func (s *SyncAdapter) SetVersion(version int64) {
+	s._V = version
 }
 
 type SyncAdapterI interface {
