@@ -201,6 +201,6 @@ func (repo *Repository) GetChainId() uint {
 func (repo *Repository) GetTokenOracles() map[string]*core.TokenOracle {
 	return repo.tokensCurrentOracle
 }
-func (repo *Repository) GetAllowedTokens() map[string]map[string]*core.AllowedToken {
-	return repo.allowedTokens
+func (repo *Repository) GetDisabledTokens() []*core.AllowedToken {
+	return repo.disabledTokens
 }

@@ -79,4 +79,5 @@ const (
 	FeesUpdated
 	CreditFacadeUpgraded
 	CreditConfiguratorUpgraded
+	LTUpdated
 )

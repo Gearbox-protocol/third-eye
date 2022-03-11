@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/addressProvider"
 	"github.com/Gearbox-protocol/third-eye/artifacts/contractsRegister"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditAccount"
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditConfigurator"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dieselToken"
@@ -101,6 +102,7 @@ func GetAbi(contractName string) *abi.ABI {
 		"Uniswapv2Pool":   &bind.MetaData{ABI: uniswapv2Pool.Uniswapv2PoolABI},
 		"Uniswapv3Pool":   &bind.MetaData{ABI: uniswapv3Pool.Uniswapv3PoolABI},
 		"Uniswapv2Router": &bind.MetaData{ABI: uniswapv2Router.Uniswapv2RouterABI},
+		"CreditConfigurator": &bind.MetaData{ABI: creditConfigurator.CreditConfiguratorABI},
 	}
 	abiStr, ok := metadataMap[contractName]
 	if !ok {

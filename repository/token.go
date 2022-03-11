@@ -104,6 +104,12 @@ func (repo *Repository) GetPreviousLiqThreshold(cm, token string) *core.BigInt {
 	}
 	return repo.allowedTokens[cm][token].LiquidityThreshold
 }
+func (repo *Repository) isAllowedTokenDisabled(cm, token string) bool {
+	if repo.allowedTokens[cm] == nil || repo.allowedTokens[cm][token] == nil {
+		return false
+	}
+	return repo.allowedTokens[cm][token].DisableBlock != 0
+}
 
 func (repo *Repository) GetActivePriceOracle(blockNum int64) (string, error) {
 	oracles := repo.kit.GetAdapterAddressByName(core.PriceOracle)

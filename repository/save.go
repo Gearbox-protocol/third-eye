@@ -102,7 +102,7 @@ func (repo *Repository) Flush() error {
 		repo.relations = []*core.UniPriceAndChainlink{}
 	}
 
-	// add disabled tokens after the block num is synced to db
+	// add disabled tokens after the block num and allowed tokens are synced to db
 	if len(repo.disabledTokens) > 0 {
 		err = tx.Clauses(clause.OnConflict{
 			UpdateAll: true,

@@ -70,15 +70,19 @@ func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string,
 
 // v2 logic
 // - token emitted.
-// if the previous lt is not present only store dao operation.
-// if previous lt is present, set the old lt to new lt. store dao operation, update allowed token state and add allowed token to table.
+// (c1)if the previous lt is not present only store dao operation.
+// (c2)if previous lt is present, set the old lt to new lt. store dao operation, update allowed token state and add allowed token to table.
+// if previous lt has disabledBlock,  set reenabled
+// if previous lt hasn't disabledBlock, disable previous entry
 // - liquiditythreshold emitted.
-// store dao operation, update allowed token state and add allowed token to table.
+// (c3)store dao operation, update allowed token state and add allowed token to table.
 func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *core.AllowedToken) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	prevLiqThreshold := repo.GetPreviousLiqThreshold(atoken.CreditManager, atoken.Token)
-	if prevLiqThreshold.Convert().Int64() == 0 {
+	cm := atoken.CreditManager
+	token := atoken.Token
+	prevLiqThreshold := repo.GetPreviousLiqThreshold(cm, token)
+	if prevLiqThreshold.Convert().Int64() == 0 && atoken.LiquidityThreshold == nil { // c1
 		repo.addDAOOperation(&core.DAOOperation{
 			BlockNumber: atoken.BlockNumber,
 			LogID:       logID,
@@ -92,24 +96,40 @@ func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter strin
 		})
 		return
 	}
-	if atoken.LiquidityThreshold == nil {
+	if atoken.LiquidityThreshold == nil { // c2
 		atoken.LiquidityThreshold = prevLiqThreshold
 	}
+	reEnable := repo.isAllowedTokenDisabled(cm, token)
 	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
 	args := core.Json{
 		"liquidityThreshold":       atoken.LiquidityThreshold,
 		"token":                    atoken.Token,
 		"creditManager":            atoken.CreditManager,
 		"prevLiquidationThreshold": prevLiqThreshold,
-		"type": "reEnabled",
+	}
+	// previous allowed token disabled
+	if reEnable {
+		args["type"] = "reEnabled"
+	} else if repo.allowedTokens[cm] != nil && repo.allowedTokens[cm][token] != nil {
+		// and previous entries is present has disabledBlock set to 0
+		// previous allowed token enabled
+		prevToken := repo.allowedTokens[atoken.CreditManager][atoken.Token]
+		prevToken.DisableBlock = atoken.BlockNumber
+		repo.disabledTokens = append(repo.disabledTokens, prevToken)
 	}
 	repo.addAllowedTokenState(atoken, true)
+	var daoEventType uint 
+	if atoken.LiquidityThreshold == nil {
+		daoEventType = core.TokenAllowedV2
+	} else {
+		daoEventType = core.LTUpdated
+	}
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: atoken.BlockNumber,
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
-		Type:        core.TokenAllowedV2,
+		Type:        daoEventType,
 		Args:        &args,
 	})
 }
