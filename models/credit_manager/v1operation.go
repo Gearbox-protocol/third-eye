@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, sender, onBehalfOf, account string,
+func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, account string,
 	amount,
 	borrowAmount,
 	referralCode *big.Int) error {

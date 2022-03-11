@@ -2,11 +2,12 @@ package credit_manager
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditManagerv2"
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -23,7 +24,9 @@ type SessionCloseDetails struct {
 
 type CreditManager struct {
 	*core.SyncAdapter
-	contractETH     *creditManager.CreditManager
+	contractETHV1     *creditManager.CreditManager
+	contractETHV2     *creditManagerv2.CreditManagerv2
+	facadeContractV2     *creditFacade.CreditFacade
 	LastTxHash      string
 	executeParams   []core.ExecuteParams
 	State           *core.CreditManagerState
@@ -37,57 +40,65 @@ func (CreditManager) TableName() string {
 }
 
 func NewCreditManager(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *CreditManager {
+	// get version
 	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(addr), client)
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(discoveredAt),
-	}
-	// create underlying token
-	underlyingToken, err := cmContract.UnderlyingToken(opts)
+	log.CheckFatal(err)
+	version, err := cmContract.Version(&bind.CallOpts{})
 	if err != nil {
-		log.Fatal(err)
-	}
-	repo.AddToken(underlyingToken.Hex())
-	//
-	poolAddr, err := cmContract.PoolService(opts)
-	if err != nil {
-		log.Fatal(err)
+		version = big.NewInt(1)
 	}
 
-	// create creditFilter syncadapter
-	creditFilter, err := cmContract.CreditFilter(&bind.CallOpts{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	repo.AddCreditManagerToFilter(addr, creditFilter.Hex())
-	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), addr, discoveredAt, client, repo)
-	repo.AddSyncAdapter(cf)
-	//
-
+	// credit manager
+	adapter := core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo)
+	adapter.Version = version.Int64()
 	cm := NewCreditManagerFromAdapter(
-		core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo),
+		adapter,
 	)
-	// create credit manager state
-	cm.SetUnderlyingState(&core.CreditManagerState{
-		Address:         addr,
-		PoolAddress:     poolAddr.Hex(),
-		UnderlyingToken: underlyingToken.Hex(),
-		Sessions:        map[string]string{},
-	})
+	cm.CommonInit()
+	switch version.Int64() {
+	case 1:
+		cm.addCreditFilter()
+	case 2:
+		cm.addCreditConfigurator()
+	}
 	return cm
 }
 
 func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
-	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
-	if err != nil {
-		log.Fatal(err)
-	}
 	obj := &CreditManager{
 		SyncAdapter:     adapter,
-		contractETH:     cmContract,
 		UpdatedSessions: make(map[string]int),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 	}
 	obj.GetAbi()
+	switch obj.Version {
+	case 1:
+		cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
+		if err != nil {
+			log.Fatal(err)
+		}
+		obj.contractETHV1 = cmContract
+	case 2:
+		// set credit manager and credit facade contracts
+		cmContract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(adapter.Address), adapter.Client)
+		if err != nil {
+			log.Fatal(err)
+		}
+		obj.contractETHV2 = cmContract
+		var creditFacadeAddr common.Address
+		if obj.Details != nil && obj.Details["creditFacade"] != nil {
+			creditFacadeAddr = common.HexToAddress(obj.Details["creditFacade"].(string))
+		} else {
+			creditFacadeAddr, err = cmContract.CreditFacade(&bind.CallOpts{})
+			log.CheckFatal(err)
+		}
+		obj.facadeContractV2, err = creditFacade.NewCreditFacade(creditFacadeAddr, adapter.Client)
+		log.CheckFatal(err)
+		if obj.Details == nil {
+			obj.Details = map[string]interface{}{}
+		}
+		obj.Details["creditFacade"] = creditFacadeAddr.Hex()
+	}
 	return obj
 }
 
