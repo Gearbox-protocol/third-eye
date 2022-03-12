@@ -248,10 +248,16 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 		roundData.StartedAt = *abi.ConvertType(value[2], new(*big.Int)).(**big.Int)
 		roundData.UpdatedAt = *abi.ConvertType(value[3], new(*big.Int)).(**big.Int)
 		roundData.AnsweredInRound = *abi.ConvertType(value[4], new(*big.Int)).(**big.Int)
+		isPriceInETH := adapter.GetVersion() <= 1
+		var decimals int8 = 18 // for eth
+		if !isPriceInETH {
+			decimals = 8 // for usd
+		}
 		priceData = &core.PriceFeed{
 			RoundId:    roundData.RoundId.Int64(),
-			PriceETHBI: (*core.BigInt)(roundData.Answer),
-			PriceETH:   utils.GetFloat64Decimal(roundData.Answer, 18),
+			PriceBI: (*core.BigInt)(roundData.Answer),
+			Price:   utils.GetFloat64Decimal(roundData.Answer, decimals),
+			IsPriceInETH: isPriceInETH,  // for 2 and above the prices are in usd
 		}
 		adapter.setNotified(false)
 	} else {

@@ -37,8 +37,9 @@
       {
         blockNum: 7,
         feed: '#ChainlinkPriceFeed_1',
-        priceETH: 0.0008,
-        priceETHBI: '800000000000000',
+        price: 0.0008,
+        priceBI: '800000000000000',
+        isPriceInETH: true,
         roundId: 2,
         token: '#Token_1',
         uniPriceFetchBlock: 0,

@@ -60,6 +60,7 @@ type TokenDetails struct {
 	Decimals          int8
 	TokenLiqThreshold *BigInt `json:"tokenLiqThreshold"`
 	Symbol            string  `json:"symbol"`
+	IsPriceInETH bool `json:"isPriceInETH"`
 }
 type DebtProfile struct {
 	*Debt                  `json:"debt"`
@@ -76,6 +77,7 @@ type CumIndexAndUToken struct {
 	Price           *big.Int
 	Decimals        int8
 	Symbol          string
+	IsPriceInETH bool
 }
 
 func (debt *DebtProfile) Json() []byte {

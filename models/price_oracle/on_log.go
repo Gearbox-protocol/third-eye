@@ -43,15 +43,16 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 
 		token := newPriceFeedEvent.Token.Hex()
 		oracle := newPriceFeedEvent.PriceFeed.Hex()
+		version := mdl.FetchVersion(blockNum)
 		priceFeedType, err := mdl.checkPriceFeedContract(blockNum, oracle)
 		if err != nil {
 			log.Fatal(err)
 		}
 		if priceFeedType == ChainlinkPriceFeed {
-			obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo, version)
 			mdl.Repo.AddSyncAdapter(obj)
 		} else if priceFeedType == YearnPriceFeed {
-			obj := aggregated_block_feed.NewYearnPriceFeed(token, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			obj := aggregated_block_feed.NewYearnPriceFeed(token, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo, version)
 			mdl.Repo.AddSyncAdapter(obj)
 		} else {
 			log.Fatal("Unknown PriceFeed type", priceFeedType)

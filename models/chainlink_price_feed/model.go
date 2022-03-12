@@ -20,7 +20,7 @@ type ChainlinkPriceFeed struct {
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on 'vm execution error' or 'execution reverted'.
 // if oracle and adress are same we try to get the pricefeed.
-func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *ChainlinkPriceFeed {
+func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI, version int64) *ChainlinkPriceFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address:      feed,
@@ -32,6 +32,7 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 		Details:  map[string]interface{}{"oracle": oracle, "token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
+		V: version,
 	}
 	adapter := NewChainlinkPriceFeedFromAdapter(
 		syncAdapter,
@@ -87,7 +88,7 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 	newPriceFeed := mdl.GetPriceFeedAddr(syncedTill)
 	if newPriceFeed != mdl.Address && newPriceFeed != "" {
 		mdl.Repo.AddSyncAdapter(
-			NewChainlinkPriceFeed(mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo),
+			NewChainlinkPriceFeed(mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo, mdl.GetVersion()),
 		)
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)

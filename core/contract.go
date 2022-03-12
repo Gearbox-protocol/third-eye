@@ -45,6 +45,7 @@ type Contract struct {
 	ContractName string            `gorm:"column:type" json:"type"`
 	Client       ethclient.ClientI `gorm:"-" json:"-"`
 	ABI          *abi.ABI          `gorm:"-" json:"-"`
+	VersionABI abi.ABI `gorm:"-" json:"-"`
 }
 
 func (c *Contract) Disable() {
@@ -66,6 +67,10 @@ func NewContract(address, contractName string, discoveredAt int64, client ethcli
 	} else {
 		con.DiscoveredAt = discoveredAt
 	}
+	abiStr := "{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}"
+	versionABI, err := abi.JSON(strings.NewReader(abiStr))
+	log.CheckFatal(err)
+	con.VersionABI = versionABI
 	return con
 }
 
@@ -85,7 +90,7 @@ func GetAbi(contractName string) *abi.ABI {
 		"WETHGateway":   wETHGateway.WETHGatewayMetaData,
 
 		// Oracle
-		PriceOracle:    priceOracle.PriceOracleMetaData,
+		PriceOracle:    &bind.MetaData{ABI: priceOracle.PriceOracleABI},
 		YearnPriceFeed: &bind.MetaData{ABI: yearnPriceFeed.YearnPriceFeedABI},
 
 		// Pool
@@ -303,4 +308,19 @@ func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, *Json
 	jsonData := Json(data)
 	jsonData.CheckSumAddress()
 	return c.ABI.Events[eventName].Sig, &jsonData
+}
+
+func (c *Contract) FetchVersion(blockNum int64 ) int64 {
+	var opts *bind.CallOpts
+	if blockNum != 0 {
+		opts = &bind.CallOpts{BlockNumber: big.NewInt(blockNum)}
+	}
+	contract := bind.NewBoundContract(common.HexToAddress(c.Address), c.VersionABI, c.Client, c.Client, c.Client)
+	var out []interface{}
+	err := contract.Call(opts, &out, "version")
+	if err != nil {
+		return 1
+	}
+	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
+	return out0.Int64()
 }

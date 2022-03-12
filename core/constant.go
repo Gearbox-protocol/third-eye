@@ -10,8 +10,9 @@ const LogFilterQueryTimeout = "Query timeout exceeded. Consider reducing your bl
 const NoOfBlocksPerMin int64 = 5
 const NoOfBlocksPerHr int64 = NoOfBlocksPerMin * 60
 
-var WETHPrice *big.Int
+var WETHPrice, USDCPrice *big.Int
 
 func init() {
 	WETHPrice, _ = new(big.Int).SetString("1000000000000000000", 10)
+	USDCPrice, _ = new(big.Int).SetString("100000000", 10)
 }

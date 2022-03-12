@@ -39,14 +39,20 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			if !ok {
 				log.Fatal("answer parsing failed")
 			}
+			isPriceInETH := mdl.GetVersion() <= 1
+			var decimals int8 = 18 // for eth
+			if !isPriceInETH {
+				decimals = 8 // for usd
+			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
 			priceFeed = &core.PriceFeed{
 				BlockNumber: blockNum,
 				Token:       mdl.Token,
 				Feed:        mdl.Address,
 				RoundId:     roundId,
-				PriceETHBI:  (*core.BigInt)(answerBI),
-				PriceETH:    utils.GetFloat64Decimal(answerBI, 18),
+				PriceBI:  (*core.BigInt)(answerBI),
+				Price:    utils.GetFloat64Decimal(answerBI, decimals),
+				IsPriceInETH: isPriceInETH,
 			}
 			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
 				mdl.compareDiff(mdl.prevPriceFeed, uniPrices[uniPricesInd])
@@ -90,9 +96,10 @@ func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPoolPrices *co
 		Token:                pf.Token,
 		Feed:                 pf.Feed,
 	})
-	if (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
-		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
-		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
+	// For usd
+	if mdl.GetVersion() <=1 && (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.Price)) ||
+		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.Price)) ||
+		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.Price)) {
 		if !mdl.isNotified() {
 			mdl.uniPriceVariationNotify(pf, uniPoolPrices)
 			mdl.Details["notified"] = true
@@ -114,7 +121,7 @@ func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPr
 	Uniswapv2 Price: %f
 	Uniswapv3 Price: %f
 	Uniswapv3 Twap: %f\n`, symbol, mdl.Token,
-		pf.BlockNumber, pf.PriceETH,
+		pf.BlockNumber, pf.Price,
 		uniPrices.BlockNum, uniPrices.PriceV2, uniPrices.PriceV3, uniPrices.TwapV3)
 }
 

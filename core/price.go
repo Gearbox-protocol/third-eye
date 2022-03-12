@@ -17,13 +17,14 @@ type PriceFeed struct {
 	Token              string  `gorm:"column:token" json:"token"`
 	Feed               string  `gorm:"column:feed" json:"feed"`
 	RoundId            int64   `gorm:"column:round_id" json:"roundId"`
-	PriceETHBI         *BigInt `gorm:"column:price_eth_bi" json:"priceETHBI"`
+	PriceBI         *BigInt `gorm:"column:price_bi" json:"priceBI"`
+	IsPriceInETH       bool `gorm:"column:price_in_eth" json:"isPriceInETH"`
 	Uniswapv2Price     float64 `gorm:"column:uniswapv2_price" json:"uniswapv2Price"`
 	Uniswapv3Twap      float64 `gorm:"column:uniswapv3_twap" json:"uniswapv3Twap"`
 	Uniswapv3Price     float64 `gorm:"column:uniswapv3_price" json:"uniswapv3Price"`
 	UniPriceFetchBlock int64   `gorm:"column:uni_price_fetch_block" json:"uniPriceFetchBlock"`
 	// PriceETHBI *BigInt `gorm:"column:price_eth_bi"`
-	PriceETH float64 `gorm:"column:price_eth" json:"priceETH"`
+	Price float64 `gorm:"column:price" json:"price"`
 }
 
 func (PriceFeed) TableName() string {

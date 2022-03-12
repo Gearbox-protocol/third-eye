@@ -24,7 +24,7 @@ type YearnPriceFeed struct {
 	mu                *sync.Mutex
 }
 
-func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *YearnPriceFeed {
+func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI, version int64) *YearnPriceFeed {
 	syncAdapter := &core.SyncAdapter{
 		Contract: &core.Contract{
 			Address:      oracle,
@@ -36,6 +36,7 @@ func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclien
 		Details:  map[string]interface{}{"token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
+		V: version,
 	}
 	// add token oracle for db
 	// feed is also oracle address for yearn address
@@ -122,11 +123,16 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 		new(big.Int).Mul(pricePerShare, roundData.Answer),
 		mdl.DecimalDivider,
 	)
-
+	isPriceInETH := mdl.GetVersion() <= 1
+	var decimals int8 = 18 // for eth
+	if !isPriceInETH {
+		decimals = 8 // for usd
+	}
 	return &core.PriceFeed{
 		RoundId:    roundData.RoundId.Int64(),
-		PriceETHBI: (*core.BigInt)(newAnswer),
-		PriceETH:   utils.GetFloat64Decimal(newAnswer, 18),
+		PriceBI: (*core.BigInt)(newAnswer),
+		Price:   utils.GetFloat64Decimal(newAnswer, decimals),
+		IsPriceInETH: isPriceInETH,
 	}
 }
 
