@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum"
@@ -20,24 +19,24 @@ type SyncAdapter struct {
 	LastSync               int64       `gorm:"column:last_sync" json:"lastSync"`
 	Details                Json        `gorm:"column:details" json:"details"`
 	UnderlyingStatePresent bool        `gorm:"-" json:"-"`
-	Error                  string      `gorm:"column:error"`
-	Repo                   RepositoryI `gorm:"-"`
-	OnlyQuery              bool        `gorm:"-"`
-	blockToDisableOn       int64       `gorm:"column:disabled_at"`
-	HasOnLogs              bool        `gorm:"-"`
-	V                      int64       `gorm:"column:version"`
+	Error                  string      `gorm:"column:error" json:"error"`
+	Repo                   RepositoryI `gorm:"-" json:"-"`
+	OnlyQuery              bool        `gorm:"-" json:"-"`
+	BlockToDisableOn       int64       `gorm:"column:disabled_at" json:"disabled_at"`
+	HasOnLogs              bool        `gorm:"-" json:"-"`
+	V                      int16       `gorm:"column:version" json:"version"`
 }
 
 func (SyncAdapter) TableName() string {
 	return "sync_adapters"
 }
-func (s *SyncAdapter) GetVersion() int64 {
+func (s *SyncAdapter) GetVersion() int16 {
 	if s.V == 0 {
 		return 1
 	}
 	return s.V
 }
-func (s *SyncAdapter) SetVersion(version int64) {
+func (s *SyncAdapter) SetVersion(version int16) {
 	s.V = version
 }
 
@@ -64,14 +63,16 @@ type SyncAdapterI interface {
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
 	GetDiscoveredAt() int64
-	GetDetails(key string) string
-	FetchVersion(blockNum int64) int64
+	GetDetailsByKey(key string) string
+	GetDetails() Json
+	FetchVersion(blockNum int64) int16
+	GetVersion() int16
 }
 
 func (s *SyncAdapter) SetDetails(obj interface{}) {
 }
 
-func (s *SyncAdapter) GetDetails(key string) string {
+func (s *SyncAdapter) GetDetailsByKey(key string) string {
 	if s.Details == nil {
 		return ""
 	}
@@ -80,6 +81,9 @@ func (s *SyncAdapter) GetDetails(key string) string {
 		log.Fatalf("Not able to parse detail field %s", key)
 	}
 	return value
+}
+func (s *SyncAdapter) GetDetails() Json {
+	return s.Details
 }
 func (s *SyncAdapter) GetHasOnLogs() bool {
 	return s.HasOnLogs
@@ -90,27 +94,23 @@ func (s *SyncAdapter) OnLogs(txLog []types.Log) {
 }
 
 func (s *SyncAdapter) DisableOnBlock(currentBlock int64) {
-	if s.blockToDisableOn != 0 && currentBlock >= s.blockToDisableOn {
-		log.Warnf("DisableOnBlock at currentBlock(%d) and s.blockToDisableOn(%d) for %s(%s)",
-			currentBlock, s.blockToDisableOn, s.ContractName, s.Address)
+	if s.BlockToDisableOn != 0 && currentBlock >= s.BlockToDisableOn {
+		log.Warnf("DisableOnBlock at currentBlock(%d) and s.BlockToDisableOn(%d) for %s(%s)",
+			currentBlock, s.BlockToDisableOn, s.ContractName, s.Address)
 		s.Disable()
 	}
 }
 
 func (s *SyncAdapter) SetBlockToDisableOn(blockNum int64) {
-	if s.Details == nil {
-		s.Details = make(map[string]interface{})
-	}
-	s.blockToDisableOn = blockNum
-	s.Details["blockToDisableOn"] = fmt.Sprintf("%d", blockNum)
+	s.BlockToDisableOn = blockNum
 	log.Warnf("Block to disable on set for %s(%s) at %d", s.GetName(), s.GetAddress(), blockNum)
 }
 
 func (s *SyncAdapter) GetBlockToDisableOn() int64 {
-	if s.blockToDisableOn == 0 {
+	if s.BlockToDisableOn == 0 {
 		return math.MaxInt64
 	}
-	return s.blockToDisableOn
+	return s.BlockToDisableOn
 }
 
 func (s *SyncAdapter) OnlyQueryAllowed() bool {

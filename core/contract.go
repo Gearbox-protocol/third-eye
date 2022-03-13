@@ -67,7 +67,7 @@ func NewContract(address, contractName string, discoveredAt int64, client ethcli
 	} else {
 		con.DiscoveredAt = discoveredAt
 	}
-	abiStr := "{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}"
+	abiStr := "[{\"inputs\":[],\"name\":\"version\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"}]"
 	versionABI, err := abi.JSON(strings.NewReader(abiStr))
 	log.CheckFatal(err)
 	con.VersionABI = versionABI
@@ -310,7 +310,7 @@ func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, *Json
 	return c.ABI.Events[eventName].Sig, &jsonData
 }
 
-func (c *Contract) FetchVersion(blockNum int64) int64 {
+func (c *Contract) FetchVersion(blockNum int64) int16 {
 	var opts *bind.CallOpts
 	if blockNum != 0 {
 		opts = &bind.CallOpts{BlockNumber: big.NewInt(blockNum)}
@@ -322,5 +322,5 @@ func (c *Contract) FetchVersion(blockNum int64) int64 {
 		return 1
 	}
 	out0 := *abi.ConvertType(out[0], new(*big.Int)).(**big.Int)
-	return out0.Int64()
+	return int16(out0.Int64())
 }

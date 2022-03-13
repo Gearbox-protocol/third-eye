@@ -19,7 +19,7 @@ type PriceCallParams struct {
 func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	calls := []multicall.Multicall2Call{}
 
-	oracle, err := repo.GetActivePriceOracle(blockNum)
+	oracle, err := repo.GetActivePriceOracleByBlockNum(blockNum)
 	if err != nil && err.Error() == "Not Found" {
 		for _ = range tokenAddrs {
 			prices = append(prices, new(big.Int))

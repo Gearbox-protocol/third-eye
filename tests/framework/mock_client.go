@@ -16,14 +16,15 @@ import (
 
 type TestClient struct {
 	// Blocks map[int64]BlockInput
-	blockNums []int64
-	events    map[int64]map[string][]types.Log
-	prices    map[string]map[int64]*big.Int
-	masks     map[int64]map[string]*big.Int
-	state     *StateStore
-	USDCAddr  string
-	WETHAddr  string
-	token     map[string]int8
+	blockNums  []int64
+	events     map[int64]map[string][]types.Log
+	prices     map[string]map[int64]*big.Int
+	masks      map[int64]map[string]*big.Int
+	state      *StateStore
+	USDCAddr   string
+	WETHAddr   string
+	token      map[string]int8
+	otherCalls map[int64]map[string][]string
 }
 
 func (t *TestClient) SetUSDC(addr string) {
@@ -31,6 +32,9 @@ func (t *TestClient) SetUSDC(addr string) {
 }
 func (t *TestClient) SetWETH(addr string) {
 	t.WETHAddr = addr
+}
+func (t *TestClient) SetOtherCalls(calls map[int64]map[string][]string) {
+	t.otherCalls = calls
 }
 func NewTestClient() *TestClient {
 	return &TestClient{
@@ -148,7 +152,13 @@ func (t *TestClient) CodeAt(ctx context.Context, contract common.Address, blockN
 }
 func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	sig := hex.EncodeToString(call.Data[:4])
-	blockNum := blockNumber.Int64()
+	var blockNum int64
+	if blockNumber != nil {
+		blockNum = blockNumber.Int64()
+	}
+	if t.otherCalls[blockNum] != nil && t.otherCalls[blockNum][sig] != nil {
+		return common.HexToHash(t.otherCalls[blockNum][sig][0]).Bytes(), nil
+	}
 	// convert on priceOracle
 	if sig == "b66102df" {
 		s := 4

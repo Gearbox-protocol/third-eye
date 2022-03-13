@@ -2,12 +2,14 @@ package repository
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/Gearbox-protocol/third-eye/artifacts/priceOracle"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 // For token with symbol/decimals
@@ -111,7 +113,7 @@ func (repo *Repository) isAllowedTokenDisabled(cm, token string) bool {
 	return repo.allowedTokens[cm][token].DisableBlock != 0
 }
 
-func (repo *Repository) GetActivePriceOracle(blockNum int64) (string, error) {
+func (repo *Repository) GetActivePriceOracleByBlockNum(blockNum int64) (string, error) {
 	oracles := repo.kit.GetAdapterAddressByName(core.PriceOracle)
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
@@ -121,10 +123,22 @@ func (repo *Repository) GetActivePriceOracle(blockNum int64) (string, error) {
 	}
 	return "", fmt.Errorf("Not Found")
 }
+func (repo *Repository) GetPriceOracleByVersion(version int16) (string, error) {
+	addrProviderAddr := repo.kit.GetAdapterAddressByName(core.AddressProvider)
+	addrProvider := repo.kit.GetAdapter(addrProviderAddr[0])
+	details := addrProvider.GetDetails()
+	if details != nil {
+		priceOracles := details["priceOracles"]
+		if priceOracles != nil {
+			return utils.ConvertToListOfString(priceOracles)[version-1], nil
+		}
+	}
+	return "", fmt.Errorf("Not Found")
+}
 
 // This function is used for getting the collateral value in usd and underlying
-func (repo *Repository) GetValueInCurrency(blockNum int64, token, currency string, amount *big.Int) *big.Int {
-	oracle, err := repo.GetActivePriceOracle(blockNum)
+func (repo *Repository) GetValueInCurrency(blockNum int64, version int16, token, currency string, amount *big.Int) *big.Int {
+	oracle, err := repo.GetPriceOracleByVersion(version)
 	log.CheckFatal(err)
 	poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
 	log.CheckFatal(err)

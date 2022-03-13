@@ -50,7 +50,7 @@ func NewCreditManager(addr string, client ethclient.ClientI, repo core.Repositor
 	cm.CommonInit()
 	switch version {
 	case 1:
-		cm.addCreditFilter()
+		cm.addCreditFilter(discoveredAt)
 	case 2:
 		cm.addCreditConfigurator()
 	}

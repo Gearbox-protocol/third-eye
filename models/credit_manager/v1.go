@@ -12,7 +12,6 @@ import (
 )
 
 func (mdl *CreditManager) CommonInit() {
-	mdl.addCreditFilter()
 	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)
 	// do state changes
 	// create underlying token
@@ -37,8 +36,8 @@ func (mdl *CreditManager) CommonInit() {
 	})
 }
 
-func (cm *CreditManager) addCreditFilter() {
-	creditFilter, err := cm.contractETHV1.CreditFilter(&bind.CallOpts{})
+func (cm *CreditManager) addCreditFilter(blockNum int64) {
+	creditFilter, err := cm.contractETHV1.CreditFilter(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
 	if err != nil {
 		log.Fatal(err)
 	}

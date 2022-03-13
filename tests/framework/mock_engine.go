@@ -92,8 +92,8 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		actualAdapter := m.repo.PrepareSyncAdapter(adapter)
 		switch actualAdapter.GetName() {
 		case core.ChainlinkPriceFeed:
-			oracle := actualAdapter.GetDetails("oracle")
-			token := actualAdapter.GetDetails("token")
+			oracle := actualAdapter.GetDetailsByKey("oracle")
+			token := actualAdapter.GetDetailsByKey("token")
 			m.repo.AddTokenOracle(token, oracle, actualAdapter.GetAddress(), actualAdapter.GetDiscoveredAt())
 			m.feedToToken[actualAdapter.GetAddress()] = token
 		case core.CreditManager:
@@ -165,7 +165,9 @@ func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
 func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 	accountMask := make(map[int64]map[string]*big.Int)
 	wrapper := m.repo.GetDCWrapper()
+	otherCalls := make(map[int64]map[string][]string)
 	for blockNum, block := range inputFile.Blocks {
+		otherCalls[blockNum] = block.Calls.OtherCalls
 		calls := core.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
 			calls.Pools[poolCall.Addr] = poolCall
@@ -187,6 +189,7 @@ func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 		}
 		wrapper.SetCalls(blockNum, calls)
 	}
+	m.client.SetOtherCalls(otherCalls)
 	m.client.setMasks(accountMask)
 }
 
