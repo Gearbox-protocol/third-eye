@@ -11,6 +11,7 @@ CREATE TABLE credit_sessions (
     balances jsonb,
     health_factor varchar(80),
     liquidator  varchar(42),
+    version smallint,
     remaining_funds varchar(80)
 );
 ALTER TABLE ONLY credit_sessions

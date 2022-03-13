@@ -159,14 +159,13 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 			cumIndexNormalized := utils.GetInt64(cumIndex, 27)
 			tokenAddr := eng.repo.GetCMState(cmAddr).UnderlyingToken
 			token := eng.repo.GetToken(tokenAddr)
-			price, isPriceInETH := eng.GetTokenLastPrice(tokenAddr)
 			poolToCI[cmAddr] = &core.CumIndexAndUToken{
 				CumulativeIndex: cumIndexNormalized,
 				Token:           tokenAddr,
 				Symbol:          token.Symbol,
 				Decimals:        token.Decimals,
-				Price:           price,
-				IsPriceInETH: isPriceInETH,
+				PriceInETH: eng.GetTokenLastPrice(tokenAddr, 1, true),
+				PriceInUSD: eng.GetTokenLastPrice(tokenAddr, 2, true),
 			}
 			// log.Infof("blockNum%d newInterest:%s tsDiff:%s cumIndexDecimal:%s predicate:%s cumIndex:%s",blockNum ,newInterest, tsDiff, cumIndexNormalized, predicate, cumIndex)
 		}
@@ -222,12 +221,11 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 	accountAddr := session.Account
 	calThresholdValue := big.NewInt(0)
 	calTotalValue := big.NewInt(0)
-	priceDenominationETH := cumIndexAndUToken.IsPriceInETH
 	// profiling
 	tokenDetails := map[string]core.TokenDetails{}
 	for tokenAddr, balance := range *sessionSnapshot.Balances {
 		decimal := eng.repo.GetToken(tokenAddr).Decimals
-		price, isPriceInETH := eng.GetTokenLastPrice(tokenAddr)
+		price := eng.GetTokenLastPrice(tokenAddr, session.Version)
 		tokenLiquidityThreshold := eng.allowedTokensThreshold[cmAddr][tokenAddr]
 		// profiling
 		tokenDetails[tokenAddr] = core.TokenDetails{
@@ -235,11 +233,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 			Decimals:          decimal,
 			TokenLiqThreshold: tokenLiquidityThreshold,
 			Symbol:            eng.repo.GetToken(tokenAddr).Symbol,
-			IsPriceInETH: isPriceInETH,
-		}
-		// set price denomination
-		if priceDenominationETH !=  isPriceInETH {
-			log.Fatal("Price denomination not same", utils.ToJson(tokenDetails))
+			Version: session.Version,
 		}
 		// token not linked continue
 		if !balance.Linked {
@@ -253,7 +247,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 
 	}
 	// the value of credit account is in terms of underlying asset
-	underlyingPrice := cumIndexAndUToken.Price
+	underlyingPrice := cumIndexAndUToken.GetPrice(session.Version)
 	calThresholdValue = new(big.Int).Quo(calThresholdValue, underlyingPrice)
 	calTotalValue = new(big.Int).Quo(calTotalValue, underlyingPrice)
 	// borrowed + interest and normalized threshold value
@@ -339,25 +333,23 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.C
 	} else {
 		remainingFunds = (*big.Int)(session.RemainingFunds)
 	}
-	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds)
+	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds, session.Version)
 	debt.ProfitInUnderlying = utils.GetFloat64Decimal(remainingFunds, cumIndexAndUToken.Decimals) - debt.CollateralInUnderlying
 	debt.CollateralInUnderlying = sessionSnapshot.CollateralInUnderlying
 	// fields in USD
 	debt.CollateralInUSD = sessionSnapshot.CollateralInUSD
 	debt.ProfitInUSD = utils.GetFloat64Decimal(remainingFundsInUSD, 8) - sessionSnapshot.CollateralInUSD
-	debt.TotalValueInUSD = utils.GetFloat64Decimal(eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert()), 8)
+	debt.TotalValueInUSD = utils.GetFloat64Decimal(
+		eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert(), session.Version), 8)
 }
 
-func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.Int {
+func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version int16) *big.Int {
 	usdcAddr := eng.repo.GetUSDCAddr()
-	tokenPrice, isPriceInETH := eng.GetTokenLastPrice(tokenAddr)
-	if !isPriceInETH {
+	tokenPrice := eng.GetTokenLastPrice(tokenAddr, version)
+	if version == 2 {
 		return new(big.Int).Mul(tokenPrice, amount) 
 	}
-	usdcPrice, isPriceInETHForUSDC := eng.GetTokenLastPrice(usdcAddr)
-	if isPriceInETHForUSDC != isPriceInETH { // both are true
-		log.Fatal("token's price in ETH(%b), usdc's Price in ETH(%b)", isPriceInETH, isPriceInETHForUSDC)
-	}
+	usdcPrice := eng.GetTokenLastPrice(usdcAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
 	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
 
@@ -367,14 +359,24 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int) *big.In
 	return new(big.Int).Mul(value, big.NewInt(100))
 }
 
-func (eng *DebtEngine) GetTokenLastPrice(addr string) (*big.Int, bool) {
-	if eng.tokenLastPrice[addr] != nil {
-		return eng.tokenLastPrice[addr].PriceBI.Convert(), eng.tokenLastPrice[addr].IsPriceInETH
-	} else if eng.repo.GetWETHAddr() == addr {
-		return core.WETHPrice, true
+func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ...bool) (*big.Int) {
+	switch version {
+	case 1:
+		if eng.tokenLastPrice[addr] != nil {
+			return eng.tokenLastPrice[addr].PriceBI.Convert()
+		} else if eng.repo.GetWETHAddr() == addr {
+			return core.WETHPrice
+		}
+	case 2:
+		if eng.tokenLastPriceV2[addr] != nil {
+			eng.tokenLastPriceV2[addr].PriceBI.Convert()
+		}
 	}
-	log.Fatal("Price not found for %s", addr)
-	return nil, false
+	if len(dontFail) > 0 && dontFail[0] == true {
+		return  nil
+	}
+	log.Fatalf("Price not found for %s version: %d", addr, version)
+	return nil
 }
 
 func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) mainnet.DataTypesCreditAccountDataExtended {
@@ -401,9 +403,9 @@ func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
 		log.Fatal(err)
 	}
 	version, err := yearnPFContract.Version(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
-	isPriceInETH := version.Int64() <= 1
+	isPriceInUSD := version.Int64() > 1
 	var decimals int8 = 18 // for eth
-	if !isPriceInETH {
+	if isPriceInUSD {
 		decimals = 8 // for usd
 	}
 	eng.AddTokenLastPrice(&core.PriceFeed{
@@ -413,6 +415,6 @@ func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
 		RoundId:     roundData.RoundId.Int64(),
 		PriceBI:  (*core.BigInt)(roundData.Answer),
 		Price:    utils.GetFloat64Decimal(roundData.Answer, decimals),
-		IsPriceInETH: isPriceInETH,
+		IsPriceInUSD: isPriceInUSD,
 	})
 }

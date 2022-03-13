@@ -27,11 +27,10 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDetails *SessionCloseDetails) {
 	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
-	session := mdl.Repo.GetCreditSession(sessionId)
+	session := mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{})
 	// set session fields
 	session.ClosedAt = blockNum
 	session.Status = closeDetails.Status
-	session.IsDirty = true
 	// this checks prevent getting data for credit session that exist only within a block
 	// datacompressor query will fail
 	if session.Since == session.ClosedAt {
@@ -85,8 +84,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 }
 
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
-	session := mdl.Repo.GetCreditSession(sessionId)
-	session.IsDirty = true
+	session := mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{})
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
 	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)

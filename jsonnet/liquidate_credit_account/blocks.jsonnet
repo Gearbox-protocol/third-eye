@@ -39,7 +39,7 @@
         feed: '#ChainlinkPriceFeed_1',
         price: 0.0008,
         priceBI: '800000000000000',
-        isPriceInETH: true,
+        isPriceInUSD: false,
         roundId: 2,
         token: '#Token_1',
         uniPriceFetchBlock: 0,

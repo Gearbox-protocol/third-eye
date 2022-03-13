@@ -3,6 +3,8 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"reflect"
+	"math/big"
 )
 
 func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
@@ -51,6 +53,28 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 
 func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {
 	return repo.sessions[sessionId]
+}
+func (repo *Repository) UpdateCreditSession(sessionId string, values map[string]interface{}) *core.CreditSession {
+	session := repo.sessions[sessionId]
+	session.IsDirty = true
+	ref := reflect.ValueOf(session).Elem()
+	for k,v :=range values {
+		switch v.(type) {
+		case string:
+			ref.FieldByName(k).SetString(v.(string))
+		case int64:
+			ref.FieldByName(k).SetInt(v.(int64))
+		case int:
+			ref.FieldByName(k).SetInt(int64(v.(int)))
+		case *big.Int:
+			val := (*core.BigInt)(v.(*big.Int))
+			pointer := reflect.ValueOf(val)
+			ref.FieldByName(k).Set(pointer)
+		default:
+			log.Fatal("Not able to set %s %v", k,v)
+		}
+	}
+	return session
 }
 
 func (repo *Repository) GetSessions() map[string]*core.CreditSession {

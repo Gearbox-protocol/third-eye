@@ -122,6 +122,7 @@ func (repo *Repository) GetActivePriceOracle(blockNum int64) (string, error) {
 	return "", fmt.Errorf("Not Found")
 }
 
+// This function is used for getting the collateral value in usd and underlying
 func (repo *Repository) GetValueInCurrency(blockNum int64, token, currency string, amount *big.Int) *big.Int {
 	oracle, err := repo.GetActivePriceOracle(blockNum)
 	log.CheckFatal(err)

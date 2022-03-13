@@ -123,16 +123,16 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 		new(big.Int).Mul(pricePerShare, roundData.Answer),
 		mdl.DecimalDivider,
 	)
-	isPriceInETH := mdl.GetVersion() <= 1
+	isPriceInUSD := mdl.GetVersion() > 1
 	var decimals int8 = 18 // for eth
-	if !isPriceInETH {
+	if isPriceInUSD {
 		decimals = 8 // for usd
 	}
 	return &core.PriceFeed{
 		RoundId:    roundData.RoundId.Int64(),
 		PriceBI: (*core.BigInt)(newAnswer),
 		Price:   utils.GetFloat64Decimal(newAnswer, decimals),
-		IsPriceInETH: isPriceInETH,
+		IsPriceInUSD: isPriceInUSD,
 	}
 }
 

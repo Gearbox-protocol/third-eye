@@ -15,10 +15,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, acco
 	borrowAmount,
 	referralCode *big.Int) error {
 	// manager state
-	mdl.State.TotalOpenedAccounts++
-	mdl.State.OpenedAccountsCount++
-	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, borrowAmount)
-	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
+	mdl.CMStatsOnOpenAccount(borrowAmount)
 	// other operations
 	cmAddr := txLog.Address.Hex()
 	sessionId := fmt.Sprintf("%s_%d_%d", account, txLog.BlockNumber, txLog.Index)
@@ -55,6 +52,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, acco
 		InitialAmount:  (*core.BigInt)(amount),
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		IsDirty:        true,
+		Version: 1,
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
 	mdl.AddCollateralToSession(blockNum, sessionId, mdl.State.UnderlyingToken, amount)
@@ -232,6 +230,8 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 	}
 	mdl.PoolBorrow(txLog, sessionId, borrower, amount)
 	mdl.AddAccountOperation(accountOperation)
+	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
+	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Mul(session.BorrowedAmount.Convert(), amount))
 	mdl.UpdatedSessions[sessionId]++
 	return nil
 }
@@ -256,9 +256,7 @@ func (mdl *CreditManager) onTransferAccount(txLog *types.Log, owner, newOwner st
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
 	mdl.AddCreditOwnerSession(newOwner, sessionId)
-	session := mdl.Repo.GetCreditSession(sessionId)
-	session.Borrower = newOwner
-	session.IsDirty = true
+	mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{"Borrower": newOwner})
 	return nil
 }
 

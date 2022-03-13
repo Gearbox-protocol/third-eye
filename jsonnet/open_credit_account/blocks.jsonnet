@@ -192,7 +192,7 @@
       price: 1e-18,
       priceBI: '1',
       roundId: 300000000000000,
-      isPriceInETH: true,
+      isPriceInUSD: false,
       token: '#Token_1',
       uniPriceFetchBlock: 0,
       uniswapv2Price: 0,

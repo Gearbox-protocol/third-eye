@@ -75,7 +75,7 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.Tr
 		}
 		tokenAddrs = append(tokenAddrs, token)
 	}
-	prices := repo.GetPriceInUSD(blockNum, tokenAddrs)
+	prices := repo.GetPricesInUSD(blockNum, tokenAddrs)
 	for token, amt := range *tss.Balances {
 		totalValueInUSD += amt * prices[token]
 	}
@@ -100,7 +100,7 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
 }
 
-func (repo *Repository) GetPriceInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
 	priceByToken := core.JsonFloatMap{}
 	var tokenForCalls []string
 	var poolForDieselRate []string

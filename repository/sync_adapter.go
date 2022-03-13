@@ -74,13 +74,22 @@ func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	return nil
 }
 
-func (repo *Repository) AddSyncAdapter(adapterI core.SyncAdapterI) {
+func (repo *Repository) AddSyncAdapter(newAdapterI core.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.config.ROLLBACK == "1" {
 		return
 	}
-	repo.addSyncAdapter(adapterI)
+	if newAdapterI.GetName() == core.PriceOracle {
+		oldPriceOracleAddrs := repo.kit.GetAdapterAddressByName(core.PriceOracle)
+		for _, addr:= range oldPriceOracleAddrs {
+			oldPriceOracle := repo.kit.GetAdapter(addr)
+			if ! oldPriceOracle.IsDisabled() {
+				oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
+			}
+		}
+	}
+	repo.addSyncAdapter(newAdapterI)
 }
 
 func (repo *Repository) addSyncAdapter(adapterI core.SyncAdapterI) {

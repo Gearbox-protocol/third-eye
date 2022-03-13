@@ -14,6 +14,8 @@ type PriceCallParams struct {
 	Address common.Address
 }
 
+// multicall for getting price in batch
+// For only getting the prices for calculating the treasury value
 func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	calls := []multicall.Multicall2Call{}
 

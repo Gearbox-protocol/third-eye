@@ -35,8 +35,8 @@ func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
 func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 	data := []*core.PriceFeed{}
 	query := `SELECT price_feeds.* FROM price_feeds
-	JOIN (SELECT max(block_num) AS bn, token FROM price_feeds WHERE block_num <= ? GROUP BY token) AS max_pf
-	ON max_pf.bn = price_feeds.block_num AND max_pf.token = price_feeds.token WHERE block_num <= ?`
+	JOIN (SELECT id, token, price_in_usd FROM price_feeds WHERE block_num <= ? GROUP BY token, price_in_usd) AS max_pf
+	ON max_pf.id = price_feeds.id`
 	err := eng.db.Raw(query, lastDebtSync, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -47,5 +47,9 @@ func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 }
 
 func (eng *DebtEngine) AddTokenLastPrice(pf *core.PriceFeed) {
-	eng.tokenLastPrice[pf.Token] = pf
+	if !pf.IsPriceInUSD {
+		eng.tokenLastPrice[pf.Token] = pf
+	} else {
+		eng.tokenLastPriceV2[pf.Token] = pf
+	}
 }

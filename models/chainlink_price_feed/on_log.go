@@ -39,9 +39,9 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			if !ok {
 				log.Fatal("answer parsing failed")
 			}
-			isPriceInETH := mdl.GetVersion() <= 1
+			isPriceInUSD := mdl.GetVersion() > 1
 			var decimals int8 = 18 // for eth
-			if !isPriceInETH {
+			if isPriceInUSD {
 				decimals = 8 // for usd
 			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
@@ -52,7 +52,7 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				RoundId:     roundId,
 				PriceBI:  (*core.BigInt)(answerBI),
 				Price:    utils.GetFloat64Decimal(answerBI, decimals),
-				IsPriceInETH: isPriceInETH,
+				IsPriceInUSD: isPriceInUSD,
 			}
 			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
 				mdl.compareDiff(mdl.prevPriceFeed, uniPrices[uniPricesInd])

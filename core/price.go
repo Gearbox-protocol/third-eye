@@ -18,7 +18,7 @@ type PriceFeed struct {
 	Feed               string  `gorm:"column:feed" json:"feed"`
 	RoundId            int64   `gorm:"column:round_id" json:"roundId"`
 	PriceBI         *BigInt `gorm:"column:price_bi" json:"priceBI"`
-	IsPriceInETH       bool `gorm:"column:price_in_eth" json:"isPriceInETH"`
+	IsPriceInUSD       bool `gorm:"column:price_in_usd" json:"isPriceInUSD"`
 	Uniswapv2Price     float64 `gorm:"column:uniswapv2_price" json:"uniswapv2Price"`
 	Uniswapv3Twap      float64 `gorm:"column:uniswapv3_twap" json:"uniswapv3Twap"`
 	Uniswapv3Price     float64 `gorm:"column:uniswapv3_price" json:"uniswapv3Price"`

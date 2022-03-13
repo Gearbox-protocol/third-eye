@@ -60,7 +60,7 @@ type TokenDetails struct {
 	Decimals          int8
 	TokenLiqThreshold *BigInt `json:"tokenLiqThreshold"`
 	Symbol            string  `json:"symbol"`
-	IsPriceInETH bool `json:"isPriceInETH"`
+	Version int16 `json:"version"`
 }
 type DebtProfile struct {
 	*Debt                  `json:"debt"`
@@ -74,10 +74,20 @@ type DebtProfile struct {
 type CumIndexAndUToken struct {
 	CumulativeIndex *big.Int
 	Token           string
-	Price           *big.Int
 	Decimals        int8
 	Symbol          string
-	IsPriceInETH bool
+	PriceInETH  *big.Int
+	PriceInUSD    *big.Int
+}
+
+func (c *CumIndexAndUToken) GetPrice(version int16) *big.Int {
+	switch version {
+	case 1 :
+		return c.PriceInETH
+	case 2 :
+		return c.PriceInUSD
+	}
+	return nil
 }
 
 func (debt *DebtProfile) Json() []byte {
