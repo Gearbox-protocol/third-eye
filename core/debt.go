@@ -48,7 +48,8 @@ func (CurrentDebt) TableName() string {
 }
 
 type DebtSync struct {
-	LastCalculatedAt int64 `gorm:"last_calculated_at"`
+	LastCalculatedAt int64 `gorm:"column:last_calculated_at"`
+	FieldSet         bool  `gorm:"column:field_set;primaryKey"`
 }
 
 func (DebtSync) TableName() string {

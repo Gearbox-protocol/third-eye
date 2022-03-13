@@ -140,7 +140,9 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	}
 	log.Infof("Flushing %d for block:%d", debtLen, newDebtSyncTill)
 	tx := eng.db.Begin()
-	err := tx.Create(&core.DebtSync{LastCalculatedAt: newDebtSyncTill}).Error
+	err := tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&core.DebtSync{LastCalculatedAt: newDebtSyncTill, FieldSet: true}).Error
 	log.CheckFatal(err)
 	liquidableAccounts := []*core.LiquidableAccount{}
 	for _, la := range eng.liquidableBlockTracker {

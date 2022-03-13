@@ -1,5 +1,6 @@
 CREATE TABLE debt_sync (
-    last_calculated_at integer
+    last_calculated_at integer,
+    field_set boolean,
 );
 
 CREATE TABLE debts (
