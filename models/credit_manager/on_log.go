@@ -52,7 +52,7 @@ func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*core.TokenTransfer) {
 	for sessionID, txs := range sessionIDToTxs {
 		session := mdl.Repo.GetCreditSession(sessionID)
-		txsList :=  core.TokenTransferList(txs)
+		txsList := core.TokenTransferList(txs)
 		sort.Sort(txsList)
 		for _, tx := range txsList {
 			var amount *big.Int

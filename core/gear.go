@@ -50,7 +50,7 @@ type RepositoryI interface {
 	DisableProtocol(blockNum int64, logID uint, txHash, cm, creditFilter, protocol string)
 	AddAllowedToken(logID uint, txHash, creditFilter string, atoken *AllowedToken)
 	DisableAllowedToken(blockNum int64, logID uint, txHash string, creditManager, creditFilter, token string)
-	// v2 
+	// v2
 	AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *AllowedToken)
 	UpdateLimits(logID uint, txHash string, params *Parameters)
 	UpdateFees(logID uint, txHash string, params *Parameters)

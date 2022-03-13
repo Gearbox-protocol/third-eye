@@ -45,7 +45,7 @@ type Contract struct {
 	ContractName string            `gorm:"column:type" json:"type"`
 	Client       ethclient.ClientI `gorm:"-" json:"-"`
 	ABI          *abi.ABI          `gorm:"-" json:"-"`
-	VersionABI abi.ABI `gorm:"-" json:"-"`
+	VersionABI   abi.ABI           `gorm:"-" json:"-"`
 }
 
 func (c *Contract) Disable() {
@@ -100,13 +100,13 @@ func GetAbi(contractName string) *abi.ABI {
 		Pool:                      poolService.PoolServiceMetaData,
 
 		// GetUnderlyingToken
-		"DieselToken":     dieselToken.DieselTokenMetaData,
-		GearToken:         gearToken.GearTokenMetaData,
-		"TokenMock":       tokenMock.TokenMockMetaData,
-		"Token":           eRC20.ERC20MetaData,
-		"Uniswapv2Pool":   &bind.MetaData{ABI: uniswapv2Pool.Uniswapv2PoolABI},
-		"Uniswapv3Pool":   &bind.MetaData{ABI: uniswapv3Pool.Uniswapv3PoolABI},
-		"Uniswapv2Router": &bind.MetaData{ABI: uniswapv2Router.Uniswapv2RouterABI},
+		"DieselToken":        dieselToken.DieselTokenMetaData,
+		GearToken:            gearToken.GearTokenMetaData,
+		"TokenMock":          tokenMock.TokenMockMetaData,
+		"Token":              eRC20.ERC20MetaData,
+		"Uniswapv2Pool":      &bind.MetaData{ABI: uniswapv2Pool.Uniswapv2PoolABI},
+		"Uniswapv3Pool":      &bind.MetaData{ABI: uniswapv3Pool.Uniswapv3PoolABI},
+		"Uniswapv2Router":    &bind.MetaData{ABI: uniswapv2Router.Uniswapv2RouterABI},
 		"CreditConfigurator": &bind.MetaData{ABI: creditConfigurator.CreditConfiguratorABI},
 	}
 	abiStr, ok := metadataMap[contractName]
@@ -310,7 +310,7 @@ func (c *Contract) ParseEvent(eventName string, txLog *types.Log) (string, *Json
 	return c.ABI.Events[eventName].Sig, &jsonData
 }
 
-func (c *Contract) FetchVersion(blockNum int64 ) int64 {
+func (c *Contract) FetchVersion(blockNum int64) int64 {
 	var opts *bind.CallOpts
 	if blockNum != 0 {
 		opts = &bind.CallOpts{BlockNumber: big.NewInt(blockNum)}

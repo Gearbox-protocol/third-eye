@@ -254,10 +254,10 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 			decimals = 8 // for usd
 		}
 		priceData = &core.PriceFeed{
-			RoundId:    roundData.RoundId.Int64(),
-			PriceBI: (*core.BigInt)(roundData.Answer),
-			Price:   utils.GetFloat64Decimal(roundData.Answer, decimals),
-			IsPriceInUSD: isPriceInUSD,  // for 2 and above the prices are in usd
+			RoundId:      roundData.RoundId.Int64(),
+			PriceBI:      (*core.BigInt)(roundData.Answer),
+			Price:        utils.GetFloat64Decimal(roundData.Answer, decimals),
+			IsPriceInUSD: isPriceInUSD, // for 2 and above the prices are in usd
 		}
 		adapter.setNotified(false)
 	} else {

@@ -108,10 +108,10 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		limitEvent, err := mdl.cfgContract.ParseLimitsUpdated(txLog)
 		log.CheckFatal(err)
 		mdl.Repo.UpdateLimits(txLog.Index, txLog.TxHash.Hex(), &core.Parameters{
-			BlockNum:            int64(txLog.BlockNumber),
-			CreditManager:       mdl.GetAddress(),
-			MinAmount:           (*core.BigInt)(limitEvent.MinBorrowedAmount),
-			MaxAmount:           (*core.BigInt)(limitEvent.MaxBorrowedAmount),
+			BlockNum:      int64(txLog.BlockNumber),
+			CreditManager: mdl.GetAddress(),
+			MinAmount:     (*core.BigInt)(limitEvent.MinBorrowedAmount),
+			MaxAmount:     (*core.BigInt)(limitEvent.MaxBorrowedAmount),
 		})
 	case core.Topic("FeesUpdated(uint256,uint256,uint256)"):
 		feesEvent, err := mdl.cfgContract.ParseFeesUpdated(txLog)

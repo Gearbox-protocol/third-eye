@@ -32,7 +32,7 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 		Details:  map[string]interface{}{"oracle": oracle, "token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
-		V: version,
+		V:        version,
 	}
 	adapter := NewChainlinkPriceFeedFromAdapter(
 		syncAdapter,

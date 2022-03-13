@@ -54,7 +54,7 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 		Since:          blockNum,
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		IsDirty:        true,
-		Version: 1,
+		Version:        1,
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
 	// mdl.AddCollateralToSession(blockNum, sessionId, mdl.State.UnderlyingToken, amount)
@@ -87,9 +87,9 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	mdl.AddAccountOperation(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		// RemainingFunds: remainingFunds,
-		Status:         core.Closed,
-		TxHash:         txLog.TxHash.Hex(),
-		Borrower:       owner,
+		Status:   core.Closed,
+		TxHash:   txLog.TxHash.Hex(),
+		Borrower: owner,
 	}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)

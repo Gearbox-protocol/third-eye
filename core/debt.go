@@ -60,7 +60,7 @@ type TokenDetails struct {
 	Decimals          int8
 	TokenLiqThreshold *BigInt `json:"tokenLiqThreshold"`
 	Symbol            string  `json:"symbol"`
-	Version int16 `json:"version"`
+	Version           int16   `json:"version"`
 }
 type DebtProfile struct {
 	*Debt                  `json:"debt"`
@@ -76,15 +76,15 @@ type CumIndexAndUToken struct {
 	Token           string
 	Decimals        int8
 	Symbol          string
-	PriceInETH  *big.Int
-	PriceInUSD    *big.Int
+	PriceInETH      *big.Int
+	PriceInUSD      *big.Int
 }
 
 func (c *CumIndexAndUToken) GetPrice(version int16) *big.Int {
 	switch version {
-	case 1 :
+	case 1:
 		return c.PriceInETH
-	case 2 :
+	case 2:
 		return c.PriceInUSD
 	}
 	return nil

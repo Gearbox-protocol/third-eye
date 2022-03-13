@@ -1,14 +1,16 @@
 package credit_manager
+
 import (
-	"math/big"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
+	"math/big"
 )
+
 func (mdl *CreditManager) CommonInit() {
 	mdl.addCreditFilter()
 	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)

@@ -164,8 +164,8 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 				Token:           tokenAddr,
 				Symbol:          token.Symbol,
 				Decimals:        token.Decimals,
-				PriceInETH: eng.GetTokenLastPrice(tokenAddr, 1, true),
-				PriceInUSD: eng.GetTokenLastPrice(tokenAddr, 2, true),
+				PriceInETH:      eng.GetTokenLastPrice(tokenAddr, 1, true),
+				PriceInUSD:      eng.GetTokenLastPrice(tokenAddr, 2, true),
 			}
 			// log.Infof("blockNum%d newInterest:%s tsDiff:%s cumIndexDecimal:%s predicate:%s cumIndex:%s",blockNum ,newInterest, tsDiff, cumIndexNormalized, predicate, cumIndex)
 		}
@@ -233,7 +233,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 			Decimals:          decimal,
 			TokenLiqThreshold: tokenLiquidityThreshold,
 			Symbol:            eng.repo.GetToken(tokenAddr).Symbol,
-			Version: session.Version,
+			Version:           session.Version,
 		}
 		// token not linked continue
 		if !balance.Linked {
@@ -347,7 +347,7 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version
 	usdcAddr := eng.repo.GetUSDCAddr()
 	tokenPrice := eng.GetTokenLastPrice(tokenAddr, version)
 	if version == 2 {
-		return new(big.Int).Mul(tokenPrice, amount) 
+		return new(big.Int).Mul(tokenPrice, amount)
 	}
 	usdcPrice := eng.GetTokenLastPrice(usdcAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
@@ -359,7 +359,7 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version
 	return new(big.Int).Mul(value, big.NewInt(100))
 }
 
-func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ...bool) (*big.Int) {
+func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ...bool) *big.Int {
 	switch version {
 	case 1:
 		if eng.tokenLastPrice[addr] != nil {
@@ -373,7 +373,7 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ..
 		}
 	}
 	if len(dontFail) > 0 && dontFail[0] == true {
-		return  nil
+		return nil
 	}
 	log.Fatalf("Price not found for %s version: %d", addr, version)
 	return nil
@@ -409,12 +409,12 @@ func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
 		decimals = 8 // for usd
 	}
 	eng.AddTokenLastPrice(&core.PriceFeed{
-		BlockNumber: blockNum,
-		Token:       token,
-		Feed:        feed,
-		RoundId:     roundData.RoundId.Int64(),
-		PriceBI:  (*core.BigInt)(roundData.Answer),
-		Price:    utils.GetFloat64Decimal(roundData.Answer, decimals),
+		BlockNumber:  blockNum,
+		Token:        token,
+		Feed:         feed,
+		RoundId:      roundData.RoundId.Int64(),
+		PriceBI:      (*core.BigInt)(roundData.Answer),
+		Price:        utils.GetFloat64Decimal(roundData.Answer, decimals),
 		IsPriceInUSD: isPriceInUSD,
 	})
 }

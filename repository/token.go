@@ -78,7 +78,7 @@ func (repo *Repository) loadAllowedTokensState() {
 	data := []*core.AllowedToken{}
 	// v1 query
 	// err := repo.db.Raw("SELECT * FROM allowed_tokens where disable_block = 0 order by block_num").Find(&data).Error
-	// v2 query 
+	// v2 query
 	err := repo.db.Raw("SELECT distinct on (credit_manager, token) * FROM allowed_tokens order by credit_manager, token, block_num DESC").Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {

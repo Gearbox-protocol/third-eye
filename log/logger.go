@@ -158,7 +158,7 @@ func send(message string) {
 	}
 	err := ch.Publish(
 		"TelegramBot", // exchange
-		netName,    // routing key
+		netName,       // routing key
 		false,         // mandatory
 		false,         // immediate
 		amqp.Publishing{

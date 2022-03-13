@@ -1,9 +1,9 @@
 package credit_manager
 
 import (
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManagerv2"
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
@@ -24,15 +24,15 @@ type SessionCloseDetails struct {
 
 type CreditManager struct {
 	*core.SyncAdapter
-	contractETHV1     *creditManager.CreditManager
-	contractETHV2     *creditManagerv2.CreditManagerv2
-	facadeContractV2     *creditFacade.CreditFacade
-	LastTxHash      string
-	executeParams   []core.ExecuteParams
-	State           *core.CreditManagerState
-	lastEventBlock  int64
-	UpdatedSessions map[string]int
-	ClosedSessions  map[string]*SessionCloseDetails
+	contractETHV1    *creditManager.CreditManager
+	contractETHV2    *creditManagerv2.CreditManagerv2
+	facadeContractV2 *creditFacade.CreditFacade
+	LastTxHash       string
+	executeParams    []core.ExecuteParams
+	State            *core.CreditManagerState
+	lastEventBlock   int64
+	UpdatedSessions  map[string]int
+	ClosedSessions   map[string]*SessionCloseDetails
 }
 
 func (CreditManager) TableName() string {

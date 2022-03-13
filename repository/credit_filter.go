@@ -61,11 +61,11 @@ func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string,
 	})
 }
 
-// allowed token 
+// allowed token
 
 // v1 logic
 // - token, threshold emitted.
-// Take the difference from the previous lt present for this token. 
+// Take the difference from the previous lt present for this token.
 // Store dao operation, add allowed token state with new lt. Add allowed token to table.
 
 // v2 logic
@@ -89,9 +89,9 @@ func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter strin
 			TxHash:      txHash,
 			Contract:    creditFilter,
 			Type:        core.TokenAllowedV2,
-			Args:        &core.Json{
-				"token":                    atoken.Token,
-				"creditManager":            atoken.CreditManager,
+			Args: &core.Json{
+				"token":         atoken.Token,
+				"creditManager": atoken.CreditManager,
 			},
 		})
 		return
@@ -118,7 +118,7 @@ func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter strin
 		repo.disabledTokens = append(repo.disabledTokens, prevToken)
 	}
 	repo.addAllowedTokenState(atoken, true)
-	var daoEventType uint 
+	var daoEventType uint
 	if atoken.LiquidityThreshold == nil {
 		daoEventType = core.TokenAllowedV2
 	} else {

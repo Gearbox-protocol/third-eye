@@ -36,7 +36,7 @@ func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclien
 		Details:  map[string]interface{}{"token": token},
 		LastSync: discoveredAt - 1,
 		Repo:     repo,
-		V: version,
+		V:        version,
 	}
 	// add token oracle for db
 	// feed is also oracle address for yearn address
@@ -129,9 +129,9 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 		decimals = 8 // for usd
 	}
 	return &core.PriceFeed{
-		RoundId:    roundData.RoundId.Int64(),
-		PriceBI: (*core.BigInt)(newAnswer),
-		Price:   utils.GetFloat64Decimal(newAnswer, decimals),
+		RoundId:      roundData.RoundId.Int64(),
+		PriceBI:      (*core.BigInt)(newAnswer),
+		Price:        utils.GetFloat64Decimal(newAnswer, decimals),
 		IsPriceInUSD: isPriceInUSD,
 	}
 }

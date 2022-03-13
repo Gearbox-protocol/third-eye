@@ -103,7 +103,7 @@ func (repo *Repository) paramsDAOV2(logID uint, txHash string, params *core.Para
 		oldCMParams = core.NewParameters()
 	}
 	args := oldCMParams.Diff(params)
-	for _, field := range fieldToRemove{
+	for _, field := range fieldToRemove {
 		delete(*args, field)
 	}
 	repo.addDAOOperation(&core.DAOOperation{
@@ -126,13 +126,13 @@ func (repo *Repository) UpdateLimits(logID uint, txHash string, params *core.Par
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
 	}
-	repo.paramsDAOV2(logID, txHash, params, 
-		[]string{"feeLiquidation","LiquidationDiscount","feeInterest","maxLeverage"}, core.LimitsUpdated)
+	repo.paramsDAOV2(logID, txHash, params,
+		[]string{"feeLiquidation", "LiquidationDiscount", "feeInterest", "maxLeverage"}, core.LimitsUpdated)
 	newParams := &core.Parameters{
-		MinAmount: params.MinAmount,
-		MaxAmount: params.MaxAmount,
-		FeeInterest: oldCMParams.FeeInterest,
-		FeeLiquidation: oldCMParams.FeeInterest,
+		MinAmount:           params.MinAmount,
+		MaxAmount:           params.MaxAmount,
+		FeeInterest:         oldCMParams.FeeInterest,
+		FeeLiquidation:      oldCMParams.FeeInterest,
 		LiquidationDiscount: oldCMParams.LiquidationDiscount,
 	}
 	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)
@@ -148,12 +148,12 @@ func (repo *Repository) UpdateFees(logID uint, txHash string, params *core.Param
 		oldCMParams = core.NewParameters()
 	}
 	repo.paramsDAOV2(logID, txHash, params,
-		[]string{"maxAmount","maxLeverage","minAmount"}, core.FeesUpdated)
+		[]string{"maxAmount", "maxLeverage", "minAmount"}, core.FeesUpdated)
 	newParams := &core.Parameters{
-		MinAmount: oldCMParams.MinAmount,
-		MaxAmount: oldCMParams.MaxAmount,
-		FeeInterest: params.FeeInterest,
-		FeeLiquidation: params.FeeInterest,
+		MinAmount:           oldCMParams.MinAmount,
+		MaxAmount:           oldCMParams.MaxAmount,
+		FeeInterest:         params.FeeInterest,
+		FeeLiquidation:      params.FeeInterest,
 		LiquidationDiscount: params.LiquidationDiscount,
 	}
 	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)

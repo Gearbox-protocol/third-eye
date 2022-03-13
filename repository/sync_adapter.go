@@ -82,9 +82,9 @@ func (repo *Repository) AddSyncAdapter(newAdapterI core.SyncAdapterI) {
 	}
 	if newAdapterI.GetName() == core.PriceOracle {
 		oldPriceOracleAddrs := repo.kit.GetAdapterAddressByName(core.PriceOracle)
-		for _, addr:= range oldPriceOracleAddrs {
+		for _, addr := range oldPriceOracleAddrs {
 			oldPriceOracle := repo.kit.GetAdapter(addr)
-			if ! oldPriceOracle.IsDisabled() {
+			if !oldPriceOracle.IsDisabled() {
 				oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
 			}
 		}

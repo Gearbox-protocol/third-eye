@@ -12,7 +12,7 @@ import (
 type CreditFilter struct {
 	*core.SyncAdapter
 	filterContract *creditFilter.CreditFilter
-	cfgContract *creditConfigurator.CreditConfigurator
+	cfgContract    *creditConfigurator.CreditConfigurator
 }
 
 func NewCreditFilter(addr, contractName, creditManager string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *CreditFilter {
@@ -29,7 +29,7 @@ func NewCreditFilterFromAdapter(adapter *core.SyncAdapter) *CreditFilter {
 		log.Fatal(err)
 	}
 	obj := &CreditFilter{
-		SyncAdapter: adapter,
+		SyncAdapter:    adapter,
 		filterContract: cfContract,
 	}
 	if adapter.ContractName == core.CreditConfigurator {

@@ -46,12 +46,12 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
 			priceFeed = &core.PriceFeed{
-				BlockNumber: blockNum,
-				Token:       mdl.Token,
-				Feed:        mdl.Address,
-				RoundId:     roundId,
-				PriceBI:  (*core.BigInt)(answerBI),
-				Price:    utils.GetFloat64Decimal(answerBI, decimals),
+				BlockNumber:  blockNum,
+				Token:        mdl.Token,
+				Feed:         mdl.Address,
+				RoundId:      roundId,
+				PriceBI:      (*core.BigInt)(answerBI),
+				Price:        utils.GetFloat64Decimal(answerBI, decimals),
 				IsPriceInUSD: isPriceInUSD,
 			}
 			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
@@ -97,7 +97,7 @@ func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPoolPrices *co
 		Feed:                 pf.Feed,
 	})
 	// For usd
-	if mdl.GetVersion() <=1 && (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.Price)) ||
+	if mdl.GetVersion() <= 1 && (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.Price)) ||
 		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.Price)) ||
 		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.Price)) {
 		if !mdl.isNotified() {

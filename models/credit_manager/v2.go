@@ -1,10 +1,11 @@
 package credit_manager
+
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 )
 
 func (cm *CreditManager) addCreditConfigurator() {
