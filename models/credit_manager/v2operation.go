@@ -20,7 +20,6 @@ func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
 }
 
 // multicall
-// sessionId is passed as multicall events for opencreditaccount are missing sessionId as sessionId is created on opencreditaccount
 func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 	account := strings.Split(mainAction.SessionId, "_")[0]
 	txHash := mainAction.TxHash
@@ -61,7 +60,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 				SessionId:     event.SessionId,
 				CreditAccount: common.HexToAddress(account),
 				Protocol:      common.HexToAddress(event.Dapp),
-				Borrower:      common.HexToAddress(event.Borrower),
+				Borrower:      common.HexToAddress(mainAction.Borrower),
 				Index:         event.LogId,
 				BlockNumber:   event.BlockNumber,
 			})

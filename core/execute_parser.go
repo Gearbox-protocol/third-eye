@@ -25,7 +25,7 @@ func (f *FuncWithMultiCall) LenOfMultiCalls() int {
 
 type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
-	GetMainEventLogs(txHash, creditManager string) []*FuncWithMultiCall
+	GetMainEventLogs(txHash, creditFacade string) []*FuncWithMultiCall
 	GetTransfers(txHash string, owner []string) Transfers
 }
 

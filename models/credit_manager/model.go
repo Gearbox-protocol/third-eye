@@ -97,9 +97,15 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		if obj.Details != nil && obj.Details["creditFacade"] != nil {
 			creditFacadeAddr = common.HexToAddress(obj.Details["creditFacade"].(string))
 		} else {
-			creditFacadeAddr, err = cmContract.CreditFacade(&bind.CallOpts{})
+			// should only be called on discovered, not when loading form db.
+			opts := &bind.CallOpts{BlockNumber: big.NewInt(adapter.DiscoveredAt)}
+			creditFacadeAddr, err = cmContract.CreditFacade(opts)
 			log.CheckFatal(err)
 			obj.SetCreditFacade(creditFacadeAddr)
+			var creditConfigurator common.Address
+			creditConfigurator, err = cmContract.CreditConfigurator(opts)
+			log.CheckFatal(err)
+			obj.Details["configurator"] = creditConfigurator.Hex()
 		}
 
 	}
@@ -113,7 +119,11 @@ func (mdl *CreditManager) SetCreditFacade(creditFacadeAddr common.Address) {
 	if mdl.Details == nil {
 		mdl.Details = map[string]interface{}{}
 	}
-	mdl.Details["creditFacade"] = creditFacadeAddr.Hex()
+	mdl.Details["facade"] = creditFacadeAddr.Hex()
+}
+
+func (mdl *CreditManager) GetCreditFacadeAddr() string {
+	return mdl.GetDetailsByKey("facade")
 }
 
 func (mdl *CreditManager) GetUnderlyingDecimal() int8 {

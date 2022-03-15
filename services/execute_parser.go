@@ -132,60 +132,6 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	return calls
 }
 
-
-func (ep *ExecuteParser) GetMainEventLogs(txHash, creditManager string) ([]*core.FuncWithMultiCall) {
-	trace := ep.GetTxTrace(txHash)
-	return ep.getOpenEvents(trace.CallTrace, common.HexToAddress(creditManager))
-}
-func (ep *ExecuteParser) GetTransfers(txHash string, accounts []string) (core.Transfers) {
-	trace := ep.GetTxTrace(txHash)
-	return ep.getTransfersToUser(trace, accounts)
-}
-
-func (ep *ExecuteParser) getOpenEvents(call *Call, creditManager common.Address) []*core.FuncWithMultiCall {
-	openFuncs := []*core.FuncWithMultiCall{}
-	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
-		if creditManager ==  && len(call.Input) >= 10 {
-			switch call.Input[:10] {
-			case "":
-				openFuncs = append(openFuncs, &core.FuncWithMultiCall{})
-			}
-		} else {
-			for _, c := range call.Calls {
-				c.Depth = call.Depth + 1
-				openFuncs = append(openFuncs, ep.getOpenEvents(c, creditManager)...)
-			}
-		}
-	}
-	return openFuncs
-}
-
-func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, accounts []string) core.Transfers {
-	transfers := core.Transfers{}
-	for _, raw := range trace.Logs {
-		eventLog := raw.Raw
-		to := common.HexToAddress(eventLog.Topics[2])
-		var isTransferToUser bool
-		for _, account := range accounts {
-			isTransferToUser = isTransferToUser || common.HexToAddress(account) == to
-		}
-		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" &&
-			isTransferToUser {
-				amt, b := new(big.Int).SetString(eventLog.Data[2:], 16)
-				if !b {
-					log.Fatal("failed at serializing transfer data in int")
-				}
-				token := common.HexToAddress(eventLog.Address).Hex()
-				oldBalance := new(big.Int)
-				if transfers[token] != nil {
-					oldBalance = transfers[token]
-				}
-				transfers[token] = new(big.Int).Add(amt,oldBalance)
-			}
-	}
-	return transfers
-}
-
 var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
 	uniswapV2Adapter.UniswapV2AdapterABI, uniswapV3Adapter.UniswapV3AdapterABI,
 	iSwapRouter.ISwapRouterABI}
@@ -231,4 +177,58 @@ func ParseCallData(input string) (string, *core.Json) {
 	}
 	log.Fatal("No method for input: ", input)
 	return "", nil
+}
+
+// parser functions for v2
+func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*core.FuncWithMultiCall {
+	trace := ep.GetTxTrace(txHash)
+	return ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
+}
+func (ep *ExecuteParser) GetTransfers(txHash string, accounts []string) core.Transfers {
+	trace := ep.GetTxTrace(txHash)
+	return ep.getTransfersToUser(trace, accounts)
+}
+
+func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) []*core.FuncWithMultiCall {
+	openFuncs := []*core.FuncWithMultiCall{}
+	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
+		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
+			switch call.Input[:10] {
+			case "":
+				openFuncs = append(openFuncs, &core.FuncWithMultiCall{})
+			}
+		} else {
+			for _, c := range call.Calls {
+				c.Depth = call.Depth + 1
+				openFuncs = append(openFuncs, ep.getMainEvents(c, creditFacade)...)
+			}
+		}
+	}
+	return openFuncs
+}
+
+func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, accounts []string) core.Transfers {
+	transfers := core.Transfers{}
+	for _, raw := range trace.Logs {
+		eventLog := raw.Raw
+		to := common.HexToAddress(eventLog.Topics[2])
+		var isTransferToUser bool
+		for _, account := range accounts {
+			isTransferToUser = isTransferToUser || common.HexToAddress(account) == to
+		}
+		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" &&
+			isTransferToUser {
+			amt, b := new(big.Int).SetString(eventLog.Data[2:], 16)
+			if !b {
+				log.Fatal("failed at serializing transfer data in int")
+			}
+			token := common.HexToAddress(eventLog.Address).Hex()
+			oldBalance := new(big.Int)
+			if transfers[token] != nil {
+				oldBalance = transfers[token]
+			}
+			transfers[token] = new(big.Int).Add(amt, oldBalance)
+		}
+	}
+	return transfers
 }

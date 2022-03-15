@@ -54,8 +54,6 @@ type RepositoryI interface {
 	AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *AllowedToken)
 	UpdateLimits(logID uint, txHash string, params *Parameters)
 	UpdateFees(logID uint, txHash string, params *Parameters)
-	AddConfiguratorUpdated(blockNum int64, logID uint, txHash, cm, creditFilter, configurator string)
-	AddFacadeUpdated(blockNum int64, logID uint, txHash, cm, creditFilter, facade string)
 	TransferAccountAllowed(*TransferAccountAllowed)
 	//
 	AddToken(token string) *Token

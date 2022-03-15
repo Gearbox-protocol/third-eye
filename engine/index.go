@@ -152,7 +152,8 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
 	addrsForLogs := []common.Address{common.HexToAddress(mdl.GetAddress())}
 	if mdl.GetName() == core.CreditManager && mdl.GetVersion() == 2 {
-		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("creditFacade")))
+		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("facade")))
+		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("configurator")))
 	}
 	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, [][]common.Hash{})
 	if err != nil {

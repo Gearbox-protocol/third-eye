@@ -23,3 +23,10 @@ func NewMockExecuteParser() *MockExecuteParser {
 		executeCalls: map[string][]*core.KnownCall{},
 	}
 }
+
+func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*core.FuncWithMultiCall {
+	return nil
+}
+func (m *MockExecuteParser) GetTransfers(txHash string, owner []string) core.Transfers {
+	return nil
+}

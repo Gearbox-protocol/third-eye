@@ -132,13 +132,5 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),
 			HFCheckInterval: (*core.BigInt)(fcParams.FastCheckDelay),
 		})
-	case core.Topic("CreditConfiguratorUpgraded(address)"):
-		event, err := mdl.cfgContract.ParseCreditConfiguratorUpgraded(txLog)
-		log.CheckFatal(err)
-		mdl.Repo.AddConfiguratorUpdated(blockNum, txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.Address, event.NewCreditConfigurator.Hex())
-	case core.Topic("CreditFacadeUpgraded(address)"):
-		event, err := mdl.cfgContract.ParseCreditFacadeUpgraded(txLog)
-		log.CheckFatal(err)
-		mdl.Repo.AddFacadeUpdated(blockNum, txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.Address, event.NewCreditFacade.Hex())
 	}
 }

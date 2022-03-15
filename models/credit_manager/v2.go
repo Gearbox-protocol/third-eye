@@ -102,12 +102,6 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			newOwner := common.BytesToAddress(txLog.Data[32:])
 			mdl.onTransferAccountV2(&txLog, oldOwner.Hex(), newOwner.Hex())
 		}
-	case core.Topic("ExecuteOrder(address,address)"):
-		execute, err := mdl.contractETHV2.ParseExecuteOrder(txLog)
-		if err != nil {
-			log.Fatal("[CreditManagerModel]: Cant unpack ExecuteOrder event", err)
-		}
-		mdl.AddExecuteParams(&txLog, execute.Borrower, execute.Target)
 	case core.Topic("TransferAccountAllowed(address,address,bool)"):
 		transferAccount, err := mdl.facadeContractV2.ParseTransferAccountAllowed(txLog)
 		log.CheckFatal(err)
@@ -118,6 +112,36 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			LogId:       int64(txLog.Index),
 			BlockNumber: int64(txLog.BlockNumber),
 		})
+	// on credit manager
+	case core.Topic("ExecuteOrder(address,address)"):
+		execute, err := mdl.contractETHV2.ParseExecuteOrder(txLog)
+		if err != nil {
+			log.Fatal("[CreditManagerModel]: Cant unpack ExecuteOrder event", err)
+		}
+		mdl.AddExecuteParams(&txLog, execute.Borrower, execute.Target)
+	case core.Topic("NewConfigurator(address)"):
+		newConfigurator := common.HexToAddress(txLog.Topics[1].Hex())
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    mdl.Address,
+			Args:        &core.Json{"oldConfigurator": mdl.GetDetailsByKey("configurator"), "configurator": newConfigurator},
+			Type:        core.NewFastCheckParameters,
+		})
+		mdl.Details["configurator"] = newConfigurator
+	case core.Topic("CreditFacadeUpgraded(address)"):
+		newFacade := common.HexToAddress(txLog.Topics[1].Hex())
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    mdl.GetDetailsByKey("configurator"),
+			Args:        &core.Json{"oldFacade": mdl.GetDetailsByKey("facade"), "facade": newFacade},
+			Type:        core.NewFastCheckParameters,
+		})
+		mdl.Details["configurator"] = newFacade
+		// on credit facade
 	}
 }
 
@@ -134,6 +158,9 @@ func (mdl *CreditManager) processRemainingMultiCalls() {
 	// if not present use multicall
 	if mainAction == nil {
 		mainAction = mdl.multicall.MultiCallStartEvent
+		// old open credit account
+	} else if mdl.multicall.lenOfMultiCalls() == 0 {
+		mdl.Repo.AddAccountOperation(mainAction)
 	}
 	if mdl.multicall.lenOfMultiCalls() > 0 {
 		mdl.multiCallHandler(mainAction)
@@ -165,8 +192,4 @@ func (mdl *CreditManager) processNonMultiCalls() {
 	if len(executeEvents) > 0 {
 		mdl.handleExecuteEvents(executeEvents)
 	}
-}
-
-func (mdl *CreditManager) GetCreditFacadeAddr() string {
-	return mdl.GetDetailsByKey("creditFacade")
 }
