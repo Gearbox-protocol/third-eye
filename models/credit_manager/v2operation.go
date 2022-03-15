@@ -29,17 +29,9 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 	}
 	events := mdl.multicall.PopMulticallEventsV2()
 	//
-	switch mainEvents[0].Name {
-	case "":
-		if len(events) != 1 {
-			log.Fatal("OpenCreditAccount without multicall has more than 1 event(addcollateral) before it. %s",
-				utils.ToJson(events))
-		}
-	case "a":
-		if len(events) != mainEvents[0].LenOfMultiCalls() {
-			log.Fatal("OpenCreditAccount with multicall has different number of event than %d. %s ",
-				mainEvents[0].LenOfMultiCalls(), utils.ToJson(events))
-		}
+	if len(events) != mainEvents[0].MultiCallsLen {
+		log.Fatal("%s expected %d of multi calls, but third-eye detected %d. Events: %s",
+			mainEvents[0].Name, mainEvents[0].MultiCallsLen, len(events), utils.ToJson(events))
 	}
 	//
 	executeEvents := []core.ExecuteParams{}

@@ -211,5 +211,5 @@ func (repo *Repository) GetDisabledTokens() []*core.AllowedToken {
 func (repo *Repository) TransferAccountAllowed(obj *core.TransferAccountAllowed) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.setAndGetBlock(obj.BlockNumber).TransferAccountAllowed(obj)
+	repo.setAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
 }

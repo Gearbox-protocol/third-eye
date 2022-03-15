@@ -15,8 +15,8 @@ type ExecuteParams struct {
 }
 
 type FuncWithMultiCall struct {
-	Name       string
-	MultiCalls []*creditFacade.MultiCall
+	Name          string
+	MultiCallsLen int
 }
 
 func (f *FuncWithMultiCall) LenOfMultiCalls() int {

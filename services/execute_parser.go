@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/third-eye/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/third-eye/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapV2Adapter"
@@ -134,9 +135,12 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 
 var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
 	uniswapV2Adapter.UniswapV2AdapterABI, uniswapV3Adapter.UniswapV3AdapterABI,
-	iSwapRouter.ISwapRouterABI}
+	iSwapRouter.ISwapRouterABI,
+	// creditfacade for credit manager onlogs
+}
 
 var abiParsers []abi.ABI
+var creditFacadeParser abi.ABI
 
 func init() {
 	for _, abiJSON := range abiJSONs {
@@ -146,6 +150,33 @@ func init() {
 		}
 		abiParsers = append(abiParsers, abiParser)
 	}
+
+	abiParser, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI))
+	if err != nil {
+		log.Fatal(err)
+	}
+	creditFacadeParser = abiParser
+}
+func getCreditFacadeMainEvent(input string) (*core.FuncWithMultiCall, error) {
+	hexData, err := hex.DecodeString(input[2:])
+	method, err := creditFacadeParser.MethodById(hexData[:4])
+	if err != nil {
+		return nil, err
+	}
+	// unpack in the map
+	data := map[string]interface{}{}
+	err = method.Inputs.UnpackIntoMap(data, hexData[4:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	multicalls, ok := data["calls"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Not able to parse(%s) multicalls", data["calls"])
+	}
+	return &core.FuncWithMultiCall{
+		Name:          method.Name,
+		MultiCallsLen: len(multicalls),
+	}, nil
 }
 
 //https://ethereum.stackexchange.com/questions/29809/how-to-decode-input-data-with-abi-using-golang/100247
@@ -182,29 +213,44 @@ func ParseCallData(input string) (string, *core.Json) {
 // parser functions for v2
 func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*core.FuncWithMultiCall {
 	trace := ep.GetTxTrace(txHash)
-	return ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
+	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
+	if err != nil {
+		log.Fatal(err.Error(), "for txHash", txHash)
+	}
+	return data
 }
 func (ep *ExecuteParser) GetTransfers(txHash string, accounts []string) core.Transfers {
 	trace := ep.GetTxTrace(txHash)
 	return ep.getTransfersToUser(trace, accounts)
 }
 
-func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) []*core.FuncWithMultiCall {
-	openFuncs := []*core.FuncWithMultiCall{}
+func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*core.FuncWithMultiCall, error) {
+	mainEvents := []*core.FuncWithMultiCall{}
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
 			switch call.Input[:10] {
-			case "":
-				openFuncs = append(openFuncs, &core.FuncWithMultiCall{})
+			case "caa5c23f", // multicall
+				"0fc39b20", // closeCreditAccount
+				"8bb406d8", // liquidateCreditAccount
+				"47639fa8": // openCreditAccountMulticall
+				event, err := getCreditFacadeMainEvent(call.Input)
+				if err != nil {
+					return nil, err
+				}
+				mainEvents = append(mainEvents, event)
 			}
 		} else {
 			for _, c := range call.Calls {
 				c.Depth = call.Depth + 1
-				openFuncs = append(openFuncs, ep.getMainEvents(c, creditFacade)...)
+				data, err := ep.getMainEvents(c, creditFacade)
+				if err != nil {
+					return nil, err
+				}
+				mainEvents = append(mainEvents, data...)
 			}
 		}
 	}
-	return openFuncs
+	return mainEvents, nil
 }
 
 func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, accounts []string) core.Transfers {

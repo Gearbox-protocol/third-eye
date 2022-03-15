@@ -46,7 +46,7 @@ func GetCreditManagerEventIds() []string {
 func Method() {
 	if a, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI)); err == nil {
 		for name, method := range a.Methods {
-			log.Info(name, method.RawName, method.Name, string(method.ID))
+			log.Info(name, method.RawName, method.Name, method.Sig, hex.EncodeToString(method.ID))
 		}
 	}
 }
