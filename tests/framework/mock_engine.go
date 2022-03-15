@@ -64,16 +64,34 @@ func NewMockRepo(repo core.RepositoryI, client *TestClient,
 func (m *MockRepo) Init(files []string) {
 	m.AddressMap = core.AddressMap{}
 	for _, file := range files {
-		testInput := m.fetchInputTestFile(file)
-		m.ProcessState(testInput)
-		m.ProcessEvents(testInput)
-		m.ProcessCalls(testInput)
+		m.fetchInputTestFile(file)
 	}
 }
 
 func (m *MockRepo) fetchInputTestFile(inputFile string) *TestInput {
 	testInput := &TestInput{}
 	syncAdapterObj := testInput.Get(inputFile, m.AddressMap, m.t)
+	// map address to type
+	for key, value := range m.AddressMap {
+		splits := strings.Split(key, "_")
+		if len(splits) == 2 {
+			m.addressToType[value] = splits[0]
+		} else {
+			m.t.Fatalf("Not properly formatted key: %s", key)
+		}
+	}
+	// set feed to token
+	if syncAdapterObj != nil {
+		for _, adapter := range syncAdapterObj.Adapters {
+			if adapter.GetName() == core.ChainlinkPriceFeed {
+				m.feedToToken[adapter.GetAddress()] = adapter.GetDetailsByKey("token")
+			}
+		}
+	}
+
+	m.ProcessState(testInput)
+	m.ProcessCalls(testInput)
+	m.ProcessEvents(testInput)
 	m.setSyncAdapters(syncAdapterObj)
 	return testInput
 
@@ -95,7 +113,6 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 			oracle := actualAdapter.GetDetailsByKey("oracle")
 			token := actualAdapter.GetDetailsByKey("token")
 			m.repo.AddTokenOracle(token, oracle, actualAdapter.GetAddress(), actualAdapter.GetDiscoveredAt())
-			m.feedToToken[actualAdapter.GetAddress()] = token
 		case core.CreditManager:
 			for _, state := range obj.CMState {
 				if state.Address == actualAdapter.GetAddress() {
@@ -122,15 +139,7 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		m.repo.AddTokenObj(tokenObj)
 		m.client.AddToken(tokenObj.Address, tokenObj.Decimals)
 	}
-	m.SyncAdapters = obj.Adapters
-	for key, value := range m.AddressMap {
-		splits := strings.Split(key, "_")
-		if len(splits) == 2 {
-			m.addressToType[value] = splits[0]
-		} else {
-			m.t.Fatalf("Not properly formatted key: %s", key)
-		}
-	}
+	// m.SyncAdapters = obj.Adapters
 }
 
 func (m *MockRepo) ProcessEvents(inputFile *TestInput) {

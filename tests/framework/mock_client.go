@@ -159,6 +159,7 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	if t.otherCalls[blockNum] != nil && t.otherCalls[blockNum][sig] != nil {
 		return common.HexToHash(t.otherCalls[blockNum][sig][0]).Bytes(), nil
 	}
+	// log.Info(blockNum, sig)
 	// convert on priceOracle
 	if sig == "b66102df" {
 		s := 4
@@ -216,7 +217,7 @@ func (t *TestClient) getPrice(blockNum int64, tokenAddr string) *big.Int {
 			}
 			return lastprice
 		} else {
-			log.Fatalf("token(%s) price not present", tokenAddr)
+			panic(fmt.Sprintf("token(%s) price not present", tokenAddr))
 		}
 	}
 	return nil

@@ -75,6 +75,17 @@
     daoOperations: [
       {
         Args: {
+          configurator: '#CreditConfigurator_2',
+          oldConfigurator: '#CreditConfigurator_1',
+        },
+        BlockNumber: 5,
+        Contract: '#CreditManager_1',
+        LogID: 8,
+        TxHash: '#Hash_13',
+        Type: 4,
+      },
+      {
+        Args: {
           creditManager: '#CreditManager_1',
           token: '#Token_1',
         },
@@ -187,17 +198,6 @@
         LogID: 7,
         TxHash: '#Hash_12',
         Type: 24,
-      },
-      {
-        Args: {
-          configurator: '#CreditConfigurator_1',
-          oldConfigurator: '#CreditConfigurator_1',
-        },
-        BlockNumber: 5,
-        Contract: '#CreditConfigurator_1',
-        LogID: 8,
-        TxHash: '#Hash_13',
-        Type: 4,
       },
       {
         Args: {

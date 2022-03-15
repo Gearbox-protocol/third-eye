@@ -64,6 +64,10 @@ func random(n int) string {
 	return hex.EncodeToString(bytes)
 }
 
+func ChecksumAddr(addr string) string {
+	return common.HexToAddress(addr).Hex()
+}
+
 func ReadJsonAndSet(fileName string) []map[string]interface{} {
 	data := []map[string]interface{}{}
 	jsonFile, err := os.Open(fileName)

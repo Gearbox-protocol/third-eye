@@ -1,7 +1,6 @@
 package core
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -17,10 +16,6 @@ type ExecuteParams struct {
 type FuncWithMultiCall struct {
 	Name          string
 	MultiCallsLen int
-}
-
-func (f *FuncWithMultiCall) LenOfMultiCalls() int {
-	return len(f.MultiCalls)
 }
 
 type ExecuteParserI interface {

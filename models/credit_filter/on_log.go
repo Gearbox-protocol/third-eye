@@ -3,6 +3,7 @@ package credit_filter
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -131,6 +132,20 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			CreditManager:   creditManager,
 			ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),
 			HFCheckInterval: (*core.BigInt)(fcParams.FastCheckDelay),
+		})
+	// we are add dao event on here instead of in logs of creditmanager
+	// as it might happen that this event is emitted before the first event on credit manager
+	// in that case, it won't have added to db bcz we get logs from the first event blocknum on model
+	// for credit manager that will lead to ignoring this dao event
+	case core.Topic("CreditFacadeUpgraded(address)"):
+		newFacade := utils.ChecksumAddr(txLog.Topics[1].Hex())
+		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Args:        &core.Json{"facade": newFacade},
+			Type:        core.NewFastCheckParameters,
 		})
 	}
 }

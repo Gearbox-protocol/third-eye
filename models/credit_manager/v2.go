@@ -1,14 +1,16 @@
 package credit_manager
 
 import (
+	"math/big"
+	"strings"
+
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"strings"
 )
 
 func (cm *CreditManager) addCreditConfigurator() {
@@ -81,15 +83,15 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack IncreaseBorrowedAmount event", err)
 		}
-		mdl.onIncreaseBorrowedAmountV2(&txLog,
-			increaseBorrowEvent.Borrower.Hex(), increaseBorrowEvent.Amount)
+		mdl.onIncreaseBorrowedAmountV2(&txLog, increaseBorrowEvent.Borrower.Hex(),
+			increaseBorrowEvent.Amount, "IncreaseBorrowedAmount")
 	case core.Topic("DecreaseBorrowedAmount(address,uint256)"):
 		decreaseBorrowEvent, err := mdl.facadeContractV2.ParseDecreaseBorrowedAmount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack DecreaseBorrowedAmount event", err)
 		}
-		mdl.onIncreaseBorrowedAmountV2(&txLog,
-			decreaseBorrowEvent.Borrower.Hex(), new(big.Int).Neg(decreaseBorrowEvent.Amount))
+		mdl.onIncreaseBorrowedAmountV2(&txLog, decreaseBorrowEvent.Borrower.Hex(),
+			new(big.Int).Neg(decreaseBorrowEvent.Amount), "DecreaseBorrowedAmount")
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.facadeContractV2.ParseTransferAccount(txLog)
@@ -118,9 +120,9 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack ExecuteOrder event", err)
 		}
-		mdl.AddExecuteParams(&txLog, execute.Borrower, execute.Target)
+		mdl.AddExecuteParamsV2(&txLog, execute.Borrower, execute.Target)
 	case core.Topic("NewConfigurator(address)"):
-		newConfigurator := common.HexToAddress(txLog.Topics[1].Hex())
+		newConfigurator := utils.ChecksumAddr(txLog.Topics[1].Hex())
 		mdl.Repo.AddDAOOperation(&core.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
@@ -130,18 +132,6 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			Type:        core.NewFastCheckParameters,
 		})
 		mdl.Details["configurator"] = newConfigurator
-	case core.Topic("CreditFacadeUpgraded(address)"):
-		newFacade := common.HexToAddress(txLog.Topics[1].Hex())
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
-			BlockNumber: int64(txLog.BlockNumber),
-			LogID:       txLog.Index,
-			TxHash:      txLog.TxHash.Hex(),
-			Contract:    mdl.GetDetailsByKey("configurator"),
-			Args:        &core.Json{"oldFacade": mdl.GetDetailsByKey("facade"), "facade": newFacade},
-			Type:        core.NewFastCheckParameters,
-		})
-		mdl.Details["configurator"] = newFacade
-		// on credit facade
 	}
 }
 

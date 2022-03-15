@@ -90,7 +90,6 @@ func (mdl *CreditManager) getProcessedExecuteEvents(executeParams []core.Execute
 			Depth: call.Depth,
 		}
 		multiCalls = append(multiCalls, accountOperation)
-		mdl.UpdatedSessions[params.SessionId]++
 	}
 	return
 }
@@ -251,14 +250,14 @@ func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token 
 	mdl.UpdatedSessions[sessionId]++
 }
 
-func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int) error {
+func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int, eventName string) error {
 	// manager state
 	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, amount)
 	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
 	// other operations
 	sessionId := mdl.GetCreditOwnerSession(borrower)
 	blockNum := int64(txLog.BlockNumber)
-	action, args := mdl.ParseEvent("IncreaseBorrowedAmount", txLog)
+	action, args := mdl.ParseEvent(eventName, txLog)
 	// add account operation
 	accountOperation := &core.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),

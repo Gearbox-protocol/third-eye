@@ -21,6 +21,14 @@ local borrowedAmount = 4000;
     }],
   },
   blocks: {
+    '2': {
+      calls: {
+        others: {
+          '2f7a1881': ['#CreditFacade_1'],
+          f9aa028a: ['#CreditConfigurator_1'],
+        },
+      },
+    },
     '3': {
       events: [
         // credit configurator allowed token test
@@ -161,10 +169,10 @@ local borrowedAmount = 4000;
         },
         {
           // credit manager on usdc
-          address: '#CreditConfigurator_1',
+          address: '#CreditManager_1',
           topics: [
-            'CreditConfiguratorUpgraded(address)',
-            '#CreditConfigurator_1',
+            'NewConfigurator(address)',
+            '#CreditConfigurator_2',
           ],
           txHash: '!#Hash_13',
         },
@@ -178,6 +186,16 @@ local borrowedAmount = 4000;
           txHash: '!#Hash_14',
         },
       ],
+      calls: {
+        cms: [{
+          address: '#CreditManager_1',
+          isWETH: false,
+          minAmount: utils.bigInt(1000, 6),
+          maxAmount: utils.bigInt(5000, 6),
+          availableLiquidity: utils.bigInt(1000, 6),
+          borrowRate: '0',
+        }],
+      },
     },
   },
 }

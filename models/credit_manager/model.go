@@ -132,8 +132,11 @@ func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 }
 
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
+	// ON NEW TXHASH
+	mdl.onNewTxHashV2("")
 	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
+	// ON NEW BLOCKNUM
 	// no logs where detected for current sync
 	if mdl.lastEventBlock == 0 {
 		mdl.ProcessDirectTokenTransfer(mdl.GetLastSync()+1, syncTill+1)

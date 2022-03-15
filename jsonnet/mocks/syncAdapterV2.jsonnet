@@ -32,7 +32,8 @@
       type: 'CreditManager',
       address: '#CreditManager_1',
       details: {
-        creditFacade: '#CreditFacade_1',
+        facade: '#CreditFacade_1',
+        configurator: '#CreditConfigurator_1',
       },
       version: 2,
       lastSync: 2,

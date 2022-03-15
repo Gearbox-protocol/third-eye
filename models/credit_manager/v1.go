@@ -112,7 +112,7 @@ func (mdl *CreditManager) checkLogV1(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack ExecuteOrder event", err)
 		}
-		mdl.AddExecuteParamsV2(&txLog, execute.Borrower, execute.Target)
+		mdl.AddExecuteParams(&txLog, execute.Borrower, execute.Target)
 	case core.Topic("NewParameters(uint256,uint256,uint256,uint256,uint256,uint256)"):
 		params, err := mdl.contractETHV1.ParseNewParameters(txLog)
 		if err != nil {

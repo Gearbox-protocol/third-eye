@@ -130,10 +130,14 @@ func detectFunc() string {
 }
 
 func CheckFatal(err error) {
+	args := []interface{}{"[Fatal]: " + detectFunc(), err}
+	amqpSend(args)
 	if err != nil {
-		args := []interface{}{"[Fatal]: " + detectFunc(), err}
-		amqpSend(args)
-		log.Fatal(args...)
+		if testLogModule == nil {
+			log.Fatal(args...)
+		} else {
+			testLogModule.Fatal(args...)
+		}
 	}
 }
 

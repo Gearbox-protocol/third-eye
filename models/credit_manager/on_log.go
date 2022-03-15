@@ -3,6 +3,7 @@ package credit_manager
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"sort"
@@ -103,15 +104,16 @@ func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 }
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
-	// for credit manager stats
-	blockNum := int64(txLog.BlockNumber)
-	if mdl.lastEventBlock != blockNum {
-		mdl.onBlockChange(blockNum)
+	// creditConfigurator events for test
+	// we only require CreditFacadeUpgraded so that we can update the details for credit manager and
+	if mdl.GetDetailsByKey("configurator") == txLog.Address.Hex() {
+		if txLog.Topics[0] == core.Topic("CreditFacadeUpgraded(address)") {
+			mdl.Details["configurator"] = utils.ChecksumAddr(txLog.Topics[1].Hex())
+		}
+		return
 	}
-	mdl.lastEventBlock = blockNum
-	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
-	switch mdl.GetVersion() {
-	case 1:
+	// on txHash
+	if mdl.GetVersion() == 1 {
 		// storing execute order in a single tx and processing them in a single go on next tx
 		// for credit session stats
 		//
@@ -120,6 +122,18 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 			mdl.processExecuteEvents()
 			mdl.LastTxHash = txLog.TxHash.Hex()
 		}
+	}
+	// on new block
+	// for credit manager stats
+	blockNum := int64(txLog.BlockNumber)
+	if mdl.lastEventBlock != blockNum {
+		mdl.onBlockChange(blockNum)
+	}
+	mdl.lastEventBlock = blockNum
+	//
+	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
+	switch mdl.GetVersion() {
+	case 1:
 		mdl.checkLogV1(txLog)
 	case 2:
 		mdl.onNewTxHashV2(txLog.TxHash.Hex())

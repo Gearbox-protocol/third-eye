@@ -78,7 +78,7 @@ func (s *SyncAdapter) GetDetailsByKey(key string) string {
 	}
 	value, ok := s.Details[key].(string)
 	if !ok {
-		log.Fatalf("Not able to parse detail field %s", key)
+		log.Fatalf("Not able to parse detail field `%s` in %+v", key, s.Details)
 	}
 	return value
 }

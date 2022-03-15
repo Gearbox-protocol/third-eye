@@ -203,25 +203,3 @@ func (repo *Repository) AddFastCheckParams(logID uint, txHash, cm, creditFilter 
 	//
 	repo.cmFastCheckParams[fcParams.CreditManager] = fcParams
 }
-
-func (repo *Repository) AddConfiguratorUpdated(blockNum int64, logID uint, txHash, cm, oldconfigurator, configurator string) {
-	repo.addDAOOperation(&core.DAOOperation{
-		BlockNumber: blockNum,
-		LogID:       logID,
-		TxHash:      txHash,
-		Contract:    oldconfigurator,
-		Args:        &core.Json{"oldConfigurator": oldconfigurator, "configurator": configurator},
-		Type:        core.NewFastCheckParameters,
-	})
-}
-
-func (repo *Repository) AddFacadeUpdated(blockNum int64, logID uint, txHash, cm, oldconfigurator, facade string) {
-	repo.addDAOOperation(&core.DAOOperation{
-		BlockNumber: blockNum,
-		LogID:       logID,
-		TxHash:      txHash,
-		Contract:    oldconfigurator,
-		Args:        &core.Json{"facade": facade},
-		Type:        core.NewFastCheckParameters,
-	})
-}

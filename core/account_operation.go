@@ -20,7 +20,7 @@ type AccountOperation struct {
 	// extras
 	Depth      uint8               `gorm:"column:depth" json:"depth"`
 	MainAction *int64              `gorm:"column:main_action"`
-	MultiCall  []*AccountOperation `gorm:"foreignkey:MainAction"`
+	MultiCall  []*AccountOperation `gorm:"foreignkey:MainAction" json:"multicalls"`
 }
 
 func (AccountOperation) TableName() string {

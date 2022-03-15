@@ -40,5 +40,6 @@ func TestDAOV2Operations(t *testing.T) {
 		},
 	}
 	r.Check(data, "dao_operations_v2/blocks.json")
+	// r.Print(data)
 	r.Check(map[string]interface{}{"data": repo.GetDisabledTokens()}, "dao_operations_v2/disabled_tokens.json")
 }
