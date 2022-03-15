@@ -286,9 +286,9 @@ func (h *DBhandler) compareDiff(pf *core.PriceFeed, uniPoolPrices *core.UniPoolP
 		Token:                pf.Token,
 		Feed:                 pf.Feed,
 	})
-	if (uniPoolPrices.PriceV2 != 0 && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
-		(uniPoolPrices.PriceV3 != 0 && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
-		(uniPoolPrices.TwapV3 != 0 && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
+	if (uniPoolPrices.PriceV2 != 0 && greaterFluctuation(uniPoolPrices.PriceV2, pf.Price)) ||
+		(uniPoolPrices.PriceV3 != 0 && greaterFluctuation(uniPoolPrices.PriceV3, pf.Price)) ||
+		(uniPoolPrices.TwapV3 != 0 && greaterFluctuation(uniPoolPrices.TwapV3, pf.Price)) {
 		// if !mdl.isNotified() {
 		// mdl.uniPriceVariationNotify(pf, uniPoolPrices)
 		// mdl.Details["notified"] = true

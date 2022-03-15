@@ -122,3 +122,11 @@ type PnlOnRepay struct {
 	Profit         *big.Int
 	BorrowedAmount *big.Int
 }
+
+type TransferAccountAllowed struct {
+	From        string `gorm:"column:sender"`
+	To          string `gorm:"column:receiver"`
+	Allowed     bool   `gorm:"column:allowed"`
+	BlockNumber int64  `gorm:"column:block_num;primaryKey"`
+	LogId       int64  `gorm:"column:log_id;primaryKey"`
+}

@@ -25,6 +25,7 @@ type (
 		TreasurySnapshots       []*TreasurySnapshotModel2 `gorm:"foreignKey:block_num" json:"treasurySnapshots"`
 		NoSessionTokenTransfers []*TokenTransfer          `gorm:"foreignKey:block_num" json:"noSessionTokenTransfers"`
 		UniswapPoolPrices       []*UniPoolPrices          `gorm:"foreignKey:block_num" json:"uniswapPoolPrices"`
+		TAA                     []*TransferAccountAllowed `gorm:"foreignKey:block_num" json:"transferAccountAllowed"`
 	}
 )
 
@@ -136,4 +137,8 @@ func (b *Block) GetRepayOnCM(cmAddr string) *PnlOnRepay {
 
 func (b *Block) GetParams() []*Parameters {
 	return b.Params
+}
+
+func (b *Block) AddTransferAccountAllowed(obj *TransferAccountAllowed) {
+	b.TAA = append(b.TAA, obj)
 }

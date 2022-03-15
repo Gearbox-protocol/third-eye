@@ -231,7 +231,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 	mdl.PoolBorrow(txLog, sessionId, borrower, amount)
 	mdl.AddAccountOperation(accountOperation)
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
-	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Mul(session.BorrowedAmount.Convert(), amount))
+	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
 	mdl.UpdatedSessions[sessionId]++
 	return nil
 }
@@ -276,9 +276,9 @@ func (mdl *CreditManager) AddExecuteParams(txLog *types.Log,
 	return nil
 }
 
-func (mdl *CreditManager) handleExecuteEvents() {
-
-	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(mdl.LastTxHash, mdl.Address, mdl.executeParams)
+func (mdl *CreditManager) handleExecuteEvents(executeParams []core.ExecuteParams) {
+	// credit manager has the execute event
+	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(mdl.LastTxHash, mdl.Address, executeParams)
 
 	for i, call := range calls {
 		params := mdl.executeParams[i]

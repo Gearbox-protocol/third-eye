@@ -134,6 +134,9 @@ func (repo *Repository) init() {
 func (repo *Repository) AddAccountOperation(accountOperation *core.AccountOperation) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	if accountOperation.SessionId == "" {
+		panic(utils.ToJson(accountOperation))
+	}
 	repo.setAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
 }
 
@@ -203,4 +206,10 @@ func (repo *Repository) GetTokenOracles() map[string]*core.TokenOracle {
 }
 func (repo *Repository) GetDisabledTokens() []*core.AllowedToken {
 	return repo.disabledTokens
+}
+
+func (repo *Repository) TransferAccountAllowed(obj *core.TransferAccountAllowed) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	repo.setAndGetBlock(obj.BlockNumber).TransferAccountAllowed(obj)
 }

@@ -27,6 +27,7 @@ func TestLifecycleCreditAccount(t *testing.T) {
 
 	outputBlocks := repo.GetBlocks()
 	delete(outputBlocks, 2)
+	r.Print(outputBlocks)
 	r.Check(outputBlocks, "account_lifecycle/blocks.json")
 	debtEng.CalculateDebt()
 	r.Check(debtEng.GetDebts(), "account_lifecycle/debts.json")

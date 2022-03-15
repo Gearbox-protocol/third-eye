@@ -18,7 +18,9 @@ type AccountOperation struct {
 	Args        *Json      `gorm:"column:args" json:"args"`
 	Transfers   *Transfers `gorm:"column:transfers" json:"transfers"`
 	// extras
-	Depth uint8 `gorm:"column:depth" json:"depth"`
+	Depth      uint8               `gorm:"column:depth" json:"depth"`
+	MainAction *int64              `gorm:"column:main_action"`
+	MultiCall  []*AccountOperation `gorm:"foreignkey:MainAction"`
 }
 
 func (AccountOperation) TableName() string {

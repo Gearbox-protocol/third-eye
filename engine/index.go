@@ -47,6 +47,7 @@ func (e *Engine) UseThreads() {
 }
 
 func (e *Engine) init() {
+	utils.Method()
 	// debt engine initialisation
 	e.repo.InitChecks()
 	e.debtEng.ProcessBackLogs()
@@ -149,7 +150,11 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
-	txLogs, err := e.GetLogs(syncFrom, syncTill, []common.Address{common.HexToAddress(mdl.GetAddress())}, [][]common.Hash{})
+	addrsForLogs := []common.Address{common.HexToAddress(mdl.GetAddress())}
+	if mdl.GetName() == core.CreditManager && mdl.GetVersion() == 2 {
+		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("creditFacade")))
+	}
+	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, [][]common.Hash{})
 	if err != nil {
 		log.Fatal(err)
 	}

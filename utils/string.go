@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -41,6 +42,13 @@ func GetCreditManagerEventIds() []string {
 		}
 	}
 	return ids
+}
+func Method() {
+	if a, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI)); err == nil {
+		for name, method := range a.Methods {
+			log.Info(name, method.RawName, method.Name, string(method.ID))
+		}
+	}
 }
 
 // for testing and json file read methods

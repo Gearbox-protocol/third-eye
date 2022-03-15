@@ -13,6 +13,10 @@ import (
 	"math/big"
 )
 
+type Collateral struct {
+	Amount *big.Int
+	Token  string
+}
 type SessionCloseDetails struct {
 	RemainingFunds   *big.Int
 	Status           int
@@ -33,6 +37,8 @@ type CreditManager struct {
 	lastEventBlock   int64
 	UpdatedSessions  map[string]int
 	ClosedSessions   map[string]*SessionCloseDetails
+	// borrower to events, these events have same txHash
+	multicall MultiCallProcessor
 }
 
 func (CreditManager) TableName() string {
@@ -56,12 +62,21 @@ func NewCreditManager(addr string, client ethclient.ClientI, repo core.Repositor
 	}
 	return cm
 }
+func (mdl *CreditManager) GetAbi() {
+	switch mdl.GetVersion() {
+	case 1:
+		mdl.ABI = core.GetAbi(mdl.ContractName)
+	case 2:
+		mdl.ABI = core.GetAbi("CreditFacade")
+	}
+}
 
 func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 	obj := &CreditManager{
 		SyncAdapter:     adapter,
 		UpdatedSessions: make(map[string]int),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
+		multicall:       MultiCallProcessor{},
 	}
 	obj.GetAbi()
 	switch obj.GetVersion() {
@@ -84,15 +99,21 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		} else {
 			creditFacadeAddr, err = cmContract.CreditFacade(&bind.CallOpts{})
 			log.CheckFatal(err)
+			obj.SetCreditFacade(creditFacadeAddr)
 		}
-		obj.facadeContractV2, err = creditFacade.NewCreditFacade(creditFacadeAddr, adapter.Client)
-		log.CheckFatal(err)
-		if obj.Details == nil {
-			obj.Details = map[string]interface{}{}
-		}
-		obj.Details["creditFacade"] = creditFacadeAddr.Hex()
+
 	}
 	return obj
+}
+
+func (mdl *CreditManager) SetCreditFacade(creditFacadeAddr common.Address) {
+	var err error
+	mdl.facadeContractV2, err = creditFacade.NewCreditFacade(creditFacadeAddr, mdl.Client)
+	log.CheckFatal(err)
+	if mdl.Details == nil {
+		mdl.Details = map[string]interface{}{}
+	}
+	mdl.Details["creditFacade"] = creditFacadeAddr.Hex()
 }
 
 func (mdl *CreditManager) GetUnderlyingDecimal() int8 {

@@ -10,7 +10,7 @@ import (
 
 func (mdl *CreditManager) processExecuteEvents() {
 	if len(mdl.executeParams) > 0 {
-		mdl.handleExecuteEvents()
+		mdl.handleExecuteEvents(mdl.executeParams)
 		mdl.executeParams = []core.ExecuteParams{}
 	}
 }
@@ -103,14 +103,6 @@ func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 }
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
-	// storing execute order in a single tx and processing them in a single go on next tx
-	// for credit session stats
-	//
-	// execute events are matched with tenderly response to get transfers for each events
-	if mdl.LastTxHash != txLog.TxHash.Hex() {
-		mdl.processExecuteEvents()
-		mdl.LastTxHash = txLog.TxHash.Hex()
-	}
 	// for credit manager stats
 	blockNum := int64(txLog.BlockNumber)
 	if mdl.lastEventBlock != blockNum {
@@ -120,8 +112,17 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
 	switch mdl.GetVersion() {
 	case 1:
+		// storing execute order in a single tx and processing them in a single go on next tx
+		// for credit session stats
+		//
+		// execute events are matched with tenderly response to get transfers for each events
+		if mdl.LastTxHash != txLog.TxHash.Hex() {
+			mdl.processExecuteEvents()
+			mdl.LastTxHash = txLog.TxHash.Hex()
+		}
 		mdl.checkLogV1(txLog)
 	case 2:
+		mdl.onNewTxHashV2(txLog.TxHash.Hex())
 		mdl.checkLogV2(txLog)
 	}
 }

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -13,8 +14,19 @@ type ExecuteParams struct {
 	BlockNumber   int64
 }
 
+type FuncWithMultiCall struct {
+	Name       string
+	MultiCalls []*creditFacade.MultiCall
+}
+
+func (f *FuncWithMultiCall) LenOfMultiCalls() int {
+	return len(f.MultiCalls)
+}
+
 type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
+	GetMainEventLogs(txHash, creditManager string) []*FuncWithMultiCall
+	GetTransfers(txHash string, owner []string) Transfers
 }
 
 type KnownCall struct {
