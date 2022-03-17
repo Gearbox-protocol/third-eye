@@ -6,19 +6,28 @@ local borrowedAmount = 4000;
     syncAdapters: 'mocks/syncAdapterV2.json',
   },
   states: {
-    oracles: [{
-      oracle: '#Oracle_1',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_1',
-    }, {
-      oracle: '#Oracle_2',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_2',
-    }, {
-      oracle: '#Oracle_4',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_4',
-    }],
+    oracles: [
+      {  // for v1
+        oracle: '#Oracle_0',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_0',
+      },  // for v2
+      {
+        oracle: '#Oracle_1',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_1',
+      },
+      {
+        oracle: '#Oracle_2',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_2',
+      },
+      {
+        oracle: '#Oracle_4',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_4',
+      },
+    ],
   },
   blocks: {
     '2': {

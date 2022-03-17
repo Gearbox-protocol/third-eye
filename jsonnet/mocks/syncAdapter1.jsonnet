@@ -73,8 +73,6 @@
         accounts: ['#Account_1'],
       },
       lastSync: 2,
-      version: 1,
-
     },
     {
       type: 'ChainlinkPriceFeed',

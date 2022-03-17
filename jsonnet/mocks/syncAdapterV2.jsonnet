@@ -14,26 +14,50 @@
 
     },
     {
-      // on usdc
-      type: 'Pool',
-      address: '#Pool_1',
+      type: 'AccountManager',
+      address: '#AccountManager_1',
+      details: {
+        accounts: ['#Account_1'],
+      },
       lastSync: 2,
-      version: 1,
-
     },
     {
       type: 'AccountFactory',
       address: '#AccountFactory_1',
       lastSync: 2,
       version: 1,
-
     },
     {
       type: 'ACL',
       address: '#ACL_1',
       lastSync: 2,
       version: 1,
+    },
+    // v1 priceoracle
+    {
+      type: 'PriceOracle',
+      address: '#PriceOracle_1',
+      lastSync: 2,
+      version: 1,
+    },
+    {
+      type: 'ChainlinkPriceFeed',
+      address: '#ChainlinkPriceFeed_0',
+      details: {
+        oracle: '#Oracle_0',
+        token: '#Token_1',
+      },
+      lastSync: 2,
+      version: 1,
 
+    },
+    // v2
+    {
+      // on usdc
+      type: 'Pool',
+      address: '#Pool_1',
+      lastSync: 2,
+      version: 2,
     },
     {
       // on usdc
@@ -55,12 +79,12 @@
       version: 2,
       lastSync: 2,
     },
+    // v2 priceoracle
     {
       type: 'PriceOracle',
       address: '#PriceOracle_1',
       lastSync: 2,
-      version: 1,
-
+      version: 2,
     },
     {
       type: 'ChainlinkPriceFeed',
@@ -68,20 +92,9 @@
       details: {
         oracle: '#Oracle_1',
         token: '#Token_1',
-        dieselToken: '#DieselToken_1',
       },
       lastSync: 2,
-      version: 1,
-
-    },
-    {
-      type: 'AccountManager',
-      address: '#AccountManager_1',
-      details: {
-        accounts: ['#Account_1'],
-      },
-      lastSync: 2,
-      version: 1,
+      version: 2,
 
     },
     {
@@ -92,7 +105,7 @@
         token: '#Token_2',
       },
       lastSync: 2,
-      version: 1,
+      version: 2,
     },
   ],
   poolState: [
