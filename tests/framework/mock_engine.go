@@ -35,13 +35,13 @@ type SyncAdapterMock struct {
 }
 
 type MockRepo struct {
-	repo         core.RepositoryI
+	Repo         core.RepositoryI
 	client       *TestClient
 	InputFile    *TestInput
 	AddressMap   core.AddressMap
 	SyncAdapters []*core.SyncAdapter
 	t            *testing.T
-	eng          core.EngineI
+	Eng          core.EngineI
 	//oracle to token
 	feedToToken   map[string]string
 	addressToType map[string]string
@@ -51,10 +51,10 @@ type MockRepo struct {
 func NewMockRepo(repo core.RepositoryI, client *TestClient,
 	t *testing.T, eng core.EngineI, ep *MockExecuteParser) MockRepo {
 	return MockRepo{
-		repo:          repo,
+		Repo:          repo,
 		client:        client,
 		t:             t,
-		eng:           eng,
+		Eng:           eng,
 		addressToType: make(map[string]string),
 		feedToToken:   make(map[string]string),
 		executeParser: ep,
@@ -101,18 +101,18 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 	if obj == nil {
 		return
 	}
-	kit := m.repo.GetKit()
+	kit := m.Repo.GetKit()
 	for _, adapter := range obj.Adapters {
 		if adapter.DiscoveredAt == 0 {
 			adapter.DiscoveredAt = adapter.LastSync
 			adapter.FirstLogAt = adapter.LastSync + 1
 		}
-		actualAdapter := m.repo.PrepareSyncAdapter(adapter)
+		actualAdapter := m.Repo.PrepareSyncAdapter(adapter)
 		switch actualAdapter.GetName() {
 		case core.ChainlinkPriceFeed:
 			oracle := actualAdapter.GetDetailsByKey("oracle")
 			token := actualAdapter.GetDetailsByKey("token")
-			m.repo.AddTokenOracle(token, oracle, actualAdapter.GetAddress(), actualAdapter.GetDiscoveredAt())
+			m.Repo.AddTokenOracle(token, oracle, actualAdapter.GetAddress(), actualAdapter.GetDiscoveredAt())
 		case core.CreditManager:
 			for _, state := range obj.CMState {
 				if state.Address == actualAdapter.GetAddress() {
@@ -136,7 +136,7 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		case "WETH":
 			m.client.SetWETH(tokenObj.Address)
 		}
-		m.repo.AddTokenObj(tokenObj)
+		m.Repo.AddTokenObj(tokenObj)
 		m.client.AddToken(tokenObj.Address, tokenObj.Decimals)
 	}
 	// m.SyncAdapters = obj.Adapters
@@ -173,7 +173,7 @@ func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
 }
 func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 	accountMask := make(map[int64]map[string]*big.Int)
-	wrapper := m.repo.GetDCWrapper()
+	wrapper := m.Repo.GetDCWrapper()
 	otherCalls := make(map[int64]map[string][]string)
 	for blockNum, block := range inputFile.Blocks {
 		otherCalls[blockNum] = block.Calls.OtherCalls
