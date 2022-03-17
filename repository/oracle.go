@@ -21,24 +21,28 @@ func (repo *Repository) loadCurrentTokenOracle() {
 }
 
 func (repo *Repository) addTokenCurrentOracle(oracle *core.TokenOracle) {
-	repo.tokensCurrentOracle[oracle.Token] = oracle
+	if repo.tokensCurrentOracle[oracle.Version] == nil {
+		repo.tokensCurrentOracle[oracle.Version] = map[string]*core.TokenOracle{}
+	}
+	repo.tokensCurrentOracle[oracle.Version][oracle.Token] = oracle
 }
 
-func (repo *Repository) AddTokenOracle(token, oracle, feed string, blockNum int64) {
+func (repo *Repository) AddTokenOracle(tokenOracle *core.TokenOracle) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.tokensCurrentOracle[token] != nil {
-		currentFeed := repo.tokensCurrentOracle[token].Feed
-		log.Warnf("New feed(%s) discovered at %d for token(%s) old feed: %s", feed, blockNum, token, currentFeed)
-		repo.GetAdapter(currentFeed).SetBlockToDisableOn(blockNum)
+	if repo.tokensCurrentOracle[tokenOracle.Version] != nil && repo.tokensCurrentOracle[tokenOracle.Version][tokenOracle.Token] != nil {
+		currentFeed := repo.tokensCurrentOracle[tokenOracle.Version][tokenOracle.Token].Feed
+		log.Warnf("New feed(%s) discovered at %d for token(%s) old feed: %s",
+			tokenOracle.Feed, tokenOracle.BlockNumber, tokenOracle.Token, currentFeed)
+		repo.GetAdapter(currentFeed).SetBlockToDisableOn(tokenOracle.BlockNumber)
 	}
 	// set current state of oracle for token.
 	repo.addTokenCurrentOracle(
-		&core.TokenOracle{Token: token, Oracle: oracle, Feed: feed, BlockNumber: blockNum},
+		tokenOracle,
 	)
 	// token oracle
-	repo.setAndGetBlock(blockNum).AddTokenOracle(
-		&core.TokenOracle{Token: token, Oracle: oracle, Feed: feed, BlockNumber: blockNum},
+	repo.setAndGetBlock(tokenOracle.BlockNumber).AddTokenOracle(
+		tokenOracle,
 	)
 }
 

@@ -37,9 +37,10 @@ type Repository struct {
 	blocks map[int64]*core.Block
 	tokens map[string]*core.Token
 	// changed during syncing
-	sessions            map[string]*core.CreditSession
-	poolUniqueUsers     map[string]map[string]bool
-	tokensCurrentOracle map[string]*core.TokenOracle
+	sessions        map[string]*core.CreditSession
+	poolUniqueUsers map[string]map[string]bool
+	// version  to token to oracle
+	tokensCurrentOracle map[int16]map[string]*core.TokenOracle
 	// for params diff calculation
 	cmParams          map[string]*core.Parameters
 	cmFastCheckParams map[string]*core.FastCheckParams
@@ -64,7 +65,7 @@ func GetRepository(db *gorm.DB, client ethclient.ClientI, config *config.Config,
 		tokens:                make(map[string]*core.Token),
 		sessions:              make(map[string]*core.CreditSession),
 		poolUniqueUsers:       make(map[string]map[string]bool),
-		tokensCurrentOracle:   make(map[string]*core.TokenOracle),
+		tokensCurrentOracle:   make(map[int16]map[string]*core.TokenOracle),
 		dcWrapper:             core.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
 		allowedTokens:         make(map[string]map[string]*core.AllowedToken),
@@ -201,7 +202,7 @@ func (repo *Repository) GetChainId() uint {
 	return repo.config.ChainId
 }
 
-func (repo *Repository) GetTokenOracles() map[string]*core.TokenOracle {
+func (repo *Repository) GetTokenOracles() map[int16]map[string]*core.TokenOracle {
 	return repo.tokensCurrentOracle
 }
 func (repo *Repository) GetDisabledTokens() []*core.AllowedToken {

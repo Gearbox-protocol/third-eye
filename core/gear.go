@@ -35,7 +35,7 @@ type RepositoryI interface {
 	SetBlock(blockNum int64)
 	SetAndGetBlock(blockNum int64) *Block
 	GetBlocks() map[int64]*Block
-	GetTokenOracles() map[string]*TokenOracle
+	GetTokenOracles() map[int16]map[string]*TokenOracle
 	GetDisabledTokens() []*AllowedToken
 	LoadBlocks(from, to int64)
 	// credit account operations
@@ -43,7 +43,7 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	AddTokenOracle(token, oracle, feed string, blockNum int64)
+	AddTokenOracle(*TokenOracle)
 	AddPriceFeed(blockNum int64, pf *PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *Protocol)

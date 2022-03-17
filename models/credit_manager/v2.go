@@ -13,8 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (cm *CreditManager) addCreditConfigurator() {
-	creditConfigurator, err := cm.contractETHV2.CreditConfigurator(&bind.CallOpts{})
+func (cm *CreditManager) addCreditConfigurator(blockNum int64) {
+	creditConfigurator, err := cm.contractETHV2.CreditConfigurator(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
 	if err != nil {
 		log.Fatal(err)
 	}

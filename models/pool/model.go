@@ -22,8 +22,10 @@ func (Pool) TableName() string {
 }
 
 func NewPool(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *Pool {
+	syncAdapter := core.NewSyncAdapter(addr, core.Pool, discoveredAt, client, repo)
+	syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
-		core.NewSyncAdapter(addr, core.Pool, discoveredAt, client, repo),
+		syncAdapter,
 	)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(pool.DiscoveredAt),

@@ -31,9 +31,6 @@ func (SyncAdapter) TableName() string {
 	return "sync_adapters"
 }
 func (s *SyncAdapter) GetVersion() int16 {
-	if s.V == 0 {
-		return 1
-	}
 	return s.V
 }
 func (s *SyncAdapter) SetVersion(version int16) {
@@ -143,12 +140,9 @@ func NewSyncAdapter(addr, name string, discoveredAt int64, client ethclient.Clie
 		Contract: NewContract(addr, name, discoveredAt, client),
 		Repo:     repo,
 	}
-	// if obj.FirstLogAt != 0 {
-	// 	obj.LastSync = obj.FirstLogAt - 1
-	// } else {
-	// 	obj.LastSync = discoveredAt - 1
-	// }
 	obj.LastSync = obj.FirstLogAt - 1
+	// for addressProvider discoveredAt is -1 but NewContract set it to firstLogAt so this will work
+	obj.V = obj.FetchVersion(discoveredAt)
 	return obj
 }
 

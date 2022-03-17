@@ -5,6 +5,8 @@ alter table price_feeds drop price_eth_bi, drop price_eth;
 alter table credit_sessions add version smallint;
 alter table debt_sync add field_set boolean;
 update credit_sessions set version=1;
+update sync_adapters set version=1;
+alter table  sync_adapters add version smallint;
 
 create table transfer_account_allowed(
     log_id integer,
@@ -14,3 +16,6 @@ create table transfer_account_allowed(
     allowed boolean,
     PRIMARY KEY(block_num, log_id),
 );
+
+alter table token_oracle add version smallint;
+update token_oracle set version = 1;

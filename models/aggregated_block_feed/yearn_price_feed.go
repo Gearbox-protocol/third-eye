@@ -41,7 +41,12 @@ func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclien
 	// add token oracle for db
 	// feed is also oracle address for yearn address
 	// we don't relie on underlying feed
-	repo.AddTokenOracle(token, oracle, oracle, discoveredAt)
+	repo.AddTokenOracle(&core.TokenOracle{
+		Token:       token,
+		Oracle:      oracle,
+		Feed:        oracle,
+		BlockNumber: discoveredAt,
+		Version:     version})
 	return NewYearnPriceFeedFromAdapter(
 		syncAdapter,
 	)

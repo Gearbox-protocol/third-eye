@@ -10,22 +10,30 @@
         priceOracles: ['#PriceOracle_1'],
       },
       lastSync: 1,
+      version: 1,
+
     },
     {
       // on usdc
       type: 'Pool',
       address: '#Pool_1',
       lastSync: 2,
+      version: 1,
+
     },
     {
       type: 'AccountFactory',
       address: '#AccountFactory_1',
       lastSync: 2,
+      version: 1,
+
     },
     {
       type: 'ACL',
       address: '#ACL_1',
       lastSync: 2,
+      version: 1,
+
     },
     {
       // on usdc
@@ -51,6 +59,8 @@
       type: 'PriceOracle',
       address: '#PriceOracle_1',
       lastSync: 2,
+      version: 1,
+
     },
     {
       type: 'ChainlinkPriceFeed',
@@ -61,6 +71,8 @@
         dieselToken: '#DieselToken_1',
       },
       lastSync: 2,
+      version: 1,
+
     },
     {
       type: 'AccountManager',
@@ -69,6 +81,8 @@
         accounts: ['#Account_1'],
       },
       lastSync: 2,
+      version: 1,
+
     },
     {
       type: 'ChainlinkPriceFeed',
@@ -78,6 +92,7 @@
         token: '#Token_2',
       },
       lastSync: 2,
+      version: 1,
     },
   ],
   poolState: [

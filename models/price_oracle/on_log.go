@@ -43,7 +43,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 
 		token := newPriceFeedEvent.Token.Hex()
 		oracle := newPriceFeedEvent.PriceFeed.Hex()
-		version := mdl.FetchVersion(blockNum)
+		version := mdl.GetVersion()
 		priceFeedType, err := mdl.checkPriceFeedContract(blockNum, oracle)
 		if err != nil {
 			log.Fatal(err)

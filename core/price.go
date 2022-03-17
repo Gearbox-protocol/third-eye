@@ -5,6 +5,7 @@ type TokenOracle struct {
 	Token       string `gorm:"primaryKey;column:token" json:"token"`
 	Oracle      string `gorm:"column:oracle" json:"oracle"`
 	Feed        string `gorm:"column:feed" json:"feed"`
+	Version     int16  `gorm:"column:version" json:"version"`
 }
 
 func (TokenOracle) TableName() string {

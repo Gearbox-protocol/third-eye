@@ -11,6 +11,7 @@ func TestSyncAdapters(t *testing.T) {
 	r.Eng.Sync(10)
 	adapters := getAdapters(r.Repo.GetKit())
 	r.Check(map[string]interface{}{"data": adapters}, "sync_adapters/adapters.json")
+	r.Check(r.Repo.GetBlocks()[6], "sync_adapters/blocks.json")
 }
 
 func getAdapters(kit *core.AdapterKit) (array []*core.SyncAdapter) {

@@ -47,18 +47,15 @@ func (CreditManager) TableName() string {
 
 func NewCreditManager(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *CreditManager {
 	// credit manager
-	adapter := core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo)
-	version := adapter.FetchVersion(0)
-	adapter.SetVersion(version)
 	cm := NewCreditManagerFromAdapter(
-		adapter,
+		core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo),
 	)
 	cm.CommonInit()
-	switch version {
+	switch cm.GetVersion() {
 	case 1:
 		cm.addCreditFilter(discoveredAt)
 	case 2:
-		cm.addCreditConfigurator()
+		cm.addCreditConfigurator(discoveredAt)
 	}
 	return cm
 }
