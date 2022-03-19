@@ -16,11 +16,10 @@ type PriceCallParams struct {
 
 // multicall for getting price in batch
 // For only getting the prices for calculating the treasury value
-func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
+func (repo *Repository) getPricesInBatch(oracle string, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	calls := []multicall.Multicall2Call{}
 
-	oracle, err := repo.GetActivePriceOracleByBlockNum(blockNum)
-	if err != nil && err.Error() == "Not Found" {
+	if oracle == "" {
 		for _ = range tokenAddrs {
 			prices = append(prices, new(big.Int))
 		}
@@ -29,7 +28,6 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		}
 		return
 	}
-	log.CheckFatal(err)
 	oracleABI := core.GetAbi(core.PriceOracle)
 	for _, token := range tokenAddrs {
 		tokenObj, err := repo.getTokenWithError(token)

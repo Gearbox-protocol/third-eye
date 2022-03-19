@@ -2,6 +2,7 @@ package repository
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 
 	"github.com/Gearbox-protocol/third-eye/artifacts/priceOracle"
@@ -112,16 +113,36 @@ func (repo *Repository) isAllowedTokenDisabled(cm, token string) bool {
 	}
 	return repo.allowedTokens[cm][token].DisableBlock != 0
 }
-
+// return the active first oracle under blockNum
+// if all disabled return the last one
 func (repo *Repository) GetActivePriceOracleByBlockNum(blockNum int64) (string, error) {
+	var disabledLastOracle, activeFirstOracle string
+	var disabledOracleBlock, activeOracleBlock int64
+	activeOracleBlock = math.MaxInt64
 	oracles := repo.kit.GetAdapterAddressByName(core.PriceOracle)
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
-		if !oracleAdapter.IsDisabled() && oracleAdapter.GetDiscoveredAt() <= blockNum {
-			return addr, nil
+		if oracleAdapter.GetDiscoveredAt() <= blockNum {
+			if oracleAdapter.IsDisabled() {
+				if disabledOracleBlock < oracleAdapter.GetDiscoveredAt() {
+					disabledOracleBlock = oracleAdapter.GetDiscoveredAt()
+					disabledLastOracle = addr
+				}
+			} else {
+				if activeOracleBlock > oracleAdapter.GetDiscoveredAt() {
+					activeOracleBlock = oracleAdapter.GetDiscoveredAt()
+					activeFirstOracle = addr
+				}
+			}
 		}
 	}
-	return "", fmt.Errorf("Not Found")
+	if activeFirstOracle != "" {
+		return activeFirstOracle, nil
+	} else if disabledLastOracle != "" {
+		return disabledLastOracle, nil
+	} else {
+		return "", fmt.Errorf("Not Found")
+	}
 }
 func (repo *Repository) GetPriceOracleByVersion(version int16) (string, error) {
 	addrProviderAddr := repo.kit.GetAdapterAddressByName(core.AddressProvider)

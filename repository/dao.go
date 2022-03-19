@@ -114,7 +114,8 @@ func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core
 			tokenForCalls = append(tokenForCalls, token)
 		}
 	}
-	prices, dieselRates := repo.getPricesInBatch(blockNum, false, tokenForCalls, poolForDieselRate)
+	priceOracle,_ := repo.GetActivePriceOracleByBlockNum(blockNum)
+	prices, dieselRates := repo.getPricesInBatch(priceOracle, blockNum, false, tokenForCalls, poolForDieselRate)
 	var poolIndex int
 	for i, token := range tokenAddrs {
 		var price *big.Int
@@ -129,7 +130,9 @@ func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core
 		}
 		priceByToken[token] = utils.GetFloat64Decimal(price, 8)
 	}
-	priceByToken[repo.WETHAddr] = 1
+	if repo.kit.GetAdapter(priceOracle).GetVersion() == 1 {
+		priceByToken[repo.WETHAddr] = 1
+	}
 	return priceByToken
 }
 

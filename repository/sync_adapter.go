@@ -21,7 +21,7 @@ import (
 func (repo *Repository) loadSyncAdapters() {
 	//
 	data := []*core.SyncAdapter{}
-	err := repo.db.Find(&data, "disabled = ?", false).Error
+	err := repo.db.Find(&data, "disabled = ? OR type = 'PriceOracle'", false).Error
 	if err != nil {
 		log.Fatal(err)
 	}

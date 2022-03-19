@@ -39,6 +39,8 @@
       address: '#PriceOracle_0',
       lastSync: 2,
       version: 1,
+      disabled_at: 2,
+      disabled: true,
     },
     {
       type: 'ChainlinkPriceFeed',

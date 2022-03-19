@@ -209,7 +209,7 @@ func (addrs AddressMap) ReplaceWithVariable(key string, data interface{}) interf
 	if key == "sessionId" {
 		value, ok := data.(string)
 		if !ok {
-			log.Error("string parsing failed")
+				log.Error("string parsing failed")
 		}
 		splits := strings.Split(value, "_")
 		splits[0] = addrs[splits[0]]

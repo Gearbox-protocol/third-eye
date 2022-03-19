@@ -189,6 +189,8 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 		tokens = append(tokens, token)
 	}
 	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
+	log.Info(prices)
+	log.Info(utils.ToJson(session.Balances))
 	session.RemainingFunds = (*core.BigInt)(session.Balances.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
 

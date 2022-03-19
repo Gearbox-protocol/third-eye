@@ -13,7 +13,7 @@ const (
 
 type (
 	CreditSession struct {
-		ID                     string       `gorm:"primaryKey" json:"id"`
+		ID                     string       `gorm:"primaryKey" json:"sessionId"`
 		Status                 int          `json:"status"`
 		Borrower               string       `json:"borrower"`
 		CreditManager          string       `json:"creditManager"`
