@@ -160,11 +160,13 @@ func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
 			txLog.BlockNumber = uint64(blockNum)
 			events[blockNum][event.Address] = append(events[blockNum][event.Address], txLog)
 			if event.Topics[0] == core.Topic("AnswerUpdated(int256,uint256,uint256)").Hex() {
+				log.Info(utils.ToJson(event))
 				price, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
 				if !ok {
 					log.Fatal("Failed in parsing price in answerupdated")
 				}
 				token := m.feedToToken[txLog.Address.Hex()]
+				log.Info(token)
 				if prices[token] == nil {
 					prices[token] = make(map[int64]*big.Int)
 				}
