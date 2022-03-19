@@ -8,19 +8,15 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (cm *CreditManager) addCreditConfigurator(blockNum int64) {
-	creditConfigurator, err := cm.contractETHV2.CreditConfigurator(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
-	if err != nil {
-		log.Fatal(err)
-	}
-	cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator.Hex())
-	cf := credit_filter.NewCreditFilter(creditConfigurator.Hex(), core.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
+func (cm *CreditManager) addCreditConfigurator(creditConfigurator string) {
+	cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator)
+	cf := credit_filter.NewCreditFilter(creditConfigurator, core.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
+	cm.Details["configurator"] = creditConfigurator
 }
 
 func (mdl *CreditManager) checkLogV2(txLog types.Log) {
@@ -121,15 +117,19 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		mdl.AddExecuteParamsV2(&txLog, execute.Borrower, execute.Target)
 	case core.Topic("NewConfigurator(address)"):
 		newConfigurator := utils.ChecksumAddr(txLog.Topics[1].Hex())
+		oldConfigurator := mdl.GetDetailsByKey("configurator")
 		mdl.Repo.AddDAOOperation(&core.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Args:        &core.Json{"oldConfigurator": mdl.GetDetailsByKey("configurator"), "configurator": newConfigurator},
+			Args:        &core.Json{"oldConfigurator": oldConfigurator, "configurator": newConfigurator},
 			Type:        core.NewFastCheckParameters,
 		})
-		mdl.Details["configurator"] = newConfigurator
+		if oldConfigurator != newConfigurator {
+			mdl.Repo.GetKit().GetAdapter(oldConfigurator).SetBlockToDisableOn(int64(txLog.BlockNumber))
+			mdl.addCreditConfigurator(newConfigurator)
+		}
 	}
 }
 

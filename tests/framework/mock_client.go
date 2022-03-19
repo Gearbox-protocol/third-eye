@@ -124,7 +124,7 @@ func ContainsHash(list []common.Hash, v common.Hash) bool {
 func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
 	toBlock := query.ToBlock.Int64()
 	txLogs := []types.Log{}
-	for i := query.FromBlock.Int64(); i < toBlock; i++ {
+	for i := query.FromBlock.Int64(); i <= toBlock; i++ {
 		for _, address := range query.Addresses {
 			if t.events[i] != nil {
 				if len(query.Topics) > 0 && query.Topics[0][0] == topic("Transfer(address,address,uint256)") {

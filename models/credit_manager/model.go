@@ -55,7 +55,11 @@ func NewCreditManager(addr string, client ethclient.ClientI, repo core.Repositor
 	case 1:
 		cm.addCreditFilter(discoveredAt)
 	case 2:
-		cm.addCreditConfigurator(discoveredAt)
+		creditConfigurator, err := cm.contractETHV2.CreditConfigurator(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
+		if err != nil {
+			log.Fatal(err)
+		}
+		cm.addCreditConfigurator(creditConfigurator.Hex())
 	}
 	return cm
 }
@@ -93,24 +97,17 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		var creditFacadeAddr common.Address
 		if obj.Details != nil && obj.Details["facade"] != nil {
 			creditFacadeAddr = common.HexToAddress(obj.Details["facade"].(string))
-			obj.SetCreditFacade(creditFacadeAddr)
-		} else {
-			// should only be called on discovered, not when loading from db.
+		}  else {
 			opts := &bind.CallOpts{BlockNumber: big.NewInt(adapter.DiscoveredAt)}
 			creditFacadeAddr, err = cmContract.CreditFacade(opts)
 			log.CheckFatal(err)
-			obj.SetCreditFacade(creditFacadeAddr)
-			var creditConfigurator common.Address
-			creditConfigurator, err = cmContract.CreditConfigurator(opts)
-			log.CheckFatal(err)
-			obj.Details["configurator"] = creditConfigurator.Hex()
 		}
-
+		obj.SetCreditFacadeContract(creditFacadeAddr) 
 	}
 	return obj
 }
 
-func (mdl *CreditManager) SetCreditFacade(creditFacadeAddr common.Address) {
+func (mdl *CreditManager) SetCreditFacadeContract(creditFacadeAddr common.Address) {
 	var err error
 	mdl.facadeContractV2, err = creditFacade.NewCreditFacade(creditFacadeAddr, mdl.Client)
 	log.CheckFatal(err)

@@ -5,6 +5,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"sort"
 )
@@ -108,7 +109,8 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	// we only require CreditFacadeUpgraded so that we can update the details for credit manager and
 	if mdl.GetDetailsByKey("configurator") == txLog.Address.Hex() {
 		if txLog.Topics[0] == core.Topic("CreditFacadeUpgraded(address)") {
-			mdl.Details["configurator"] = utils.ChecksumAddr(txLog.Topics[1].Hex())
+			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
+			mdl.SetCreditFacadeContract(common.HexToAddress(facade))
 		}
 		return
 	}
