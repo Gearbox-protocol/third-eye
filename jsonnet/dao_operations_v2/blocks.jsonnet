@@ -171,6 +171,7 @@
             '0',
             '1000000000',
           ],
+          creditManager: '#CreditManager_1',
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
@@ -192,6 +193,7 @@
             '0',
             '200',
           ],
+          creditManager: '#CreditManager_1',
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
@@ -202,6 +204,7 @@
       {
         Args: {
           facade: '#CreditFacade_1',
+          creditManager: '#CreditManager_1',
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',

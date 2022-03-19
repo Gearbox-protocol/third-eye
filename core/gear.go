@@ -52,8 +52,8 @@ type RepositoryI interface {
 	DisableAllowedToken(blockNum int64, logID uint, txHash string, creditManager, creditFilter, token string)
 	// v2
 	AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *AllowedToken)
-	UpdateLimits(logID uint, txHash string, params *Parameters)
-	UpdateFees(logID uint, txHash string, params *Parameters)
+	UpdateLimits(logID uint, txHash, creditConfigurator string, params *Parameters)
+	UpdateFees(logID uint, txHash, creditConfigurator string, params *Parameters)
 	TransferAccountAllowed(*TransferAccountAllowed)
 	//
 	AddToken(token string) *Token

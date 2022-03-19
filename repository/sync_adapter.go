@@ -41,7 +41,6 @@ func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 		if ap.Details["dc"] != nil {
 			repo.dcWrapper.LoadMultipleDC(ap.Details["dc"])
 		}
-		log.Info(ap)
 		return ap
 	case core.AccountFactory:
 		return account_factory.NewAccountFactoryFromAdapter(adapter)

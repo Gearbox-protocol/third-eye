@@ -25,6 +25,7 @@ type TestCall struct {
 	Accounts    []core.TestAccountCallData   `json:"accounts"`
 	Masks       []TestMask                   `json:"masks"`
 	ExecuteOnCM map[string][]*core.KnownCall `json:"executeOnCM"`
+	MainEventLogs map[string][]*core.FuncWithMultiCall `json:"mainEventLogs"`
 	OtherCalls  map[string][]string          `json:"others"`
 }
 

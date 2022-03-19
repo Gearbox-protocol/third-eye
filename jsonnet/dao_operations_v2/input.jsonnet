@@ -23,6 +23,11 @@ local borrowedAmount = 4000;
         feed: '#ChainlinkPriceFeed_2',
       },
       {
+        oracle: '#Oracle_3',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_3',
+      },
+      {
         oracle: '#Oracle_4',
         block: 1,
         feed: '#ChainlinkPriceFeed_4',

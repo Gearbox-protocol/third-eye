@@ -11,11 +11,12 @@ type ExecuteParams struct {
 	Borrower      common.Address
 	Index         uint
 	BlockNumber   int64
+	TxHash string
 }
 
 type FuncWithMultiCall struct {
-	Name          string
-	MultiCallsLen int
+	Name          string `json:"name"`
+	MultiCallsLen int `json:"len"`
 }
 
 type ExecuteParserI interface {

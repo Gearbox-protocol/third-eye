@@ -272,6 +272,7 @@ func (mdl *CreditManager) AddExecuteParams(txLog *types.Log,
 		Borrower:      borrower,
 		Index:         txLog.Index,
 		BlockNumber:   blockNum,
+		TxHash: txLog.Address.Hex(),
 	})
 	return nil
 }
@@ -281,7 +282,7 @@ func (mdl *CreditManager) handleExecuteEvents(executeParams []core.ExecuteParams
 	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(mdl.LastTxHash, mdl.Address, executeParams)
 
 	for i, call := range calls {
-		params := mdl.executeParams[i]
+		params := executeParams[i]
 		// add account operation
 		accountOperation := &core.AccountOperation{
 			BlockNumber: params.BlockNumber,

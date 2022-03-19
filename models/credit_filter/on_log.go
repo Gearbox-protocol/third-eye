@@ -108,18 +108,18 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("LimitsUpdated(uint256,uint256)"):
 		limitEvent, err := mdl.cfgContract.ParseLimitsUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.UpdateLimits(txLog.Index, txLog.TxHash.Hex(), &core.Parameters{
+		mdl.Repo.UpdateLimits(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &core.Parameters{
 			BlockNum:      int64(txLog.BlockNumber),
-			CreditManager: mdl.GetAddress(),
+			CreditManager: creditManager,
 			MinAmount:     (*core.BigInt)(limitEvent.MinBorrowedAmount),
 			MaxAmount:     (*core.BigInt)(limitEvent.MaxBorrowedAmount),
 		})
 	case core.Topic("FeesUpdated(uint256,uint256,uint256)"):
 		feesEvent, err := mdl.cfgContract.ParseFeesUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), &core.Parameters{
+		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &core.Parameters{
 			BlockNum:            int64(txLog.BlockNumber),
-			CreditManager:       mdl.GetAddress(),
+			CreditManager:       creditManager,
 			FeeInterest:         (*core.BigInt)(feesEvent.FeeInterest),
 			FeeLiquidation:      (*core.BigInt)(feesEvent.FeeLiquidation),
 			LiquidationDiscount: (*core.BigInt)(feesEvent.LiquidationPremium),
@@ -144,7 +144,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
-			Args:        &core.Json{"facade": newFacade},
+			Args:        &core.Json{"facade": newFacade, "creditManager": creditManager},
 			Type:        core.NewFastCheckParameters,
 		})
 	}

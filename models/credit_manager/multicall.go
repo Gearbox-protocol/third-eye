@@ -48,6 +48,7 @@ func (p *MultiCallProcessor) Start(borrower, txHash string, startEvent *core.Acc
 	p.txHash = txHash
 	p.borrower = borrower
 	p.MultiCallStartEvent = startEvent
+	p.running = true
 }
 func (p *MultiCallProcessor) lenOfMultiCalls() int {
 	return len(p.events)

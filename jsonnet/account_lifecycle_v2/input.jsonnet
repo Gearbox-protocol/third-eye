@@ -1,106 +1,46 @@
+///////
+// TEST
+///////
+// open credit account without multicall. Block 4
+// multicall for decreaseBorrowedAmount and add collateral. Block 5
+// multicall for token swapping. Block 6
+// direct token transfers with yif not linked and usdc linked 7
+
 local utils = import '../utils.libsonnet';
 local initialAmount = 1000;
 local borrowedAmount = 4000;
 local extraBorrowedAmount = 1000;
 local newCollateral = 1;
 // price are in usd
-// the liquidity threshold is separate from allowed tokens
 {
-  mocks: {
-    syncAdapters: 'mocks/syncAdapterV2.json',
-  },
-  states: {
-    oracles: [{
-      oracle: '#Oracle_1',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_1',
-    }, {
-      oracle: '#Oracle_2',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_2',
-    }],
-  },
   blocks: {
     // block with open and borrow more underlying asset
-    '3': {
+    '4': {
       events: [
         {
-          // credit filter on usdc
-          address: '#CreditConfigurator_1',
+          // open account without multicall
+          address: '#CreditFacade_1',
           topics: [
-            'TokenAllowed(address)',
-            '#Token_1',
-          ],
-          txHash: '!#Hash_1',
-        },
-        {
-          // credit filter on usdc
-          address: '#CreditConfigurator_1',
-          topics: [
-            'TokenLiquidationThresholdUpdated(address,uint256)',
-            '#Token_1',
-          ],
-          data: [
-            utils.bigIntTopic(9000, 0),
-          ],
-          txHash: '!#Hash_1',
-        },
-        {
-          // price chainlink on usdc
-          address: '#CreditConfigurator_1',
-          txHash: '!#Hash_2',
-          topics: [
-            'LimitsUpdated(uint256,uint256)',
-          ],
-          data: [
-            // minAnount
-            utils.bigIntTopic(1000, 6),
-            // maxAmount
-            utils.bigIntTopic(5000, 6),
-          ],
-        },
-        {
-          // price chainlink on usdc
-          address: '#CreditConfigurator_1',
-          txHash: '!#Hash_2',
-          topics: [
-            'FeesUpdated(uint256,uint256,uint256)',
-          ],
-          data: [
-            // feeInterest
-            utils.bigIntTopic(1000, 0),
-            // feeLiquidation
-            utils.bigIntTopic(200, 0),
-            // liquidationDiscount
-            utils.bigIntTopic(9500, 0),
-          ],
-        },
-        {
-          // price chainlink on usdc
-          address: '#ChainlinkPriceFeed_1',
-          txHash: '!#Hash_3',
-          topics: [
-            'AnswerUpdated(int256,uint256,uint256)',
-            // 0.0004
-            utils.bigIntTopic(2500, 8),
-            // roundid
-            utils.bigIntTopic(1, 0),
-          ],
-          data: [],
-        },
-        {
-          // credit manager on usdc
-          address: '#CreditManager_1',
-          topics: [
-            'OpenCreditAccount(address,address,address,uint256,uint256,uint256)',
-            '#User_1',
+            'OpenCreditAccount(address,address,uint256,uint256)',
             '#User_1',
             '#Account_1',
           ],
           data: [
-            utils.bigIntTopic(initialAmount, 6),
             utils.bigIntTopic(borrowedAmount, 6),
             'bigint:0',
+          ],
+          txHash: '!#Hash_4',
+        },
+        {
+          // add collateral
+          address: '#CreditFacade_1',
+          topics: [
+            'AddCollateral(address,address,uint256)',
+            '#User_1',
+            '#Token_1',
+          ],
+          data: [
+            utils.bigIntTopic(initialAmount, 6),
           ],
           txHash: '!#Hash_4',
         },
@@ -115,11 +55,11 @@ local newCollateral = 1;
           data: [
             utils.bigIntTopic(borrowedAmount, 6),
           ],
-          txHash: '!#Hash_5',
+          txHash: '!#Hash_4',
         },
         {
           // credit manager on usdc increaseborrow
-          address: '#CreditManager_1',
+          address: '#CreditFacade_1',
           topics: [
             'IncreaseBorrowedAmount(address,uint256)',
             '#User_1',  // borrower
@@ -127,20 +67,20 @@ local newCollateral = 1;
           data: [
             utils.bigIntTopic(extraBorrowedAmount, 6),  // amount
           ],
-          txHash: '!#Hash_6',
+          txHash: '!#Hash_5',
         },
         {
           // pool on usdc
           address: '#Pool_1',
           topics: [
             'Borrow(address,address,uint256)',
-            '#CreditManager_1',
+            '#CreditFacade_1',
             '#Account_1',
           ],
           data: [
             utils.bigIntTopic(extraBorrowedAmount, 6),
           ],
-          txHash: '!#Hash_7',
+          txHash: '!#Hash_5',
         },
       ],
       calls:
@@ -152,8 +92,8 @@ local newCollateral = 1;
           pools: [{
             address: '#Pool_1',
             totalBorrowed: utils.bigInt(borrowedAmount, 6),
-            expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount + 1000, 6),
-            availableLiquidity: utils.bigInt(1000, 6),
+            expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount + 5000, 6),
+            availableLiquidity: utils.bigInt(5000, 6),
             depositAPY: utils.bigInt(0),
             borrowAPY: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
@@ -179,30 +119,60 @@ local newCollateral = 1;
             address: '#CreditManager_1',
             isWETH: false,
             minAmount: utils.bigInt(1000, 6),
-            maxAmount: utils.bigInt(5000, 6),
-            availableLiquidity: utils.bigInt(1000, 6),
+            maxAmount: utils.bigInt(6000, 6),
+            availableLiquidity: utils.bigInt(5000, 6),
             borrowRate: '0',
           }],
         },
     },
-    // new block with add collateral
-    '4': {
+    // new block with multicall add collateral and decreaseBorrowedAmount
+    '5': {
       events: [
         {
-          // credit filter on usdc
-          address: '#CreditFilter_1',
+          // WETH price chainlink
+          address: '#ChainlinkPriceFeed_3',
+          txHash: '!#Hash_6',
           topics: [
-            'TokenAllowed(address,uint256)',
+            'AnswerUpdated(int256,uint256,uint256)',
+            // 8
+            utils.bigIntTopic(2500, 8),
+            // roundid
+            utils.bigIntTopic(1, 0),
+          ],
+        },
+        {
+          // credit filter on usdc
+          address: '#CreditConfigurator_1',
+          topics: [
+            'TokenAllowed(address)',
+            '#Token_3',
+          ],
+          txHash: '!#Hash_6',
+        },
+        {
+          // credit filter on usdc
+          address: '#CreditConfigurator_1',
+          topics: [
+            'TokenLiquidationThresholdUpdated(address,uint256)',
             '#Token_3',
           ],
           data: [
             utils.bigIntTopic(8000, 0),
           ],
-          txHash: '!#Hash_8',
+          txHash: '!#Hash_6',
+        },
+        {
+          // multicall start
+          address: '#CreditFacade_1',
+          topics: [
+            'MultiCall(address)',
+            '#User_1',
+          ],
+          txHash: '!#Hash_7',
         },
         {
           // credit manager on usdc
-          address: '#CreditManager_1',
+          address: '#CreditFacade_1',
           topics: [
             'AddCollateral(address,address,uint256)',
             '#User_1',
@@ -211,7 +181,27 @@ local newCollateral = 1;
           data: [
             utils.bigIntTopic(newCollateral, 18),
           ],
-          txHash: '!#Hash_9',
+          txHash: '!#Hash_7',
+        },
+        {
+          // credit manager on usdc increaseborrow
+          address: '#CreditFacade_1',
+          topics: [
+            'DecreaseBorrowedAmount(address,uint256)',
+            '#User_1',  // borrower
+          ],
+          data: [
+            utils.bigIntTopic(extraBorrowedAmount, 6),  // amount
+          ],
+          txHash: '!#Hash_7',
+        },
+        {
+          // multicall end
+          address: '#CreditFacade_1',
+          topics: [
+            'MultiCallEnd()',
+          ],
+          txHash: '!#Hash_7',
         },
       ],
       calls: {
@@ -223,14 +213,14 @@ local newCollateral = 1;
           address: '#Account_1',
           creditManager: '#CreditManager_1',
           borrower: '#User_1',
-          healthFactor: '14800',
-          totalValue: utils.bigInt(borrowedAmount + initialAmount + extraBorrowedAmount + newCollateral * 2500, 6),
-          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          healthFactor: '15444',  // 6950/4500
+          totalValue: utils.bigInt(borrowedAmount + initialAmount + (extraBorrowedAmount / 2) + newCollateral * 2500, 6),
+          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
-          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
-            balance: utils.bigInt(6000, 6),
+            balance: utils.bigInt(5500, 6),
             isAllowed: true,
           }, {
             token: '#Token_3',
@@ -242,15 +232,30 @@ local newCollateral = 1;
           address: '#CreditManager_1',
           isWETH: false,
           minAmount: utils.bigInt(1000, 6),
-          maxAmount: utils.bigInt(5000, 6),
-          availableLiquidity: utils.bigInt(1000, 6),
+          maxAmount: utils.bigInt(6000, 6),
+          availableLiquidity: utils.bigInt(5500, 6),
           borrowRate: '0',
         }],
+        mainEventLogs: {
+          '!#Hash_7': [{
+            name: 'multicall',
+            len: 2,
+          }],
+        },
       },
     },
     // swap on uniswap v2
-    '5': {
+    '6': {
       events: [
+        {
+          // multicall start
+          address: '#CreditFacade_1',
+          topics: [
+            'MultiCall(address)',
+            '#User_1',
+          ],
+          txHash: '!#Hash_8',
+        },
         {
           // credit filter on usdc
           address: '#CreditManager_1',
@@ -258,6 +263,24 @@ local newCollateral = 1;
             'ExecuteOrder(address,address)',
             '#User_1',
             '#Uniswapv2_1',
+          ],
+          txHash: '!#Hash_8',
+        },
+        {
+          // credit filter on usdc
+          address: '#CreditManager_1',
+          topics: [
+            'ExecuteOrder(address,address)',
+            '#User_1',
+            '#Uniswapv2_1',
+          ],
+          txHash: '!#Hash_8',
+        },
+        {
+          // multicall end
+          address: '#CreditFacade_1',
+          topics: [
+            'MultiCallEnd()',
           ],
           txHash: '!#Hash_8',
         },
@@ -271,14 +294,14 @@ local newCollateral = 1;
           address: '#Account_1',
           creditManager: '#CreditManager_1',
           borrower: '#User_1',
-          healthFactor: '13800',
-          totalValue: utils.bigInt(borrowedAmount + initialAmount + extraBorrowedAmount + newCollateral * 2500, 6),
-          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          healthFactor: '14333',
+          totalValue: utils.bigInt(500 + 3 * 2500, 6),
+          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
-          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
-            balance: utils.bigInt(1000, 6),
+            balance: utils.bigInt(500, 6),
             isAllowed: true,
           }, {
             token: '#Token_3',
@@ -299,35 +322,67 @@ local newCollateral = 1;
             name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
             args: {
               _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
-              amountIn: utils.bigIntTopic(5000, 6),
-              amountOutMin: utils.bigIntTopic(2, 18),
+              amountIn: utils.bigIntTopic(2500, 6),
+              amountOutMin: utils.bigIntTopic(1, 18),
               path: ['#Token_1', '#Token_3'],
               '': '#Account_1',
               deadline: 0,
             },
             depth: 0,
             transfers: {
-              '#Token_1': utils.bigInt(-5000, 6),
-              '#Token_3': utils.bigInt(2, 18),
+              '#Token_1': utils.bigInt(-2500, 6),
+              '#Token_3': utils.bigInt(1, 18),
             },
+          }, {
+            name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+            args: {
+              _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
+              amountIn: utils.bigIntTopic(2500, 6),
+              amountOutMin: utils.bigIntTopic(1, 18),
+              path: ['#Token_1', '#Token_3'],
+              '': '#Account_1',
+              deadline: 0,
+            },
+            depth: 0,
+            transfers: {
+              '#Token_1': utils.bigInt(-2500, 6),
+              '#Token_3': utils.bigInt(1, 18),
+            },
+          }],
+        },
+        mainEventLogs: {
+          '!#Hash_8': [{
+            name: 'multicall',
+            len: 2,
           }],
         },
       },
     },
-    // direct token transfer
-    '6': {
+    // direct token transfer for yfi and usdc
+    // yfi is enabled on creditfacade but not linked
+    // hence will not be considered while calculating total value
+    '7': {
       events: [
         {
-          // credit filter for YFI allowed
-          address: '#CreditFilter_1',
+          // credit filter on usdc
+          address: '#CreditConfigurator_1',
           topics: [
-            'TokenAllowed(address,uint256)',
+            'TokenAllowed(address)',
+            '#Token_2',
+          ],
+          txHash: '!#Hash_9',
+        },
+        {
+          // credit filter on usdc
+          address: '#CreditConfigurator_1',
+          topics: [
+            'TokenLiquidationThresholdUpdated(address,uint256)',
             '#Token_2',
           ],
           data: [
             utils.bigIntTopic(9000, 0),
           ],
-          txHash: '!#Hash_1',
+          txHash: '!#Hash_9',
         },
         {
           // YFI price chainlink
@@ -336,7 +391,7 @@ local newCollateral = 1;
           topics: [
             'AnswerUpdated(int256,uint256,uint256)',
             // 8
-            utils.bigIntTopic(8, 18),
+            utils.bigIntTopic(20000, 8),
             // roundid
             utils.bigIntTopic(1, 0),
           ],
@@ -377,16 +432,16 @@ local newCollateral = 1;
           address: '#Account_1',
           creditManager: '#CreditManager_1',
           borrower: '#User_1',
-          healthFactor: '15600',
+          healthFactor: '16333',  // 7350/4500 = (.9*1500+ 3*2500*.8)/(4000+1000-500)
           // 1000 is for direct token transfer of token 1 usdc
-          // .1 YFI = 8*ETH *.1= 2000 USDC  // yfi is not linked so it not included in yfi
-          totalValue: utils.bigInt(borrowedAmount + initialAmount + extraBorrowedAmount + newCollateral * 2500 + 1000, 6),
-          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          // .1 YFI = 8*ETH *.1= 2000 USDC  // yfi is not linked so it not included in token value
+          totalValue: utils.bigInt(borrowedAmount + initialAmount + extraBorrowedAmount / 2 + newCollateral * 2500 + 1000, 6),
+          repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
-          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+          borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
-            balance: utils.bigInt(2000, 6),
+            balance: utils.bigInt(1500, 6),
             isAllowed: true,
           }, {
             token: '#Token_3',

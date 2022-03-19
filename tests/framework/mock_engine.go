@@ -194,6 +194,7 @@ func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 			calls.CMs[cmCall.Addr] = cmCall
 		}
 		m.executeParser.setCalls(block.Calls.ExecuteOnCM)
+		m.executeParser.setMainEvents(block.Calls.MainEventLogs)
 		for _, maskDetails := range block.Calls.Masks {
 			if accountMask[blockNum] == nil {
 				accountMask[blockNum] = make(map[string]*big.Int)

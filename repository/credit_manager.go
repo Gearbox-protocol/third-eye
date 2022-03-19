@@ -97,7 +97,7 @@ func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Pa
 	repo.cmParams[params.CreditManager] = params
 }
 
-func (repo *Repository) paramsDAOV2(logID uint, txHash string, params *core.Parameters, fieldToRemove []string, daoEventType uint) {
+func (repo *Repository) paramsDAOV2(logID uint, txHash, creditConfigurator string,  params *core.Parameters, fieldToRemove []string, daoEventType uint) {
 	oldCMParams := repo.cmParams[params.CreditManager]
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
@@ -106,19 +106,20 @@ func (repo *Repository) paramsDAOV2(logID uint, txHash string, params *core.Para
 	for _, field := range fieldToRemove {
 		delete(*args, field)
 	}
+	(*args)["creditManager"] = params.CreditManager
 	repo.addDAOOperation(&core.DAOOperation{
 		BlockNumber: params.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,
 		Type:        daoEventType,
-		Contract:    params.CreditManager,
+		Contract:    creditConfigurator,
 		Args:        args,
 	})
 	//
 	repo.cmParams[params.CreditManager] = params
 }
 
-func (repo *Repository) UpdateLimits(logID uint, txHash string, params *core.Parameters) {
+func (repo *Repository) UpdateLimits(logID uint, txHash, creditConfigurator string, params *core.Parameters) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// cal dao action
@@ -126,7 +127,7 @@ func (repo *Repository) UpdateLimits(logID uint, txHash string, params *core.Par
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
 	}
-	repo.paramsDAOV2(logID, txHash, params,
+	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{"feeLiquidation", "LiquidationDiscount", "feeInterest", "maxLeverage"}, core.LimitsUpdated)
 	newParams := &core.Parameters{
 		MinAmount:           params.MinAmount,
@@ -134,12 +135,14 @@ func (repo *Repository) UpdateLimits(logID uint, txHash string, params *core.Par
 		FeeInterest:         oldCMParams.FeeInterest,
 		FeeLiquidation:      oldCMParams.FeeInterest,
 		LiquidationDiscount: oldCMParams.LiquidationDiscount,
+		BlockNum: params.BlockNum,
+		CreditManager: params.CreditManager,
 	}
 	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)
 	repo.cmParams[params.CreditManager] = newParams
 }
 
-func (repo *Repository) UpdateFees(logID uint, txHash string, params *core.Parameters) {
+func (repo *Repository) UpdateFees(logID uint, txHash, creditConfigurator string, params *core.Parameters) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// cal dao action
@@ -147,7 +150,7 @@ func (repo *Repository) UpdateFees(logID uint, txHash string, params *core.Param
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
 	}
-	repo.paramsDAOV2(logID, txHash, params,
+	repo.paramsDAOV2(logID, txHash,creditConfigurator, params, 
 		[]string{"maxAmount", "maxLeverage", "minAmount"}, core.FeesUpdated)
 	newParams := &core.Parameters{
 		MinAmount:           oldCMParams.MinAmount,
@@ -155,6 +158,8 @@ func (repo *Repository) UpdateFees(logID uint, txHash string, params *core.Param
 		FeeInterest:         params.FeeInterest,
 		FeeLiquidation:      params.FeeInterest,
 		LiquidationDiscount: params.LiquidationDiscount,
+		BlockNum: params.BlockNum,
+		CreditManager: params.CreditManager,
 	}
 	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)
 	repo.cmParams[params.CreditManager] = newParams

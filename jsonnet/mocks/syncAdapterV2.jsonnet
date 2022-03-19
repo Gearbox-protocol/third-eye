@@ -7,7 +7,7 @@
         dc:
           // data compressor should be deployed before it is used
           { '1': '#DC_1' },
-        priceOracles: ['#PriceOracle_1'],
+        priceOracles: ['#PriceOracle_0', '#PriceOracle_1'],
       },
       lastSync: 1,
       version: 1,
@@ -36,7 +36,7 @@
     // v1 priceoracle
     {
       type: 'PriceOracle',
-      address: '#PriceOracle_1',
+      address: '#PriceOracle_0',
       lastSync: 2,
       version: 1,
     },
@@ -103,6 +103,16 @@
       details: {
         oracle: '#Oracle_2',
         token: '#Token_2',
+      },
+      lastSync: 2,
+      version: 2,
+    },
+    {
+      type: 'ChainlinkPriceFeed',
+      address: '#ChainlinkPriceFeed_3',
+      details: {
+        oracle: '#Oracle_3',
+        token: '#Token_3',
       },
       lastSync: 2,
       version: 2,

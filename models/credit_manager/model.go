@@ -91,10 +91,11 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		}
 		obj.contractETHV2 = cmContract
 		var creditFacadeAddr common.Address
-		if obj.Details != nil && obj.Details["creditFacade"] != nil {
-			creditFacadeAddr = common.HexToAddress(obj.Details["creditFacade"].(string))
+		if obj.Details != nil && obj.Details["facade"] != nil {
+			creditFacadeAddr = common.HexToAddress(obj.Details["facade"].(string))
+			obj.SetCreditFacade(creditFacadeAddr)
 		} else {
-			// should only be called on discovered, not when loading form db.
+			// should only be called on discovered, not when loading from db.
 			opts := &bind.CallOpts{BlockNumber: big.NewInt(adapter.DiscoveredAt)}
 			creditFacadeAddr, err = cmContract.CreditFacade(opts)
 			log.CheckFatal(err)
@@ -104,6 +105,7 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 			log.CheckFatal(err)
 			obj.Details["configurator"] = creditConfigurator.Hex()
 		}
+		
 
 	}
 	return obj

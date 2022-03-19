@@ -203,23 +203,20 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	return nil, nil
 }
 func (t *TestClient) getPrice(blockNum int64, tokenAddr string) *big.Int {
-	if tokenAddr == t.WETHAddr {
+	if t.prices[tokenAddr] != nil {
+		var lastprice *big.Int
+		for currentNum, price := range t.prices[tokenAddr] {
+			if currentNum <= blockNum {
+				lastprice = price
+			}
+		}
+		return lastprice
+	} else if tokenAddr == t.WETHAddr { // only for v1
 		value, _ := new(big.Int).SetString("1000000000000000000", 10)
 		return value
 	} else {
-		if t.prices[tokenAddr] != nil {
-			var lastprice *big.Int
-			for currentNum, price := range t.prices[tokenAddr] {
-				if currentNum <= blockNum {
-					lastprice = price
-				}
-			}
-			return lastprice
-		} else {
-			panic(fmt.Sprintf("token(%s) price not present", tokenAddr))
-		}
+		panic(fmt.Sprintf("token(%s) price not present", tokenAddr))
 	}
-	return nil
 }
 func (t *TestClient) PendingCodeAt(ctx context.Context, contract common.Address) ([]byte, error) {
 	return nil, nil

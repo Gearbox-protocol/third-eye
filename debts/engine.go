@@ -77,7 +77,6 @@ func (eng *DebtEngine) CalculateDebt() {
 				sessionsToUpdate[sessionId] = true
 			}
 		}
-
 		for _, params := range block.GetParams() {
 			eng.addLastParameters(params)
 		}
@@ -173,6 +172,15 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return poolToCI
 }
 
+func (eng *DebtEngine) getTokenPriceFeed(token string ,version int16) *core.PriceFeed{
+	switch version {
+	case 1:
+		return eng.tokenLastPrice[token]
+	case 2:
+		return eng.tokenLastPriceV2[token]
+	}
+	return nil
+}
 func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *core.CreditSession, cumIndexAndUToken *core.CumIndexAndUToken) {
 	sessionId := session.ID
 	sessionSnapshot := eng.lastCSS[sessionId]
@@ -184,7 +192,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *core.CreditSe
 	if profile != nil {
 		yearnFeeds := eng.repo.GetYearnFeedAddrs()
 		for tokenAddr := range *sessionSnapshot.Balances {
-			lastPriceEvent := eng.tokenLastPrice[tokenAddr]
+			lastPriceEvent := eng.getTokenPriceFeed(tokenAddr, session.Version)
 			// for weth price feed is null
 			// if lastPriceEvent != nil {
 			// 	log.Infof("%+v\n",lastPriceEvent)
@@ -346,11 +354,11 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.C
 func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version int16) *big.Int {
 	usdcAddr := eng.repo.GetUSDCAddr()
 	tokenPrice := eng.GetTokenLastPrice(tokenAddr, version)
+	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
 	if version == 2 {
-		return new(big.Int).Mul(tokenPrice, amount)
+		return utils.GetInt64(new(big.Int).Mul(tokenPrice, amount), tokenDecimals)
 	}
 	usdcPrice := eng.GetTokenLastPrice(usdcAddr, version)
-	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
 	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
 
 	value := new(big.Int).Mul(amount, tokenPrice)
@@ -369,7 +377,7 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ..
 		}
 	case 2:
 		if eng.tokenLastPriceV2[addr] != nil {
-			eng.tokenLastPriceV2[addr].PriceBI.Convert()
+			return eng.tokenLastPriceV2[addr].PriceBI.Convert()
 		}
 	}
 	if len(dontFail) > 0 && dontFail[0] == true {

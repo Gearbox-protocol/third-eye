@@ -27,6 +27,22 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 	if len(mainEvents) != 1 {
 		log.Fatal(utils.ToJson(mainEvents))
 	}
+	var tenderlyEventName string
+	switch mainEvents[0].Name {
+		case "multicall":
+			mdl.UpdatedSessions[mainAction.SessionId]++
+			tenderlyEventName = "MultiCall(address)"
+		case "openCreditAccountMulticall":
+			mdl.UpdatedSessions[mainAction.SessionId]++
+			tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint256)"
+		case "liquidateCreditAccount":
+			tenderlyEventName = "LiquidateCreditAccount(address,address,uint256)"
+		case "closeCreditAccount":
+			tenderlyEventName = "CloseCreditAccount(address,address)"
+	}
+	if tenderlyEventName != mainAction.Action {
+		log.Fatalf("Tenderly event %s is different from %s", mainEvents[0].Name, mainAction.Action)
+	}
 	events := mdl.multicall.PopMulticallEventsV2()
 	//
 	if len(events) != mainEvents[0].MultiCallsLen {
@@ -49,7 +65,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 			multicalls = append(multicalls, event)
 		case "ExecuteOrder":
 			executeEvents = append(executeEvents, core.ExecuteParams{
-				SessionId:     event.SessionId,
+				SessionId:     mainAction.SessionId,
 				CreditAccount: common.HexToAddress(account),
 				Protocol:      common.HexToAddress(event.Dapp),
 				Borrower:      common.HexToAddress(mainAction.Borrower),
@@ -60,17 +76,16 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 			log.Fatal(utils.ToJson(event))
 		}
 	}
-	multicalls = append(multicalls, mdl.getProcessedExecuteEvents(executeEvents)...)
+	multicalls = append(multicalls, mdl.getProcessedExecuteEvents(txHash, executeEvents)...)
 	mainAction.MultiCall = multicalls
 	mdl.Repo.AddAccountOperation(mainAction)
 }
 
-func (mdl *CreditManager) getProcessedExecuteEvents(executeParams []core.ExecuteParams) (multiCalls []*core.AccountOperation) {
+func (mdl *CreditManager) getProcessedExecuteEvents(txHash string, executeParams []core.ExecuteParams) (multiCalls []*core.AccountOperation) {
 	// credit manager has the execute event
-	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(mdl.LastTxHash, mdl.Address, executeParams)
-
+	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash, mdl.Address, executeParams)
 	for i, call := range calls {
-		params := mdl.executeParams[i]
+		params := executeParams[i]
 		// add account operation
 		accountOperation := &core.AccountOperation{
 			BlockNumber: params.BlockNumber,
@@ -122,9 +137,8 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 		},
 		Dapp: cmAddr,
 	}
-	mdl.multicall.AddMulticallEvent(accountOperation)
+	mdl.multicall.AddOpenEvent(accountOperation)
 	mdl.PoolBorrow(txLog, sessionId, onBehalfOf, borrowAmount)
-	mdl.UpdatedSessions[sessionId]++
 	// add session to manager object
 	mdl.AddCreditOwnerSession(onBehalfOf, sessionId)
 	// create credit session
@@ -137,7 +151,7 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 		Since:          blockNum,
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		IsDirty:        true,
-		Version:        1,
+		Version:        2,
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
 	return nil
@@ -247,7 +261,6 @@ func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token 
 	}
 	mdl.multicall.AddMulticallEvent(accountOperation)
 	mdl.AddCollateralToSession(blockNum, sessionId, token, value)
-	mdl.UpdatedSessions[sessionId]++
 }
 
 func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int, eventName string) error {
@@ -277,13 +290,13 @@ func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower 
 	mdl.PoolBorrow(txLog, sessionId, borrower, amount)
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
-	mdl.UpdatedSessions[sessionId]++
 	return nil
 }
 
 func (mdl *CreditManager) AddExecuteParamsV2(txLog *types.Log,
 	borrower,
 	targetContract common.Address) error {
+	sessionId := mdl.GetCreditOwnerSession(borrower.Hex(), true)
 	mdl.multicall.AddMulticallEvent(&core.AccountOperation{
 		BlockNumber: int64(txLog.BlockNumber),
 		TxHash:      txLog.TxHash.Hex(),
@@ -291,6 +304,7 @@ func (mdl *CreditManager) AddExecuteParamsV2(txLog *types.Log,
 		Borrower:    borrower.Hex(),
 		Dapp:        targetContract.Hex(),
 		AdapterCall: true,
+		SessionId:   sessionId,
 		Action:      "ExecuteOrder",
 	})
 	return nil
