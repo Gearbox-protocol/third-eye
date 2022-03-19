@@ -15,6 +15,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/eRC20"
 	"github.com/Gearbox-protocol/third-eye/artifacts/gearToken"
 	"github.com/Gearbox-protocol/third-eye/artifacts/linearInterestRateModel"
+	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
 	"github.com/Gearbox-protocol/third-eye/artifacts/poolService"
 	"github.com/Gearbox-protocol/third-eye/artifacts/priceOracle"
 	"github.com/Gearbox-protocol/third-eye/artifacts/tokenMock"
@@ -110,6 +111,7 @@ func GetAbi(contractName string) *abi.ABI {
 		"Uniswapv2Router":    &bind.MetaData{ABI: uniswapv2Router.Uniswapv2RouterABI},
 		"CreditConfigurator": &bind.MetaData{ABI: creditConfigurator.CreditConfiguratorABI},
 		"CreditFacade":       &bind.MetaData{ABI: creditFacade.CreditFacadeABI},
+		"MultiCall":          &bind.MetaData{ABI: multicall.MulticallABI},
 	}
 	abiStr, ok := metadataMap[contractName]
 	if !ok {

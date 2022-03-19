@@ -191,7 +191,7 @@ local newCollateral = 1;
             '#User_1',  // borrower
           ],
           data: [
-            utils.bigIntTopic(extraBorrowedAmount, 6),  // amount
+            utils.bigIntTopic(extraBorrowedAmount / 2, 6),  // amount
           ],
           txHash: '!#Hash_7',
         },
@@ -435,7 +435,7 @@ local newCollateral = 1;
           healthFactor: '16333',  // 7350/4500 = (.9*1500+ 3*2500*.8)/(4000+1000-500)
           // 1000 is for direct token transfer of token 1 usdc
           // .1 YFI = 8*ETH *.1= 2000 USDC  // yfi is not linked so it not included in token value
-          totalValue: utils.bigInt(borrowedAmount + initialAmount + extraBorrowedAmount / 2 + newCollateral * 2500 + 1000, 6),
+          totalValue: utils.bigInt(500 + 3 * 2500 + 1000, 6),
           repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
           borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),

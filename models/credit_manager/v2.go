@@ -72,7 +72,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			BlockNumber: int64(txLog.BlockNumber),
 			SessionId:   sessionId,
 			Dapp:        txLog.Address.Hex(),
-			Action: "MultiCall(address)",
+			Action:      "MultiCall(address)",
 		})
 	case core.Topic("MultiCallEnd()"):
 		mdl.multicall.End()
@@ -148,7 +148,7 @@ func (mdl *CreditManager) processRemainingMultiCalls() {
 		mainAction = mdl.multicall.MultiCallStartEvent
 		// old open credit account
 	} else if mdl.multicall.lenOfMultiCalls() == 0 {
-		mdl.UpdatedSessions[mainAction.SessionId]++
+		mdl.setUpdateSession(mainAction.SessionId)
 		mdl.Repo.AddAccountOperation(mainAction)
 	}
 	if mdl.multicall.lenOfMultiCalls() > 0 {
@@ -156,6 +156,10 @@ func (mdl *CreditManager) processRemainingMultiCalls() {
 	}
 	mdl.multicall.OpenEvent = nil
 	mdl.multicall.MultiCallStartEvent = nil
+}
+func (mdl *CreditManager) setUpdateSession(sessionId string) {
+	// log.Info(log.DetectFunc(),sessionId, "increased")
+	mdl.UpdatedSessions[sessionId]++
 }
 func (mdl *CreditManager) processNonMultiCalls() {
 	events := mdl.multicall.popNonMulticallEventsV2()
@@ -165,11 +169,11 @@ func (mdl *CreditManager) processNonMultiCalls() {
 		case "AddCollateral(address,address,uint256)",
 			"IncreaseBorrowedAmount(address,uint256)",
 			"DecreaseBorrowedAmount(address,uint256)":
-			mdl.UpdatedSessions[event.SessionId]++
+			mdl.setUpdateSession(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":
 			account := strings.Split(event.SessionId, "_")[0]
-			mdl.UpdatedSessions[event.SessionId]++
+			mdl.setUpdateSession(event.SessionId)
 			executeEvents = append(executeEvents, core.ExecuteParams{
 				SessionId:     event.SessionId,
 				CreditAccount: common.HexToAddress(account),

@@ -55,6 +55,7 @@ type RepositoryI interface {
 	UpdateLimits(logID uint, txHash, creditConfigurator string, params *Parameters)
 	UpdateFees(logID uint, txHash, creditConfigurator string, params *Parameters)
 	TransferAccountAllowed(*TransferAccountAllowed)
+	GetPricesInUSD(blockNum int64, tokenAddrs []string) JsonFloatMap
 	//
 	AddToken(token string) *Token
 	GetToken(addr string) *Token

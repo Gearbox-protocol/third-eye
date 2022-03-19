@@ -29,16 +29,16 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 	}
 	var tenderlyEventName string
 	switch mainEvents[0].Name {
-		case "multicall":
-			mdl.UpdatedSessions[mainAction.SessionId]++
-			tenderlyEventName = "MultiCall(address)"
-		case "openCreditAccountMulticall":
-			mdl.UpdatedSessions[mainAction.SessionId]++
-			tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint256)"
-		case "liquidateCreditAccount":
-			tenderlyEventName = "LiquidateCreditAccount(address,address,uint256)"
-		case "closeCreditAccount":
-			tenderlyEventName = "CloseCreditAccount(address,address)"
+	case "multicall":
+		mdl.setUpdateSession(mainAction.SessionId)
+		tenderlyEventName = "MultiCall(address)"
+	case "openCreditAccountMulticall":
+		mdl.setUpdateSession(mainAction.SessionId)
+		tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint256)"
+	case "liquidateCreditAccount":
+		tenderlyEventName = "LiquidateCreditAccount(address,address,uint256)"
+	case "closeCreditAccount":
+		tenderlyEventName = "CloseCreditAccount(address,address)"
 	}
 	if tenderlyEventName != mainAction.Action {
 		log.Fatalf("Tenderly event %s is different from %s", mainEvents[0].Name, mainAction.Action)
@@ -46,7 +46,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 	events := mdl.multicall.PopMulticallEventsV2()
 	//
 	if len(events) != mainEvents[0].MultiCallsLen {
-		log.Fatal("%s expected %d of multi calls, but third-eye detected %d. Events: %s",
+		log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s",
 			mainEvents[0].Name, mainEvents[0].MultiCallsLen, len(events), utils.ToJson(events))
 	}
 	//
@@ -89,7 +89,7 @@ func (mdl *CreditManager) getProcessedExecuteEvents(txHash string, executeParams
 		// add account operation
 		accountOperation := &core.AccountOperation{
 			BlockNumber: params.BlockNumber,
-			TxHash:      mdl.LastTxHash,
+			TxHash:      txHash,
 			LogId:       params.Index,
 			// owner/account data
 			Borrower:  params.Borrower.Hex(),
@@ -160,12 +160,13 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to string) error {
 	mdl.State.TotalClosedAccounts++
 	sessionId := mdl.GetCreditOwnerSession(owner)
+	account := strings.Split(sessionId, "_")[0]
 	//
 	cmAddr := txLog.Address.Hex()
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("CloseCreditAccount", txLog)
 	// add account operation
-	transfers := mdl.Repo.GetExecuteParser().GetTransfers(txLog.TxHash.Hex(), []string{owner, to})
+	transfers := mdl.Repo.GetExecuteParser().GetTransfers(txLog.TxHash.Hex(), owner, account, mdl.GetUnderlyingToken(), []string{owner, to})
 	accountOperation := &core.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
@@ -180,6 +181,17 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	}
 	// process multicalls
 	mdl.multiCallHandler(accountOperation)
+	// update remainingFunds
+	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
+	session.Balances = mdl.toJsonBalance(transfers)
+	var tokens []string
+	for token := range *session.Balances {
+		tokens = append(tokens, token)
+	}
+	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
+	session.RemainingFunds = (*core.BigInt)(session.Balances.ValueInUnderlying(
+		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
+
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		// RemainingFunds: remainingFunds,
 		Status:   core.Closed,
@@ -190,6 +202,16 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	mdl.RemoveCreditOwnerSession(owner)
 	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
+}
+func (mdl *CreditManager) toJsonBalance(z core.Transfers) *core.JsonBalance {
+	bal := core.JsonBalance{}
+	for token, amt := range z {
+		bal[token] = &core.BalanceType{
+			BI: (*core.BigInt)(amt),
+			F:  utils.GetFloat64Decimal(amt, mdl.Repo.GetToken(token).Decimals),
+		}
+	}
+	return &bal
 }
 
 func (mdl *CreditManager) getRemainingFundsOnClose(blockNum int64, txHash, borrower string) *core.Transfers {
@@ -287,7 +309,15 @@ func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower 
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.multicall.AddMulticallEvent(accountOperation)
-	mdl.PoolBorrow(txLog, sessionId, borrower, amount)
+	if amount.Sign() == -1 {
+		repayAmount := new(big.Int).Neg(amount)
+		// manager state
+		mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, repayAmount)
+		mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
+		mdl.PoolRepay(blockNum, txLog.Index, txLog.TxHash.Hex(), sessionId, borrower, repayAmount)
+	} else {
+		mdl.PoolBorrow(txLog, sessionId, borrower, amount)
+	}
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
 	return nil

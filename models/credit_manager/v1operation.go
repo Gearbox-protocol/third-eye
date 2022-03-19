@@ -38,7 +38,8 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, acco
 	}
 	mdl.PoolBorrow(txLog, sessionId, onBehalfOf, borrowAmount)
 	mdl.AddAccountOperation(accountOperation)
-	mdl.UpdatedSessions[sessionId]++
+	mdl.setUpdateSession(sessionId)
+
 	// add session to manager object
 	mdl.AddCreditOwnerSession(onBehalfOf, sessionId)
 	// create credit session
@@ -191,7 +192,7 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 	}
 	mdl.AddAccountOperation(accountOperation)
 	mdl.AddCollateralToSession(blockNum, sessionId, token, value)
-	mdl.UpdatedSessions[sessionId]++
+	mdl.setUpdateSession(sessionId)
 	return nil
 }
 
@@ -232,7 +233,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmount(txLog *types.Log, borrower st
 	mdl.AddAccountOperation(accountOperation)
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
-	mdl.UpdatedSessions[sessionId]++
+	mdl.setUpdateSession(sessionId)
 	return nil
 }
 
@@ -272,7 +273,6 @@ func (mdl *CreditManager) AddExecuteParams(txLog *types.Log,
 		Borrower:      borrower,
 		Index:         txLog.Index,
 		BlockNumber:   blockNum,
-		TxHash: txLog.Address.Hex(),
 	})
 	return nil
 }
@@ -302,7 +302,7 @@ func (mdl *CreditManager) handleExecuteEvents(executeParams []core.ExecuteParams
 			Depth: call.Depth,
 		}
 		mdl.AddAccountOperation(accountOperation)
-		mdl.UpdatedSessions[params.SessionId]++
+		mdl.setUpdateSession(params.SessionId)
 	}
 }
 

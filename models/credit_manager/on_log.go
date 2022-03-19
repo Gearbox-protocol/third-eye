@@ -68,7 +68,7 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Deposit %v", tx)
 			}
 			if blockNum == mdl.lastEventBlock {
-				mdl.UpdatedSessions[sessionID]++
+				mdl.setUpdateSession(sessionID)
 			}
 			mdl.Repo.AddAccountOperation(&core.AccountOperation{
 				TxHash:      tx.TxHash,
@@ -113,7 +113,8 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		return
 	}
 	// on txHash
-	if mdl.GetVersion() == 1 {
+	switch mdl.GetVersion() {
+	case 1:
 		// storing execute order in a single tx and processing them in a single go on next tx
 		// for credit session stats
 		//
@@ -122,6 +123,8 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 			mdl.processExecuteEvents()
 			mdl.LastTxHash = txLog.TxHash.Hex()
 		}
+	case 2:
+		mdl.onNewTxHashV2(txLog.TxHash.Hex())
 	}
 	// on new block
 	// for credit manager stats
@@ -136,7 +139,6 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	case 1:
 		mdl.checkLogV1(txLog)
 	case 2:
-		mdl.onNewTxHashV2(txLog.TxHash.Hex())
 		mdl.checkLogV2(txLog)
 	}
 }

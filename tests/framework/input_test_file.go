@@ -20,13 +20,15 @@ type TestMask struct {
 }
 
 type TestCall struct {
-	Pools       []core.TestPoolCallData      `json:"pools"`
-	CMs         []core.TestCMCallData        `json:"cms"`
-	Accounts    []core.TestAccountCallData   `json:"accounts"`
-	Masks       []TestMask                   `json:"masks"`
-	ExecuteOnCM map[string][]*core.KnownCall `json:"executeOnCM"`
+	Pools         []core.TestPoolCallData              `json:"pools"`
+	CMs           []core.TestCMCallData                `json:"cms"`
+	Accounts      []core.TestAccountCallData           `json:"accounts"`
+	Masks         []TestMask                           `json:"masks"`
+	ExecuteOnCM   map[string][]*core.KnownCall         `json:"executeOnCM"`
 	MainEventLogs map[string][]*core.FuncWithMultiCall `json:"mainEventLogs"`
-	OtherCalls  map[string][]string          `json:"others"`
+	OtherCalls    map[string][]string                  `json:"others"`
+	// txHash to transfers
+	ExecuteTransfers map[string]core.Transfers `json:"executeTransfers"`
 }
 
 func (c *TestCall) Process() {

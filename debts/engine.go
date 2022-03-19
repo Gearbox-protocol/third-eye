@@ -172,7 +172,7 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return poolToCI
 }
 
-func (eng *DebtEngine) getTokenPriceFeed(token string ,version int16) *core.PriceFeed{
+func (eng *DebtEngine) getTokenPriceFeed(token string, version int16) *core.PriceFeed {
 	switch version {
 	case 1:
 		return eng.tokenLastPrice[token]
@@ -336,8 +336,20 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.C
 	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)
 	// calculate profit
 	var remainingFunds *big.Int
-	if (session.ClosedAt == 0 || session.ClosedAt != debt.BlockNumber+1) || session.Status == core.Repaid {
+	// if not closed, or the blocknum is not having close event or on repay we don't have remainingFunds
+	if session.Version == 2 && session.Status == core.Closed && session.ClosedAt == debt.BlockNumber+1 {
+		remainingFunds = new(big.Int)
+		prices := core.JsonFloatMap{}
+		for token := range *session.Balances {
+			tokenPrice := eng.GetTokenLastPrice(token, session.Version)
+			price := utils.GetFloat64Decimal(tokenPrice, 8)
+			prices[token] = price
+		}
+		remainingFunds = session.Balances.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
+		// v1 open/repay
+	} else if (session.ClosedAt == 0 || session.ClosedAt != debt.BlockNumber+1) || session.Status == core.Repaid {
 		remainingFunds = new(big.Int).Sub(debt.CalTotalValueBI.Convert(), debt.AmountToPoolBI.Convert())
+		// for v1 close/liquidate and v2 liquidate
 	} else {
 		remainingFunds = (*big.Int)(session.RemainingFunds)
 	}

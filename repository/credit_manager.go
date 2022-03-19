@@ -97,7 +97,7 @@ func (repo *Repository) AddParameters(logID uint, txHash string, params *core.Pa
 	repo.cmParams[params.CreditManager] = params
 }
 
-func (repo *Repository) paramsDAOV2(logID uint, txHash, creditConfigurator string,  params *core.Parameters, fieldToRemove []string, daoEventType uint) {
+func (repo *Repository) paramsDAOV2(logID uint, txHash, creditConfigurator string, params *core.Parameters, fieldToRemove []string, daoEventType uint) {
 	oldCMParams := repo.cmParams[params.CreditManager]
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
@@ -135,8 +135,8 @@ func (repo *Repository) UpdateLimits(logID uint, txHash, creditConfigurator stri
 		FeeInterest:         oldCMParams.FeeInterest,
 		FeeLiquidation:      oldCMParams.FeeInterest,
 		LiquidationDiscount: oldCMParams.LiquidationDiscount,
-		BlockNum: params.BlockNum,
-		CreditManager: params.CreditManager,
+		BlockNum:            params.BlockNum,
+		CreditManager:       params.CreditManager,
 	}
 	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)
 	repo.cmParams[params.CreditManager] = newParams
@@ -150,7 +150,7 @@ func (repo *Repository) UpdateFees(logID uint, txHash, creditConfigurator string
 	if oldCMParams == nil {
 		oldCMParams = core.NewParameters()
 	}
-	repo.paramsDAOV2(logID, txHash,creditConfigurator, params, 
+	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{"maxAmount", "maxLeverage", "minAmount"}, core.FeesUpdated)
 	newParams := &core.Parameters{
 		MinAmount:           oldCMParams.MinAmount,
@@ -158,8 +158,8 @@ func (repo *Repository) UpdateFees(logID uint, txHash, creditConfigurator string
 		FeeInterest:         params.FeeInterest,
 		FeeLiquidation:      params.FeeInterest,
 		LiquidationDiscount: params.LiquidationDiscount,
-		BlockNum: params.BlockNum,
-		CreditManager: params.CreditManager,
+		BlockNum:            params.BlockNum,
+		CreditManager:       params.CreditManager,
 	}
 	repo.setAndGetBlock(params.BlockNum).AddParameters(newParams)
 	repo.cmParams[params.CreditManager] = newParams

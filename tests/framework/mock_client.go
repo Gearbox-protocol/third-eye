@@ -4,14 +4,18 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"sort"
+
+	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
+	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"math/big"
-	"sort"
 )
 
 type TestClient struct {
@@ -159,8 +163,10 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	if t.otherCalls[blockNum] != nil && t.otherCalls[blockNum][sig] != nil {
 		return common.HexToHash(t.otherCalls[blockNum][sig][0]).Bytes(), nil
 	}
+	log.Info(sig)
 	// convert on priceOracle
 	if sig == "b66102df" {
+		return common.HexToHash(fmt.Sprintf("%x", t.convertPrice(blockNum, call.Data))).Bytes(), nil
 		s := 4
 		amount, ok := new(big.Int).SetString(hex.EncodeToString(call.Data[s:s+32]), 16)
 		if !ok {
@@ -199,8 +205,46 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		oracle := call.To.Hex()
 		feed := t.state.Oracle.GetState(oracle, int(index.Int64()))
 		return common.HexToHash(feed.Feed).Bytes(), nil
+	} else if sig == "bce38bd7" {
+		obj := map[string]interface{}{}
+		parser := core.GetAbi("MultiCall")
+		method, err := parser.MethodById(call.Data[:4])
+		log.CheckFatal(err)
+		method.Inputs.UnpackIntoMap(obj, call.Data[4:])
+		calls := *abi.ConvertType(obj["calls"], new([]multicall.Multicall2Call)).(*[]multicall.Multicall2Call)
+		resultArray := []multicall.Multicall2Result{}
+		for _, call := range calls {
+			price := t.convertPrice(blockNum, call.CallData)
+			resultArray = append(resultArray, multicall.Multicall2Result{
+				Success:    true,
+				ReturnData: common.HexToHash(fmt.Sprintf("%x", price)).Bytes(),
+			})
+		}
+		outputData, err := method.Outputs.Pack(resultArray)
+		log.CheckFatal(err)
+		return outputData, nil
 	}
 	return nil, nil
+}
+
+func (t *TestClient) convertPrice(blockNum int64, data []byte) *big.Int {
+	s := 4
+	amount, ok := new(big.Int).SetString(hex.EncodeToString(data[s:s+32]), 16)
+	if !ok {
+		log.Fatal("failed in parsing int")
+	}
+	s += 32
+	token0 := common.BytesToAddress(data[s : s+32]).Hex()
+	decimalT0 := t.token[token0]
+	s += 32
+	token1 := common.BytesToAddress(data[s : s+32]).Hex()
+	decimalT1 := t.token[token1]
+	price0 := t.getPrice(blockNum, token0)
+	price1 := t.getPrice(blockNum, token1)
+	newAmount := new(big.Int).Mul(amount, price0)
+	newAmount = utils.GetInt64(newAmount, decimalT0-decimalT1)
+	newAmount = new(big.Int).Quo(newAmount, price1)
+	return newAmount
 }
 func (t *TestClient) getPrice(blockNum int64, tokenAddr string) *big.Int {
 	if t.prices[tokenAddr] != nil {

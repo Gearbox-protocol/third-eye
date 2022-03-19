@@ -5,8 +5,9 @@ import (
 )
 
 type MockExecuteParser struct {
-	executeCalls map[string][]*core.KnownCall
-	mainEventLogs map[string][]*core.FuncWithMultiCall
+	executeCalls     map[string][]*core.KnownCall
+	mainEventLogs    map[string][]*core.FuncWithMultiCall
+	executeTransfers map[string]core.Transfers
 }
 
 func (m *MockExecuteParser) setCalls(obj map[string][]*core.KnownCall) {
@@ -26,10 +27,20 @@ func (m *MockExecuteParser) setMainEvents(obj map[string][]*core.FuncWithMultiCa
 	}
 }
 
+func (m *MockExecuteParser) setTransfers(obj map[string]core.Transfers) {
+	if obj == nil {
+		return
+	}
+	for txHash, transfers := range obj {
+		m.executeTransfers[txHash] = transfers
+	}
+}
+
 func NewMockExecuteParser() *MockExecuteParser {
 	return &MockExecuteParser{
-		executeCalls: map[string][]*core.KnownCall{},
-		mainEventLogs: map[string][]*core.FuncWithMultiCall{},
+		executeCalls:     map[string][]*core.KnownCall{},
+		mainEventLogs:    map[string][]*core.FuncWithMultiCall{},
+		executeTransfers: map[string]core.Transfers{},
 	}
 }
 
@@ -39,6 +50,6 @@ func (m *MockExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, pa
 func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*core.FuncWithMultiCall {
 	return m.mainEventLogs[txHash]
 }
-func (m *MockExecuteParser) GetTransfers(txHash string, owner []string) core.Transfers {
-	return nil
+func (m *MockExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, owner []string) core.Transfers {
+	return m.executeTransfers[txHash]
 }

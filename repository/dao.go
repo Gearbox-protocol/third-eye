@@ -100,6 +100,7 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
 }
 
+// used for treasury calculation and for remainingFunds on close v2
 func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
 	priceByToken := core.JsonFloatMap{}
 	var tokenForCalls []string

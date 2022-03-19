@@ -75,7 +75,9 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	if err != nil {
 		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
 	}
-	session.Balances = css.Balances
+	if closeDetails.Status != core.Closed || session.Version != 2 { // neg( closed on v2)
+		session.Balances = css.Balances
+	}
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())

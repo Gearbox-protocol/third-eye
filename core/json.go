@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 	"strings"
 	"testing"
 )
@@ -69,6 +70,19 @@ func (j *JsonBalance) Copy() *JsonBalance {
 		}
 	}
 	return &newJB
+}
+
+func (j *JsonBalance) ValueInUnderlying(underlyingToken string, uDecimals int8, prices JsonFloatMap) *big.Int {
+	var total float64
+	priceOfUnderlying := prices[underlyingToken]
+	for token, bal := range *j {
+		tokenPrice := prices[token]
+		value := (bal.F * tokenPrice) / priceOfUnderlying
+		total += value
+	}
+	valueInFloat := new(big.Float).Mul(big.NewFloat(total), utils.GetExpFloat(uDecimals))
+	remainingFunds, _ := valueInFloat.Int(nil)
+	return remainingFunds
 }
 
 type JsonBigIntMap map[string]*BigInt

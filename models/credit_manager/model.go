@@ -105,7 +105,6 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 			log.CheckFatal(err)
 			obj.Details["configurator"] = creditConfigurator.Hex()
 		}
-		
 
 	}
 	return obj

@@ -219,9 +219,9 @@ func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*core.F
 	}
 	return data
 }
-func (ep *ExecuteParser) GetTransfers(txHash string, accounts []string) core.Transfers {
+func (ep *ExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, accounts []string) core.Transfers {
 	trace := ep.GetTxTrace(txHash)
-	return ep.getTransfersToUser(trace, accounts)
+	return ep.getTransfersToUser(trace, borrower, account, underlyingToken, accounts)
 }
 
 func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*core.FuncWithMultiCall, error) {
@@ -253,22 +253,32 @@ func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) 
 	return mainEvents, nil
 }
 
-func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, accounts []string) core.Transfers {
+func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, borrower, account, underlyingToken string, accounts []string) core.Transfers {
 	transfers := core.Transfers{}
 	for _, raw := range trace.Logs {
 		eventLog := raw.Raw
-		to := common.HexToAddress(eventLog.Topics[2])
-		var isTransferToUser bool
-		for _, account := range accounts {
-			isTransferToUser = isTransferToUser || common.HexToAddress(account) == to
-		}
-		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" &&
-			isTransferToUser {
+		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+			to := common.HexToAddress(eventLog.Topics[2])
+			from := common.HexToAddress(eventLog.Topics[1]).Hex()
+			token := common.HexToAddress(eventLog.Address).Hex()
+			var sign *big.Int
+			if from == borrower && to.Hex() == account && token == underlyingToken {
+				sign = big.NewInt(-1)
+			} else {
+				var isTransferToUser bool
+				for _, account := range accounts {
+					isTransferToUser = isTransferToUser || common.HexToAddress(account) == to
+				}
+				if !isTransferToUser {
+					continue
+				}
+				sign = big.NewInt(1)
+			}
 			amt, b := new(big.Int).SetString(eventLog.Data[2:], 16)
 			if !b {
 				log.Fatal("failed at serializing transfer data in int")
 			}
-			token := common.HexToAddress(eventLog.Address).Hex()
+			amt = new(big.Int).Mul(sign, amt)
 			oldBalance := new(big.Int)
 			if transfers[token] != nil {
 				oldBalance = transfers[token]

@@ -11,18 +11,17 @@ type ExecuteParams struct {
 	Borrower      common.Address
 	Index         uint
 	BlockNumber   int64
-	TxHash string
 }
 
 type FuncWithMultiCall struct {
 	Name          string `json:"name"`
-	MultiCallsLen int `json:"len"`
+	MultiCallsLen int    `json:"len"`
 }
 
 type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
 	GetMainEventLogs(txHash, creditFacade string) []*FuncWithMultiCall
-	GetTransfers(txHash string, owner []string) Transfers
+	GetTransfers(txHash string, borrower, account, underlyingToken string, owner []string) Transfers
 }
 
 type KnownCall struct {
