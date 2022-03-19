@@ -64,7 +64,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			liquidateCreditAccountEvent.Owner.Hex(),
 			liquidateCreditAccountEvent.Liquidator.Hex(),
 			liquidateCreditAccountEvent.RemainingFunds)
-	case core.Topic("MultiCall(address)"):
+	case core.Topic("MultiCallStarted(address)"):
 		borrower := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		sessionId := mdl.GetCreditOwnerSession(borrower)
 		mdl.multicall.Start(borrower, txLog.TxHash.Hex(), &core.AccountOperation{
@@ -72,9 +72,9 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			BlockNumber: int64(txLog.BlockNumber),
 			SessionId:   sessionId,
 			Dapp:        txLog.Address.Hex(),
-			Action:      "MultiCall(address)",
+			Action:      "MultiCallStarted(address)",
 		})
-	case core.Topic("MultiCallEnd()"):
+	case core.Topic("MultiCallFinished()"):
 		mdl.multicall.End()
 	case core.Topic("IncreaseBorrowedAmount(address,uint256)"):
 		increaseBorrowEvent, err := mdl.facadeContractV2.ParseIncreaseBorrowedAmount(txLog)

@@ -173,7 +173,7 @@
   '5': {
     accountOperations: [
       {
-        action: 'MultiCall(address)',
+        action: 'MultiCallStarted(address)',
         adapterCall: false,
         blockNum: 5,
         borrower: '',
@@ -353,7 +353,7 @@
   '6': {
     accountOperations: [
       {
-        action: 'MultiCall(address)',
+        action: 'MultiCallStarted(address)',
         adapterCall: false,
         blockNum: 6,
         borrower: '',

@@ -31,7 +31,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 	switch mainEvents[0].Name {
 	case "multicall":
 		mdl.setUpdateSession(mainAction.SessionId)
-		tenderlyEventName = "MultiCall(address)"
+		tenderlyEventName = "MultiCallStarted(address)"
 	case "openCreditAccountMulticall":
 		mdl.setUpdateSession(mainAction.SessionId)
 		tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint256)"

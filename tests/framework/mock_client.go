@@ -163,7 +163,6 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	if t.otherCalls[blockNum] != nil && t.otherCalls[blockNum][sig] != nil {
 		return common.HexToHash(t.otherCalls[blockNum][sig][0]).Bytes(), nil
 	}
-	log.Info(sig)
 	// convert on priceOracle
 	if sig == "b66102df" {
 		return common.HexToHash(fmt.Sprintf("%x", t.convertPrice(blockNum, call.Data))).Bytes(), nil

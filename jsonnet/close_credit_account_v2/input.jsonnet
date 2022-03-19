@@ -43,7 +43,7 @@ local extraBorrowedAmount = 1000;
           // multicall start
           address: '#CreditFacade_1',
           topics: [
-            'MultiCall(address)',
+            'MultiCallStarted(address)',
             '#User_1',
           ],
           txHash: '!#Hash_12',
@@ -62,7 +62,7 @@ local extraBorrowedAmount = 1000;
           // multicall end
           address: '#CreditFacade_1',
           topics: [
-            'MultiCallEnd()',
+            'MultiCallFinished()',
           ],
           txHash: '!#Hash_12',
         },

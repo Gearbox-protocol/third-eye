@@ -165,7 +165,7 @@ local newCollateral = 1;
           // multicall start
           address: '#CreditFacade_1',
           topics: [
-            'MultiCall(address)',
+            'MultiCallStarted(address)',
             '#User_1',
           ],
           txHash: '!#Hash_7',
@@ -199,7 +199,7 @@ local newCollateral = 1;
           // multicall end
           address: '#CreditFacade_1',
           topics: [
-            'MultiCallEnd()',
+            'MultiCallFinished()',
           ],
           txHash: '!#Hash_7',
         },
@@ -251,7 +251,7 @@ local newCollateral = 1;
           // multicall start
           address: '#CreditFacade_1',
           topics: [
-            'MultiCall(address)',
+            'MultiCallStarted(address)',
             '#User_1',
           ],
           txHash: '!#Hash_8',
@@ -280,7 +280,7 @@ local newCollateral = 1;
           // multicall end
           address: '#CreditFacade_1',
           topics: [
-            'MultiCallEnd()',
+            'MultiCallFinished()',
           ],
           txHash: '!#Hash_8',
         },
