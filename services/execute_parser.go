@@ -230,8 +230,8 @@ func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) 
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
 			switch call.Input[:10] {
 			case "caa5c23f", // multicall
-				"0fc39b20", // closeCreditAccount
-				"8bb406d8", // liquidateCreditAccount
+				"5f73fbec", // closeCreditAccount
+				"5d91a0e0", // liquidateCreditAccount
 				"47639fa8": // openCreditAccountMulticall
 				event, err := getCreditFacadeMainEvent(call.Input)
 				if err != nil {
