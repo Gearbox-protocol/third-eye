@@ -13,7 +13,8 @@ import (
 )
 
 func (cm *CreditManager) addCreditConfigurator(creditConfigurator string) {
-	cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator)
+	// this is need for mask only
+	// cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator)
 	cf := credit_filter.NewCreditFilter(creditConfigurator, core.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 	cm.Details["configurator"] = creditConfigurator

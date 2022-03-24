@@ -286,7 +286,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *core.Credit
 		if !core.CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, cumIndexAndUToken) ||
 			!core.CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, cumIndexAndUToken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) {
-			mask := eng.repo.GetMask(blockNum, cmAddr, accountAddr)
+			mask := eng.repo.GetMask(blockNum, cmAddr, accountAddr, session.Version)
 			var err error
 			profile.RPCBalances, err = eng.repo.ConvertToBalanceWithMask(data.Balances, mask)
 			if err != nil {
@@ -325,11 +325,11 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *core.Debt, session *core.C
 	// amount to pool
 	// if account is liquidable
 	if debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 0 {
-		amountToPool, _, _ = eng.calCloseAmount(session.CreditManager, debt.CalTotalValueBI, true,
+		amountToPool, _, _ = eng.calCloseAmountV1(session.CreditManager, debt.CalTotalValueBI, true,
 			debt.CalBorrowedAmountPlusInterestBI.Convert(),
 			sessionSnapshot.BorrowedAmountBI.Convert())
 	} else {
-		amountToPool, _, _ = eng.calCloseAmount(session.CreditManager, debt.CalTotalValueBI, false,
+		amountToPool, _, _ = eng.calCloseAmountV1(session.CreditManager, debt.CalTotalValueBI, false,
 			debt.CalBorrowedAmountPlusInterestBI.Convert(),
 			sessionSnapshot.BorrowedAmountBI.Convert())
 	}

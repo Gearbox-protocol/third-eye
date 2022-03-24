@@ -86,7 +86,7 @@ type RepositoryI interface {
 	// credit manager
 	AddAccountTokenTransfer(tt *TokenTransfer)
 	AddCreditManagerToFilter(cmAddr, cfAddr string)
-	GetMask(blockNum int64, cmAddr, accountAddr string) *big.Int
+	GetMask(blockNum int64, cmAddr, accountAddr string, version int16) *big.Int
 	AddCreditManagerStats(cms *CreditManagerStat)
 	GetCMState(cmAddr string) *CreditManagerState
 	GetUnderlyingDecimal(cmAddr string) int8

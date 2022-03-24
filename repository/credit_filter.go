@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/creditFilter"
+	"github.com/Gearbox-protocol/third-eye/artifacts/creditManagerv2"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -172,13 +173,23 @@ func (repo *Repository) getCreditManagerToFilter(cmAddr string) *creditFilter.Cr
 	return cf
 }
 
-func (repo *Repository) GetMask(blockNum int64, cmAddr, accountAddr string) *big.Int {
+func (repo *Repository) GetMask(blockNum int64, cmAddr, accountAddr string, version int16) *big.Int {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	mask, err := repo.getCreditManagerToFilter(cmAddr).EnabledTokens(opts, common.HexToAddress(accountAddr))
-	log.CheckFatal(err)
-	return mask
+	switch version {
+	case 1:
+		mask, err := repo.getCreditManagerToFilter(cmAddr).EnabledTokens(opts, common.HexToAddress(accountAddr))
+		log.CheckFatal(err)
+		return mask
+	case 2:
+		cm, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(cmAddr), repo.client) 
+		log.CheckFatal(err)
+		mask, err := cm.EnabledTokensMap(opts, common.HexToAddress(accountAddr))
+		log.CheckFatal(err)
+		return mask
+	}
+	return nil
 }
 
 func (repo *Repository) AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *core.FastCheckParams) {

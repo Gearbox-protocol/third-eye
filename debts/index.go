@@ -108,7 +108,39 @@ func (eng *DebtEngine) Clear() {
 	eng.repo.Clear()
 }
 
-func (eng *DebtEngine) calCloseAmount(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
+func (eng *DebtEngine) calCloseAmountV1(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
+	params := eng.lastParameters[creditManager]
+	loss = big.NewInt(0)
+	profit = big.NewInt(0)
+	var totalFunds *big.Int
+	if isLiquidated {
+		totalFunds = utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
+	} else {
+		totalFunds = totalValue.Convert()
+	}
+	// borrow amt is greater than total funds
+	if totalFunds.Cmp(borrowedAmountWithInterest) < 0 {
+		amountToPool = new(big.Int).Sub(totalFunds, big.NewInt(1))
+		loss = new(big.Int).Sub(borrowedAmountWithInterest, amountToPool)
+	} else {
+		if isLiquidated {
+			amountToPool = utils.PercentMul(totalFunds, params.FeeLiquidation.Convert())
+			amountToPool = new(big.Int).Add(borrowedAmountWithInterest, amountToPool)
+		} else {
+			interestAmt := new(big.Int).Sub(borrowedAmountWithInterest, borrowedAmount)
+			fee := utils.PercentMul(interestAmt, params.FeeInterest.Convert())
+			amountToPool = new(big.Int).Add(borrowedAmountWithInterest, fee)
+		}
+
+		if totalFunds.Cmp(amountToPool) <= 0 {
+			amountToPool = new(big.Int).Sub(totalFunds, big.NewInt(1))
+		}
+		profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
+	}
+	return
+}
+
+func (eng *DebtEngine) calCloseAmountV2(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
 	params := eng.lastParameters[creditManager]
 	loss = big.NewInt(0)
 	profit = big.NewInt(0)

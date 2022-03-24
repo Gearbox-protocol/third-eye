@@ -184,7 +184,8 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		newAmount = new(big.Int).Quo(newAmount, price1)
 		return common.HexToHash(fmt.Sprintf("%x", newAmount)).Bytes(), nil
 		// enabledmask on creditfilter for account
-	} else if sig == "b451cecc" {
+		// v1 or v2 get mask
+	} else if sig == "b451cecc" || sig == "8991b2f1" {
 		s := 4
 		account := common.BytesToAddress(call.Data[s : s+32]).Hex()
 		mask := t.masks[blockNum][account]
