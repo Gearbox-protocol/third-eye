@@ -39,13 +39,21 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
+	var amountToPool *big.Int
+	switch closeDetails.Status {
+	case core.Closed, 
+	 core.Repaid:
+		amountToPool = data.RepayAmount
+	case core.Liquidated:
+		amountToPool = data.LiquidationAmount
+	}
 	// pool repay
 	mdl.PoolRepay(blockNum,
 		closeDetails.LogId,
 		closeDetails.TxHash,
 		sessionId,
 		closeDetails.Borrower,
-		data.RepayAmount)
+		amountToPool)
 
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == core.Repaid {
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
@@ -54,7 +62,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	}
 
 	// credit manager state
-	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, data.RepayAmount)
+	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, amountToPool)
 	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
 	//
 	// create session snapshot
@@ -68,7 +76,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account)
+	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account, session.Version)
 	// set balances
 	var err error
 	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
@@ -101,7 +109,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account, session.Version)
 	// set balances of css and credit session
 	var err error
 	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
