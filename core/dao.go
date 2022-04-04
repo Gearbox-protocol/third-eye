@@ -5,7 +5,7 @@ type DAOOperation struct {
 	TxHash      string `gorm:"column:tx_hash"`
 	BlockNumber int64  `gorm:"column:block_num;primaryKey"`
 	Contract    string `gorm:"column:contract"`
-	Type        uint   `gorm:"column:"`
+	Type        uint   `gorm:"column:type"`
 	Args        *Json  `gorm:"column:args"`
 }
 

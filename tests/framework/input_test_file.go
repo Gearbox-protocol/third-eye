@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strings"
@@ -50,7 +51,7 @@ func (c *TestEvent) Process(contractName string) types.Log {
 		}
 		topics = append(topics, common.HexToHash(newTopic))
 	}
-	data, err := c.ParseData(contractName, topic0)
+	data, err := c.ParseData([]string{contractName}, topic0)
 	log.CheckFatal(err)
 	return types.Log{
 		Data:    data,
@@ -60,12 +61,22 @@ func (c *TestEvent) Process(contractName string) types.Log {
 	}
 }
 
-func (c *TestEvent) ParseData(contractName string, topic0 common.Hash) ([]byte, error) {
+func (c *TestEvent) ParseData(contractName []string, topic0 common.Hash) ([]byte, error) {
 	if len(c.Data) == 0 {
 		return []byte{}, nil
 	}
-	abi := core.GetAbi(contractName)
-	event, err := abi.EventByID(topic0)
+	if contractName[0] == "ACL" {
+		contractName = append(contractName, "ACLTrait")
+	}
+	var event *abi.Event
+	var err error
+	for _, name := range contractName {
+		abi := core.GetAbi(name)
+		event, err = abi.EventByID(topic0)
+		if err == nil {
+			break
+		}
+	}
 	log.CheckFatal(err)
 	var args []interface{}
 	for _, entry := range c.Data {
@@ -89,7 +100,7 @@ func (c *TestEvent) ParseData(contractName string, topic0 common.Hash) ([]byte, 
 				}
 			}
 		} else {
-			arg = common.HexToAddress(entry).Hex()
+			arg = common.HexToAddress(entry)
 		}
 		args = append(args, arg)
 	}

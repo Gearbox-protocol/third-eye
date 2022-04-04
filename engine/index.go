@@ -176,22 +176,24 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 
 func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
 	switch txLog.Topics[0] {
-	case core.Topic("Paused()"):
+	case core.Topic("Paused(address)"):
 		e.repo.AddDAOOperation(&core.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
 			Type:        core.Paused,
+			Args: &core.Json{"account": common.BytesToAddress(txLog.Data).Hex()},
 		})
 		return true
-	case core.Topic("UnPaused()"):
+	case core.Topic("Unpaused(address)"):
 		e.repo.AddDAOOperation(&core.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
 			Type:        core.UnPaused,
+			Args: &core.Json{"account": common.BytesToAddress(txLog.Data).Hex()},
 		})
 		return true
 	default:

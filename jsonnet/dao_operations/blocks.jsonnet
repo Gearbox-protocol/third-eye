@@ -67,6 +67,9 @@
     LogID: 19,
     TxHash: '#Hash_20',
     Type: 19,  // Paused
+    Args: {
+      account: '#ACLTrait_1',
+    },
   },
   {
     BlockNumber: 3,
@@ -74,6 +77,9 @@
     LogID: 20,
     TxHash: '#Hash_21',
     Type: 20,  // Unpaused
+    Args: {
+      account: '#ACLTrait_1',
+    },
   },
   {
     Args: {

@@ -207,14 +207,20 @@ local borrowedAmount = 4000;
         {
           address: '#ACL_1',
           topics: [
-            'Paused()',
+            'Paused(address)',
+          ],
+          data: [
+            '#ACLTrait_1',
           ],
           txHash: '!#Hash_20',
         },
         {
           address: '#ACL_1',
           topics: [
-            'UnPaused()',
+            'Unpaused(address)',
+          ],
+          data: [
+            '#ACLTrait_1',
           ],
           txHash: '!#Hash_21',
         },
