@@ -3,9 +3,10 @@ CREATE TABLE price_feeds (
     block_num integer,
     token character varying(42),
     feed character varying(42),
-    price_eth_bi character varying(80),
+    price_bi varchar(80),
+    price DOUBLE PRECISION, 
+    price_in_usd boolean,
     round_id integer,
-    price_eth double precision,
     uniswapv2_price double precision,
     uniswapv3_twap double precision,
     uniswapv3_price double precision,
@@ -33,6 +34,7 @@ CREATE TABLE token_oracle (
     oracle character varying(42),
     feed character varying(42),
     block_num integer NOT NULL,
+    version smallint,
     PRIMARY KEY (block_num, token));
 
 CREATE TABLE uniswap_pools (
