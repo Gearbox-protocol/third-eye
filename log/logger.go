@@ -144,8 +144,8 @@ func DetectFuncAtStack3() string {
 
 func CheckFatal(err error) {
 	args := []interface{}{"[Fatal]: " + DetectFunc(), err}
-	amqpSend(args)
 	if err != nil {
+		amqpSend(args)
 		if testLogModule == nil {
 			log.Fatal(args...)
 		} else {

@@ -2,6 +2,7 @@ CREATE TABLE debt_sync (
     last_calculated_at integer,
     field_set boolean,
 );
+alter table debt_sync add primary key(field_set);
 
 CREATE TABLE debts (
     id SERIAL NOT NULL,

@@ -7,6 +7,7 @@ select max(last_calculated_at) from debt_sync;
 alter table debt_sync add field_set boolean;
 delete from debt_sync;
 insert into debt_sync(last_calculated_at, field_set) values(30859574,'t');
+alter table debt_sync add primary key(field_set);
 -- version 
 alter table credit_sessions add version smallint;
 update credit_sessions set version=1;
@@ -14,6 +15,10 @@ alter table  sync_adapters add version smallint;
 update sync_adapters set version=1;
 alter table token_oracle add version smallint;
 update token_oracle set version = 1;
+
+-- 
+alter table account_operations add main_action integer ;
+alter table account_operations add constraint main_action_c FOREIGN KEY(main_action) references account_operations(id);
 
 -- transfer allowed by the receiver
 create table transfer_account_allowed(
@@ -25,3 +30,4 @@ create table transfer_account_allowed(
     PRIMARY KEY(block_num, log_id)
 );
 
+-- update sync_adapters set details='{"priceOracles":[]}' where type='AddressProvider';
