@@ -14,9 +14,9 @@ type Debt struct {
 	TotalValueBI                    *BigInt `gorm:"-" json:"-"`
 	BorrowedAmountPlusInterestBI    *BigInt `gorm:"-" json:"-"`
 	CalHealthFactor                 *BigInt `gorm:"column:cal_health_factor" json:"calHealthFactor"`
-	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value" json:"calTotalValue"`
-	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest" json:"calBorrowedAmountWithInterest"`
-	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value" json:"calThresholdValue"`
+	CalTotalValueBI                 *BigInt `gorm:"column:cal_total_value_bi" json:"calTotalValue"`
+	CalBorrowedAmountPlusInterestBI *BigInt `gorm:"column:cal_borrowed_amt_with_interest_bi" json:"calBorrowedAmountWithInterest"`
+	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value_bi" json:"calThresholdValue"`
 	AmountToPoolBI                  *BigInt `gorm:"-" json:"-"`
 	ProfitInUSD                     float64 `gorm:"column:profit_usd" json:"profitUSD"`
 	TotalValueInUSD                 float64 `gorm:"column:total_value_usd" json:"totalValueInUSD"`
