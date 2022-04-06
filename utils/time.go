@@ -39,3 +39,10 @@ func GetTimeoutOpts(blockNum int64) (*bind.CallOpts, context.CancelFunc) {
 		Context:     ctx,
 	}, cancel
 }
+
+func Elapsed(what string) func() {
+    start := time.Now()
+    return func() {
+        log.InfoStack3(fmt.Sprintf("%s took %v", what, time.Since(start)))
+    }
+}

@@ -3,10 +3,12 @@ package debts
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
 // pool interest state fetch
 func (eng *DebtEngine) loadPoolLastInterestData(lastDebtSync int64) {
+	defer utils.Elapsed("Debt(loadPoolLastInterestData)")()
 	data := []*core.PoolInterestData{}
 	query := `SELECT * FROM pool_stats 
 	JOIN (SELECT max(block_num) as bn, pool FROM pool_stats WHERE block_num <= ? group by pool) as p

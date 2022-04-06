@@ -116,10 +116,14 @@ func (eng *DebtEngine) addDebt(debt *core.Debt) {
 }
 
 func (eng *DebtEngine) loadLastDebts() {
+	defer utils.Elapsed("Debt(loadLastDebts)")()
 	data := []*core.Debt{}
-	query := `SELECT debts.* FROM 
-			(SELECT max(block_num), session_id FROM debts GROUP BY session_id) debt_max_block
-			JOIN debts ON debt_max_block.max = debts.block_num AND debt_max_block.session_id = debts.session_id`
+	// from debts
+	// query := `SELECT debts.* FROM 
+	// 		(SELECT max(block_num), session_id FROM debts GROUP BY session_id) debt_max_block
+	// 		JOIN debts ON debt_max_block.max = debts.block_num AND debt_max_block.session_id = debts.session_id`
+	// from current_debts
+	query := `SELECT * FROM current_debts;`
 	err := eng.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)

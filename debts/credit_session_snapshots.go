@@ -3,9 +3,11 @@ package debts
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
 func (eng *DebtEngine) loadLastCSS(lastDebtSync int64) {
+	defer utils.Elapsed("Debt(loadLastCSS)")()
 	data := []*core.CreditSessionSnapshot{}
 	query := `SELECT css_2.* FROM credit_session_snapshots as css_2 JOIN
 		(SELECT session_id, max(block_num) AS block_num FROM credit_session_snapshots WHERE block_num <= ? GROUP BY session_id) AS css

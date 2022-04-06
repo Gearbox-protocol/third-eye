@@ -3,10 +3,12 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
 // for price oracle/feeds
 func (repo *Repository) loadCurrentTokenOracle() {
+	defer utils.Elapsed("loadCurrentTokenOracle")()
 	data := []*core.TokenOracle{}
 	query := `SELECT token_oracle.* FROM token_oracle
 	JOIN (SELECT max(block_num) AS bn, token FROM token_oracle GROUP BY token) AS max_to

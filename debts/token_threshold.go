@@ -3,10 +3,12 @@ package debts
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
 // token threshold
 func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
+	defer utils.Elapsed("Debt(loadAllowedTokenThreshold)")()
 	data := []*core.AllowedToken{}
 	query := `SELECT * FROM allowed_tokens 
 	JOIN (SELECT max(block_num) as bn, token, credit_manager FROM allowed_tokens 
@@ -33,6 +35,7 @@ func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
 
 // token price from feeds
 func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
+	defer utils.Elapsed("Debt(loadTokenLastPrice)")()
 	data := []*core.PriceFeed{}
 	query := `SELECT pf.* FROM price_feeds pf
 	JOIN (SELECT max(block_num) b, token, price_in_usd FROM price_feeds WHERE block_num <= ? GROUP BY token, price_in_usd) AS max_pf

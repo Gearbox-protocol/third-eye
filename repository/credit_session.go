@@ -1,13 +1,16 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"math/big"
 	"reflect"
+
+	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
 func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
+	defer utils.Elapsed("loadCreditSessions")()
 	data := []*core.CreditSession{}
 	err := repo.db.Raw(`SELECT * FROM credit_sessions cs 
 	JOIN (SELECT distinct on (session_id) collateral_usd, collateral_underlying, session_id FROM credit_session_snapshots ORDER BY session_id, block_num DESC) css
@@ -83,6 +86,7 @@ func (repo *Repository) GetSessions() map[string]*core.CreditSession {
 
 // for account manager
 func (repo *Repository) loadAccountLastSession() {
+	defer utils.Elapsed("loadAccountLastSession")()
 	data := []*core.SessionData{}
 	err := repo.db.Raw(`SELECT t1.*,t2.*, t3.closed_tx_hash, t3.closed_log_id 
 		FROM (SELECT DISTINCT ON (account) credit_manager, since, id, closed_at, account 

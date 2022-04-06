@@ -3,9 +3,11 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
 func (repo *Repository) loadCreditManagers() {
+	defer utils.Elapsed("loadCreditManagers")()
 	data := []*core.CreditManagerState{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
@@ -166,6 +168,7 @@ func (repo *Repository) UpdateFees(logID uint, txHash, creditConfigurator string
 }
 
 func (repo *Repository) loadAllParams() {
+	defer utils.Elapsed("loadAllParams")()
 	// parameters
 	data := []*core.Parameters{}
 	err := repo.db.Raw(`SELECT distinct on (credit_manager) * FROM parameters 

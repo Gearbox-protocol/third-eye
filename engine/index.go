@@ -47,7 +47,6 @@ func (e *Engine) UseThreads() {
 }
 
 func (e *Engine) init() {
-	utils.Method()
 	// debt engine initialisation
 	e.repo.InitChecks()
 	e.debtEng.ProcessBackLogs()

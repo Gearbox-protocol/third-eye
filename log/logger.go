@@ -68,6 +68,15 @@ func Info(v ...interface{}) {
 		testLogModule.Log(args...)
 	}
 }
+func InfoStack3(v ...interface{}) {
+	args := []interface{}{"[Info]: " + DetectFuncAtStack3()}
+	args = append(args, v...)
+	if testLogModule == nil {
+		log.Println(args...)
+	} else {
+		testLogModule.Log(args...)
+	}
+}
 
 func Errorf(msg string, args ...interface{}) {
 	msgFormat := "[Error]: " + DetectFunc() + msg
@@ -126,6 +135,10 @@ func Fatal(v ...interface{}) {
 
 func DetectFunc() string {
 	_, file, line, _ := runtime.Caller(2)
+	return fmt.Sprintf(" %s:%d ", file, line)
+}
+func DetectFuncAtStack3() string {
+	_, file, line, _ := runtime.Caller(3)
 	return fmt.Sprintf(" %s:%d ", file, line)
 }
 

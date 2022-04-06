@@ -52,6 +52,7 @@ func (repo *Repository) getTokenWithError(addr string) (*core.Token, error) {
 }
 
 func (repo *Repository) loadToken() {
+	defer utils.Elapsed("loadToken")()
 	data := []*core.Token{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
@@ -78,6 +79,7 @@ func (repo *Repository) AddTokenObj(t *core.Token) {
 }
 
 func (repo *Repository) loadAllowedTokensState() {
+	defer utils.Elapsed("loadAllowedTokensState")()
 	data := []*core.AllowedToken{}
 	// v1 query
 	// err := repo.db.Raw("SELECT * FROM allowed_tokens where disable_block = 0 order by block_num").Find(&data).Error

@@ -182,6 +182,7 @@ func (eng *DebtEngine) calCloseAmountV2(creditManager string, totalValue *core.B
 }
 
 func (eng *DebtEngine) loadLiquidableAccounts(lastDebtSync int64) {
+	defer utils.Elapsed("loadLiquidableAccounts")()
 	data := []*core.LiquidableAccount{}
 	query := `SELECT * FROM liquidable_accounts la JOIN credit_sessions cs ON la.session_id = cs.id WHERE cs.status not in (1,2);`
 	err := eng.db.Raw(query).Find(&data).Error

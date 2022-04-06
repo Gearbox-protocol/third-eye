@@ -3,9 +3,11 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 )
 
 func (repo *Repository) loadPool() {
+	defer utils.Elapsed("loadPool")()
 	data := []*core.PoolState{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
@@ -26,6 +28,7 @@ func (repo *Repository) IsDieselToken(token string) bool {
 }
 
 func (repo *Repository) loadPoolUniqueUsers() {
+	defer utils.Elapsed("loadPoolUniqueUsers")()
 	query := "select distinct pool, user_address from pool_ledger WHERE event = 'AddLiquidity';"
 	data := []*core.PoolLedger{}
 	err := repo.db.Raw(query).Find(&data).Error

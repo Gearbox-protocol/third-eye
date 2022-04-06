@@ -19,10 +19,11 @@ type Debt struct {
 	CalThresholdValueBI             *BigInt `gorm:"column:cal_threshold_value_bi" json:"calThresholdValue"`
 	AmountToPoolBI                  *BigInt `gorm:"-" json:"-"`
 	ProfitInUSD                     float64 `gorm:"column:profit_usd" json:"profitUSD"`
-	TotalValueInUSD                 float64 `gorm:"column:total_value_usd" json:"totalValueInUSD"`
 	CollateralInUSD                 float64 `gorm:"column:collateral_usd" json:"collateralUSD"`
 	CollateralInUnderlying          float64 `gorm:"column:collateral_underlying" json:"collateralUnderlying"`
 	ProfitInUnderlying              float64 `gorm:"column:profit_underlying" json:"profitUnderlying"`
+	// field not present in current_debts
+	TotalValueInUSD                 float64 `gorm:"column:total_value_usd" json:"totalValueInUSD"`
 }
 
 type CurrentDebt struct {

@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapv3Router"
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -81,6 +82,7 @@ func (repo *Repository) AddUniswapPrices(prices *core.UniPoolPrices) {
 }
 
 func (repo *Repository) loadUniswapPools() {
+	defer utils.Elapsed("loadUniswapPools")()
 	data := []*core.UniswapPools{}
 	err := repo.db.Raw(`SELECT * from uniswap_pools`).Find(&data).Error
 	log.CheckFatal(err)
@@ -92,6 +94,7 @@ func (repo *Repository) loadUniswapPools() {
 }
 
 func (repo *Repository) loadChainlinkPrevState() {
+	defer utils.Elapsed("loadChainlinkPrevState")()
 	data := []*core.PriceFeed{}
 	err := repo.db.Raw(`SELECT distinct on (feed)* from price_feeds order by feed, block_num DESC`).Find(&data).Error
 	log.CheckFatal(err)

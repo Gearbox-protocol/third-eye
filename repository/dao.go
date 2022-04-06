@@ -137,6 +137,7 @@ func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core
 }
 
 func (repo *Repository) loadLastTreasuryTs() {
+	defer utils.Elapsed("loadLastTreasuryTs")()
 	data := core.DebtSync{}
 	if err := repo.db.Raw(`SELECT timestamp AS last_calculated_at FROM blocks 
 		WHERE id in (SELECT max(block_num) FROM treasury_snapshots)`).Find(&data).Error; err != nil {
@@ -149,6 +150,7 @@ func (repo *Repository) loadLastTreasuryTs() {
 }
 
 func (repo *Repository) loadBlockDatePair() {
+	defer utils.Elapsed("loadBlockDatePair")()
 	data := []*core.BlockDate{}
 	sql := `select b.*, a.timestamp from blocks a 
 	JOIN (select timezone('UTC', to_timestamp(timestamp))::date as date,max(id) as block_num from blocks group by date) b 
@@ -170,6 +172,7 @@ func (repo *Repository) addBlockDate(entry *core.BlockDate) {
 }
 
 func (repo *Repository) loadTreasurySnapshot() {
+	defer utils.Elapsed("loadTreasurySnapshot")()
 	ss := core.TreasurySnapshot{}
 	sql := `SELECT * FROM treasury_snapshots WHERE block_num=0`
 	if err := repo.db.Raw(sql).Find(&ss).Error; err != nil {

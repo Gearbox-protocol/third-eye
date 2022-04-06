@@ -3,6 +3,7 @@ package repository
 import (
 	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/Gearbox-protocol/third-eye/models/account_factory"
 	"github.com/Gearbox-protocol/third-eye/models/account_manager"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
@@ -19,6 +20,7 @@ import (
 )
 
 func (repo *Repository) loadSyncAdapters() {
+	defer utils.Elapsed("loadSyncAdapters")()
 	//
 	data := []*core.SyncAdapter{}
 	err := repo.db.Find(&data, "disabled = ? OR type = 'PriceOracle'", false).Error
