@@ -9,16 +9,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
-	"github.com/Gearbox-protocol/third-eye/artifacts/curveV1Adapter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/iSwapRouter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapV2Adapter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapV3Adapter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/yearnAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV2Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV3Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnAdapter"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -41,7 +42,7 @@ type ExecuteParser struct {
 	ChainId             uint
 }
 
-func NewExecuteParser(config *config.Config) core.ExecuteParserI {
+func NewExecuteParser(config *config.Config) ds.ExecuteParserI {
 	return &ExecuteParser{
 		Client:              http.Client{},
 		IgnoreCMEventIds:    utils.GetCreditManagerEventIds(),
@@ -115,7 +116,7 @@ func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
 	return trace
 }
 
-func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []core.ExecuteParams) []*core.KnownCall {
+func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	trace := ep.GetTxTrace(txHash)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)
@@ -157,7 +158,7 @@ func init() {
 	}
 	creditFacadeParser = abiParser
 }
-func getCreditFacadeMainEvent(input string) (*core.FuncWithMultiCall, error) {
+func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
 	hexData, err := hex.DecodeString(input[2:])
 	method, err := creditFacadeParser.MethodById(hexData[:4])
 	if err != nil {
@@ -173,7 +174,7 @@ func getCreditFacadeMainEvent(input string) (*core.FuncWithMultiCall, error) {
 	if !ok {
 		return nil, fmt.Errorf("Not able to parse(%s) multicalls", data["calls"])
 	}
-	return &core.FuncWithMultiCall{
+	return &ds.FuncWithMultiCall{
 		Name:          method.Name,
 		MultiCallsLen: len(multicalls),
 	}, nil
@@ -211,7 +212,7 @@ func ParseCallData(input string) (string, *core.Json) {
 }
 
 // parser functions for v2
-func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*core.FuncWithMultiCall {
+func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FuncWithMultiCall {
 	trace := ep.GetTxTrace(txHash)
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
 	if err != nil {
@@ -224,8 +225,8 @@ func (ep *ExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken
 	return ep.getTransfersToUser(trace, borrower, account, underlyingToken, accounts)
 }
 
-func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*core.FuncWithMultiCall, error) {
-	mainEvents := []*core.FuncWithMultiCall{}
+func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*ds.FuncWithMultiCall, error) {
+	mainEvents := []*ds.FuncWithMultiCall{}
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
 			switch call.Input[:10] {

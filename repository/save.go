@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm/clause"
 	"time"
 )
@@ -27,11 +28,11 @@ func (repo *Repository) Flush() error {
 	tx := repo.db.Begin()
 	now := time.Now()
 
-	adapters := make([]*core.SyncAdapter, 0, repo.kit.Len())
+	adapters := make([]*ds.SyncAdapter, 0, repo.kit.Len())
 	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
 		for repo.kit.Next(lvlIndex) {
 			adapter := repo.kit.Get(lvlIndex)
-			if adapter.GetName() != core.AggregatedBlockFeed {
+			if adapter.GetName() != ds.AggregatedBlockFeed {
 				adapters = append(adapters, adapter.GetAdapterState())
 			}
 			if adapter.HasUnderlyingState() {
@@ -62,7 +63,7 @@ func (repo *Repository) Flush() error {
 	log.Infof("created sync adapters sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
-	tokens := make([]*core.Token, 0, len(repo.tokens))
+	tokens := make([]*schemas.Token, 0, len(repo.tokens))
 	for _, token := range repo.tokens {
 		tokens = append(tokens, token)
 	}
@@ -87,7 +88,7 @@ func (repo *Repository) Flush() error {
 	log.Infof("created session sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
-	blocksToSync := make([]*core.Block, 0, len(repo.blocks))
+	blocksToSync := make([]*schemas.Block, 0, len(repo.blocks))
 	for _, block := range repo.blocks {
 		blocksToSync = append(blocksToSync, block)
 	}
@@ -99,7 +100,7 @@ func (repo *Repository) Flush() error {
 	if len(repo.relations) > 0 {
 		err := tx.CreateInBatches(repo.relations, 3000).Error
 		log.CheckFatal(err)
-		repo.relations = []*core.UniPriceAndChainlink{}
+		repo.relations = []*schemas.UniPriceAndChainlink{}
 	}
 
 	// add disabled tokens after the block num and allowed tokens are synced to db
@@ -108,7 +109,7 @@ func (repo *Repository) Flush() error {
 			UpdateAll: true,
 		}).CreateInBatches(repo.disabledTokens, 50).Error
 		log.CheckFatal(err)
-		repo.disabledTokens = []*core.AllowedToken{}
+		repo.disabledTokens = []*schemas.AllowedToken{}
 	}
 
 	// save current treasury snapshot
@@ -142,5 +143,5 @@ func (repo *Repository) Clear() {
 			delete(repo.sessions, session.ID)
 		}
 	}
-	repo.blocks = map[int64]*core.Block{}
+	repo.blocks = map[int64]*schemas.Block{}
 }

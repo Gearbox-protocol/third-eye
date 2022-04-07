@@ -4,10 +4,12 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
-	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -15,7 +17,7 @@ import (
 func (cm *CreditManager) addCreditConfigurator(creditConfigurator string) {
 	// this is need for mask only
 	// cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator)
-	cf := credit_filter.NewCreditFilter(creditConfigurator, core.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
+	cf := credit_filter.NewCreditFilter(creditConfigurator, ds.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 	cm.Details["configurator"] = creditConfigurator
 }
@@ -64,7 +66,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	case core.Topic("MultiCallStarted(address)"):
 		borrower := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		sessionId := mdl.GetCreditOwnerSession(borrower)
-		mdl.multicall.Start(borrower, txLog.TxHash.Hex(), &core.AccountOperation{
+		mdl.multicall.Start(borrower, txLog.TxHash.Hex(), &schemas.AccountOperation{
 			TxHash:      txLog.TxHash.Hex(),
 			BlockNumber: int64(txLog.BlockNumber),
 			SessionId:   sessionId,
@@ -102,7 +104,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	case core.Topic("TransferAccountAllowed(address,address,bool)"):
 		transferAccount, err := mdl.facadeContractV2.ParseTransferAccountAllowed(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.TransferAccountAllowed(&core.TransferAccountAllowed{
+		mdl.Repo.TransferAccountAllowed(&schemas.TransferAccountAllowed{
 			From:        transferAccount.From.Hex(),
 			To:          transferAccount.To.Hex(),
 			Allowed:     transferAccount.State,
@@ -119,13 +121,13 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	case core.Topic("NewConfigurator(address)"):
 		newConfigurator := utils.ChecksumAddr(txLog.Topics[1].Hex())
 		oldConfigurator := mdl.GetDetailsByKey("configurator")
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
 			Args:        &core.Json{"oldConfigurator": oldConfigurator, "configurator": newConfigurator},
-			Type:        core.NewFastCheckParameters,
+			Type:        schemas.NewFastCheckParameters,
 		})
 		if oldConfigurator != newConfigurator {
 			mdl.Repo.GetKit().GetAdapter(oldConfigurator).SetBlockToDisableOn(int64(txLog.BlockNumber))
@@ -164,7 +166,7 @@ func (mdl *CreditManager) setUpdateSession(sessionId string) {
 }
 func (mdl *CreditManager) processNonMultiCalls() {
 	events := mdl.multicall.popNonMulticallEventsV2()
-	executeEvents := []core.ExecuteParams{}
+	executeEvents := []ds.ExecuteParams{}
 	for _, event := range events {
 		switch event.Action {
 		case "AddCollateral(address,address,uint256)",
@@ -175,7 +177,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 		case "ExecuteOrder":
 			account := strings.Split(event.SessionId, "_")[0]
 			mdl.setUpdateSession(event.SessionId)
-			executeEvents = append(executeEvents, core.ExecuteParams{
+			executeEvents = append(executeEvents, ds.ExecuteParams{
 				SessionId:     event.SessionId,
 				CreditAccount: common.HexToAddress(account),
 				Protocol:      common.HexToAddress(event.Dapp),

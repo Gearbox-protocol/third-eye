@@ -1,14 +1,15 @@
 package debts
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
 func (eng *DebtEngine) loadLastCSS(lastDebtSync int64) {
 	defer utils.Elapsed("Debt(loadLastCSS)")()
-	data := []*core.CreditSessionSnapshot{}
+	data := []*schemas.CreditSessionSnapshot{}
 	query := `SELECT css_2.* FROM credit_session_snapshots as css_2 JOIN
 		(SELECT session_id, max(block_num) AS block_num FROM credit_session_snapshots WHERE block_num <= ? GROUP BY session_id) AS css
 		ON css_2.block_num = css.block_num AND css_2.session_id = css.session_id`
@@ -21,15 +22,15 @@ func (eng *DebtEngine) loadLastCSS(lastDebtSync int64) {
 	}
 }
 
-func (eng *DebtEngine) AddLastCSS(css *core.CreditSessionSnapshot) {
+func (eng *DebtEngine) AddLastCSS(css *schemas.CreditSessionSnapshot) {
 	eng.lastCSS[css.SessionId] = css
 }
 
-func (eng *DebtEngine) GetLastCSS(sessionId string) *core.CreditSessionSnapshot {
+func (eng *DebtEngine) GetLastCSS(sessionId string) *schemas.CreditSessionSnapshot {
 	css := eng.lastCSS[sessionId]
 	if css == nil {
 		log.Infof("Last Credit session snapshot not found: %s", sessionId)
-		eng.lastCSS[sessionId] = &core.CreditSessionSnapshot{SessionId: sessionId, Balances: &core.JsonBalance{}}
+		eng.lastCSS[sessionId] = &schemas.CreditSessionSnapshot{SessionId: sessionId, Balances: &core.JsonBalance{}}
 		css = eng.lastCSS[sessionId]
 	}
 	return css

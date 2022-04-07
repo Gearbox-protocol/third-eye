@@ -4,19 +4,21 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
 func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
 	defer utils.Elapsed("loadCreditSessions")()
-	data := []*core.CreditSession{}
+	data := []*schemas.CreditSession{}
 	err := repo.db.Raw(`SELECT * FROM credit_sessions cs 
 	JOIN (SELECT distinct on (session_id) collateral_usd, collateral_underlying, session_id FROM credit_session_snapshots ORDER BY session_id, block_num DESC) css
 	ON css.session_id = cs.id
 	WHERE status = ? OR (status <> ? AND closed_at > ?)`,
-		core.Active, core.Active, lastDebtSync).Find(&data).Error
+		schemas.Active, schemas.Active, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -29,7 +31,7 @@ func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
 	repo.dcWrapper.AddDataCompressor(blockNum, addr)
 }
 
-func (repo *Repository) addCreditSession(session *core.CreditSession, loadedFromDB bool) {
+func (repo *Repository) addCreditSession(session *schemas.CreditSession, loadedFromDB bool) {
 	if repo.sessions[session.ID] == nil {
 		if !loadedFromDB {
 			log.Infof("Add session %s", session.ID)
@@ -40,11 +42,11 @@ func (repo *Repository) addCreditSession(session *core.CreditSession, loadedFrom
 	}
 }
 
-func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFromDB bool, txHash string, logID uint) {
+func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string, logID uint) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.addCreditSession(session, loadedFromDB)
-	repo.accountManager.AddAccountDetails(&core.SessionData{
+	repo.accountManager.AddAccountDetails(&ds.SessionData{
 		Since:         session.Since,
 		Account:       session.Account,
 		CreditManager: session.CreditManager,
@@ -54,10 +56,10 @@ func (repo *Repository) AddCreditSession(session *core.CreditSession, loadedFrom
 	})
 }
 
-func (repo *Repository) GetCreditSession(sessionId string) *core.CreditSession {
+func (repo *Repository) GetCreditSession(sessionId string) *schemas.CreditSession {
 	return repo.sessions[sessionId]
 }
-func (repo *Repository) UpdateCreditSession(sessionId string, values map[string]interface{}) *core.CreditSession {
+func (repo *Repository) UpdateCreditSession(sessionId string, values map[string]interface{}) *schemas.CreditSession {
 	session := repo.sessions[sessionId]
 	session.IsDirty = true
 	ref := reflect.ValueOf(session).Elem()
@@ -80,14 +82,14 @@ func (repo *Repository) UpdateCreditSession(sessionId string, values map[string]
 	return session
 }
 
-func (repo *Repository) GetSessions() map[string]*core.CreditSession {
+func (repo *Repository) GetSessions() map[string]*schemas.CreditSession {
 	return repo.sessions
 }
 
 // for account manager
 func (repo *Repository) loadAccountLastSession() {
 	defer utils.Elapsed("loadAccountLastSession")()
-	data := []*core.SessionData{}
+	data := []*ds.SessionData{}
 	err := repo.db.Raw(`SELECT t1.*,t2.*, t3.closed_tx_hash, t3.closed_log_id 
 		FROM (SELECT DISTINCT ON (account) credit_manager, since, id, closed_at, account 
 				FROM credit_sessions ORDER BY account, since DESC) t1 JOIN 
@@ -106,12 +108,12 @@ func (repo *Repository) loadAccountLastSession() {
 	}
 }
 
-func (repo *Repository) GetAccountManager() *core.AccountTokenManager {
+func (repo *Repository) GetAccountManager() *ds.AccountTokenManager {
 	return repo.accountManager
 }
 
 func (repo *Repository) AddAccountAddr(account string) {
-	addrs := repo.kit.GetAdapterAddressByName(core.AccountManager)
+	addrs := repo.kit.GetAdapterAddressByName(ds.AccountManager)
 	if len(addrs) == 1 {
 		adapter := repo.GetAdapter(addrs[0])
 		adapter.SetDetails(account)

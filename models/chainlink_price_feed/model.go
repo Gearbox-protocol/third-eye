@@ -1,44 +1,47 @@
 package chainlink_price_feed
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type ChainlinkPriceFeed struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	contractETH   *priceFeed.PriceFeed
 	Token         string
 	Oracle        string
-	prevPriceFeed *core.PriceFeed
+	prevPriceFeed *schemas.PriceFeed
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on 'vm execution error' or 'execution reverted'.
 // if oracle and adress are same we try to get the pricefeed.
-func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI, version int16) *ChainlinkPriceFeed {
-	syncAdapter := &core.SyncAdapter{
-		Contract: &core.Contract{
-			Address:      feed,
-			DiscoveredAt: discoveredAt,
-			FirstLogAt:   discoveredAt,
-			ContractName: core.ChainlinkPriceFeed,
-			Client:       client,
+func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *ChainlinkPriceFeed {
+	syncAdapter := &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				Address:      feed,
+				DiscoveredAt: discoveredAt,
+				FirstLogAt:   discoveredAt,
+				ContractName: ds.ChainlinkPriceFeed,
+				Client:       client,
+			},
+			Details:  map[string]interface{}{"oracle": oracle, "token": token},
+			LastSync: discoveredAt - 1,
+			V:        version,
 		},
-		Details:  map[string]interface{}{"oracle": oracle, "token": token},
-		LastSync: discoveredAt - 1,
-		Repo:     repo,
-		V:        version,
+		Repo: repo,
 	}
 	adapter := NewChainlinkPriceFeedFromAdapter(
 		syncAdapter,
 		true,
 	)
-	repo.AddTokenOracle(&core.TokenOracle{
+	repo.AddTokenOracle(&schemas.TokenOracle{
 		Token:       token,
 		Oracle:      adapter.Oracle,
 		Feed:        adapter.Address,
@@ -48,7 +51,7 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 	return adapter
 }
 
-func NewChainlinkPriceFeedFromAdapter(adapter *core.SyncAdapter, includeLastLogBeforeDiscover bool) *ChainlinkPriceFeed {
+func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBeforeDiscover bool) *ChainlinkPriceFeed {
 	oracleAddr, ok := adapter.Details["oracle"].(string)
 	if !ok {
 		log.Fatal("Failed asserting oracle address(%s) as string for chainlink pricefeed(%s) ", adapter.Details["oracle"], adapter.GetAddress())

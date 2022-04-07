@@ -1,16 +1,17 @@
 package framework
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
 type MockExecuteParser struct {
-	executeCalls     map[string][]*core.KnownCall
-	mainEventLogs    map[string][]*core.FuncWithMultiCall
+	executeCalls     map[string][]*ds.KnownCall
+	mainEventLogs    map[string][]*ds.FuncWithMultiCall
 	executeTransfers map[string]core.Transfers
 }
 
-func (m *MockExecuteParser) setCalls(obj map[string][]*core.KnownCall) {
+func (m *MockExecuteParser) setCalls(obj map[string][]*ds.KnownCall) {
 	if obj == nil {
 		return
 	}
@@ -18,7 +19,7 @@ func (m *MockExecuteParser) setCalls(obj map[string][]*core.KnownCall) {
 		m.executeCalls[txHash] = calls
 	}
 }
-func (m *MockExecuteParser) setMainEvents(obj map[string][]*core.FuncWithMultiCall) {
+func (m *MockExecuteParser) setMainEvents(obj map[string][]*ds.FuncWithMultiCall) {
 	if obj == nil {
 		return
 	}
@@ -38,16 +39,16 @@ func (m *MockExecuteParser) setTransfers(obj map[string]core.Transfers) {
 
 func NewMockExecuteParser() *MockExecuteParser {
 	return &MockExecuteParser{
-		executeCalls:     map[string][]*core.KnownCall{},
-		mainEventLogs:    map[string][]*core.FuncWithMultiCall{},
+		executeCalls:     map[string][]*ds.KnownCall{},
+		mainEventLogs:    map[string][]*ds.FuncWithMultiCall{},
 		executeTransfers: map[string]core.Transfers{},
 	}
 }
 
-func (m *MockExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []core.ExecuteParams) []*core.KnownCall {
+func (m *MockExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	return m.executeCalls[txHash]
 }
-func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*core.FuncWithMultiCall {
+func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FuncWithMultiCall {
 	return m.mainEventLogs[txHash]
 }
 func (m *MockExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, owner []string) core.Transfers {

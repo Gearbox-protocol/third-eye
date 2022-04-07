@@ -1,9 +1,10 @@
 package treasury
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 
 	//
 	"github.com/ethereum/go-ethereum/common"
@@ -12,28 +13,30 @@ import (
 )
 
 type Treasury struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	node *core.Node
 }
 
-func NewTreasury(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *Treasury {
-	syncAdapter := &core.SyncAdapter{
-		Contract: &core.Contract{
-			Address:      addr,
-			DiscoveredAt: discoveredAt,
-			FirstLogAt:   discoveredAt,
-			ContractName: core.Treasury,
-			Client:       client,
+func NewTreasury(addr string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *Treasury {
+	syncAdapter := &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				Address:      addr,
+				DiscoveredAt: discoveredAt,
+				FirstLogAt:   discoveredAt,
+				ContractName: ds.Treasury,
+				Client:       client,
+			},
+			LastSync: discoveredAt - 1,
 		},
-		LastSync: discoveredAt - 1,
-		Repo:     repo,
+		Repo: repo,
 	}
 	return NewTreasuryFromAdapter(
 		syncAdapter,
 	)
 }
 
-func NewTreasuryFromAdapter(adapter *core.SyncAdapter) *Treasury {
+func NewTreasuryFromAdapter(adapter *ds.SyncAdapter) *Treasury {
 	obj := &Treasury{
 		SyncAdapter: adapter,
 	}

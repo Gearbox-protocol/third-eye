@@ -1,9 +1,10 @@
 package tests
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
-	"github.com/Gearbox-protocol/third-eye/utils"
 	"testing"
 )
 
@@ -23,11 +24,11 @@ func TestLiquidateCreditAccount(t *testing.T) {
 
 func filterDebts(debtsAndCurrentDebts core.Json, t *testing.T, indexes ...int) {
 	debts := debtsAndCurrentDebts["debts"]
-	parsedDebts, ok := debts.([]*core.Debt)
+	parsedDebts, ok := debts.([]*schemas.Debt)
 	if !ok {
 		t.Errorf("parsing debts from engine failed: %s", utils.ToJson(debts))
 	}
-	filteredDebts := []*core.Debt{}
+	filteredDebts := []*schemas.Debt{}
 	for _, index := range indexes {
 		filteredDebts = append(filteredDebts, parsedDebts[index])
 	}

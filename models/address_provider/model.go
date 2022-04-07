@@ -1,21 +1,21 @@
 package address_provider
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
 type AddressProvider struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 }
 
-func NewAddressProvider(addr string, client ethclient.ClientI, repo core.RepositoryI) *AddressProvider {
+func NewAddressProvider(addr string, client core.ClientI, repo ds.RepositoryI) *AddressProvider {
 	return NewAddressProviderFromAdapter(
-		core.NewSyncAdapter(addr, core.AddressProvider, -1, client, repo),
+		ds.NewSyncAdapter(addr, ds.AddressProvider, -1, client, repo),
 	)
 }
 
-func NewAddressProviderFromAdapter(adapter *core.SyncAdapter) *AddressProvider {
+func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter) *AddressProvider {
 	obj := &AddressProvider{
 		SyncAdapter: adapter,
 	}

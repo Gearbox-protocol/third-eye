@@ -1,9 +1,11 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +30,7 @@ func (mdl *CreditManager) CommonInit() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	mdl.SetUnderlyingState(&core.CreditManagerState{
+	mdl.SetUnderlyingState(&schemas.CreditManagerState{
 		Address:         mdl.Address,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
@@ -42,7 +44,7 @@ func (cm *CreditManager) addCreditFilter(blockNum int64) {
 		log.Fatal(err)
 	}
 	cm.Repo.AddCreditManagerToFilter(cm.Address, creditFilter.Hex())
-	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), core.CreditFilter, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
+	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), ds.CreditFilter, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 }
 
@@ -122,7 +124,7 @@ func (mdl *CreditManager) checkLogV1(txLog types.Log) {
 		mdl.State.MaxAmount = (*core.BigInt)(params.MaxAmount)
 		mdl.State.MaxLeverageFactor = params.MaxLeverage.Int64()
 		mdl.State.FeeInterest = params.FeeInterest.Int64()
-		mdl.Repo.AddParameters(txLog.Index, txLog.TxHash.Hex(), &core.Parameters{
+		mdl.Repo.AddParameters(txLog.Index, txLog.TxHash.Hex(), &schemas.Parameters{
 			BlockNum:            int64(txLog.BlockNumber),
 			CreditManager:       mdl.GetAddress(),
 			MinAmount:           (*core.BigInt)(params.MinAmount),

@@ -1,9 +1,10 @@
 package pool
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -22,7 +23,7 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 	token := p.Repo.GetToken(p.State.UnderlyingToken)
 	p.State.IsWETH = state.IsWETH
 	// log.Infof("Pool:%s ciRAY: %s and linearCI: %s\n", p.Address, state.CumulativeIndexRAY.String(), state.LinearCumulativeIndex.String())
-	p.Repo.AddPoolStat(&core.PoolStat{
+	p.Repo.AddPoolStat(&schemas.PoolStat{
 		BlockNum:        blockNum,
 		Address:         p.Address,
 		UniqueUsers:     p.Repo.GetPoolUniqueUserLen(p.Address),

@@ -1,9 +1,10 @@
 package credit_filter
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -20,12 +21,12 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		po, err := mdl.filterContract.ParsePriceOracleUpdated(txLog)
 		log.CheckFatal(err)
 		args := &core.Json{"newPriceOracle": po.NewPriceOracle.Hex(), "creditManager": creditManager}
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			BlockNumber: blockNum,
 			Contract:    mdl.Address,
-			Type:        core.PriceOracleUpdated,
+			Type:        schemas.PriceOracleUpdated,
 			Args:        args,
 		})
 	case core.Topic("ContractAllowed(address,address)"):
@@ -33,7 +34,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack contract allowed event", err)
 		}
-		mdl.Repo.AddAllowedProtocol(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &core.Protocol{
+		mdl.Repo.AddAllowedProtocol(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.Protocol{
 			BlockNumber:   blockNum,
 			CreditManager: creditManager,
 			Protocol:      contractAllowedEvent.Protocol.Hex(),
@@ -51,7 +52,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("NewFastCheckParameters(uint256,uint256)"):
 		fcParams, err := mdl.filterContract.ParseNewFastCheckParameters(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddFastCheckParams(txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.GetAddress(), &core.FastCheckParams{
+		mdl.Repo.AddFastCheckParams(txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.GetAddress(), &schemas.FastCheckParams{
 			BlockNum:        blockNum,
 			CreditManager:   creditManager,
 			ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),
@@ -65,7 +66,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack token allowed event", err)
 		}
-		mdl.Repo.AddAllowedToken(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &core.AllowedToken{
+		mdl.Repo.AddAllowedToken(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
 			BlockNumber:        blockNum,
 			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
@@ -76,12 +77,12 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 		transferPlugin, err := mdl.filterContract.ParseTransferPluginAllowed(txLog)
 		log.CheckFatal(err)
 		args := &core.Json{"plugin": transferPlugin.Pugin.Hex(), "state": transferPlugin.State, "creditManager": creditManager}
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			BlockNumber: blockNum,
 			Contract:    mdl.Address,
-			Type:        core.TransferPluginAllowed,
+			Type:        schemas.TransferPluginAllowed,
 			Args:        args,
 		})
 	/////////////////////////////
@@ -90,7 +91,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("TokenAllowed(address)"):
 		tokenEvent, err := mdl.cfgContract.ParseTokenAllowed(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &core.AllowedToken{
+		mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
 			BlockNumber:        blockNum,
 			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
@@ -99,7 +100,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("TokenLiquidationThresholdUpdated(address,uint256)"):
 		tokenEvent, err := mdl.cfgContract.ParseTokenLiquidationThresholdUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &core.AllowedToken{
+		mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
 			BlockNumber:        blockNum,
 			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
@@ -108,7 +109,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("LimitsUpdated(uint256,uint256)"):
 		limitEvent, err := mdl.cfgContract.ParseLimitsUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.UpdateLimits(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &core.Parameters{
+		mdl.Repo.UpdateLimits(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &schemas.Parameters{
 			BlockNum:      int64(txLog.BlockNumber),
 			CreditManager: creditManager,
 			MinAmount:     (*core.BigInt)(limitEvent.MinBorrowedAmount),
@@ -117,7 +118,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("FeesUpdated(uint256,uint256,uint256)"):
 		feesEvent, err := mdl.cfgContract.ParseFeesUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &core.Parameters{
+		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &schemas.Parameters{
 			BlockNum:            int64(txLog.BlockNumber),
 			CreditManager:       creditManager,
 			FeeInterest:         (*core.BigInt)(feesEvent.FeeInterest),
@@ -127,7 +128,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("FastCheckParametersUpdated(uint256,uint256)"):
 		fcParams, err := mdl.cfgContract.ParseFastCheckParametersUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddFastCheckParams(txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.GetAddress(), &core.FastCheckParams{
+		mdl.Repo.AddFastCheckParams(txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.GetAddress(), &schemas.FastCheckParams{
 			BlockNum:        blockNum,
 			CreditManager:   creditManager,
 			ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),
@@ -139,13 +140,13 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	// for credit manager that will lead to ignoring this dao event
 	case core.Topic("CreditFacadeUpgraded(address)"):
 		newFacade := utils.ChecksumAddr(txLog.Topics[1].Hex())
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
 			Args:        &core.Json{"facade": newFacade, "creditManager": creditManager},
-			Type:        core.NewFastCheckParameters,
+			Type:        schemas.NewFastCheckParameters,
 		})
 	}
 }

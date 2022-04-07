@@ -1,8 +1,8 @@
 package services
 
 import (
+	logger "github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
-	logger "github.com/Gearbox-protocol/third-eye/log"
 	amqp "github.com/rabbitmq/amqp091-go"
 	"log"
 )

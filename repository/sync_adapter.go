@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/account_factory"
 	"github.com/Gearbox-protocol/third-eye/models/account_manager"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
@@ -22,7 +22,7 @@ import (
 func (repo *Repository) loadSyncAdapters() {
 	defer utils.Elapsed("loadSyncAdapters")()
 	//
-	data := []*core.SyncAdapter{}
+	data := []*ds.SyncAdapter{}
 	err := repo.db.Find(&data, "disabled = ? OR type = 'PriceOracle'", false).Error
 	if err != nil {
 		log.Fatal(err)
@@ -32,41 +32,41 @@ func (repo *Repository) loadSyncAdapters() {
 	}
 }
 
-func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncAdapterI {
+func (repo *Repository) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
 	adapter.Client = repo.client
 	adapter.Repo = repo
 	switch adapter.ContractName {
-	case core.ACL:
+	case ds.ACL:
 		return acl.NewACLFromAdapter(adapter)
-	case core.AddressProvider:
+	case ds.AddressProvider:
 		ap := address_provider.NewAddressProviderFromAdapter(adapter)
 		if ap.Details["dc"] != nil {
 			repo.dcWrapper.LoadMultipleDC(ap.Details["dc"])
 		}
 		return ap
-	case core.AccountFactory:
+	case ds.AccountFactory:
 		return account_factory.NewAccountFactoryFromAdapter(adapter)
-	case core.Pool:
+	case ds.Pool:
 		return pool.NewPoolFromAdapter(adapter)
-	case core.CreditManager:
+	case ds.CreditManager:
 		return credit_manager.NewCreditManagerFromAdapter(adapter)
-	case core.PriceOracle:
+	case ds.PriceOracle:
 		return price_oracle.NewPriceOracleFromAdapter(adapter)
-	case core.ChainlinkPriceFeed:
+	case ds.ChainlinkPriceFeed:
 		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter, false)
-	case core.YearnPriceFeed:
+	case ds.YearnPriceFeed:
 		return aggregated_block_feed.NewYearnPriceFeedFromAdapter(adapter)
-	case core.ContractRegister:
+	case ds.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
-	case core.GearToken:
+	case ds.GearToken:
 		return gear_token.NewGearTokenFromAdapter(adapter)
-	case core.Treasury:
+	case ds.Treasury:
 		return treasury.NewTreasuryFromAdapter(adapter)
-	case core.AccountManager:
+	case ds.AccountManager:
 		return account_manager.NewAccountManagerFromAdapter(adapter)
-	case core.CreditConfigurator:
+	case ds.CreditConfigurator:
 		return credit_filter.NewCreditFilterFromAdapter(adapter)
-	case core.CreditFilter:
+	case ds.CreditFilter:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)
 			repo.AddCreditManagerToFilter(cmAddr, adapter.GetAddress())
@@ -78,14 +78,14 @@ func (repo *Repository) PrepareSyncAdapter(adapter *core.SyncAdapter) core.SyncA
 	return nil
 }
 
-func (repo *Repository) AddSyncAdapter(newAdapterI core.SyncAdapterI) {
+func (repo *Repository) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.config.ROLLBACK == "1" {
 		return
 	}
-	if newAdapterI.GetName() == core.PriceOracle {
-		oldPriceOracleAddrs := repo.kit.GetAdapterAddressByName(core.PriceOracle)
+	if newAdapterI.GetName() == ds.PriceOracle {
+		oldPriceOracleAddrs := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 		for _, addr := range oldPriceOracleAddrs {
 			oldPriceOracle := repo.kit.GetAdapter(addr)
 			if !oldPriceOracle.IsDisabled() {
@@ -96,11 +96,11 @@ func (repo *Repository) AddSyncAdapter(newAdapterI core.SyncAdapterI) {
 	repo.addSyncAdapter(newAdapterI)
 }
 
-func (repo *Repository) addSyncAdapter(adapterI core.SyncAdapterI) {
-	if core.GearToken == adapterI.GetName() {
+func (repo *Repository) addSyncAdapter(adapterI ds.SyncAdapterI) {
+	if ds.GearToken == adapterI.GetName() {
 		repo.GearTokenAddr = adapterI.GetAddress()
 	}
-	if adapterI.GetName() == core.YearnPriceFeed {
+	if adapterI.GetName() == ds.YearnPriceFeed {
 		repo.aggregatedFeed.AddYearnFeed(adapterI)
 	} else {
 		repo.kit.Add(adapterI)

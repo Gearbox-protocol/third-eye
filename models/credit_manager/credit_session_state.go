@@ -1,9 +1,10 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"math/big"
 )
 
@@ -41,10 +42,10 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	var amountToPool *big.Int
 	switch closeDetails.Status {
-	case core.Closed, 
-	 core.Repaid:
+	case schemas.Closed,
+		schemas.Repaid:
 		amountToPool = data.RepayAmount
-	case core.Liquidated:
+	case schemas.Liquidated:
 		amountToPool = data.LiquidationAmount
 	}
 	// pool repay
@@ -55,7 +56,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 		closeDetails.Borrower,
 		amountToPool)
 
-	if closeDetails.RemainingFunds == nil && closeDetails.Status == core.Repaid {
+	if closeDetails.RemainingFunds == nil && closeDetails.Status == schemas.Repaid {
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
 		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmount
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
@@ -66,7 +67,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
 	//
 	// create session snapshot
-	css := core.CreditSessionSnapshot{}
+	css := schemas.CreditSessionSnapshot{}
 	mdl.Repo.SetBlock(blockNum - 1)
 	css.BlockNum = blockNum - 1
 	css.SessionId = sessionId
@@ -83,7 +84,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	if err != nil {
 		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
 	}
-	if closeDetails.Status != core.Closed || session.Version != 2 { // neg( closed on v2)
+	if closeDetails.Status != schemas.Closed || session.Version != 2 { // neg( closed on v2)
 		session.Balances = css.Balances
 	}
 	//
@@ -100,7 +101,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
 	// create session snapshot
-	css := core.CreditSessionSnapshot{}
+	css := schemas.CreditSessionSnapshot{}
 	css.BlockNum = blockNum
 	css.SessionId = sessionId
 	css.CollateralInUSD = session.CollateralInUSD

@@ -1,15 +1,16 @@
 package debts
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
 // token threshold
 func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
 	defer utils.Elapsed("Debt(loadAllowedTokenThreshold)")()
-	data := []*core.AllowedToken{}
+	data := []*schemas.AllowedToken{}
 	query := `SELECT * FROM allowed_tokens 
 	JOIN (SELECT max(block_num) as bn, token, credit_manager FROM allowed_tokens 
 		WHERE block_num <= ? group by token,credit_manager) as atokens
@@ -26,7 +27,7 @@ func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
 	}
 }
 
-func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
+func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *schemas.AllowedToken) {
 	if eng.allowedTokensThreshold[atoken.CreditManager] == nil {
 		eng.allowedTokensThreshold[atoken.CreditManager] = make(map[string]*core.BigInt)
 	}
@@ -36,7 +37,7 @@ func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
 // token price from feeds
 func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 	defer utils.Elapsed("Debt(loadTokenLastPrice)")()
-	data := []*core.PriceFeed{}
+	data := []*schemas.PriceFeed{}
 	query := `SELECT pf.* FROM price_feeds pf
 	JOIN (SELECT max(block_num) b, token, price_in_usd FROM price_feeds WHERE block_num <= ? GROUP BY token, price_in_usd) AS max_pf
 	ON max_pf.b = pf.block_num and pf.token=max_pf.token and max_pf.price_in_usd=pf.price_in_usd`
@@ -49,7 +50,7 @@ func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 	}
 }
 
-func (eng *DebtEngine) AddTokenLastPrice(pf *core.PriceFeed) {
+func (eng *DebtEngine) AddTokenLastPrice(pf *schemas.PriceFeed) {
 	if !pf.IsPriceInUSD {
 		eng.tokenLastPrice[pf.Token] = pf
 	} else {

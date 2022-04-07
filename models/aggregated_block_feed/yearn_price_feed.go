@@ -1,22 +1,24 @@
 package aggregated_block_feed
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
-	"github.com/Gearbox-protocol/third-eye/artifacts/yVault"
-	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"math/big"
+	"sync"
+
+	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yVault"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"sync"
 )
 
 type YearnPriceFeed struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	contractETH       *yearnPriceFeed.YearnPriceFeed
 	YVaultContract    *yVault.YVault
 	PriceFeedContract *priceFeed.PriceFeed
@@ -24,24 +26,26 @@ type YearnPriceFeed struct {
 	mu                *sync.Mutex
 }
 
-func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI, version int16) *YearnPriceFeed {
-	syncAdapter := &core.SyncAdapter{
-		Contract: &core.Contract{
-			Address:      oracle,
-			DiscoveredAt: discoveredAt,
-			FirstLogAt:   discoveredAt,
-			ContractName: core.YearnPriceFeed,
-			Client:       client,
+func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *YearnPriceFeed {
+	syncAdapter := &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				Address:      oracle,
+				DiscoveredAt: discoveredAt,
+				FirstLogAt:   discoveredAt,
+				ContractName: ds.YearnPriceFeed,
+				Client:       client,
+			},
+			Details:  map[string]interface{}{"token": token},
+			LastSync: discoveredAt - 1,
+			V:        version,
 		},
-		Details:  map[string]interface{}{"token": token},
-		LastSync: discoveredAt - 1,
-		Repo:     repo,
-		V:        version,
+		Repo: repo,
 	}
 	// add token oracle for db
 	// feed is also oracle address for yearn address
 	// we don't relie on underlying feed
-	repo.AddTokenOracle(&core.TokenOracle{
+	repo.AddTokenOracle(&schemas.TokenOracle{
 		Token:       token,
 		Oracle:      oracle,
 		Feed:        oracle,
@@ -52,7 +56,7 @@ func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclien
 	)
 }
 
-func NewYearnPriceFeedFromAdapter(adapter *core.SyncAdapter) *YearnPriceFeed {
+func NewYearnPriceFeedFromAdapter(adapter *ds.SyncAdapter) *YearnPriceFeed {
 	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
@@ -98,7 +102,7 @@ func (mdl *YearnPriceFeed) GetTokenAddr() string {
 	return tokenAddr
 }
 
-func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.PriceFeed {
+func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *schemas.PriceFeed {
 	if mdl.YVaultContract == nil || mdl.PriceFeedContract == nil || mdl.DecimalDivider == nil {
 		mdl.setContracts(blockNum)
 	}
@@ -133,7 +137,7 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 	if isPriceInUSD {
 		decimals = 8 // for usd
 	}
-	return &core.PriceFeed{
+	return &schemas.PriceFeed{
 		RoundId:      roundData.RoundId.Int64(),
 		PriceBI:      (*core.BigInt)(newAnswer),
 		Price:        utils.GetFloat64Decimal(newAnswer, decimals),

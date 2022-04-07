@@ -1,13 +1,14 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditFacade"
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditManagerv2"
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
@@ -23,17 +24,17 @@ type SessionCloseDetails struct {
 	LogId            uint
 	TxHash           string
 	Borrower         string
-	AccountOperation *core.AccountOperation
+	AccountOperation *schemas.AccountOperation
 }
 
 type CreditManager struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	contractETHV1    *creditManager.CreditManager
 	contractETHV2    *creditManagerv2.CreditManagerv2
 	facadeContractV2 *creditFacade.CreditFacade
 	LastTxHash       string
-	executeParams    []core.ExecuteParams
-	State            *core.CreditManagerState
+	executeParams    []ds.ExecuteParams
+	State            *schemas.CreditManagerState
 	lastEventBlock   int64
 	UpdatedSessions  map[string]int
 	ClosedSessions   map[string]*SessionCloseDetails
@@ -45,10 +46,10 @@ func (CreditManager) TableName() string {
 	return "sync_adapters"
 }
 
-func NewCreditManager(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *CreditManager {
+func NewCreditManager(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *CreditManager {
 	// credit manager
 	cm := NewCreditManagerFromAdapter(
-		core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo),
+		ds.NewSyncAdapter(addr, ds.CreditManager, discoveredAt, client, repo),
 	)
 	cm.CommonInit()
 	switch cm.GetVersion() {
@@ -66,13 +67,13 @@ func NewCreditManager(addr string, client ethclient.ClientI, repo core.Repositor
 func (mdl *CreditManager) GetAbi() {
 	switch mdl.GetVersion() {
 	case 1:
-		mdl.ABI = core.GetAbi(mdl.ContractName)
+		mdl.ABI = schemas.GetAbi(mdl.ContractName)
 	case 2:
-		mdl.ABI = core.GetAbi("CreditFacade")
+		mdl.ABI = schemas.GetAbi("CreditFacade")
 	}
 }
 
-func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
+func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 	obj := &CreditManager{
 		SyncAdapter:     adapter,
 		UpdatedSessions: make(map[string]int),
@@ -97,12 +98,12 @@ func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
 		var creditFacadeAddr common.Address
 		if obj.Details != nil && obj.Details["facade"] != nil {
 			creditFacadeAddr = common.HexToAddress(obj.Details["facade"].(string))
-		}  else {
+		} else {
 			opts := &bind.CallOpts{BlockNumber: big.NewInt(adapter.DiscoveredAt)}
 			creditFacadeAddr, err = cmContract.CreditFacade(opts)
 			log.CheckFatal(err)
 		}
-		obj.SetCreditFacadeContract(creditFacadeAddr) 
+		obj.SetCreditFacadeContract(creditFacadeAddr)
 	}
 	return obj
 }

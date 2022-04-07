@@ -1,22 +1,22 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
 type MultiCallProcessor struct {
 	borrower            string
 	txHash              string
-	OpenEvent           *core.AccountOperation
-	events              []*core.AccountOperation
-	nonMultiCallEvents  []*core.AccountOperation
-	MultiCallStartEvent *core.AccountOperation
+	OpenEvent           *schemas.AccountOperation
+	events              []*schemas.AccountOperation
+	nonMultiCallEvents  []*schemas.AccountOperation
+	MultiCallStartEvent *schemas.AccountOperation
 	running             bool
 }
 
-func (p *MultiCallProcessor) AddMulticallEvent(operation *core.AccountOperation) {
+func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperation) {
 	if !p.running {
 		p.nonMultiCallEvents = append(p.nonMultiCallEvents, operation)
 		return
@@ -27,7 +27,7 @@ func (p *MultiCallProcessor) AddMulticallEvent(operation *core.AccountOperation)
 	operation.Borrower = p.borrower
 	p.events = append(p.events, operation)
 }
-func (p *MultiCallProcessor) AddOpenEvent(openEvent *core.AccountOperation) {
+func (p *MultiCallProcessor) AddOpenEvent(openEvent *schemas.AccountOperation) {
 	if len(p.events) > 0 {
 		log.Info("Previous multicall events not processed", utils.ToJson(p.events))
 	}
@@ -37,7 +37,7 @@ func (p *MultiCallProcessor) AddOpenEvent(openEvent *core.AccountOperation) {
 	}
 	p.OpenEvent = openEvent
 }
-func (p *MultiCallProcessor) Start(borrower, txHash string, startEvent *core.AccountOperation) {
+func (p *MultiCallProcessor) Start(borrower, txHash string, startEvent *schemas.AccountOperation) {
 	if len(p.events) > 0 {
 		log.Infof("Previous multicall events not processed %s", utils.ToJson(p.events))
 	}
@@ -62,15 +62,15 @@ func (p *MultiCallProcessor) End() {
 	}
 	p.running = false
 }
-func (p *MultiCallProcessor) PopMulticallEventsV2() []*core.AccountOperation {
+func (p *MultiCallProcessor) PopMulticallEventsV2() []*schemas.AccountOperation {
 	collaterals := p.events
-	p.events = []*core.AccountOperation{}
+	p.events = []*schemas.AccountOperation{}
 	return collaterals
 }
 
-func (p *MultiCallProcessor) popNonMulticallEventsV2() []*core.AccountOperation {
+func (p *MultiCallProcessor) popNonMulticallEventsV2() []*schemas.AccountOperation {
 	calls := p.nonMultiCallEvents
-	p.nonMultiCallEvents = []*core.AccountOperation{}
+	p.nonMultiCallEvents = []*schemas.AccountOperation{}
 	return calls
 }
 

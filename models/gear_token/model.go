@@ -1,29 +1,30 @@
 package gear_token
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/eRC20"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/eRC20"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type GearToken struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	contractETH               *eRC20.ERC20
-	State                     map[string]*core.GearBalance
-	arrayOfGearBalanceUpdates []*core.GearBalance
+	State                     map[string]*schemas.GearBalance
+	arrayOfGearBalanceUpdates []*schemas.GearBalance
 }
 
-func NewGearToken(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *GearToken {
+func NewGearToken(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *GearToken {
 	pool := NewGearTokenFromAdapter(
-		core.NewSyncAdapter(addr, core.GearToken, discoveredAt, client, repo),
+		ds.NewSyncAdapter(addr, ds.GearToken, discoveredAt, client, repo),
 	)
-	pool.SetUnderlyingState([]*core.GearBalance{})
+	pool.SetUnderlyingState([]*schemas.GearBalance{})
 	return pool
 }
 
-func NewGearTokenFromAdapter(adapter *core.SyncAdapter) *GearToken {
+func NewGearTokenFromAdapter(adapter *ds.SyncAdapter) *GearToken {
 	cmContract, err := eRC20.NewERC20(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)

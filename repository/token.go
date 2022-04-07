@@ -5,16 +5,18 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/Gearbox-protocol/third-eye/artifacts/priceOracle"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOracle"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // For token with symbol/decimals
-func (repo *Repository) AddToken(addr string) *core.Token {
+func (repo *Repository) AddToken(addr string) *schemas.Token {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	token, err := repo.addToken(addr)
@@ -24,9 +26,9 @@ func (repo *Repository) AddToken(addr string) *core.Token {
 	return token
 }
 
-func (repo *Repository) addToken(addr string) (*core.Token, error) {
+func (repo *Repository) addToken(addr string) (*schemas.Token, error) {
 	if repo.tokens[addr] == nil {
-		token, err := core.NewToken(addr, repo.client)
+		token, err := schemas.NewToken(addr, repo.client)
 		if err != nil {
 			return nil, err
 		}
@@ -35,7 +37,7 @@ func (repo *Repository) addToken(addr string) (*core.Token, error) {
 	return repo.tokens[addr], nil
 }
 
-func (repo *Repository) GetToken(addr string) *core.Token {
+func (repo *Repository) GetToken(addr string) *schemas.Token {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	token, err := repo.getTokenWithError(addr)
@@ -43,7 +45,7 @@ func (repo *Repository) GetToken(addr string) *core.Token {
 	return token
 }
 
-func (repo *Repository) getTokenWithError(addr string) (*core.Token, error) {
+func (repo *Repository) getTokenWithError(addr string) (*schemas.Token, error) {
 	token := repo.tokens[addr]
 	if token == nil {
 		return repo.addToken(addr)
@@ -53,7 +55,7 @@ func (repo *Repository) getTokenWithError(addr string) (*core.Token, error) {
 
 func (repo *Repository) loadToken() {
 	defer utils.Elapsed("loadToken")()
-	data := []*core.Token{}
+	data := []*schemas.Token{}
 	err := repo.db.Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -65,7 +67,7 @@ func (repo *Repository) loadToken() {
 
 // not to be called directly
 // only exposed for testing framework
-func (repo *Repository) AddTokenObj(t *core.Token) {
+func (repo *Repository) AddTokenObj(t *schemas.Token) {
 	// set usdc addr in repo
 	if t.Symbol == "USDC" {
 		repo.USDCAddr = t.Address
@@ -80,7 +82,7 @@ func (repo *Repository) AddTokenObj(t *core.Token) {
 
 func (repo *Repository) loadAllowedTokensState() {
 	defer utils.Elapsed("loadAllowedTokensState")()
-	data := []*core.AllowedToken{}
+	data := []*schemas.AllowedToken{}
 	// v1 query
 	// err := repo.db.Raw("SELECT * FROM allowed_tokens where disable_block = 0 order by block_num").Find(&data).Error
 	// v2 query
@@ -91,10 +93,10 @@ func (repo *Repository) loadAllowedTokensState() {
 	}
 }
 
-func (repo *Repository) addAllowedTokenState(entry *core.AllowedToken, usingV2 bool) {
+func (repo *Repository) addAllowedTokenState(entry *schemas.AllowedToken, usingV2 bool) {
 	tokensForCM := repo.allowedTokens[entry.CreditManager]
 	if tokensForCM == nil {
-		repo.allowedTokens[entry.CreditManager] = make(map[string]*core.AllowedToken)
+		repo.allowedTokens[entry.CreditManager] = make(map[string]*schemas.AllowedToken)
 		tokensForCM = repo.allowedTokens[entry.CreditManager]
 	}
 	if tokensForCM[entry.Token] != nil && !usingV2 {
@@ -115,13 +117,14 @@ func (repo *Repository) isAllowedTokenDisabled(cm, token string) bool {
 	}
 	return repo.allowedTokens[cm][token].DisableBlock != 0
 }
+
 // return the active first oracle under blockNum
 // if all disabled return the last one
 func (repo *Repository) GetActivePriceOracleByBlockNum(blockNum int64) (string, error) {
 	var disabledLastOracle, activeFirstOracle string
 	var disabledOracleBlock, activeOracleBlock int64
 	activeOracleBlock = math.MaxInt64
-	oracles := repo.kit.GetAdapterAddressByName(core.PriceOracle)
+	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
 		if oracleAdapter.GetDiscoveredAt() <= blockNum {
@@ -147,7 +150,7 @@ func (repo *Repository) GetActivePriceOracleByBlockNum(blockNum int64) (string, 
 	}
 }
 func (repo *Repository) GetPriceOracleByVersion(version int16) (string, error) {
-	addrProviderAddr := repo.kit.GetAdapterAddressByName(core.AddressProvider)
+	addrProviderAddr := repo.kit.GetAdapterAddressByName(ds.AddressProvider)
 	addrProvider := repo.kit.GetAdapter(addrProviderAddr[0])
 	details := addrProvider.GetDetails()
 	if details != nil {

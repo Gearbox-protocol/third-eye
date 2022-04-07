@@ -1,11 +1,13 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"sort"
 )
@@ -13,7 +15,7 @@ import (
 func (mdl *CreditManager) processExecuteEvents() {
 	if len(mdl.executeParams) > 0 {
 		mdl.handleExecuteEvents(mdl.executeParams)
-		mdl.executeParams = []core.ExecuteParams{}
+		mdl.executeParams = []ds.ExecuteParams{}
 	}
 }
 
@@ -51,10 +53,10 @@ func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 	}
 }
 
-func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*core.TokenTransfer) {
+func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
 	for sessionID, txs := range sessionIDToTxs {
 		session := mdl.Repo.GetCreditSession(sessionID)
-		txsList := core.TokenTransferList(txs)
+		txsList := schemas.TokenTransferList(txs)
 		sort.Sort(txsList)
 		for _, tx := range txsList {
 			var amount *big.Int
@@ -71,7 +73,7 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 			if blockNum == mdl.lastEventBlock {
 				mdl.setUpdateSession(sessionID)
 			}
-			mdl.Repo.AddAccountOperation(&core.AccountOperation{
+			mdl.Repo.AddAccountOperation(&schemas.AccountOperation{
 				TxHash:      tx.TxHash,
 				BlockNumber: tx.BlockNum,
 				LogId:       tx.LogID,

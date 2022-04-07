@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
 	"testing"
 )
@@ -14,7 +14,7 @@ func TestSyncAdapters(t *testing.T) {
 	r.Check(r.Repo.GetBlocks()[6], "sync_adapters/blocks.json")
 }
 
-func getAdapters(kit *core.AdapterKit) (array []*core.SyncAdapter) {
+func getAdapters(kit *ds.AdapterKit) (array []*ds.SyncAdapter) {
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
 		for kit.Next(lvlIndex) {
 			array = append(array, kit.Get(lvlIndex).GetAdapterState())

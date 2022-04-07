@@ -2,9 +2,11 @@ package credit_manager
 
 import (
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
@@ -20,7 +22,7 @@ func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
 }
 
 // multicall
-func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
+func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation) {
 	account := strings.Split(mainAction.SessionId, "_")[0]
 	txHash := mainAction.TxHash
 	mainEvents := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
@@ -50,8 +52,8 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 			mainEvents[0].Name, mainEvents[0].MultiCallsLen, len(events), utils.ToJson(events))
 	}
 	//
-	executeEvents := []core.ExecuteParams{}
-	var multicalls []*core.AccountOperation
+	executeEvents := []ds.ExecuteParams{}
+	var multicalls []*schemas.AccountOperation
 	for _, event := range events {
 		if event.BlockNumber != mainAction.BlockNumber || event.TxHash != txHash {
 			log.Fatal("%s has different blockNumber or txhash from opencreditaccount(%d, %s)",
@@ -64,7 +66,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 			"DecreaseBorrowedAmount(address,uint256)":
 			multicalls = append(multicalls, event)
 		case "ExecuteOrder":
-			executeEvents = append(executeEvents, core.ExecuteParams{
+			executeEvents = append(executeEvents, ds.ExecuteParams{
 				SessionId:     mainAction.SessionId,
 				CreditAccount: common.HexToAddress(account),
 				Protocol:      common.HexToAddress(event.Dapp),
@@ -81,13 +83,13 @@ func (mdl *CreditManager) multiCallHandler(mainAction *core.AccountOperation) {
 	mdl.Repo.AddAccountOperation(mainAction)
 }
 
-func (mdl *CreditManager) getProcessedExecuteEvents(txHash string, executeParams []core.ExecuteParams) (multiCalls []*core.AccountOperation) {
+func (mdl *CreditManager) getProcessedExecuteEvents(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
 	// credit manager has the execute event
 	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash, mdl.Address, executeParams)
 	for i, call := range calls {
 		params := executeParams[i]
 		// add account operation
-		accountOperation := &core.AccountOperation{
+		accountOperation := &schemas.AccountOperation{
 			BlockNumber: params.BlockNumber,
 			TxHash:      txHash,
 			LogId:       params.Index,
@@ -123,7 +125,7 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 
 	// add account operation
 	action, args := mdl.ParseEvent("OpenCreditAccount", txLog)
-	accountOperation := &core.AccountOperation{
+	accountOperation := &schemas.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
 		LogId:       txLog.Index,
@@ -142,9 +144,9 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 	// add session to manager object
 	mdl.AddCreditOwnerSession(onBehalfOf, sessionId)
 	// create credit session
-	newSession := &core.CreditSession{
+	newSession := &schemas.CreditSession{
 		ID:             sessionId,
-		Status:         core.Active,
+		Status:         schemas.Active,
 		Borrower:       onBehalfOf,
 		CreditManager:  mdl.Address,
 		Account:        account,
@@ -167,7 +169,7 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	action, args := mdl.ParseEvent("CloseCreditAccount", txLog)
 	// add account operation
 	transfers := mdl.Repo.GetExecuteParser().GetTransfers(txLog.TxHash.Hex(), owner, account, mdl.GetUnderlyingToken(), []string{owner, to})
-	accountOperation := &core.AccountOperation{
+	accountOperation := &schemas.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
 		LogId:       txLog.Index,
@@ -196,7 +198,7 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		// RemainingFunds: remainingFunds,
-		Status:   core.Closed,
+		Status:   schemas.Closed,
 		TxHash:   txLog.TxHash.Hex(),
 		Borrower: owner,
 	}
@@ -230,7 +232,7 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("LiquidateCreditAccount", txLog)
 	// add account operation
-	accountOperation := &core.AccountOperation{
+	accountOperation := &schemas.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
 		LogId:       txLog.Index,
@@ -248,7 +250,7 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 	mdl.multiCallHandler(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		RemainingFunds: remainingFunds,
-		Status:         core.Liquidated,
+		Status:         schemas.Liquidated,
 		TxHash:         txLog.TxHash.Hex(),
 		Borrower:       owner,
 	}
@@ -269,7 +271,7 @@ func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token 
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("AddCollateral", txLog)
 	// add account operation
-	accountOperation := &core.AccountOperation{
+	accountOperation := &schemas.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
 		LogId:       txLog.Index,
@@ -296,7 +298,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower 
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent(eventName, txLog)
 	// add account operation
-	accountOperation := &core.AccountOperation{
+	accountOperation := &schemas.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
 		LogId:       txLog.Index,
@@ -329,7 +331,7 @@ func (mdl *CreditManager) AddExecuteParamsV2(txLog *types.Log,
 	borrower,
 	targetContract common.Address) error {
 	sessionId := mdl.GetCreditOwnerSession(borrower.Hex(), true)
-	mdl.multicall.AddMulticallEvent(&core.AccountOperation{
+	mdl.multicall.AddMulticallEvent(&schemas.AccountOperation{
 		BlockNumber: int64(txLog.BlockNumber),
 		TxHash:      txLog.TxHash.Hex(),
 		LogId:       txLog.Index,

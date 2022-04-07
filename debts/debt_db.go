@@ -3,9 +3,11 @@ package debts
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm/clause"
 )
 
@@ -29,7 +31,7 @@ func (eng *DebtEngine) networkUIUrl() NetworkUI {
 	}
 	return NetworkUI{}
 }
-func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string, token *core.CumIndexAndUToken) {
+func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower string, token *ds.CumIndexAndUToken) {
 	lastDebt := eng.lastDebts[debt.SessionId]
 	if lastDebt != nil {
 		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
@@ -71,8 +73,8 @@ func (eng *DebtEngine) liquidationCheck(debt *core.Debt, cmAddr, borrower string
 	}
 }
 
-func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
-	curDebt := core.CurrentDebt{
+func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
+	curDebt := schemas.CurrentDebt{
 		SessionId:                       debt.SessionId,
 		BlockNumber:                     debt.BlockNumber,
 		CalHealthFactor:                 debt.CalHealthFactor,
@@ -92,7 +94,7 @@ func (eng *DebtEngine) addCurrentDebt(debt *core.Debt, decimals int8) {
 	eng.currentDebts = append(eng.currentDebts, &curDebt)
 }
 
-func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
+func (eng *DebtEngine) AddDebt(debt *schemas.Debt, forceAdd bool) {
 	lastDebt := eng.lastDebts[debt.SessionId]
 	if eng.config.ThrottleDebtCal {
 		// add debt if throttle is enabled and (last debt is missing or forced add is set)
@@ -110,16 +112,16 @@ func (eng *DebtEngine) AddDebt(debt *core.Debt, forceAdd bool) {
 	}
 }
 
-func (eng *DebtEngine) addDebt(debt *core.Debt) {
+func (eng *DebtEngine) addDebt(debt *schemas.Debt) {
 	eng.addLastDebt(debt)
 	eng.debts = append(eng.debts, debt)
 }
 
 func (eng *DebtEngine) loadLastDebts() {
 	defer utils.Elapsed("Debt(loadLastDebts)")()
-	data := []*core.Debt{}
+	data := []*schemas.Debt{}
 	// from debts
-	// query := `SELECT debts.* FROM 
+	// query := `SELECT debts.* FROM
 	// 		(SELECT max(block_num), session_id FROM debts GROUP BY session_id) debt_max_block
 	// 		JOIN debts ON debt_max_block.max = debts.block_num AND debt_max_block.session_id = debts.session_id`
 	// from current_debts
@@ -133,7 +135,7 @@ func (eng *DebtEngine) loadLastDebts() {
 	}
 }
 
-func (eng *DebtEngine) addLastDebt(debt *core.Debt) {
+func (eng *DebtEngine) addLastDebt(debt *schemas.Debt) {
 	eng.lastDebts[debt.SessionId] = debt
 }
 
@@ -146,9 +148,9 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	tx := eng.db.Begin()
 	err := tx.Clauses(clause.OnConflict{
 		UpdateAll: true,
-	}).Create(&core.DebtSync{LastCalculatedAt: newDebtSyncTill, FieldSet: true}).Error
+	}).Create(&schemas.DebtSync{LastCalculatedAt: newDebtSyncTill, FieldSet: true}).Error
 	log.CheckFatal(err)
-	liquidableAccounts := []*core.LiquidableAccount{}
+	liquidableAccounts := []*schemas.LiquidableAccount{}
 	for _, la := range eng.liquidableBlockTracker {
 		if la.Updated {
 			liquidableAccounts = append(liquidableAccounts, la)
@@ -168,5 +170,5 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	if info.Error != nil {
 		log.Fatal(info.Error, *info.Statement)
 	}
-	eng.debts = []*core.Debt{}
+	eng.debts = []*schemas.Debt{}
 }

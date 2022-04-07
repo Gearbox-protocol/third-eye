@@ -1,55 +1,56 @@
 package debts
 
 import (
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm"
 
 	"math/big"
 )
 
 type DebtEngine struct {
-	repo             core.RepositoryI
+	repo             ds.RepositoryI
 	db               *gorm.DB
-	client           ethclient.ClientI
+	client           core.ClientI
 	config           *config.Config
-	lastCSS          map[string]*core.CreditSessionSnapshot
-	tokenLastPrice   map[string]*core.PriceFeed
-	tokenLastPriceV2 map[string]*core.PriceFeed
+	lastCSS          map[string]*schemas.CreditSessionSnapshot
+	tokenLastPrice   map[string]*schemas.PriceFeed
+	tokenLastPriceV2 map[string]*schemas.PriceFeed
 	//// credit_manager -> token -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
-	poolLastInterestData   map[string]*core.PoolInterestData
-	debts                  []*core.Debt
-	lastDebts              map[string]*core.Debt
-	currentDebts           []*core.CurrentDebt
-	liquidableBlockTracker map[string]*core.LiquidableAccount
+	poolLastInterestData   map[string]*schemas.PoolInterestData
+	debts                  []*schemas.Debt
+	lastDebts              map[string]*schemas.Debt
+	currentDebts           []*schemas.CurrentDebt
+	liquidableBlockTracker map[string]*schemas.LiquidableAccount
 	// cm to paramters
-	lastParameters map[string]*core.Parameters
+	lastParameters map[string]*schemas.Parameters
 	isTesting      bool
 }
 
-func GetDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config, repo core.RepositoryI, testing bool) core.DebtEngineI {
+func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
 	return &DebtEngine{
 		repo:                   repo,
 		db:                     db,
 		client:                 client,
 		config:                 config,
-		lastCSS:                make(map[string]*core.CreditSessionSnapshot),
-		tokenLastPrice:         make(map[string]*core.PriceFeed),
-		tokenLastPriceV2:       make(map[string]*core.PriceFeed),
+		lastCSS:                make(map[string]*schemas.CreditSessionSnapshot),
+		tokenLastPrice:         make(map[string]*schemas.PriceFeed),
+		tokenLastPriceV2:       make(map[string]*schemas.PriceFeed),
 		allowedTokensThreshold: make(map[string]map[string]*core.BigInt),
-		poolLastInterestData:   make(map[string]*core.PoolInterestData),
-		lastDebts:              make(map[string]*core.Debt),
-		liquidableBlockTracker: make(map[string]*core.LiquidableAccount),
-		lastParameters:         make(map[string]*core.Parameters),
+		poolLastInterestData:   make(map[string]*schemas.PoolInterestData),
+		lastDebts:              make(map[string]*schemas.Debt),
+		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),
+		lastParameters:         make(map[string]*schemas.Parameters),
 		isTesting:              testing,
 	}
 }
 
-func NewDebtEngine(db *gorm.DB, client ethclient.ClientI, config *config.Config, repo core.RepositoryI) core.DebtEngineI {
+func NewDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI) ds.DebtEngineI {
 	return GetDebtEngine(db, client, config, repo, false)
 }
 
@@ -103,7 +104,7 @@ func (eng *DebtEngine) CalculateDebtAndClear(to int64) {
 }
 
 func (eng *DebtEngine) Clear() {
-	eng.debts = []*core.Debt{}
+	eng.debts = []*schemas.Debt{}
 	// clear repo after calculating debt as debt uses repository for calculations
 	eng.repo.Clear()
 }
@@ -113,9 +114,9 @@ func (eng *DebtEngine) calCloseAmount(creditManager string, version int16, total
 	case 1:
 		return eng.calCloseAmountV1(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
 	case 2:
-		amountToPool,_, profit, loss = eng.calCloseAmountV2(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
+		amountToPool, _, profit, loss = eng.calCloseAmountV2(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
 	}
-	return 
+	return
 }
 func (eng *DebtEngine) calCloseAmountV1(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
 	params := eng.lastParameters[creditManager]
@@ -161,19 +162,19 @@ func (eng *DebtEngine) calCloseAmountV2(creditManager string, totalValue *core.B
 	amountToPool = new(big.Int).Add(amountToPool, borrowedAmountWithInterest)
 
 	if isLiquidated {
-		totalFunds :=  utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
+		totalFunds := utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
 		liquidationFeeToPool := utils.PercentMul(totalValue.Convert(), params.FeeLiquidation.Convert())
 		amountToPool = new(big.Int).Add(amountToPool, liquidationFeeToPool)
-		if (totalFunds.Cmp(amountToPool) > 0) {
+		if totalFunds.Cmp(amountToPool) > 0 {
 			remainingFunds = new(big.Int).Sub(totalFunds, new(big.Int).Add(amountToPool, big.NewInt(1)))
 		} else {
 			amountToPool = totalFunds
 		}
 
-		if (totalFunds.Cmp(borrowedAmountWithInterest)>=0) {
+		if totalFunds.Cmp(borrowedAmountWithInterest) >= 0 {
 			profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
 		} else {
-			loss = new(big.Int).Sub(borrowedAmountWithInterest,amountToPool)
+			loss = new(big.Int).Sub(borrowedAmountWithInterest, amountToPool)
 		}
 	} else {
 		profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
@@ -183,7 +184,7 @@ func (eng *DebtEngine) calCloseAmountV2(creditManager string, totalValue *core.B
 
 func (eng *DebtEngine) loadLiquidableAccounts(lastDebtSync int64) {
 	defer utils.Elapsed("loadLiquidableAccounts")()
-	data := []*core.LiquidableAccount{}
+	data := []*schemas.LiquidableAccount{}
 	query := `SELECT * FROM liquidable_accounts la JOIN credit_sessions cs ON la.session_id = cs.id WHERE cs.status not in (1,2);`
 	err := eng.db.Raw(query).Find(&data).Error
 	log.CheckFatal(err)
@@ -195,7 +196,7 @@ func (eng *DebtEngine) loadLiquidableAccounts(lastDebtSync int64) {
 func (eng *DebtEngine) addLiquidableAccount(sessionId string, newBlockNum int64) {
 	liquidableAccount := eng.liquidableBlockTracker[sessionId]
 	if liquidableAccount == nil {
-		eng.liquidableBlockTracker[sessionId] = &core.LiquidableAccount{
+		eng.liquidableBlockTracker[sessionId] = &schemas.LiquidableAccount{
 			SessionId: sessionId,
 			BlockNum:  newBlockNum,
 			Updated:   true,
@@ -213,7 +214,7 @@ func (eng *DebtEngine) notifiedIfLiquidable(sessionId string, notified bool) {
 }
 
 func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
-	data := core.DebtSync{}
+	data := schemas.DebtSync{}
 	query := "SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters where disabled=false"
 	err := eng.db.Raw(query).Find(&data).Error
 	if err != nil {
@@ -247,4 +248,9 @@ func (eng *DebtEngine) GetDebts() core.Json {
 	obj["debts"] = eng.debts
 	obj["currentDebts"] = eng.currentDebts
 	return obj
+}
+
+func CompareBalance(a, b *core.BigInt, token *ds.CumIndexAndUToken) bool {
+	precision := utils.GetPrecision(token.Symbol)
+	return utils.AlmostSameBigInt(a.Convert(), b.Convert(), token.Decimals-precision)
 }

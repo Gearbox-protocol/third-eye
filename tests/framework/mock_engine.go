@@ -3,53 +3,58 @@ package framework
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/stretchr/testify/require"
 	"math/big"
 	"strings"
 	"testing"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/stretchr/testify/require"
+
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func getTestAdapter(name string, lastSync int64, details core.Json) *core.SyncAdapter {
-	return &core.SyncAdapter{
-		LastSync: lastSync,
-		Contract: &core.Contract{
-			ContractName: name,
-			Address:      utils.RandomAddr(),
-			DiscoveredAt: lastSync,
-			FirstLogAt:   lastSync + 1,
+func getTestAdapter(name string, lastSync int64, details core.Json) *ds.SyncAdapter {
+	return &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			LastSync: lastSync,
+			Contract: &schemas.Contract{
+				ContractName: name,
+				Address:      utils.RandomAddr(),
+				DiscoveredAt: lastSync,
+				FirstLogAt:   lastSync + 1,
+			},
+			Details: details,
 		},
-		Details: details,
 	}
 }
 
 type SyncAdapterMock struct {
-	Adapters  []*core.SyncAdapter        `json:"adapters"`
-	CMState   []*core.CreditManagerState `json:"cmState"`
-	PoolState []*core.PoolState          `json:"poolState"`
-	Tokens    []*core.Token              `json:"tokens"`
+	Adapters  []*ds.SyncAdapter             `json:"adapters"`
+	CMState   []*schemas.CreditManagerState `json:"cmState"`
+	PoolState []*schemas.PoolState          `json:"poolState"`
+	Tokens    []*schemas.Token              `json:"tokens"`
 }
 
 type MockRepo struct {
-	Repo         core.RepositoryI
+	Repo         ds.RepositoryI
 	client       *TestClient
 	InputFile    *TestInput
 	AddressMap   core.AddressMap
-	SyncAdapters []*core.SyncAdapter
+	SyncAdapters []*ds.SyncAdapter
 	t            *testing.T
-	Eng          core.EngineI
+	Eng          ds.EngineI
 	//oracle to token
 	feedToToken   map[string]string
 	addressToType map[string]string
 	executeParser *MockExecuteParser
 }
 
-func NewMockRepo(repo core.RepositoryI, client *TestClient,
-	t *testing.T, eng core.EngineI, ep *MockExecuteParser) MockRepo {
+func NewMockRepo(repo ds.RepositoryI, client *TestClient,
+	t *testing.T, eng ds.EngineI, ep *MockExecuteParser) MockRepo {
 	return MockRepo{
 		Repo:          repo,
 		client:        client,
@@ -83,7 +88,7 @@ func (m *MockRepo) fetchInputTestFile(inputFile string) *TestInput {
 	// set feed to token
 	if syncAdapterObj != nil {
 		for _, adapter := range syncAdapterObj.Adapters {
-			if adapter.GetName() == core.ChainlinkPriceFeed {
+			if adapter.GetName() == ds.ChainlinkPriceFeed {
 				m.feedToToken[adapter.GetAddress()] = adapter.GetDetailsByKey("token")
 			}
 		}
@@ -109,23 +114,23 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		}
 		actualAdapter := m.Repo.PrepareSyncAdapter(adapter)
 		switch actualAdapter.GetName() {
-		case core.ChainlinkPriceFeed:
+		case ds.ChainlinkPriceFeed:
 			oracle := actualAdapter.GetDetailsByKey("oracle")
 			token := actualAdapter.GetDetailsByKey("token")
-			m.Repo.AddTokenOracle(&core.TokenOracle{
+			m.Repo.AddTokenOracle(&schemas.TokenOracle{
 				Token:       token,
 				Oracle:      oracle,
 				Feed:        actualAdapter.GetAddress(),
 				BlockNumber: actualAdapter.GetDiscoveredAt(),
 				Version:     actualAdapter.GetVersion()})
-		case core.CreditManager:
+		case ds.CreditManager:
 			for _, state := range obj.CMState {
 				if state.Address == actualAdapter.GetAddress() {
 					state.Sessions = map[string]string{}
 					actualAdapter.SetUnderlyingState(state)
 				}
 			}
-		case core.Pool:
+		case ds.Pool:
 			for _, state := range obj.PoolState {
 				if state.Address == actualAdapter.GetAddress() {
 					actualAdapter.SetUnderlyingState(state)
@@ -182,7 +187,7 @@ func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 	otherCalls := make(map[int64]map[string][]string)
 	for blockNum, block := range inputFile.Blocks {
 		otherCalls[blockNum] = block.Calls.OtherCalls
-		calls := core.NewDCCalls()
+		calls := ds.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
 			calls.Pools[poolCall.Addr] = poolCall
 		}

@@ -2,8 +2,9 @@ package debts
 
 import (
 	"context"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm/clause"
 	"math/big"
 )
@@ -23,7 +24,7 @@ func (eng *DebtEngine) CalCurrentDebts(to int64) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	var cmAddrToCumIndex map[string]*core.CumIndexAndUToken
+	var cmAddrToCumIndex map[string]*ds.CumIndexAndUToken
 	if len(eng.lastCSS) > 0 {
 		cmAddrToCumIndex = eng.GetCumulativeIndexAndDecimalForCMs(to, b.Time())
 	}
@@ -65,5 +66,5 @@ func (eng *DebtEngine) flushCurrentDebts(to int64) {
 	if err := tx.Commit().Error; err != nil {
 		log.Fatal(err)
 	}
-	eng.currentDebts = []*core.CurrentDebt{}
+	eng.currentDebts = []*schemas.CurrentDebt{}
 }

@@ -1,17 +1,17 @@
 package framework
 
 import (
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/debts"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/engine"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/repository"
-	"github.com/Gearbox-protocol/third-eye/utils"
 	"testing"
 )
 
-func NewEngs(t *testing.T, inputFiles []string) (MockRepo, core.DebtEngineI) {
+func NewEngs(t *testing.T, inputFiles []string) (MockRepo, ds.DebtEngineI) {
 	log.SetTestLogging(t)
 	client := NewTestClient()
 	cfg := &config.Config{}
