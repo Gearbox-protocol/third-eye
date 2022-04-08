@@ -204,7 +204,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 			if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
 				feed := lastPriceEvent.Feed
 				if utils.Contains(yearnFeeds, feed) {
-					eng.requestPriceFeed(blockNum, feed, tokenAddr)
+					eng.requestPriceFeed(blockNum, feed, tokenAddr, lastPriceEvent.IsPriceInUSD)
 				}
 			}
 		}
@@ -415,7 +415,7 @@ func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string
 	return data
 }
 
-func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
+func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string, isPriceInUSD bool) {
 	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(feed), eng.client)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
@@ -424,8 +424,6 @@ func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	version, err := yearnPFContract.Version(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
-	isPriceInUSD := version.Int64() > 1
 	var decimals int8 = 18 // for eth
 	if isPriceInUSD {
 		decimals = 8 // for usd

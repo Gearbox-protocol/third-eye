@@ -5,6 +5,5 @@ import (
 )
 
 var Module = fx.Options(
-	fx.Invoke(NewAMQPService),
 	fx.Provide(NewExecuteParser),
 )

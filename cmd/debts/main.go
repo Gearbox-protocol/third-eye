@@ -19,8 +19,8 @@ import (
 	"time"
 )
 
-func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, shutdowner fx.Shutdowner) {
-
+func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, config *config.Config,  shutdowner fx.Shutdowner) {
+	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl)
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

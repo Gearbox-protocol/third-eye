@@ -24,7 +24,7 @@ func (Pool) TableName() string {
 
 func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *Pool {
 	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
-	syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
+	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
 		syncAdapter,
 	)

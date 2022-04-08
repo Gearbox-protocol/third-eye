@@ -31,6 +31,11 @@ type DebtProfile struct {
 	Tokens                         map[string]TokenDetails `json:"tokens"`
 	UnderlyingDecimals             int8                    `json:"underlyingDecimals"`
 	*CumIndexAndUToken             `json:"poolDetails"`
+	DCFields                       struct {
+		HealthFactor                 *core.BigInt
+		TotalValueBI                 *core.BigInt
+		BorrowedAmountPlusInterestBI *core.BigInt
+	}
 }
 
 type CumIndexAndUToken struct {
@@ -52,8 +57,11 @@ func (c *CumIndexAndUToken) GetPrice(version int16) *big.Int {
 	return nil
 }
 
-func (debt *DebtProfile) Json() []byte {
-	str, err := json.Marshal(debt)
+func (profile *DebtProfile) Json() []byte {
+	profile.DCFields.BorrowedAmountPlusInterestBI = profile.Debt.BorrowedAmountPlusInterestBI
+	profile.DCFields.TotalValueBI = profile.Debt.TotalValueBI
+	profile.DCFields.HealthFactor = profile.Debt.HealthFactor
+	str, err := json.Marshal(profile)
 	if err != nil {
 		log.Fatal(err)
 	}

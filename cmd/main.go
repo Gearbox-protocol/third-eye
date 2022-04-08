@@ -22,7 +22,7 @@ import (
 )
 
 func StartServer(lc fx.Lifecycle, engine ds.EngineI, config *config.Config) {
-
+	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl)
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and
