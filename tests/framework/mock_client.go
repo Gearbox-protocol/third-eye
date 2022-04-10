@@ -246,6 +246,9 @@ func (t *TestClient) convertPrice(blockNum int64, data []byte) *big.Int {
 	newAmount = new(big.Int).Quo(newAmount, price1)
 	return newAmount
 }
+func (t *TestClient) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
+	return nil, nil
+}
 func (t *TestClient) getPrice(blockNum int64, tokenAddr string) *big.Int {
 	if t.prices[tokenAddr] != nil {
 		var lastprice *big.Int
