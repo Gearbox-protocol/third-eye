@@ -42,15 +42,6 @@ func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client core.Cli
 		},
 		Repo: repo,
 	}
-	// add token oracle for db
-	// feed is also oracle address for yearn address
-	// we don't relie on underlying feed
-	repo.AddTokenOracle(&schemas.TokenOracle{
-		Token:       token,
-		Oracle:      oracle,
-		Feed:        oracle,
-		BlockNumber: discoveredAt,
-		Version:     version})
 	return NewYearnPriceFeedFromAdapter(
 		syncAdapter,
 	)
@@ -167,4 +158,92 @@ func (mdl *YearnPriceFeed) setContracts(blockNum int64) {
 	decimals, err := yVaultContract.Decimals(opts)
 	log.CheckFatal(err)
 	mdl.DecimalDivider = utils.GetExpInt(int8(decimals))
+}
+
+func (mdl *YearnPriceFeed) AddToken(token string, discoveredAt int64) {
+	if mdl.Details == nil {
+		mdl.Details = core.Json{}
+	}
+	if mdl.Details["token"] != nil {
+		obj := map[string]interface{}{}
+		switch mdl.Details["token"].(type) {
+		case string:
+			prevToken := mdl.Details["token"].(string)
+			obj[prevToken] = []int64{mdl.DiscoveredAt}
+		case map[string]interface{}:
+			obj, _ = mdl.Details["token"].(map[string]interface{})
+			ints := ConvertToListOfInt64(obj[token])
+			if obj[token] != nil {
+				log.Warnf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, ints[0], discoveredAt)
+				return
+			}
+		}
+		obj[token] = []int64{discoveredAt}
+		mdl.Details["token"] = obj
+	} else {
+		log.Fatal("Can't reach this part in the yearn price feed")
+	}
+}
+
+func (mdl *YearnPriceFeed) DisableToken(token string, disabledAt int64) {
+	obj := map[string]interface{}{}
+	switch mdl.Details["token"].(type) {
+	case string:
+		obj[token] = []int64{mdl.DiscoveredAt, disabledAt}
+	case map[string]interface{}:
+		obj = mdl.Details["token"].(map[string]interface{})
+		ints := ConvertToListOfInt64(obj[token])
+		if len(ints) != 1 {
+			log.Fatal("%s's enable block number for pricefeed is malformed: %v", ints)
+		}
+		ints = append(ints, disabledAt)
+		obj[token] = ints
+	}
+	mdl.Details["token"] = obj
+}
+
+func (mdl *YearnPriceFeed) TokensValidAtBlock(blockNum int64) []string {
+	switch mdl.Details["token"].(type) {
+	case string:
+		tokens := []string{}
+		if mdl.DiscoveredAt <= blockNum {
+			tokens = append(tokens, mdl.Details["token"].(string))
+		}
+		return tokens
+	case map[string]interface{}:
+		tokens := []string{}
+		obj := mdl.Details["token"].(map[string]interface{})
+		for token, info := range obj {
+			ints := ConvertToListOfInt64(info)
+			if ints[0] <= blockNum && (len(ints) == 1 || blockNum < ints[1]) {
+				tokens = append(tokens, token)
+			}
+		}
+		return tokens
+	}
+	return nil
+}
+
+func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
+	switch list.(type) {
+	case []interface{}:
+		ints, ok := list.([]interface{})
+		if !ok {
+			panic("parsing list of int failed")
+		}
+		for _, int_ := range ints {
+			parsedInt, ok := int_.(int64)
+			if !ok {
+				log.Fatalf("parsing int failed %v", int_)
+			}
+			parsedInts = append(parsedInts, parsedInt)
+		}
+	case []int64:
+		ints, ok := list.([]int64)
+		if !ok {
+			panic("parsing accounts list for token transfer failed")
+		}
+		parsedInts = ints
+	}
+	return
 }

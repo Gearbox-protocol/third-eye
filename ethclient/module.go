@@ -1,11 +1,11 @@
 package ethclient
 
 import (
-	"go.uber.org/fx"
-	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/sdk-go/core"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/ethclient"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/config"
+	"go.uber.org/fx"
 )
 
 func NewEthClient(config *config.Config) core.ClientI {

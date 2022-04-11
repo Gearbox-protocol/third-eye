@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
 // for price oracle/feeds
@@ -36,7 +37,17 @@ func (repo *Repository) AddTokenOracle(tokenOracle *schemas.TokenOracle) {
 		currentFeed := repo.tokensCurrentOracle[tokenOracle.Version][tokenOracle.Token].Feed
 		log.Warnf("New feed(%s) discovered at %d for token(%s) old feed: %s",
 			tokenOracle.Feed, tokenOracle.BlockNumber, tokenOracle.Token, currentFeed)
-		repo.GetAdapter(currentFeed).SetBlockToDisableOn(tokenOracle.BlockNumber)
+		adapter := repo.GetAdapter(currentFeed)
+		if currentFeed == tokenOracle.Feed {
+			log.Warnf("Oracle Prev feed(%s) and new feed(%s) for token(%s) are same.",
+				currentFeed, tokenOracle.Feed, tokenOracle.Token)
+			return
+		}
+		if adapter.GetName() != ds.YearnPriceFeed {
+			adapter.SetBlockToDisableOn(tokenOracle.BlockNumber)
+		} else {
+			repo.aggregatedFeed.DisableYearnFeed(tokenOracle.Token, currentFeed, tokenOracle.BlockNumber)
+		}
 	}
 	// set current state of oracle for token.
 	repo.addTokenCurrentOracle(
@@ -52,4 +63,17 @@ func (repo *Repository) AddPriceFeed(blockNum int64, pf *schemas.PriceFeed) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.setAndGetBlock(blockNum).AddPriceFeed(pf)
+}
+
+func (repo *Repository) AddYearnFeed(token, oracle string, discoveredAt int64, version int16) {
+	// add token oracle for db
+	// feed is also oracle address for yearn address
+	// we don't relie on underlying feed
+	repo.AddTokenOracle(&schemas.TokenOracle{
+		Token:       token,
+		Oracle:      oracle,
+		Feed:        oracle,
+		BlockNumber: discoveredAt,
+		Version:     version})
+	repo.aggregatedFeed.AddYearnFeedOrToken(token, oracle, discoveredAt, version)
 }

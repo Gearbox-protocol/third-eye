@@ -93,7 +93,7 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 	for i, entry := range result {
 		if i < yearnFeedLen {
 			pf := mdl.processPriceData(blockNum, queryAbleAdapters[i], entry)
-			pfs = append(pfs, pf)
+			pfs = append(pfs, pf...)
 		} else {
 			tokenInd := (i - yearnFeedLen) / 3
 			callInd := i - yearnFeedLen - tokenInd*3
@@ -222,7 +222,7 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 	priceFeedABI := schemas.GetAbi(ds.YearnPriceFeed)
 	//
 	for _, adapter := range mdl.YearnFeeds {
-		if blockNum <= adapter.GetLastSync() || adapter.IsDisabled() {
+		if blockNum <= adapter.GetLastSync() || adapter.IsDisabled() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
 			continue
 		}
 		data, err := priceFeedABI.Pack("latestRoundData")
@@ -238,7 +238,7 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 	return
 }
 
-func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnPriceFeed, entry multicall.Multicall2Result) *schemas.PriceFeed {
+func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	priceFeedABI := schemas.GetAbi(ds.YearnPriceFeed)
 	var priceData *schemas.PriceFeed
 	if entry.Success {
@@ -265,10 +265,15 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 	} else {
 		priceData = adapter.calculatePriceFeedInternally(blockNum)
 	}
-	priceData.BlockNumber = blockNum
-	priceData.Token = adapter.GetTokenAddr()
-	priceData.Feed = adapter.GetAddress()
-	return priceData
+	priceFeeds := []*schemas.PriceFeed{}
+	for _, token := range adapter.TokensValidAtBlock(blockNum) {
+		priceDataCopy := priceData.Clone()
+		priceDataCopy.BlockNumber = blockNum
+		priceDataCopy.Token = token
+		priceDataCopy.Feed = adapter.GetAddress()
+		priceFeeds = append(priceFeeds, priceDataCopy)
+	}
+	return priceFeeds
 }
 
 func (mdl *AggregatedBlockFeed) Clear() {

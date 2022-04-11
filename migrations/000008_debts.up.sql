@@ -18,4 +18,5 @@ CREATE TABLE debts (
     collateral_usd DOUBLE PRECISION,
     collateral_underlying DOUBLE PRECISION
 );
-create index debts_session_id_index on debts using BTREE (session_id,block_num);
+create index debts_block_num on debts using BTREE (block_num);
+create index debts_session_id on debts using BTREE (session_id);

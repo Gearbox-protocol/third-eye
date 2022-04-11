@@ -13,7 +13,7 @@ import (
 
 type AggregatedBlockFeed struct {
 	*ds.SyncAdapter
-	YearnFeeds        []*YearnPriceFeed
+	YearnFeeds        map[string]*YearnPriceFeed
 	UniswapPools      []string
 	UniPoolByToken    map[string]*schemas.UniswapPools
 	TokenLastSync     map[string]int64
@@ -46,6 +46,7 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 		Interval:          interval,
 		mu:                &sync.Mutex{},
 		tokenInfos:        map[string]*schemas.Token{},
+		YearnFeeds:        map[string]*YearnPriceFeed{},
 	}
 }
 
@@ -55,14 +56,18 @@ func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter ds.SyncAdapterI) {
 		log.Fatal("Failed in parsing yearn feed for aggregated yearn feed")
 	}
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
-	mdl.YearnFeeds = append(mdl.YearnFeeds, yearnFeed)
+	mdl.YearnFeeds[adapter.GetAddress()] = yearnFeed
 }
 
 func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
 }
 
 func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
-	return mdl.YearnFeeds
+	feeds := []*YearnPriceFeed{}
+	for _, feed := range mdl.YearnFeeds {
+		feeds = append(feeds, feed)
+	}
+	return feeds
 }
 
 func (mdl *AggregatedBlockFeed) AddUniPools(token *schemas.Token, uniswapPools *schemas.UniswapPools) {
@@ -89,4 +94,16 @@ func (mdl *AggregatedBlockFeed) GetUniswapPools() (updatedPools []*schemas.Unisw
 		entry.Updated = false
 	}
 	return
+}
+
+func (mdl *AggregatedBlockFeed) AddYearnFeedOrToken(token, oracle string, discoveredAt int64, version int16) {
+	if mdl.YearnFeeds[oracle] != nil {
+		mdl.YearnFeeds[oracle].AddToken(token, discoveredAt)
+	} else {
+		mdl.YearnFeeds[oracle] = NewYearnPriceFeed(token, oracle, discoveredAt, mdl.Client, mdl.Repo, version)
+	}
+}
+
+func (mdl *AggregatedBlockFeed) DisableYearnFeed(token, oracle string, disabledAt int64) {
+	mdl.YearnFeeds[oracle].DisableToken(token, disabledAt)
 }

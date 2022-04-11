@@ -69,7 +69,7 @@ func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.Aggregate
 	}
 }
 
-func NewDBhandler(db *gorm.DB, client *ethclient.Client) *DBhandler {
+func NewDBhandler(db *gorm.DB, client core.ClientI) *DBhandler {
 	blockFeed := aggregated_block_feed.NewAggregatedBlockFeed(client, nil, 1)
 	obj := &DBhandler{db: db,
 		ChainlinkPrices:    map[string]schemas.SortedPriceFeed{},

@@ -51,7 +51,7 @@ type SyncAdapterI interface {
 	GetAdapterState() *SyncAdapter
 	OnlyQueryAllowed() bool
 	Query(queryTill int64)
-	DisableOnBlock(currentBlock int64)
+	disableOnBlock(currentBlock int64)
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
 	GetDiscoveredAt() int64
@@ -85,7 +85,7 @@ func (s *SyncAdapter) OnLogs(txLog []types.Log) {
 
 }
 
-func (s *SyncAdapter) DisableOnBlock(currentBlock int64) {
+func (s *SyncAdapter) disableOnBlock(currentBlock int64) {
 	if s.BlockToDisableOn != 0 && currentBlock >= s.BlockToDisableOn {
 		log.Warnf("DisableOnBlock at currentBlock(%d) and s.BlockToDisableOn(%d) for %s(%s)",
 			currentBlock, s.BlockToDisableOn, s.ContractName, s.Address)
@@ -125,7 +125,7 @@ func (s *SyncAdapter) SetError(err error) {
 
 func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
 	s.SetLastSync(syncTill)
-	s.DisableOnBlock(syncTill)
+	s.disableOnBlock(syncTill)
 }
 func (s *SyncAdapter) Query(queryTill int64) {
 }
