@@ -170,12 +170,20 @@ func (mdl *YearnPriceFeed) AddToken(token string, discoveredAt int64) {
 		case string:
 			prevToken := mdl.Details["token"].(string)
 			obj[prevToken] = []int64{mdl.DiscoveredAt}
+			if prevToken == token {
+				log.Warnf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, mdl.DiscoveredAt, discoveredAt)
+				return
+			}
 		case map[string]interface{}:
 			obj, _ = mdl.Details["token"].(map[string]interface{})
 			ints := ConvertToListOfInt64(obj[token])
-			if obj[token] != nil {
+			// token is already in enabled state, we are trying to add again
+			if obj[token] != nil && len(ints) == 1 {
 				log.Warnf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, ints[0], discoveredAt)
 				return
+				// token is disabled so reenable and add to logs
+			} else if len(ints) == 2 {
+				mdl.Details["logs"] = append(parseLogArray(mdl.Details["logs"]), []interface{}{token, ints})
 			}
 		}
 		obj[token] = []int64{discoveredAt}
@@ -183,6 +191,24 @@ func (mdl *YearnPriceFeed) AddToken(token string, discoveredAt int64) {
 	} else {
 		log.Fatal("Can't reach this part in the yearn price feed")
 	}
+}
+
+func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
+	if logs != nil {
+		l, ok := logs.([]interface{})
+		if !ok {
+			log.Fatal("failed in converting to log array", logs)
+		}
+		for _, ele := range l {
+			obj, ok  := ele.([]interface{})
+			if !ok {
+				log.Fatal("failed in converting to log array element", ele)
+			}
+			parsedEle := []interface{}{obj[0].(string), ConvertToListOfInt64(obj[1])}
+			parsedLogs = append(parsedLogs, parsedEle)
+		}
+	}
+	return 
 }
 
 func (mdl *YearnPriceFeed) DisableToken(token string, disabledAt int64) {
