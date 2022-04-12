@@ -258,9 +258,15 @@ func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
 			panic("parsing list of int failed")
 		}
 		for _, int_ := range ints {
-			parsedInt, ok := int_.(int64)
-			if !ok {
-				log.Fatalf("parsing int failed %v", int_)
+			var parsedInt int64
+			switch int_.(type) {
+				case int64:
+					parsedInt = int_.(int64)
+				case float64:
+					parsedFloat := int_.(float64)
+					parsedInt = int64(parsedFloat)
+				default:
+					log.Fatalf("YearnPriceFeed token start/end block_num not in int format %v", int_)
 			}
 			parsedInts = append(parsedInts, parsedInt)
 		}
