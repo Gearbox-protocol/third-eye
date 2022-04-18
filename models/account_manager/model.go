@@ -1,10 +1,11 @@
 package account_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 
 	//
 	"github.com/ethereum/go-ethereum/common"
@@ -13,30 +14,32 @@ import (
 )
 
 type AccountManager struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	node          *core.Node
 	AccountHashes []common.Hash
 	isAccount     map[string]bool
 }
 
-func NewAccountManager(addr string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *AccountManager {
-	syncAdapter := &core.SyncAdapter{
-		Contract: &core.Contract{
-			Address:      addr,
-			DiscoveredAt: discoveredAt,
-			FirstLogAt:   discoveredAt,
-			ContractName: core.AccountManager,
-			Client:       client,
+func NewAccountManager(addr string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *AccountManager {
+	syncAdapter := &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				Address:      addr,
+				DiscoveredAt: discoveredAt,
+				FirstLogAt:   discoveredAt,
+				ContractName: ds.AccountManager,
+				Client:       client,
+			},
+			LastSync: discoveredAt - 1,
 		},
-		LastSync: discoveredAt - 1,
-		Repo:     repo,
+		Repo: repo,
 	}
 	return NewAccountManagerFromAdapter(
 		syncAdapter,
 	)
 }
 
-func NewAccountManagerFromAdapter(adapter *core.SyncAdapter) *AccountManager {
+func NewAccountManagerFromAdapter(adapter *ds.SyncAdapter) *AccountManager {
 	obj := &AccountManager{
 		SyncAdapter: adapter,
 		isAccount:   map[string]bool{},
@@ -58,7 +61,7 @@ func (mdl *AccountManager) OnLog(txLog types.Log) {
 		if !ok {
 			log.Fatal("Failed parsing value")
 		}
-		tt := &core.TokenTransfer{
+		tt := &schemas.TokenTransfer{
 			BlockNum:      int64(txLog.BlockNumber),
 			LogID:         txLog.Index,
 			Token:         txLog.Address.Hex(),

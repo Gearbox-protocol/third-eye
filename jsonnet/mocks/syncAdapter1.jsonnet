@@ -7,30 +7,36 @@
         dc:
           // data compressor should be deployed before it is used
           { '1': '0x0050b1ABD1DD2D9b01ce954E663ff3DbCa9193B1' },
+        priceOracles: ['#PriceOracle_1'],
       },
       lastSync: 1,
+      version: 1,
     },
     {
       // on usdc
       type: 'Pool',
       address: '#Pool_1',
       lastSync: 2,
+      version: 1,
     },
     {
       type: 'AccountFactory',
       address: '#AccountFactory_1',
       lastSync: 2,
+      version: 1,
     },
     {
       type: 'ACL',
       address: '#ACL_1',
       lastSync: 2,
+      version: 1,
     },
     {
       // on usdc
       type: 'CreditManager',
       address: '#CreditManager_1',
       lastSync: 2,
+      version: 1,
     },
     {
       type: 'CreditFilter',
@@ -39,11 +45,14 @@
         creditManager: '#CreditManager_1',
       },
       lastSync: 2,
+      version: 1,
     },
     {
       type: 'PriceOracle',
       address: '#PriceOracle_1',
       lastSync: 2,
+      version: 1,
+
     },
     {
       type: 'ChainlinkPriceFeed',
@@ -54,6 +63,8 @@
         dieselToken: '#DieselToken_1',
       },
       lastSync: 2,
+      version: 1,
+
     },
     {
       type: 'AccountManager',
@@ -71,6 +82,8 @@
         token: '#Token_2',
       },
       lastSync: 2,
+      version: 1,
+
     },
   ],
   poolState: [

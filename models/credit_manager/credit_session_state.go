@@ -1,9 +1,10 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"math/big"
 )
 
@@ -16,7 +17,7 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 	for sessionId, closeDetails := range mdl.ClosedSessions {
 		updates := mdl.UpdatedSessions[sessionId]
 		if updates != 0 {
-			log.Fatal("Session: %s updated %d before close %+v in block %d\n", sessionId, updates, closeDetails, blockNum)
+			log.Fatalf("Session: %s updated %d before close %+v in block %d\n", sessionId, updates, closeDetails, blockNum)
 		}
 		mdl.closeSession(sessionId, blockNum, closeDetails)
 	}
@@ -27,11 +28,10 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDetails *SessionCloseDetails) {
 	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
-	session := mdl.Repo.GetCreditSession(sessionId)
+	session := mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{})
 	// set session fields
 	session.ClosedAt = blockNum
 	session.Status = closeDetails.Status
-	session.IsDirty = true
 	// this checks prevent getting data for credit session that exist only within a block
 	// datacompressor query will fail
 	if session.Since == session.ClosedAt {
@@ -40,26 +40,34 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
+	var amountToPool *big.Int
+	switch closeDetails.Status {
+	case schemas.Closed,
+		schemas.Repaid:
+		amountToPool = data.RepayAmount
+	case schemas.Liquidated:
+		amountToPool = data.LiquidationAmount
+	}
 	// pool repay
 	mdl.PoolRepay(blockNum,
 		closeDetails.LogId,
 		closeDetails.TxHash,
 		sessionId,
 		closeDetails.Borrower,
-		data.RepayAmount)
+		amountToPool)
 
-	if closeDetails.RemainingFunds == nil && closeDetails.Status == core.Repaid {
+	if closeDetails.RemainingFunds == nil && closeDetails.Status == schemas.Repaid {
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
 		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmount
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
 	}
 
 	// credit manager state
-	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, data.RepayAmount)
+	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, amountToPool)
 	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
 	//
 	// create session snapshot
-	css := core.CreditSessionSnapshot{}
+	css := schemas.CreditSessionSnapshot{}
 	mdl.Repo.SetBlock(blockNum - 1)
 	css.BlockNum = blockNum - 1
 	css.SessionId = sessionId
@@ -69,14 +77,16 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account)
+	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account, session.Version)
 	// set balances
 	var err error
 	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
 	if err != nil {
 		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
 	}
-	session.Balances = css.Balances
+	if closeDetails.Status != schemas.Closed || session.Version != 2 { // neg( closed on v2)
+		session.Balances = css.Balances
+	}
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
@@ -85,14 +95,13 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 }
 
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
-	session := mdl.Repo.GetCreditSession(sessionId)
-	session.IsDirty = true
+	session := mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{})
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
 	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
 	// create session snapshot
-	css := core.CreditSessionSnapshot{}
+	css := schemas.CreditSessionSnapshot{}
 	css.BlockNum = blockNum
 	css.SessionId = sessionId
 	css.CollateralInUSD = session.CollateralInUSD
@@ -101,7 +110,7 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.HealthFactor = session.HealthFactor
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account)
+	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account, session.Version)
 	// set balances of css and credit session
 	var err error
 	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)

@@ -5,13 +5,13 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/Gearbox-protocol/third-eye/artifacts/addressProvider"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/addressProvider"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/services"
-	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -120,7 +120,7 @@ func (am *AccountMining) isMiningStarted(gearToken string) {
 	}
 }
 
-func StartServer(lc fx.Lifecycle, client ethclient.ClientI, config *config.Config) {
+func StartServer(lc fx.Lifecycle, client core.ClientI, config *config.Config) {
 
 	// Starting server
 	lc.Append(fx.Hook{

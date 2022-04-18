@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20220418213806-470d93c924e6 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -52,3 +53,7 @@ require (
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
+
+// replace (
+// 	github.com/Gearbox-protocol/sdk-go v0.0.0-20220410090500-000ab36fc482 => ../sdk-go
+// )

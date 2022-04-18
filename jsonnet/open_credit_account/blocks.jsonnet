@@ -189,9 +189,10 @@
     {
       blockNum: 3,
       feed: '#ChainlinkPriceFeed_1',
-      priceETH: 1e-18,
-      priceETHBI: '1',
+      price: 1e-18,
+      priceBI: '1',
       roundId: 300000000000000,
+      isPriceInUSD: false,
       token: '#Token_1',
       uniPriceFetchBlock: 0,
       uniswapv2Price: 0,

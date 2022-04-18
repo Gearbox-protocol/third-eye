@@ -6,9 +6,10 @@ import (
 
 	"math"
 
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -26,7 +27,7 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 		uniPricesInd++
 	}
 	for _, txLog := range txLogs {
-		var priceFeed *core.PriceFeed
+		var priceFeed *schemas.PriceFeed
 		blockNum := int64(txLog.BlockNumber)
 		switch txLog.Topics[0] {
 		case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
@@ -39,14 +40,20 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			if !ok {
 				log.Fatal("answer parsing failed")
 			}
+			isPriceInUSD := mdl.GetVersion() > 1
+			var decimals int8 = 18 // for eth
+			if isPriceInUSD {
+				decimals = 8 // for usd
+			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
-			priceFeed = &core.PriceFeed{
-				BlockNumber: blockNum,
-				Token:       mdl.Token,
-				Feed:        mdl.Address,
-				RoundId:     roundId,
-				PriceETHBI:  (*core.BigInt)(answerBI),
-				PriceETH:    utils.GetFloat64Decimal(answerBI, 18),
+			priceFeed = &schemas.PriceFeed{
+				BlockNumber:  blockNum,
+				Token:        mdl.Token,
+				Feed:         mdl.Address,
+				RoundId:      roundId,
+				PriceBI:      (*core.BigInt)(answerBI),
+				Price:        utils.GetFloat64Decimal(answerBI, decimals),
+				IsPriceInUSD: isPriceInUSD,
 			}
 			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
 				mdl.compareDiff(mdl.prevPriceFeed, uniPrices[uniPricesInd])
@@ -79,20 +86,21 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 	}
 }
 
-func (mdl *ChainlinkPriceFeed) compareDiff(pf *core.PriceFeed, uniPoolPrices *core.UniPoolPrices) {
+func (mdl *ChainlinkPriceFeed) compareDiff(pf *schemas.PriceFeed, uniPoolPrices *schemas.UniPoolPrices) {
 	// previous pricefeed can be nil
 	if pf == nil {
 		return
 	}
-	mdl.Repo.AddUniPriceAndChainlinkRelation(&core.UniPriceAndChainlink{
+	mdl.Repo.AddUniPriceAndChainlinkRelation(&schemas.UniPriceAndChainlink{
 		UniBlockNum:          uniPoolPrices.BlockNum,
 		ChainlinkBlockNumber: pf.BlockNumber,
 		Token:                pf.Token,
 		Feed:                 pf.Feed,
 	})
-	if (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
-		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
-		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
+	// For usd
+	if mdl.GetVersion() <= 1 && (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.Price)) ||
+		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.Price)) ||
+		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.Price)) {
 		if !mdl.isNotified() {
 			mdl.uniPriceVariationNotify(pf, uniPoolPrices)
 			mdl.Details["notified"] = true
@@ -106,7 +114,7 @@ func greaterFluctuation(a, b float64) bool {
 	return math.Abs((a-b)/a) > 0.03
 }
 
-func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPrices *core.UniPoolPrices) {
+func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *schemas.PriceFeed, uniPrices *schemas.UniPoolPrices) {
 	symbol := mdl.Repo.GetToken(mdl.Token).Symbol
 	log.Infof(`Token:%s(%s) =>
 	Chainlink BlockNum:%d %f
@@ -114,7 +122,7 @@ func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *core.PriceFeed, uniPr
 	Uniswapv2 Price: %f
 	Uniswapv3 Price: %f
 	Uniswapv3 Twap: %f\n`, symbol, mdl.Token,
-		pf.BlockNumber, pf.PriceETH,
+		pf.BlockNumber, pf.Price,
 		uniPrices.BlockNum, uniPrices.PriceV2, uniPrices.PriceV3, uniPrices.TwapV3)
 }
 
@@ -131,8 +139,8 @@ func (mdl *ChainlinkPriceFeed) isNotified() bool {
 
 func (mdl *ChainlinkPriceFeed) SetUnderlyingState(obj interface{}) {
 	switch obj.(type) {
-	case (*core.PriceFeed):
-		state := obj.(*core.PriceFeed)
+	case (*schemas.PriceFeed):
+		state := obj.(*schemas.PriceFeed)
 		mdl.prevPriceFeed = state
 	default:
 		log.Fatal("Type assertion for chainlink state failed")

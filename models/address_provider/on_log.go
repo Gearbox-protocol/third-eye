@@ -1,8 +1,9 @@
 package address_provider
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -33,6 +34,17 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			cr := contract_register.NewContractRegister(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(cr)
 		case "PRICE_ORACLE":
+			//
+			if mdl.Details == nil {
+				mdl.Details = make(map[string]interface{})
+			}
+			var priceOracles []string
+			if mdl.Details["priceOracles"] != nil {
+				priceOracles = append(priceOracles, utils.ConvertToListOfString(mdl.Details["priceOracles"])...)
+			}
+			priceOracles = append(priceOracles, address)
+			mdl.Details["priceOracles"] = priceOracles
+			//
 			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(po)
 		case "ACCOUNT_FACTORY":

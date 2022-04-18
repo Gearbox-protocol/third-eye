@@ -1,68 +1,76 @@
 package aggregated_block_feed
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math"
 	"sync"
 )
 
 type AggregatedBlockFeed struct {
-	*core.SyncAdapter
-	YearnFeeds        []*YearnPriceFeed
+	*ds.SyncAdapter
+	YearnFeeds        map[string]*YearnPriceFeed
 	UniswapPools      []string
-	UniPoolByToken    map[string]*core.UniswapPools
+	UniPoolByToken    map[string]*schemas.UniswapPools
 	TokenLastSync     map[string]int64
-	UniPricesByTokens map[string]core.SortedUniPoolPrices
+	UniPricesByTokens map[string]schemas.SortedUniPoolPrices
 	Interval          int64
 	mu                *sync.Mutex
-	tokenInfos        map[string]*core.Token
+	tokenInfos        map[string]*schemas.Token
 }
 
-func NewAggregatedBlockFeed(client ethclient.ClientI, repo core.RepositoryI, interval int64) *AggregatedBlockFeed {
-	syncAdapter := &core.SyncAdapter{
-		Contract: &core.Contract{
-			// Address:      oracle,
-			// DiscoveredAt: discoveredAt,
-			// FirstLogAt:   discoveredAt,
-			ContractName: core.AggregatedBlockFeed,
-			Client:       client,
+func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval int64) *AggregatedBlockFeed {
+	syncAdapter := &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				// Address:      oracle,
+				// DiscoveredAt: discoveredAt,
+				// FirstLogAt:   discoveredAt,
+				ContractName: ds.AggregatedBlockFeed,
+				Client:       client,
+			},
+			LastSync: math.MaxInt64,
 		},
-		LastSync:  math.MaxInt64,
 		Repo:      repo,
 		OnlyQuery: true,
 	}
 	return &AggregatedBlockFeed{
-		UniPoolByToken:    map[string]*core.UniswapPools{},
-		UniPricesByTokens: map[string]core.SortedUniPoolPrices{},
+		UniPoolByToken:    map[string]*schemas.UniswapPools{},
+		UniPricesByTokens: map[string]schemas.SortedUniPoolPrices{},
 		SyncAdapter:       syncAdapter,
 		TokenLastSync:     map[string]int64{},
 		Interval:          interval,
 		mu:                &sync.Mutex{},
-		tokenInfos:        map[string]*core.Token{},
+		tokenInfos:        map[string]*schemas.Token{},
+		YearnFeeds:        map[string]*YearnPriceFeed{},
 	}
 }
 
-func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter core.SyncAdapterI) {
+func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter ds.SyncAdapterI) {
 	yearnFeed, ok := adapter.(*YearnPriceFeed)
 	if !ok {
 		log.Fatal("Failed in parsing yearn feed for aggregated yearn feed")
 	}
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
-	mdl.YearnFeeds = append(mdl.YearnFeeds, yearnFeed)
+	mdl.YearnFeeds[adapter.GetAddress()] = yearnFeed
 }
 
 func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
 }
 
 func (mdl *AggregatedBlockFeed) GetYearnFeeds() []*YearnPriceFeed {
-	return mdl.YearnFeeds
+	feeds := []*YearnPriceFeed{}
+	for _, feed := range mdl.YearnFeeds {
+		feeds = append(feeds, feed)
+	}
+	return feeds
 }
 
-func (mdl *AggregatedBlockFeed) AddUniPools(token *core.Token, uniswapPools *core.UniswapPools) {
+func (mdl *AggregatedBlockFeed) AddUniPools(token *schemas.Token, uniswapPools *schemas.UniswapPools) {
 	if mdl.UniPoolByToken[uniswapPools.Token] == nil {
 		mdl.UniPoolByToken[uniswapPools.Token] = uniswapPools
 	}
@@ -78,7 +86,7 @@ func (mdl *AggregatedBlockFeed) AddLastSyncForToken(token string, lastSync int64
 	mdl.TokenLastSync[token] = utils.Min(mdl.TokenLastSync[token], lastSync)
 }
 
-func (mdl *AggregatedBlockFeed) GetUniswapPools() (updatedPools []*core.UniswapPools) {
+func (mdl *AggregatedBlockFeed) GetUniswapPools() (updatedPools []*schemas.UniswapPools) {
 	for _, entry := range mdl.UniPoolByToken {
 		if entry.Updated {
 			updatedPools = append(updatedPools, entry)
@@ -86,4 +94,16 @@ func (mdl *AggregatedBlockFeed) GetUniswapPools() (updatedPools []*core.UniswapP
 		entry.Updated = false
 	}
 	return
+}
+
+func (mdl *AggregatedBlockFeed) AddYearnFeedOrToken(token, oracle string, discoveredAt int64, version int16) {
+	if mdl.YearnFeeds[oracle] != nil {
+		mdl.YearnFeeds[oracle].AddToken(token, discoveredAt)
+	} else {
+		mdl.YearnFeeds[oracle] = NewYearnPriceFeed(token, oracle, discoveredAt, mdl.Client, mdl.Repo, version)
+	}
+}
+
+func (mdl *AggregatedBlockFeed) DisableYearnFeed(token, oracle string, disabledAt int64) {
+	mdl.YearnFeeds[oracle].DisableToken(token, disabledAt)
 }

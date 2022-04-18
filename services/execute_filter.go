@@ -1,21 +1,22 @@
 package services
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
 type ExecuteFilter struct {
-	paramsList    []core.ExecuteParams
+	paramsList    []ds.ExecuteParams
 	paramsIndex   int
 	creditManager common.Address
 }
 
-func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*core.KnownCall {
-	var calls []*core.KnownCall
+func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*ds.KnownCall {
+	var calls []*ds.KnownCall
 	if ef.paramsIndex >= len(ef.paramsList) {
 		return calls
 	}
@@ -41,13 +42,13 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*core.KnownCall {
 	return calls
 }
 
-func (call *Call) dappCall(dappAddr common.Address) *core.KnownCall {
+func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) && dappAddr == common.HexToAddress(call.To) {
 		name, arguments := ParseCallData(call.Input)
 		if arguments == nil {
 			log.Fatalf("%s %#v %#v\n", name, arguments, call)
 		}
-		return &core.KnownCall{
+		return &ds.KnownCall{
 			Name: name,
 			Args: arguments,
 		}

@@ -9,18 +9,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Gearbox-protocol/third-eye/artifacts/curveV1Adapter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/iSwapRouter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapV2Adapter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/uniswapV3Adapter"
-	"github.com/Gearbox-protocol/third-eye/artifacts/yearnAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV2Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV3Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnAdapter"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 )
 
 type ExecuteParams struct {
@@ -39,7 +42,7 @@ type ExecuteParser struct {
 	ChainId             uint
 }
 
-func NewExecuteParser(config *config.Config) core.ExecuteParserI {
+func NewExecuteParser(config *config.Config) ds.ExecuteParserI {
 	return &ExecuteParser{
 		Client:              http.Client{},
 		IgnoreCMEventIds:    utils.GetCreditManagerEventIds(),
@@ -113,7 +116,7 @@ func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
 	return trace
 }
 
-func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []core.ExecuteParams) []*core.KnownCall {
+func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	trace := ep.GetTxTrace(txHash)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)
@@ -133,9 +136,12 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 
 var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
 	uniswapV2Adapter.UniswapV2AdapterABI, uniswapV3Adapter.UniswapV3AdapterABI,
-	iSwapRouter.ISwapRouterABI}
+	iSwapRouter.ISwapRouterABI,
+	// creditfacade for credit manager onlogs
+}
 
 var abiParsers []abi.ABI
+var creditFacadeParser abi.ABI
 
 func init() {
 	for _, abiJSON := range abiJSONs {
@@ -145,6 +151,33 @@ func init() {
 		}
 		abiParsers = append(abiParsers, abiParser)
 	}
+
+	abiParser, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI))
+	if err != nil {
+		log.Fatal(err)
+	}
+	creditFacadeParser = abiParser
+}
+func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
+	hexData, err := hex.DecodeString(input[2:])
+	method, err := creditFacadeParser.MethodById(hexData[:4])
+	if err != nil {
+		return nil, err
+	}
+	// unpack in the map
+	data := map[string]interface{}{}
+	err = method.Inputs.UnpackIntoMap(data, hexData[4:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	multicalls, ok := data["calls"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Not able to parse(%s) multicalls", data["calls"])
+	}
+	return &ds.FuncWithMultiCall{
+		Name:          method.Name,
+		MultiCallsLen: len(multicalls),
+	}, nil
 }
 
 //https://ethereum.stackexchange.com/questions/29809/how-to-decode-input-data-with-abi-using-golang/100247
@@ -176,4 +209,83 @@ func ParseCallData(input string) (string, *core.Json) {
 	}
 	log.Fatal("No method for input: ", input)
 	return "", nil
+}
+
+// parser functions for v2
+func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FuncWithMultiCall {
+	trace := ep.GetTxTrace(txHash)
+	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
+	if err != nil {
+		log.Fatal(err.Error(), "for txHash", txHash)
+	}
+	return data
+}
+func (ep *ExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, accounts []string) core.Transfers {
+	trace := ep.GetTxTrace(txHash)
+	return ep.getTransfersToUser(trace, borrower, account, underlyingToken, accounts)
+}
+
+func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*ds.FuncWithMultiCall, error) {
+	mainEvents := []*ds.FuncWithMultiCall{}
+	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
+		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
+			switch call.Input[:10] {
+			case "caa5c23f", // multicall
+				"5f73fbec", // closeCreditAccount
+				"5d91a0e0", // liquidateCreditAccount
+				"47639fa8": // openCreditAccountMulticall
+				event, err := getCreditFacadeMainEvent(call.Input)
+				if err != nil {
+					return nil, err
+				}
+				mainEvents = append(mainEvents, event)
+			}
+		} else {
+			for _, c := range call.Calls {
+				c.Depth = call.Depth + 1
+				data, err := ep.getMainEvents(c, creditFacade)
+				if err != nil {
+					return nil, err
+				}
+				mainEvents = append(mainEvents, data...)
+			}
+		}
+	}
+	return mainEvents, nil
+}
+
+func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, borrower, account, underlyingToken string, accounts []string) core.Transfers {
+	transfers := core.Transfers{}
+	for _, raw := range trace.Logs {
+		eventLog := raw.Raw
+		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+			to := common.HexToAddress(eventLog.Topics[2])
+			from := common.HexToAddress(eventLog.Topics[1]).Hex()
+			token := common.HexToAddress(eventLog.Address).Hex()
+			var sign *big.Int
+			if from == borrower && to.Hex() == account && token == underlyingToken {
+				sign = big.NewInt(-1)
+			} else {
+				var isTransferToUser bool
+				for _, account := range accounts {
+					isTransferToUser = isTransferToUser || common.HexToAddress(account) == to
+				}
+				if !isTransferToUser {
+					continue
+				}
+				sign = big.NewInt(1)
+			}
+			amt, b := new(big.Int).SetString(eventLog.Data[2:], 16)
+			if !b {
+				log.Fatal("failed at serializing transfer data in int")
+			}
+			amt = new(big.Int).Mul(sign, amt)
+			oldBalance := new(big.Int)
+			if transfers[token] != nil {
+				oldBalance = transfers[token]
+			}
+			transfers[token] = new(big.Int).Add(amt, oldBalance)
+		}
+	}
+	return transfers
 }

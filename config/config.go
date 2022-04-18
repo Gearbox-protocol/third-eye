@@ -1,9 +1,3 @@
-/*
- * Gearbox monitoring
- * Copyright (c) 2021. Mikael Lazarev
- *
- */
-
 package config
 
 type Config struct {

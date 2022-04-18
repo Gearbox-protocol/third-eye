@@ -3,14 +3,18 @@ package aggregated_block_feed
 import (
 	"math/big"
 	"strings"
+	"sync"
 	"time"
 
-	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+
 	// "fmt"
 	"sort"
 )
@@ -28,9 +32,11 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	rounds := 0
 	loopStartTime := time.Now()
 	roundStartTime := time.Now()
+	wg := &sync.WaitGroup{}
 	for blockNum := queryFrom; blockNum <= queryTill; blockNum += mdl.Interval {
 		ch <- 1
-		go mdl.queryAsync(blockNum, ch)
+		wg.Add(1)
+		go mdl.queryAsync(blockNum, ch, wg)
 		if rounds%100 == 0 {
 			timeLeft := (time.Now().Sub(loopStartTime).Seconds() * float64(queryTill-blockNum)) /
 				float64(blockNum-mdl.GetLastSync())
@@ -40,10 +46,10 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 		}
 		rounds++
 	}
-	for i:=0; i < concurrentThreads; i++ {
-		ch<-1
-	}
+	wg.Wait()
+
 	for _, adapter := range mdl.YearnFeeds {
+		// yearn price feed can't be disabled from v2
 		if queryTill <= adapter.GetLastSync() || adapter.IsDisabled() {
 			continue
 		}
@@ -70,7 +76,7 @@ func powFloat(a *big.Int) *big.Float {
 	return new(big.Float).Quo(big.NewFloat(1), ans)
 }
 
-func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int) {
+func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGroup) {
 	weth := mdl.Repo.GetWETHAddr()
 	pfs, pricesByToken := mdl.QueryData(blockNum, weth, "all")
 	for _, pf := range pfs {
@@ -78,9 +84,10 @@ func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int) {
 	}
 	mdl.updatePrice(pricesByToken)
 	<-ch
+	wg.Done()
 }
 
-func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery string) ([]*core.PriceFeed, map[string]*core.UniPoolPrices) {
+func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery string) ([]*schemas.PriceFeed, map[string]*schemas.UniPoolPrices) {
 	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
 	poolCalls, uniTokens := mdl.getUniswapPoolCalls(blockNum, whatToQuery)
 	calls = append(calls, poolCalls...)
@@ -88,20 +95,20 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 	result := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
 	//
 	yearnFeedLen := len(queryAbleAdapters)
-	v2ABI := core.GetAbi("Uniswapv2Pool")
-	v3ABI := core.GetAbi("Uniswapv3Pool")
-	var pfs []*core.PriceFeed
-	pricesByToken := map[string]*core.UniPoolPrices{}
+	v2ABI := schemas.GetAbi("Uniswapv2Pool")
+	v3ABI := schemas.GetAbi("Uniswapv3Pool")
+	var pfs []*schemas.PriceFeed
+	pricesByToken := map[string]*schemas.UniPoolPrices{}
 	for i, entry := range result {
 		if i < yearnFeedLen {
 			pf := mdl.processPriceData(blockNum, queryAbleAdapters[i], entry)
-			pfs = append(pfs, pf)
+			pfs = append(pfs, pf...)
 		} else {
 			tokenInd := (i - yearnFeedLen) / 3
 			callInd := i - yearnFeedLen - tokenInd*3
 			token := uniTokens[tokenInd]
 			tokenDetails := mdl.tokenInfos[token]
-			prices := &core.UniPoolPrices{BlockNum: blockNum}
+			prices := &schemas.UniPoolPrices{BlockNum: blockNum}
 			if pricesByToken[token] != nil {
 				prices = pricesByToken[token]
 			}
@@ -158,7 +165,7 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 	return pfs, pricesByToken
 }
 
-func (mdl *AggregatedBlockFeed) updatePrice(pricesByToken map[string]*core.UniPoolPrices) {
+func (mdl *AggregatedBlockFeed) updatePrice(pricesByToken map[string]*schemas.UniPoolPrices) {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	for token, prices := range pricesByToken {
@@ -187,8 +194,8 @@ func squareIt(a *big.Int) *big.Int {
 	return new(big.Int).Mul(a, a)
 }
 func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery string) (calls []multicall.Multicall2Call, tokens []string) {
-	v2ABI := core.GetAbi("Uniswapv2Pool")
-	v3ABI := core.GetAbi("Uniswapv3Pool")
+	v2ABI := schemas.GetAbi("Uniswapv2Pool")
+	v3ABI := schemas.GetAbi("Uniswapv3Pool")
 	for token, pools := range mdl.UniPoolByToken {
 		if whatToQuery != "all" && whatToQuery != token {
 			continue
@@ -221,10 +228,10 @@ func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery 
 }
 
 func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*YearnPriceFeed) {
-	priceFeedABI := core.GetAbi(core.YearnPriceFeed)
+	priceFeedABI := schemas.GetAbi(ds.YearnPriceFeed)
 	//
 	for _, adapter := range mdl.YearnFeeds {
-		if blockNum <= adapter.GetLastSync() || adapter.IsDisabled() {
+		if blockNum <= adapter.GetLastSync() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
 			continue
 		}
 		data, err := priceFeedABI.Pack("latestRoundData")
@@ -235,16 +242,15 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 		}
 		calls = append(calls, call)
 		queryAbleAdapters = append(queryAbleAdapters, adapter)
-		adapter.AfterSyncHook(blockNum)
 	}
 	return
 }
 
-func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnPriceFeed, entry multicall.Multicall2Result) *core.PriceFeed {
-	priceFeedABI := core.GetAbi(core.YearnPriceFeed)
-	var priceData *core.PriceFeed
+func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
+	priceFeedABI := schemas.GetAbi(ds.YearnPriceFeed)
+	var priceData *schemas.PriceFeed
 	if entry.Success {
-		roundData := core.LatestRounData{}
+		roundData := schemas.LatestRounData{}
 		value, err := priceFeedABI.Unpack("latestRoundData", entry.ReturnData)
 		log.CheckFatal(err)
 		roundData.RoundId = *abi.ConvertType(value[0], new(*big.Int)).(**big.Int)
@@ -252,25 +258,36 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 		roundData.StartedAt = *abi.ConvertType(value[2], new(*big.Int)).(**big.Int)
 		roundData.UpdatedAt = *abi.ConvertType(value[3], new(*big.Int)).(**big.Int)
 		roundData.AnsweredInRound = *abi.ConvertType(value[4], new(*big.Int)).(**big.Int)
-		priceData = &core.PriceFeed{
-			RoundId:    roundData.RoundId.Int64(),
-			PriceETHBI: (*core.BigInt)(roundData.Answer),
-			PriceETH:   utils.GetFloat64Decimal(roundData.Answer, 18),
+		isPriceInUSD := adapter.GetVersion() > 1
+		var decimals int8 = 18 // for eth
+		if isPriceInUSD {
+			decimals = 8 // for usd
+		}
+		priceData = &schemas.PriceFeed{
+			RoundId:      roundData.RoundId.Int64(),
+			PriceBI:      (*core.BigInt)(roundData.Answer),
+			Price:        utils.GetFloat64Decimal(roundData.Answer, decimals),
+			IsPriceInUSD: isPriceInUSD, // for 2 and above the prices are in usd
 		}
 		adapter.setNotified(false)
 	} else {
 		priceData = adapter.calculatePriceFeedInternally(blockNum)
 	}
-	priceData.BlockNumber = blockNum
-	priceData.Token = adapter.GetTokenAddr()
-	priceData.Feed = adapter.GetAddress()
-	return priceData
+	priceFeeds := []*schemas.PriceFeed{}
+	for _, token := range adapter.TokensValidAtBlock(blockNum) {
+		priceDataCopy := priceData.Clone()
+		priceDataCopy.BlockNumber = blockNum
+		priceDataCopy.Token = token
+		priceDataCopy.Feed = adapter.GetAddress()
+		priceFeeds = append(priceFeeds, priceDataCopy)
+	}
+	return priceFeeds
 }
 
 func (mdl *AggregatedBlockFeed) Clear() {
-	mdl.UniPricesByTokens = map[string]core.SortedUniPoolPrices{}
+	mdl.UniPricesByTokens = map[string]schemas.SortedUniPoolPrices{}
 }
 
-func (mdl *AggregatedBlockFeed) GetUniPricesByToken(token string) []*core.UniPoolPrices {
+func (mdl *AggregatedBlockFeed) GetUniPricesByToken(token string) []*schemas.UniPoolPrices {
 	return mdl.UniPricesByTokens[token]
 }

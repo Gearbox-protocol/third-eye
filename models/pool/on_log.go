@@ -1,9 +1,10 @@
 package pool
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
@@ -28,7 +29,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack AddLiquidity event", err)
 		}
-		mdl.Repo.AddPoolLedger(&core.PoolLedger{
+		mdl.Repo.AddPoolLedger(&schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
@@ -44,7 +45,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		mdl.Repo.AddPoolLedger(&core.PoolLedger{
+		mdl.Repo.AddPoolLedger(&schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
@@ -62,7 +63,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		mdl.Repo.AddRepayOnCM(blockNum, repayEvent.CreditManager.Hex(), core.PnlOnRepay{
+		mdl.Repo.AddRepayOnCM(blockNum, repayEvent.CreditManager.Hex(), schemas.PnlOnRepay{
 			BorrowedAmount: repayEvent.BorrowedAmount,
 			Profit:         repayEvent.Profit,
 			Loss:           repayEvent.Loss,
@@ -72,34 +73,34 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 	case core.Topic("NewInterestRateModel(address)"):
 		interestModel, err := mdl.contractETH.ParseNewInterestRateModel(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.NewInterestRateModel,
+			Type:        schemas.NewInterestRateModel,
 			Args:        &core.Json{"newInterestRateModel": interestModel.NewInterestRateModel.Hex()},
 		})
 	case core.Topic("NewCreditManagerConnected(address)"):
 		newCreditManager, err := mdl.contractETH.ParseNewCreditManagerConnected(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.NewCreditManagerConnected,
+			Type:        schemas.NewCreditManagerConnected,
 			Args:        &core.Json{"creditManager": newCreditManager.CreditManager.Hex()},
 		})
 	case core.Topic("BorrowForbidden(address)"):
 		borrowForbidden, err := mdl.contractETH.ParseBorrowForbidden(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.BorrowForbidden,
+			Type:        schemas.BorrowForbidden,
 			Args:        &core.Json{"creditManager": borrowForbidden.CreditManager.Hex()},
 		})
 	case core.Topic("NewWithdrawFee(uint256)"):
@@ -109,12 +110,12 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		}
 		withdrawFee, err := mdl.contractETH.ParseNewWithdrawFee(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.NewWithdrawFee,
+			Type:        schemas.NewWithdrawFee,
 			Args: &core.Json{
 				"token":  mdl.State.UnderlyingToken,
 				"oldFee": oldFee,
@@ -125,12 +126,12 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 	case core.Topic("NewExpectedLiquidityLimit(uint256)"):
 		expectedLiq, err := mdl.contractETH.ParseNewExpectedLiquidityLimit(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddDAOOperation(&core.DAOOperation{
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
-			Type:        core.NewExpectedLiquidityLimit,
+			Type:        schemas.NewExpectedLiquidityLimit,
 			Args: &core.Json{
 				"oldLimit": mdl.State.ExpectedLiquidityLimit,
 				"newLimit": (*core.BigInt)(expectedLiq.NewLimit),

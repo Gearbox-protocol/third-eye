@@ -2,13 +2,14 @@ package repository
 
 import (
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"math/big"
 )
 
-func (repo *Repository) AddCreditSessionSnapshot(css *core.CreditSessionSnapshot) {
+func (repo *Repository) AddCreditSessionSnapshot(css *schemas.CreditSessionSnapshot) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	css.ID = 0

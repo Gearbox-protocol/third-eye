@@ -3,11 +3,13 @@ package framework
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 	"strings"
@@ -20,11 +22,15 @@ type TestMask struct {
 }
 
 type TestCall struct {
-	Pools       []core.TestPoolCallData      `json:"pools"`
-	CMs         []core.TestCMCallData        `json:"cms"`
-	Accounts    []core.TestAccountCallData   `json:"accounts"`
-	Masks       []TestMask                   `json:"masks"`
-	ExecuteOnCM map[string][]*core.KnownCall `json:"executeOnCM"`
+	Pools         []ds.TestPoolCallData              `json:"pools"`
+	CMs           []ds.TestCMCallData                `json:"cms"`
+	Accounts      []ds.TestAccountCallData           `json:"accounts"`
+	Masks         []TestMask                         `json:"masks"`
+	ExecuteOnCM   map[string][]*ds.KnownCall         `json:"executeOnCM"`
+	MainEventLogs map[string][]*ds.FuncWithMultiCall `json:"mainEventLogs"`
+	OtherCalls    map[string][]string                `json:"others"`
+	// txHash to transfers
+	ExecuteTransfers map[string]core.Transfers `json:"executeTransfers"`
 }
 
 func (c *TestCall) Process() {
@@ -71,7 +77,7 @@ func (c *TestEvent) ParseData(contractName []string, topic0 common.Hash) ([]byte
 	var event *abi.Event
 	var err error
 	for _, name := range contractName {
-		abi := core.GetAbi(name)
+		abi := schemas.GetAbi(name)
 		event, err = abi.EventByID(topic0)
 		if err == nil {
 			break

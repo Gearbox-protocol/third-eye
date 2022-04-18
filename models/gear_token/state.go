@@ -1,23 +1,23 @@
 package gear_token
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 )
 
 func (mdl *GearToken) GetUnderlyingState() interface{} {
 	arr := mdl.arrayOfGearBalanceUpdates
-	mdl.arrayOfGearBalanceUpdates = []*core.GearBalance{}
+	mdl.arrayOfGearBalanceUpdates = []*schemas.GearBalance{}
 	return arr
 }
 
 func (mdl *GearToken) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStatePresent = true
-	gb, ok := obj.([]*core.GearBalance)
+	gb, ok := obj.([]*schemas.GearBalance)
 	if !ok {
 		log.Fatal("Type assertion for gear token state failed")
 	}
-	state := map[string]*core.GearBalance{}
+	state := map[string]*schemas.GearBalance{}
 	for _, entry := range gb {
 		state[entry.User] = entry
 	}
@@ -25,7 +25,7 @@ func (mdl *GearToken) SetUnderlyingState(obj interface{}) {
 }
 
 func (mdl *GearToken) HasUnderlyingState() bool {
-	gb := []*core.GearBalance{}
+	gb := []*schemas.GearBalance{}
 	for _, entry := range mdl.State {
 		if entry.Updated {
 			gb = append(gb, entry)

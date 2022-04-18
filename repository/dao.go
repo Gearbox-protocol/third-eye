@@ -1,20 +1,21 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"math/big"
 	"time"
 )
 
-func (repo *Repository) AddDAOOperation(operation *core.DAOOperation) {
+func (repo *Repository) AddDAOOperation(operation *schemas.DAOOperation) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.addDAOOperation(operation)
 }
 
-func (repo *Repository) addDAOOperation(operation *core.DAOOperation) {
+func (repo *Repository) addDAOOperation(operation *schemas.DAOOperation) {
 	repo.setAndGetBlock(operation.BlockNumber).AddDAOOperation(operation)
 }
 
@@ -23,7 +24,7 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 	defer repo.mu.Unlock()
 	block := repo.setAndGetBlock(blockNum)
 	// treasury transfer
-	block.AddTreasuryTransfer(&core.TreasuryTransfer{
+	block.AddTreasuryTransfer(&schemas.TreasuryTransfer{
 		BlockNum: blockNum,
 		LogID:    logID,
 		Token:    token,
@@ -56,7 +57,7 @@ func (repo *Repository) saveTreasurySnapshot() {
 	for token, amt := range *repo.treasurySnapshot.Balances {
 		balances[token] = amt
 	}
-	tss := &core.TreasurySnapshot{
+	tss := &schemas.TreasurySnapshot{
 		Date:     utils.TimeToDate(repo.lastTreasureTime),
 		BlockNum: blockDate.BlockNum,
 		Balances: &balances,
@@ -66,7 +67,7 @@ func (repo *Repository) saveTreasurySnapshot() {
 	repo.setAndGetBlock(blockDate.BlockNum).AddTreasurySnapshot(tss)
 }
 
-func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.TreasurySnapshot) {
+func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *schemas.TreasurySnapshot) {
 	var totalValueInUSD float64
 	var tokenAddrs []string
 	for token := range *tss.Balances {
@@ -75,7 +76,7 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *core.Tr
 		}
 		tokenAddrs = append(tokenAddrs, token)
 	}
-	prices := repo.GetPriceInUSD(blockNum, tokenAddrs)
+	prices := repo.GetPricesInUSD(blockNum, tokenAddrs)
 	for token, amt := range *tss.Balances {
 		totalValueInUSD += amt * prices[token]
 	}
@@ -100,7 +101,8 @@ func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
 }
 
-func (repo *Repository) GetPriceInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+// used for treasury calculation and for remainingFunds on close v2
+func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
 	priceByToken := core.JsonFloatMap{}
 	var tokenForCalls []string
 	var poolForDieselRate []string
@@ -113,7 +115,8 @@ func (repo *Repository) GetPriceInUSD(blockNum int64, tokenAddrs []string) core.
 			tokenForCalls = append(tokenForCalls, token)
 		}
 	}
-	prices, dieselRates := repo.getPricesInBatch(blockNum, false, tokenForCalls, poolForDieselRate)
+	priceOracle, _ := repo.GetActivePriceOracleByBlockNum(blockNum)
+	prices, dieselRates := repo.getPricesInBatch(priceOracle, blockNum, false, tokenForCalls, poolForDieselRate)
 	var poolIndex int
 	for i, token := range tokenAddrs {
 		var price *big.Int
@@ -128,12 +131,15 @@ func (repo *Repository) GetPriceInUSD(blockNum int64, tokenAddrs []string) core.
 		}
 		priceByToken[token] = utils.GetFloat64Decimal(price, 8)
 	}
-	priceByToken[repo.WETHAddr] = 1
+	if repo.kit.GetAdapter(priceOracle).GetVersion() == 1 {
+		priceByToken[repo.WETHAddr] = 1
+	}
 	return priceByToken
 }
 
 func (repo *Repository) loadLastTreasuryTs() {
-	data := core.DebtSync{}
+	defer utils.Elapsed("loadLastTreasuryTs")()
+	data := schemas.DebtSync{}
 	if err := repo.db.Raw(`SELECT timestamp AS last_calculated_at FROM blocks 
 		WHERE id in (SELECT max(block_num) FROM treasury_snapshots)`).Find(&data).Error; err != nil {
 		log.Fatal(err)
@@ -145,7 +151,8 @@ func (repo *Repository) loadLastTreasuryTs() {
 }
 
 func (repo *Repository) loadBlockDatePair() {
-	data := []*core.BlockDate{}
+	defer utils.Elapsed("loadBlockDatePair")()
+	data := []*schemas.BlockDate{}
 	sql := `select b.*, a.timestamp from blocks a 
 	JOIN (select timezone('UTC', to_timestamp(timestamp))::date as date,max(id) as block_num from blocks group by date) b 
 	ON a.id=b.block_num order by block_num`
@@ -157,7 +164,7 @@ func (repo *Repository) loadBlockDatePair() {
 	}
 }
 
-func (repo *Repository) addBlockDate(entry *core.BlockDate) {
+func (repo *Repository) addBlockDate(entry *schemas.BlockDate) {
 	ts := utils.TimeToDateEndTs(time.Unix(entry.Timestamp, 0))
 	previousEntry := repo.BlockDatePairs[ts]
 	if previousEntry == nil || previousEntry.BlockNum < entry.BlockNum {
@@ -166,7 +173,8 @@ func (repo *Repository) addBlockDate(entry *core.BlockDate) {
 }
 
 func (repo *Repository) loadTreasurySnapshot() {
-	ss := core.TreasurySnapshot{}
+	defer utils.Elapsed("loadTreasurySnapshot")()
+	ss := schemas.TreasurySnapshot{}
 	sql := `SELECT * FROM treasury_snapshots WHERE block_num=0`
 	if err := repo.db.Raw(sql).Find(&ss).Error; err != nil {
 		log.Fatal(err)

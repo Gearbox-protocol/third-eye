@@ -6,5 +6,6 @@ CREATE TABLE sync_adapters (
     details jsonb,
     type character varying(40),
     error character varying(200),
+    version smallint,
     disabled boolean
 );

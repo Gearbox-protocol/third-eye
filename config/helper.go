@@ -7,7 +7,7 @@
 package config
 
 import (
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 	"os"

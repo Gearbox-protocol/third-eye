@@ -1,6 +1,8 @@
 CREATE TABLE debt_sync (
-    last_calculated_at integer
+    last_calculated_at integer,
+    field_set boolean,
 );
+alter table debt_sync add primary key(field_set);
 
 CREATE TABLE debts (
     id SERIAL NOT NULL,
@@ -16,4 +18,5 @@ CREATE TABLE debts (
     collateral_usd DOUBLE PRECISION,
     collateral_underlying DOUBLE PRECISION
 );
-create index debts_session_id_index on debts using BTREE (session_id,block_num);
+create index debts_block_num on debts using BTREE (block_num);
+create index debts_session_id on debts using BTREE (session_id);

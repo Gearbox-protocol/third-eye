@@ -1,13 +1,13 @@
 package engine
 
 import (
-	"context"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
-	"github.com/Gearbox-protocol/third-eye/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"sync"
@@ -17,26 +17,23 @@ import (
 type Engine struct {
 	*core.Node
 	config       *config.Config
-	repo         core.RepositoryI
-	debtEng      core.DebtEngineI
+	repo         ds.RepositoryI
+	debtEng      ds.DebtEngineI
 	UsingThreads bool
 }
 
 var syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
 
 func NewEngine(config *config.Config,
-	ec ethclient.ClientI,
-	debtEng core.DebtEngineI,
-	repo core.RepositoryI) core.EngineI {
-	chaindId, err := ec.ChainID(context.TODO())
-	log.CheckFatal(err)
+	ec core.ClientI,
+	debtEng ds.DebtEngineI,
+	repo ds.RepositoryI) ds.EngineI {
 	eng := &Engine{
 		debtEng: debtEng,
 		config:  config,
 		repo:    repo,
 		Node: &core.Node{
 			Client:  ec,
-			ChainId: chaindId.Int64(),
 		},
 	}
 	return eng
@@ -142,7 +139,7 @@ func (e *Engine) Sync(syncTill int64) {
 	e.repo.AfterSync(syncTill)
 }
 
-func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {
+func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	syncFrom := mdl.GetLastSync() + 1
 	if syncFrom > syncTill {
@@ -150,7 +147,12 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 	}
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
-	txLogs, err := e.GetLogs(syncFrom, syncTill, []common.Address{common.HexToAddress(mdl.GetAddress())}, [][]common.Hash{})
+	addrsForLogs := []common.Address{common.HexToAddress(mdl.GetAddress())}
+	if mdl.GetName() == ds.CreditManager && mdl.GetVersion() == 2 {
+		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("facade")))
+		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("configurator")))
+	}
+	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, [][]common.Hash{})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -178,23 +180,23 @@ func (e *Engine) SyncModel(mdl core.SyncAdapterI, syncTill int64, wg *sync.WaitG
 func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
 	switch txLog.Topics[0] {
 	case core.Topic("Paused(address)"):
-		e.repo.AddDAOOperation(&core.DAOOperation{
+		e.repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
-			Type:        core.Paused,
-			Args: &core.Json{"account": common.BytesToAddress(txLog.Data).Hex()},
+			Type:        schemas.Paused,
+			Args:        &core.Json{"account": common.BytesToAddress(txLog.Data).Hex()},
 		})
 		return true
 	case core.Topic("Unpaused(address)"):
-		e.repo.AddDAOOperation(&core.DAOOperation{
+		e.repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
-			Type:        core.UnPaused,
-			Args: &core.Json{"account": common.BytesToAddress(txLog.Data).Hex()},
+			Type:        schemas.UnPaused,
+			Args:        &core.Json{"account": common.BytesToAddress(txLog.Data).Hex()},
 		})
 		return true
 	default:
@@ -202,7 +204,7 @@ func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {
 	}
 }
 
-func (e *Engine) QueryModel(mdl core.SyncAdapterI, queryTill int64, wg *sync.WaitGroup) {
+func (e *Engine) QueryModel(mdl ds.SyncAdapterI, queryTill int64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if mdl.GetLastSync()+1 > queryTill {
 		return

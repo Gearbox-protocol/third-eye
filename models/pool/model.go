@@ -1,29 +1,32 @@
 package pool
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/poolService"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/poolService"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
 type Pool struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	contractETH    *poolService.PoolService
 	lastEventBlock int64
-	State          *core.PoolState
+	State          *schemas.PoolState
 }
 
 func (Pool) TableName() string {
 	return "sync_adapters"
 }
 
-func NewPool(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *Pool {
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *Pool {
+	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
+	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
-		core.NewSyncAdapter(addr, core.Pool, discoveredAt, client, repo),
+		syncAdapter,
 	)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(pool.DiscoveredAt),
@@ -38,7 +41,7 @@ func NewPool(addr string, client ethclient.ClientI, repo core.RepositoryI, disco
 		log.Fatal(err)
 	}
 	repo.AddDieselToken(dieselToken.Hex(), underlyingToken.Hex(), addr)
-	pool.SetUnderlyingState(&core.PoolState{
+	pool.SetUnderlyingState(&schemas.PoolState{
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
@@ -50,7 +53,7 @@ func NewPool(addr string, client ethclient.ClientI, repo core.RepositoryI, disco
 	return pool
 }
 
-func NewPoolFromAdapter(adapter *core.SyncAdapter) *Pool {
+func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
 	cmContract, err := poolService.NewPoolService(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)

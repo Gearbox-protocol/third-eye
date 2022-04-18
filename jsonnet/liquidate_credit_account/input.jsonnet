@@ -34,6 +34,7 @@ local extraBorrowedAmount = 1000;
             // .1 YFI = 8*ETH *.1= 2000 USDC  // yfi is not linked so it not included in yfi
             totalValue: utils.bigInt(3 * 1250 + 2000, 6),
             repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+            liquidationAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             cumulativeIndexAtOpen: utils.bigInt(1, 27),
             borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             balances: [{

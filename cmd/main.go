@@ -8,12 +8,12 @@ package main
 
 import (
 	"context"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
 	"github.com/Gearbox-protocol/third-eye/debts"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
 	_ "github.com/heroku/x/hmetrics/onload"
@@ -21,8 +21,8 @@ import (
 	"time"
 )
 
-func StartServer(lc fx.Lifecycle, engine core.EngineI, config *config.Config) {
-
+func StartServer(lc fx.Lifecycle, engine ds.EngineI, config *config.Config) {
+	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl, "Third-eye")
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

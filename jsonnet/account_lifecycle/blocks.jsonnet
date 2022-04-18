@@ -222,8 +222,9 @@
       {
         blockNum: 3,
         feed: '#ChainlinkPriceFeed_1',
-        priceETH: 0.0004,
-        priceETHBI: '400000000000000',
+        price: 0.0004,
+        priceBI: '400000000000000',
+        isPriceInUSD: false,
         roundId: 1,
         token: '#Token_1',
         uniPriceFetchBlock: 0,
@@ -534,8 +535,9 @@
       {
         blockNum: 6,
         feed: '#ChainlinkPriceFeed_2',
-        priceETH: 8,
-        priceETHBI: '8000000000000000000',
+        price: 8,
+        priceBI: '8000000000000000000',
+        isPriceInUSD: false,
         roundId: 1,
         token: '#Token_2',
         uniPriceFetchBlock: 0,

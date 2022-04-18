@@ -1,7 +1,7 @@
 package contract_register
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 

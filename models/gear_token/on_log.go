@@ -1,8 +1,9 @@
 package gear_token
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/core/types"
 	"math/big"
 )
@@ -21,13 +22,13 @@ func (mdl *GearToken) UpdateStateBalances(from, to string, value *big.Int) {
 	fromBalance := mdl.State[from]
 	toBalance := mdl.State[to]
 	if fromBalance == nil {
-		fromBalance = &core.GearBalance{
+		fromBalance = &schemas.GearBalance{
 			Balance: (*core.BigInt)(big.NewInt(0)),
 			User:    from,
 		}
 	}
 	if toBalance == nil {
-		toBalance = &core.GearBalance{
+		toBalance = &schemas.GearBalance{
 			Balance: (*core.BigInt)(big.NewInt(0)),
 			User:    to,
 		}

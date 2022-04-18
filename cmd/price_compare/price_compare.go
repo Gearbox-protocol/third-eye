@@ -3,41 +3,43 @@ package main
 import (
 	"context"
 	"flag"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/core"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
-	"github.com/Gearbox-protocol/third-eye/utils"
 	"gorm.io/gorm/clause"
 	"math"
 	"math/big"
 	"sort"
 	"time"
 
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"go.uber.org/fx"
 	"gorm.io/gorm"
 )
 
 type DBhandler struct {
-	client                  ethclient.ClientI
+	client                  core.ClientI
 	db                      *gorm.DB
-	Chainlinks              map[string]*core.SyncAdapter
-	ChainlinkPrices         map[string]core.SortedPriceFeed
-	UniPoolPrices           map[string]core.SortedUniPoolPrices
+	Chainlinks              map[string]*ds.SyncAdapter
+	ChainlinkPrices         map[string]schemas.SortedPriceFeed
+	UniPoolPrices           map[string]schemas.SortedUniPoolPrices
 	tokenStartBlock         map[string]int64
-	Relations               []*core.UniPriceAndChainlink
-	blocks                  map[int64]*core.Block
+	Relations               []*schemas.UniPriceAndChainlink
+	blocks                  map[int64]*schemas.Block
 	lastBlockForToken       map[string]int64
 	ChainlinkFeedIndex      map[string]int
 	StartFrom               int64
-	tokens                  map[string]*core.Token
+	tokens                  map[string]*schemas.Token
 	blockFeed               *aggregated_block_feed.AggregatedBlockFeed
-	UpdatesForUniPoolPrices []*core.UniPoolPrices
+	UpdatesForUniPoolPrices []*schemas.UniPoolPrices
 }
 
-func (h *DBhandler) AddUniPricesToDB(prices *core.UniPoolPrices) {
+func (h *DBhandler) AddUniPricesToDB(prices *schemas.UniPoolPrices) {
 	blockNum := prices.BlockNum
 	if h.blocks[blockNum] == nil {
 		b, err := h.client.BlockByNumber(context.Background(), big.NewInt(blockNum))
@@ -45,21 +47,21 @@ func (h *DBhandler) AddUniPricesToDB(prices *core.UniPoolPrices) {
 			panic(err)
 		}
 		log.CheckFatal(err)
-		h.blocks[blockNum] = &core.Block{BlockNumber: blockNum, Timestamp: b.Time()}
+		h.blocks[blockNum] = &schemas.Block{BlockNumber: blockNum, Timestamp: b.Time()}
 	}
 	h.blocks[blockNum].AddUniswapPrices(prices)
 }
 
 func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.AggregatedBlockFeed) {
-	tokens := []*core.Token{}
+	tokens := []*schemas.Token{}
 	err := handler.db.Raw(`SELECT * FROM tokens`).Find(&tokens).Error
-	tokenMap := map[string]*core.Token{}
+	tokenMap := map[string]*schemas.Token{}
 	for _, entry := range tokens {
 		tokenMap[entry.Address] = entry
 	}
 	handler.tokens = tokenMap
 	log.CheckFatal(err)
-	uniswapPools := []*core.UniswapPools{}
+	uniswapPools := []*schemas.UniswapPools{}
 	err = handler.db.Raw(`SELECT * FROM uniswap_pools`).Find(&uniswapPools).Error
 	log.CheckFatal(err)
 	for _, entry := range uniswapPools {
@@ -67,19 +69,19 @@ func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.Aggregate
 	}
 }
 
-func NewDBhandler(db *gorm.DB, client *ethclient.Client) *DBhandler {
+func NewDBhandler(db *gorm.DB, client core.ClientI) *DBhandler {
 	blockFeed := aggregated_block_feed.NewAggregatedBlockFeed(client, nil, 1)
 	obj := &DBhandler{db: db,
-		ChainlinkPrices:    map[string]core.SortedPriceFeed{},
-		Chainlinks:         map[string]*core.SyncAdapter{},
-		UniPoolPrices:      map[string]core.SortedUniPoolPrices{},
+		ChainlinkPrices:    map[string]schemas.SortedPriceFeed{},
+		Chainlinks:         map[string]*ds.SyncAdapter{},
+		UniPoolPrices:      map[string]schemas.SortedUniPoolPrices{},
 		ChainlinkFeedIndex: map[string]int{},
 		lastBlockForToken:  map[string]int64{},
 		blockFeed:          blockFeed,
 		client:             client,
 		StartFrom:          math.MaxInt64,
-		tokens:             map[string]*core.Token{},
-		blocks:             map[int64]*core.Block{},
+		tokens:             map[string]*schemas.Token{},
+		blocks:             map[int64]*schemas.Block{},
 		tokenStartBlock:    map[string]int64{},
 	}
 	obj.populateBlockFeed(blockFeed)
@@ -89,7 +91,7 @@ func NewDBhandler(db *gorm.DB, client *ethclient.Client) *DBhandler {
 var WETHAddr string = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
 func (handler *DBhandler) getChainlinkPrices() {
-	data := []*core.PriceFeed{}
+	data := []*schemas.PriceFeed{}
 	err := handler.db.Raw(`SELECT * FROM price_feeds 
 		WHERE feed in (SELECT address FROM sync_adapters where type='ChainlinkPriceFeed')
 		ORDER BY block_num`).Find(&data).Error
@@ -108,7 +110,7 @@ func (handler *DBhandler) getChainlinkPrices() {
 }
 
 func (handler *DBhandler) getChainlinks() {
-	data := []*core.SyncAdapter{}
+	data := []*ds.SyncAdapter{}
 	err := handler.db.Raw(`(SELECT * FROM sync_adapters where type='ChainlinkPriceFeed')`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
@@ -118,7 +120,7 @@ func (handler *DBhandler) getChainlinks() {
 
 func (handler *DBhandler) getUniPrices(from, to int64) bool {
 	log.Infof("loaded from %d to %d", from, to)
-	data := []*core.UniPoolPrices{}
+	data := []*schemas.UniPoolPrices{}
 	err := handler.db.Raw(`SELECT * FROM uniswap_pool_prices 
 		WHERE block_num >= ? AND block_num < ? ORDER BY block_num`, from, to).Find(&data).Error
 	log.CheckFatal(err)
@@ -156,7 +158,7 @@ func (handler *DBhandler) getUniPrices(from, to int64) bool {
 	return len(data) > 0
 }
 
-func (handler *DBhandler) addUniPoolPrices(entry *core.UniPoolPrices) {
+func (handler *DBhandler) addUniPoolPrices(entry *schemas.UniPoolPrices) {
 	// if entry.PriceV2 == 0 || entry.PriceV3 == 0 || entry.TwapV3 == 0 {
 	// 	log.Infof("%+v\n", entry)
 	// 	_, allUniPrices := handler.blockFeed.QueryData(entry.BlockNum, WETHAddr, entry.Token)
@@ -172,7 +174,7 @@ func (handler *DBhandler) addUniPoolPrices(entry *core.UniPoolPrices) {
 
 func (handler *DBhandler) clearUniPrices() {
 	for token := range handler.UniPoolPrices {
-		handler.UniPoolPrices[token] = core.SortedUniPoolPrices{}
+		handler.UniPoolPrices[token] = schemas.SortedUniPoolPrices{}
 	}
 }
 
@@ -218,7 +220,7 @@ func (h *DBhandler) save() {
 	//
 	now := time.Now()
 
-	blocks := []*core.Block{}
+	blocks := []*schemas.Block{}
 	for _, block := range h.blocks {
 		blocks = append(blocks, block)
 	}
@@ -226,7 +228,7 @@ func (h *DBhandler) save() {
 		UpdateAll: true,
 	}).CreateInBatches(blocks, 100).Error
 	log.CheckFatal(err)
-	h.blocks = map[int64]*core.Block{}
+	h.blocks = map[int64]*schemas.Block{}
 	log.Infof("created missing uniswap_pool_prices in %f sec in blocks: %d", time.Now().Sub(now).Seconds(), len(blocks))
 	now = time.Now()
 	//
@@ -234,20 +236,20 @@ func (h *DBhandler) save() {
 		err = tx.CreateInBatches(h.Relations, 4000).Error
 		log.CheckFatal(err)
 	}
-	h.Relations = []*core.UniPriceAndChainlink{}
+	h.Relations = []*schemas.UniPriceAndChainlink{}
 
 	err = tx.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(h.UpdatesForUniPoolPrices, 100).Error
 	log.CheckFatal(err)
-	h.UpdatesForUniPoolPrices = []*core.UniPoolPrices{}
+	h.UpdatesForUniPoolPrices = []*schemas.UniPoolPrices{}
 	//
 	info := tx.Commit()
 	log.CheckFatal(info.Error)
 	log.Infof("created uniswap_chainlink_relations in %f sec", time.Now().Sub(now).Seconds())
 }
 
-func (h *DBhandler) findRelations(adapter *core.SyncAdapter, uniPrices core.SortedUniPoolPrices, chainlinkPrices core.SortedPriceFeed) (relations int64) {
+func (h *DBhandler) findRelations(adapter *ds.SyncAdapter, uniPrices schemas.SortedUniPoolPrices, chainlinkPrices schemas.SortedPriceFeed) (relations int64) {
 	uniPriceInd := 0
 	feed := adapter.Address
 	chainlinkPriceInd := h.ChainlinkFeedIndex[feed]
@@ -260,7 +262,7 @@ func (h *DBhandler) findRelations(adapter *core.SyncAdapter, uniPrices core.Sort
 	index := h.ChainlinkFeedIndex[feed]
 	for ; uniPriceInd < len(uniPrices) && index < len(chainlinkPrices); index++ {
 		chainPrevPrices := chainlinkPrices[index]
-		var chainCurrentPrices *core.PriceFeed
+		var chainCurrentPrices *schemas.PriceFeed
 		if index+1 < len(chainlinkPrices) {
 			chainCurrentPrices = chainlinkPrices[index+1]
 		}
@@ -275,20 +277,20 @@ func (h *DBhandler) findRelations(adapter *core.SyncAdapter, uniPrices core.Sort
 	return
 }
 
-func (h *DBhandler) compareDiff(pf *core.PriceFeed, uniPoolPrices *core.UniPoolPrices) {
+func (h *DBhandler) compareDiff(pf *schemas.PriceFeed, uniPoolPrices *schemas.UniPoolPrices) {
 	// previous pricefeed can be nil
 	if pf == nil {
 		return
 	}
-	h.AddUniPriceAndChainlinkRelation(&core.UniPriceAndChainlink{
+	h.AddUniPriceAndChainlinkRelation(&schemas.UniPriceAndChainlink{
 		UniBlockNum:          uniPoolPrices.BlockNum,
 		ChainlinkBlockNumber: pf.BlockNumber,
 		Token:                pf.Token,
 		Feed:                 pf.Feed,
 	})
-	if (uniPoolPrices.PriceV2 != 0 && greaterFluctuation(uniPoolPrices.PriceV2, pf.PriceETH)) ||
-		(uniPoolPrices.PriceV3 != 0 && greaterFluctuation(uniPoolPrices.PriceV3, pf.PriceETH)) ||
-		(uniPoolPrices.TwapV3 != 0 && greaterFluctuation(uniPoolPrices.TwapV3, pf.PriceETH)) {
+	if (uniPoolPrices.PriceV2 != 0 && greaterFluctuation(uniPoolPrices.PriceV2, pf.Price)) ||
+		(uniPoolPrices.PriceV3 != 0 && greaterFluctuation(uniPoolPrices.PriceV3, pf.Price)) ||
+		(uniPoolPrices.TwapV3 != 0 && greaterFluctuation(uniPoolPrices.TwapV3, pf.Price)) {
 		// if !mdl.isNotified() {
 		// mdl.uniPriceVariationNotify(pf, uniPoolPrices)
 		// mdl.Details["notified"] = true
@@ -297,7 +299,7 @@ func (h *DBhandler) compareDiff(pf *core.PriceFeed, uniPoolPrices *core.UniPoolP
 	}
 }
 
-func (h *DBhandler) AddUniPriceAndChainlinkRelation(relation *core.UniPriceAndChainlink) {
+func (h *DBhandler) AddUniPriceAndChainlinkRelation(relation *schemas.UniPriceAndChainlink) {
 	h.Relations = append(h.Relations, relation)
 }
 
@@ -307,8 +309,8 @@ func greaterFluctuation(a, b float64) bool {
 
 var SaveRelations, SaveAtAll bool
 
-func StartServer(lc fx.Lifecycle, handler *DBhandler, shutdowner fx.Shutdowner) {
-
+func StartServer(lc fx.Lifecycle, handler *DBhandler, config *config.Config, shutdowner fx.Shutdowner) {
+	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl, "Uni Price Compare")
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

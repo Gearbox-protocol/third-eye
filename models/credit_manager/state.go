@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -14,8 +15,8 @@ import (
 func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStatePresent = true
 	switch obj.(type) {
-	case (*core.CreditManagerState):
-		state := obj.(*core.CreditManagerState)
+	case (*schemas.CreditManagerState):
+		state := obj.(*schemas.CreditManagerState)
 		mdl.State = state
 	case (map[string]string):
 		sessions := obj.(map[string]string)
@@ -37,9 +38,9 @@ func (mdl *CreditManager) RemoveCreditOwnerSession(owner string) {
 	delete(mdl.State.Sessions, owner)
 }
 
-func (mdl *CreditManager) GetCreditOwnerSession(owner string) string {
+func (mdl *CreditManager) GetCreditOwnerSession(owner string, dontFail ...bool) string {
 	sessionId := mdl.State.Sessions[owner]
-	if sessionId == "" {
+	if len(dontFail) == 0 && sessionId == "" {
 		panic(
 			fmt.Sprintf("session id not found for %s in %+v\n", owner, mdl.State.Sessions),
 		)
@@ -84,10 +85,10 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	mdl.State.AvailableLiquidityBI = (*core.BigInt)(state.AvailableLiquidity)
 	mdl.State.AvailableLiquidity = utils.GetFloat64Decimal(state.AvailableLiquidity, mdl.GetUnderlyingDecimal())
 
-	stats := &core.CreditManagerStat{
+	stats := &schemas.CreditManagerStat{
 		Address:  mdl.Address,
 		BlockNum: blockNum,
-		CreditManagerData: &core.CreditManagerData{
+		CreditManagerData: &schemas.CreditManagerData{
 			// fetched from data compressor
 			OpenedAccountsCount:     mdl.State.OpenedAccountsCount,
 			TotalOpenedAccounts:     mdl.State.TotalOpenedAccounts,

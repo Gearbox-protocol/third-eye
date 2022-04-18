@@ -1,22 +1,24 @@
 package aggregated_block_feed
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/priceFeed"
-	"github.com/Gearbox-protocol/third-eye/artifacts/yVault"
-	"github.com/Gearbox-protocol/third-eye/artifacts/yearnPriceFeed"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"math/big"
+	"sync"
+
+	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yVault"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"sync"
 )
 
 type YearnPriceFeed struct {
-	*core.SyncAdapter
+	*ds.SyncAdapter
 	contractETH       *yearnPriceFeed.YearnPriceFeed
 	YVaultContract    *yVault.YVault
 	PriceFeedContract *priceFeed.PriceFeed
@@ -24,29 +26,28 @@ type YearnPriceFeed struct {
 	mu                *sync.Mutex
 }
 
-func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client ethclient.ClientI, repo core.RepositoryI) *YearnPriceFeed {
-	syncAdapter := &core.SyncAdapter{
-		Contract: &core.Contract{
-			Address:      oracle,
-			DiscoveredAt: discoveredAt,
-			FirstLogAt:   discoveredAt,
-			ContractName: core.YearnPriceFeed,
-			Client:       client,
+func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *YearnPriceFeed {
+	syncAdapter := &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				Address:      oracle,
+				DiscoveredAt: discoveredAt,
+				FirstLogAt:   discoveredAt,
+				ContractName: ds.YearnPriceFeed,
+				Client:       client,
+			},
+			Details:  map[string]interface{}{"token": token},
+			LastSync: discoveredAt - 1,
+			V:        version,
 		},
-		Details:  map[string]interface{}{"token": token},
-		LastSync: discoveredAt - 1,
-		Repo:     repo,
+		Repo: repo,
 	}
-	// add token oracle for db
-	// feed is also oracle address for yearn address
-	// we don't relie on underlying feed
-	repo.AddTokenOracle(token, oracle, oracle, discoveredAt)
 	return NewYearnPriceFeedFromAdapter(
 		syncAdapter,
 	)
 }
 
-func NewYearnPriceFeedFromAdapter(adapter *core.SyncAdapter) *YearnPriceFeed {
+func NewYearnPriceFeedFromAdapter(adapter *ds.SyncAdapter) *YearnPriceFeed {
 	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(adapter.Address), adapter.Client)
 	if err != nil {
 		log.Fatal(err)
@@ -92,7 +93,7 @@ func (mdl *YearnPriceFeed) GetTokenAddr() string {
 	return tokenAddr
 }
 
-func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.PriceFeed {
+func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *schemas.PriceFeed {
 	if mdl.YVaultContract == nil || mdl.PriceFeedContract == nil || mdl.DecimalDivider == nil {
 		mdl.setContracts(blockNum)
 	}
@@ -122,11 +123,16 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *core.Pr
 		new(big.Int).Mul(pricePerShare, roundData.Answer),
 		mdl.DecimalDivider,
 	)
-
-	return &core.PriceFeed{
-		RoundId:    roundData.RoundId.Int64(),
-		PriceETHBI: (*core.BigInt)(newAnswer),
-		PriceETH:   utils.GetFloat64Decimal(newAnswer, 18),
+	isPriceInUSD := mdl.GetVersion() > 1
+	var decimals int8 = 18 // for eth
+	if isPriceInUSD {
+		decimals = 8 // for usd
+	}
+	return &schemas.PriceFeed{
+		RoundId:      roundData.RoundId.Int64(),
+		PriceBI:      (*core.BigInt)(newAnswer),
+		Price:        utils.GetFloat64Decimal(newAnswer, decimals),
+		IsPriceInUSD: isPriceInUSD,
 	}
 }
 
@@ -152,4 +158,124 @@ func (mdl *YearnPriceFeed) setContracts(blockNum int64) {
 	decimals, err := yVaultContract.Decimals(opts)
 	log.CheckFatal(err)
 	mdl.DecimalDivider = utils.GetExpInt(int8(decimals))
+}
+
+func (mdl *YearnPriceFeed) AddToken(token string, discoveredAt int64) {
+	if mdl.Details == nil {
+		mdl.Details = core.Json{}
+	}
+	if mdl.Details["token"] != nil {
+		obj := map[string]interface{}{}
+		switch mdl.Details["token"].(type) {
+		case string:
+			prevToken := mdl.Details["token"].(string)
+			obj[prevToken] = []int64{mdl.DiscoveredAt}
+			if prevToken == token {
+				log.Warnf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, mdl.DiscoveredAt, discoveredAt)
+				return
+			}
+		case map[string]interface{}:
+			obj, _ = mdl.Details["token"].(map[string]interface{})
+			ints := ConvertToListOfInt64(obj[token])
+			// token is already in enabled state, we are trying to add again
+			if obj[token] != nil && len(ints) == 1 {
+				log.Warnf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, ints[0], discoveredAt)
+				return
+				// token is disabled so reenable and add to logs
+			} else if len(ints) == 2 {
+				mdl.Details["logs"] = append(parseLogArray(mdl.Details["logs"]), []interface{}{token, ints})
+			}
+		}
+		obj[token] = []int64{discoveredAt}
+		mdl.Details["token"] = obj
+	} else {
+		log.Fatal("Can't reach this part in the yearn price feed")
+	}
+}
+
+func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
+	if logs != nil {
+		l, ok := logs.([]interface{})
+		if !ok {
+			log.Fatal("failed in converting to log array", logs)
+		}
+		for _, ele := range l {
+			obj, ok  := ele.([]interface{})
+			if !ok {
+				log.Fatal("failed in converting to log array element", ele)
+			}
+			parsedEle := []interface{}{obj[0].(string), ConvertToListOfInt64(obj[1])}
+			parsedLogs = append(parsedLogs, parsedEle)
+		}
+	}
+	return 
+}
+
+func (mdl *YearnPriceFeed) DisableToken(token string, disabledAt int64) {
+	obj := map[string]interface{}{}
+	switch mdl.Details["token"].(type) {
+	case string:
+		obj[token] = []int64{mdl.DiscoveredAt, disabledAt}
+	case map[string]interface{}:
+		obj = mdl.Details["token"].(map[string]interface{})
+		ints := ConvertToListOfInt64(obj[token])
+		if len(ints) != 1 {
+			log.Fatal("%s's enable block number for pricefeed is malformed: %v", ints)
+		}
+		ints = append(ints, disabledAt)
+		obj[token] = ints
+	}
+	mdl.Details["token"] = obj
+}
+
+func (mdl *YearnPriceFeed) TokensValidAtBlock(blockNum int64) []string {
+	switch mdl.Details["token"].(type) {
+	case string:
+		tokens := []string{}
+		if mdl.DiscoveredAt <= blockNum {
+			tokens = append(tokens, mdl.Details["token"].(string))
+		}
+		return tokens
+	case map[string]interface{}:
+		tokens := []string{}
+		obj := mdl.Details["token"].(map[string]interface{})
+		for token, info := range obj {
+			ints := ConvertToListOfInt64(info)
+			if ints[0] <= blockNum && (len(ints) == 1 || blockNum < ints[1]) {
+				tokens = append(tokens, token)
+			}
+		}
+		return tokens
+	}
+	return nil
+}
+
+func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
+	switch list.(type) {
+	case []interface{}:
+		ints, ok := list.([]interface{})
+		if !ok {
+			panic("parsing list of int failed")
+		}
+		for _, int_ := range ints {
+			var parsedInt int64
+			switch int_.(type) {
+				case int64:
+					parsedInt = int_.(int64)
+				case float64:
+					parsedFloat := int_.(float64)
+					parsedInt = int64(parsedFloat)
+				default:
+					log.Fatalf("YearnPriceFeed token start/end block_num not in int format %v", int_)
+			}
+			parsedInts = append(parsedInts, parsedInt)
+		}
+	case []int64:
+		ints, ok := list.([]int64)
+		if !ok {
+			panic("parsing accounts list for token transfer failed")
+		}
+		parsedInts = ints
+	}
+	return
 }

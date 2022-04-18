@@ -1,13 +1,15 @@
 package debts
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
 // pool interest state fetch
 func (eng *DebtEngine) loadPoolLastInterestData(lastDebtSync int64) {
-	data := []*core.PoolInterestData{}
+	defer utils.Elapsed("Debt(loadPoolLastInterestData)")()
+	data := []*schemas.PoolInterestData{}
 	query := `SELECT * FROM pool_stats 
 	JOIN (SELECT max(block_num) as bn, pool FROM pool_stats WHERE block_num <= ? group by pool) as p
 	JOIN blocks ON p.bn = blocks.id
@@ -22,6 +24,6 @@ func (eng *DebtEngine) loadPoolLastInterestData(lastDebtSync int64) {
 	}
 }
 
-func (eng *DebtEngine) AddPoolLastInterestData(pd *core.PoolInterestData) {
+func (eng *DebtEngine) AddPoolLastInterestData(pd *schemas.PoolInterestData) {
 	eng.poolLastInterestData[pd.Address] = pd
 }

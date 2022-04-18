@@ -1,94 +1,125 @@
 package credit_manager
 
 import (
-	"github.com/Gearbox-protocol/third-eye/artifacts/creditManager"
-	"github.com/Gearbox-protocol/third-eye/artifacts/dataCompressor/mainnet"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 )
 
+type Collateral struct {
+	Amount *big.Int
+	Token  string
+}
 type SessionCloseDetails struct {
 	RemainingFunds   *big.Int
 	Status           int
 	LogId            uint
 	TxHash           string
 	Borrower         string
-	AccountOperation *core.AccountOperation
+	AccountOperation *schemas.AccountOperation
 }
 
 type CreditManager struct {
-	*core.SyncAdapter
-	contractETH     *creditManager.CreditManager
-	LastTxHash      string
-	executeParams   []core.ExecuteParams
-	State           *core.CreditManagerState
-	lastEventBlock  int64
-	UpdatedSessions map[string]int
-	ClosedSessions  map[string]*SessionCloseDetails
+	*ds.SyncAdapter
+	contractETHV1    *creditManager.CreditManager
+	contractETHV2    *creditManagerv2.CreditManagerv2
+	facadeContractV2 *creditFacade.CreditFacade
+	LastTxHash       string
+	executeParams    []ds.ExecuteParams
+	State            *schemas.CreditManagerState
+	lastEventBlock   int64
+	UpdatedSessions  map[string]int
+	ClosedSessions   map[string]*SessionCloseDetails
+	// borrower to events, these events have same txHash
+	multicall MultiCallProcessor
 }
 
 func (CreditManager) TableName() string {
 	return "sync_adapters"
 }
 
-func NewCreditManager(addr string, client ethclient.ClientI, repo core.RepositoryI, discoveredAt int64) *CreditManager {
-	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(addr), client)
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(discoveredAt),
-	}
-	// create underlying token
-	underlyingToken, err := cmContract.UnderlyingToken(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
-	repo.AddToken(underlyingToken.Hex())
-	//
-	poolAddr, err := cmContract.PoolService(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// create creditFilter syncadapter
-	creditFilter, err := cmContract.CreditFilter(&bind.CallOpts{})
-	if err != nil {
-		log.Fatal(err)
-	}
-	repo.AddCreditManagerToFilter(addr, creditFilter.Hex())
-	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), addr, discoveredAt, client, repo)
-	repo.AddSyncAdapter(cf)
-	//
-
+func NewCreditManager(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *CreditManager {
+	// credit manager
 	cm := NewCreditManagerFromAdapter(
-		core.NewSyncAdapter(addr, core.CreditManager, discoveredAt, client, repo),
+		ds.NewSyncAdapter(addr, ds.CreditManager, discoveredAt, client, repo),
 	)
-	// create credit manager state
-	cm.SetUnderlyingState(&core.CreditManagerState{
-		Address:         addr,
-		PoolAddress:     poolAddr.Hex(),
-		UnderlyingToken: underlyingToken.Hex(),
-		Sessions:        map[string]string{},
-	})
+	cm.CommonInit()
+	switch cm.GetVersion() {
+	case 1:
+		cm.addCreditFilter(discoveredAt)
+	case 2:
+		creditConfigurator, err := cm.contractETHV2.CreditConfigurator(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
+		if err != nil {
+			log.Fatal(err)
+		}
+		cm.addCreditConfigurator(creditConfigurator.Hex())
+	}
 	return cm
 }
-
-func NewCreditManagerFromAdapter(adapter *core.SyncAdapter) *CreditManager {
-	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
-	if err != nil {
-		log.Fatal(err)
+func (mdl *CreditManager) GetAbi() {
+	switch mdl.GetVersion() {
+	case 1:
+		mdl.ABI = schemas.GetAbi(mdl.ContractName)
+	case 2:
+		mdl.ABI = schemas.GetAbi("CreditFacade")
 	}
+}
+
+func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 	obj := &CreditManager{
 		SyncAdapter:     adapter,
-		contractETH:     cmContract,
 		UpdatedSessions: make(map[string]int),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
+		multicall:       MultiCallProcessor{},
 	}
 	obj.GetAbi()
+	switch obj.GetVersion() {
+	case 1:
+		cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
+		if err != nil {
+			log.Fatal(err)
+		}
+		obj.contractETHV1 = cmContract
+	case 2:
+		// set credit manager and credit facade contracts
+		cmContract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(adapter.Address), adapter.Client)
+		if err != nil {
+			log.Fatal(err)
+		}
+		obj.contractETHV2 = cmContract
+		var creditFacadeAddr common.Address
+		if obj.Details != nil && obj.Details["facade"] != nil {
+			creditFacadeAddr = common.HexToAddress(obj.Details["facade"].(string))
+		} else {
+			opts := &bind.CallOpts{BlockNumber: big.NewInt(adapter.DiscoveredAt)}
+			creditFacadeAddr, err = cmContract.CreditFacade(opts)
+			log.CheckFatal(err)
+		}
+		obj.SetCreditFacadeContract(creditFacadeAddr)
+	}
 	return obj
+}
+
+func (mdl *CreditManager) SetCreditFacadeContract(creditFacadeAddr common.Address) {
+	var err error
+	mdl.facadeContractV2, err = creditFacade.NewCreditFacade(creditFacadeAddr, mdl.Client)
+	log.CheckFatal(err)
+	if mdl.Details == nil {
+		mdl.Details = map[string]interface{}{}
+	}
+	mdl.Details["facade"] = creditFacadeAddr.Hex()
+}
+
+func (mdl *CreditManager) GetCreditFacadeAddr() string {
+	return mdl.GetDetailsByKey("facade")
 }
 
 func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
@@ -97,8 +128,11 @@ func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 }
 
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
+	// ON NEW TXHASH
+	mdl.onNewTxHashV2("")
 	// generate remaining accountoperations and operation state
 	mdl.processExecuteEvents()
+	// ON NEW BLOCKNUM
 	// no logs where detected for current sync
 	if mdl.lastEventBlock == 0 {
 		mdl.ProcessDirectTokenTransfer(mdl.GetLastSync()+1, syncTill+1)

@@ -3,10 +3,12 @@ package repository
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/third-eye/artifacts/multicall"
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -14,11 +16,12 @@ type PriceCallParams struct {
 	Address common.Address
 }
 
-func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
+// multicall for getting price in batch
+// For only getting the prices for calculating the treasury value
+func (repo *Repository) getPricesInBatch(oracle string, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	calls := []multicall.Multicall2Call{}
 
-	oracle, err := repo.GetActivePriceOracle(blockNum)
-	if err != nil && err.Error() == "Not Found" {
+	if oracle == "" {
 		for _ = range tokenAddrs {
 			prices = append(prices, new(big.Int))
 		}
@@ -27,8 +30,7 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		}
 		return
 	}
-	log.CheckFatal(err)
-	oracleABI := core.GetAbi(core.PriceOracle)
+	oracleABI := schemas.GetAbi(ds.PriceOracle)
 	for _, token := range tokenAddrs {
 		tokenObj, err := repo.getTokenWithError(token)
 		log.CheckFatal(err)
@@ -41,7 +43,7 @@ func (repo *Repository) getPricesInBatch(blockNum int64, successRequired bool, t
 		})
 	}
 
-	poolABI := core.GetAbi(core.Pool)
+	poolABI := schemas.GetAbi(ds.Pool)
 	for _, pool := range poolForDieselRate {
 		data, err := poolABI.Pack("getDieselRate_RAY")
 		log.CheckFatal(err)

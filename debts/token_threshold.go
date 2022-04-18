@@ -1,13 +1,16 @@
 package debts
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
 // token threshold
 func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
-	data := []*core.AllowedToken{}
+	defer utils.Elapsed("Debt(loadAllowedTokenThreshold)")()
+	data := []*schemas.AllowedToken{}
 	query := `SELECT * FROM allowed_tokens 
 	JOIN (SELECT max(block_num) as bn, token, credit_manager FROM allowed_tokens 
 		WHERE block_num <= ? group by token,credit_manager) as atokens
@@ -24,7 +27,7 @@ func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
 	}
 }
 
-func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
+func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *schemas.AllowedToken) {
 	if eng.allowedTokensThreshold[atoken.CreditManager] == nil {
 		eng.allowedTokensThreshold[atoken.CreditManager] = make(map[string]*core.BigInt)
 	}
@@ -33,10 +36,11 @@ func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *core.AllowedToken) {
 
 // token price from feeds
 func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
-	data := []*core.PriceFeed{}
-	query := `SELECT price_feeds.* FROM price_feeds
-	JOIN (SELECT max(block_num) AS bn, token FROM price_feeds WHERE block_num <= ? GROUP BY token) AS max_pf
-	ON max_pf.bn = price_feeds.block_num AND max_pf.token = price_feeds.token WHERE block_num <= ?`
+	defer utils.Elapsed("Debt(loadTokenLastPrice)")()
+	data := []*schemas.PriceFeed{}
+	query := `SELECT pf.* FROM price_feeds pf
+	JOIN (SELECT max(block_num) b, token, price_in_usd FROM price_feeds WHERE block_num <= ? GROUP BY token, price_in_usd) AS max_pf
+	ON max_pf.b = pf.block_num and pf.token=max_pf.token and max_pf.price_in_usd=pf.price_in_usd`
 	err := eng.db.Raw(query, lastDebtSync, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -46,6 +50,10 @@ func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 	}
 }
 
-func (eng *DebtEngine) AddTokenLastPrice(pf *core.PriceFeed) {
-	eng.tokenLastPrice[pf.Token] = pf
+func (eng *DebtEngine) AddTokenLastPrice(pf *schemas.PriceFeed) {
+	if !pf.IsPriceInUSD {
+		eng.tokenLastPrice[pf.Token] = pf
+	} else {
+		eng.tokenLastPriceV2[pf.Token] = pf
+	}
 }

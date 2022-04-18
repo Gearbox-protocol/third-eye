@@ -4,26 +4,31 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/Gearbox-protocol/third-eye/log"
-	"github.com/Gearbox-protocol/third-eye/utils"
+	"math/big"
+	"sort"
+
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"math/big"
-	"sort"
 )
 
 type TestClient struct {
 	// Blocks map[int64]BlockInput
-	blockNums []int64
-	events    map[int64]map[string][]types.Log
-	prices    map[string]map[int64]*big.Int
-	masks     map[int64]map[string]*big.Int
-	state     *StateStore
-	USDCAddr  string
-	WETHAddr  string
-	token     map[string]int8
+	blockNums  []int64
+	events     map[int64]map[string][]types.Log
+	prices     map[string]map[int64]*big.Int
+	masks      map[int64]map[string]*big.Int
+	state      *StateStore
+	USDCAddr   string
+	WETHAddr   string
+	token      map[string]int8
+	otherCalls map[int64]map[string][]string
 }
 
 func (t *TestClient) SetUSDC(addr string) {
@@ -31,6 +36,9 @@ func (t *TestClient) SetUSDC(addr string) {
 }
 func (t *TestClient) SetWETH(addr string) {
 	t.WETHAddr = addr
+}
+func (t *TestClient) SetOtherCalls(calls map[int64]map[string][]string) {
+	t.otherCalls = calls
 }
 func NewTestClient() *TestClient {
 	return &TestClient{
@@ -116,18 +124,27 @@ func ContainsHash(list []common.Hash, v common.Hash) bool {
 func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery) ([]types.Log, error) {
 	toBlock := query.ToBlock.Int64()
 	txLogs := []types.Log{}
-	for i := query.FromBlock.Int64(); i < toBlock; i++ {
+	for i := query.FromBlock.Int64(); i <= toBlock; i++ {
 		for _, address := range query.Addresses {
 			if t.events[i] != nil {
-				if len(query.Topics) > 0 && query.Topics[0][0] == topic("Transfer(address,address,uint256)") {
-					for _, txLog := range t.events[i][address.Hex()] {
-						if ContainsHash(query.Topics[2], txLog.Topics[2]) {
+				if len(query.Topics) > 0 {
+					switch query.Topics[0][0] {
+					case topic("Transfer(address,address,uint256)"):
+						for _, txLog := range t.events[i][address.Hex()] {
+							if ContainsHash(query.Topics[2], txLog.Topics[2]) {
+								txLogs = append(txLogs, txLog)
+							}
+						}
+					case topic("AnswerUpdated(int256,uint256,uint256)"):
+						for _, txLog := range t.events[i][address.Hex()] {
 							txLogs = append(txLogs, txLog)
 						}
 					}
 				} else {
 					txLogs = append(txLogs, t.events[i][address.Hex()]...)
 				}
+			} else {
+				txLogs = append(txLogs, t.events[i][address.Hex()]...)
 			}
 		}
 	}
@@ -148,9 +165,16 @@ func (t *TestClient) CodeAt(ctx context.Context, contract common.Address, blockN
 }
 func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, blockNumber *big.Int) ([]byte, error) {
 	sig := hex.EncodeToString(call.Data[:4])
-	blockNum := blockNumber.Int64()
+	var blockNum int64
+	if blockNumber != nil {
+		blockNum = blockNumber.Int64()
+	}
+	if t.otherCalls[blockNum] != nil && t.otherCalls[blockNum][sig] != nil {
+		return common.HexToHash(t.otherCalls[blockNum][sig][0]).Bytes(), nil
+	}
 	// convert on priceOracle
 	if sig == "b66102df" {
+		return common.HexToHash(fmt.Sprintf("%x", t.convertPrice(blockNum, call.Data))).Bytes(), nil
 		s := 4
 		amount, ok := new(big.Int).SetString(hex.EncodeToString(call.Data[s:s+32]), 16)
 		if !ok {
@@ -169,7 +193,8 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		newAmount = new(big.Int).Quo(newAmount, price1)
 		return common.HexToHash(fmt.Sprintf("%x", newAmount)).Bytes(), nil
 		// enabledmask on creditfilter for account
-	} else if sig == "b451cecc" {
+		// v1 or v2 get mask
+	} else if sig == "b451cecc" || sig == "8991b2f1" {
 		s := 4
 		account := common.BytesToAddress(call.Data[s : s+32]).Hex()
 		mask := t.masks[blockNum][account]
@@ -189,27 +214,65 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 		oracle := call.To.Hex()
 		feed := t.state.Oracle.GetState(oracle, int(index.Int64()))
 		return common.HexToHash(feed.Feed).Bytes(), nil
+	} else if sig == "bce38bd7" {
+		obj := map[string]interface{}{}
+		parser := schemas.GetAbi("MultiCall")
+		method, err := parser.MethodById(call.Data[:4])
+		log.CheckFatal(err)
+		method.Inputs.UnpackIntoMap(obj, call.Data[4:])
+		calls := *abi.ConvertType(obj["calls"], new([]multicall.Multicall2Call)).(*[]multicall.Multicall2Call)
+		resultArray := []multicall.Multicall2Result{}
+		for _, call := range calls {
+			price := t.convertPrice(blockNum, call.CallData)
+			resultArray = append(resultArray, multicall.Multicall2Result{
+				Success:    true,
+				ReturnData: common.HexToHash(fmt.Sprintf("%x", price)).Bytes(),
+			})
+		}
+		outputData, err := method.Outputs.Pack(resultArray)
+		log.CheckFatal(err)
+		return outputData, nil
 	}
 	return nil, nil
 }
+
+func (t *TestClient) convertPrice(blockNum int64, data []byte) *big.Int {
+	s := 4
+	amount, ok := new(big.Int).SetString(hex.EncodeToString(data[s:s+32]), 16)
+	if !ok {
+		log.Fatal("failed in parsing int")
+	}
+	s += 32
+	token0 := common.BytesToAddress(data[s : s+32]).Hex()
+	decimalT0 := t.token[token0]
+	s += 32
+	token1 := common.BytesToAddress(data[s : s+32]).Hex()
+	decimalT1 := t.token[token1]
+	price0 := t.getPrice(blockNum, token0)
+	price1 := t.getPrice(blockNum, token1)
+	newAmount := new(big.Int).Mul(amount, price0)
+	newAmount = utils.GetInt64(newAmount, decimalT0-decimalT1)
+	newAmount = new(big.Int).Quo(newAmount, price1)
+	return newAmount
+}
+func (t *TestClient) BalanceAt(ctx context.Context, account common.Address, blockNumber *big.Int) (*big.Int, error) {
+	return nil, nil
+}
 func (t *TestClient) getPrice(blockNum int64, tokenAddr string) *big.Int {
-	if tokenAddr == t.WETHAddr {
+	if t.prices[tokenAddr] != nil {
+		var lastprice *big.Int
+		for currentNum, price := range t.prices[tokenAddr] {
+			if currentNum <= blockNum {
+				lastprice = price
+			}
+		}
+		return lastprice
+	} else if tokenAddr == t.WETHAddr { // only for v1
 		value, _ := new(big.Int).SetString("1000000000000000000", 10)
 		return value
 	} else {
-		if t.prices[tokenAddr] != nil {
-			var lastprice *big.Int
-			for currentNum, price := range t.prices[tokenAddr] {
-				if currentNum <= blockNum {
-					lastprice = price
-				}
-			}
-			return lastprice
-		} else {
-			log.Fatalf("token(%s) price not present", tokenAddr)
-		}
+		panic(fmt.Sprintf("token(%s) price not present", tokenAddr))
 	}
-	return nil
 }
 func (t *TestClient) PendingCodeAt(ctx context.Context, contract common.Address) ([]byte, error) {
 	return nil, nil

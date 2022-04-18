@@ -1,12 +1,12 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/third-eye/core"
-	"github.com/Gearbox-protocol/third-eye/log"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 )
 
 func (repo *Repository) LoadLastDebtSync() int64 {
-	data := core.DebtSync{}
+	data := schemas.DebtSync{}
 	query := "SELECT max(last_calculated_at) as last_calculated_at FROM debt_sync"
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
@@ -21,7 +21,7 @@ func (repo *Repository) LoadLastDebtSync() int64 {
 }
 
 func (repo *Repository) LoadLastAdapterSync() int64 {
-	data := core.DebtSync{}
+	data := schemas.DebtSync{}
 	query := "SELECT min(last_sync) as last_calculated_at FROM sync_adapters where disabled=false"
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
@@ -31,7 +31,7 @@ func (repo *Repository) LoadLastAdapterSync() int64 {
 }
 
 func (repo *Repository) loadDiscoveredAt() int64 {
-	data := core.DebtSync{}
+	data := schemas.DebtSync{}
 	query := "SELECT min(discovered_at) as last_calculated_at FROM sync_adapters"
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
