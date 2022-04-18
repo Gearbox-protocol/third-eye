@@ -23,7 +23,8 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	if len(mdl.UniPoolByToken) == 0 && len(mdl.YearnFeeds) == 0 {
 		return
 	}
-	ch := make(chan int, 6)
+	concurrentThreads := 6
+	ch := make(chan int, concurrentThreads)
 	// msg
 	queryFrom := mdl.GetLastSync() + mdl.Interval
 	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, queryTill)
@@ -46,6 +47,7 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 		rounds++
 	}
 	wg.Wait()
+
 	for _, adapter := range mdl.YearnFeeds {
 		// yearn price feed can't be disabled from v2
 		if queryTill <= adapter.GetLastSync() || adapter.IsDisabled() {

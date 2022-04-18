@@ -44,6 +44,7 @@ func (e *Engine) UseThreads() {
 }
 
 func (e *Engine) init() {
+	log.Msg("Starting Third-eye")
 	// debt engine initialisation
 	e.repo.InitChecks()
 	e.debtEng.ProcessBackLogs()
