@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"context"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -29,15 +28,12 @@ func NewEngine(config *config.Config,
 	ec core.ClientI,
 	debtEng ds.DebtEngineI,
 	repo ds.RepositoryI) ds.EngineI {
-	chaindId, err := ec.ChainID(context.TODO())
-	log.CheckFatal(err)
 	eng := &Engine{
 		debtEng: debtEng,
 		config:  config,
 		repo:    repo,
 		Node: &core.Node{
 			Client:  ec,
-			ChainId: chaindId.Int64(),
 		},
 	}
 	return eng
