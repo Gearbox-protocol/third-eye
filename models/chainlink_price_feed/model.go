@@ -41,12 +41,12 @@ func NewChainlinkPriceFeed(token, oracle, feed string, discoveredAt int64, clien
 		syncAdapter,
 		true,
 	)
-	repo.AddTokenOracle(&schemas.TokenOracle{
-		Token:       token,
-		Oracle:      adapter.Oracle,
-		Feed:        adapter.Address,
-		BlockNumber: discoveredAt,
-		Version:     version})
+	// repo.AddTokenOracle(&schemas.TokenOracle{
+	// 	Token:       token,
+	// 	Oracle:      adapter.Oracle,
+	// 	Feed:        adapter.Address,
+	// 	BlockNumber: discoveredAt,
+	// 	Version:     version})
 	repo.AddUniPoolsForToken(adapter.DiscoveredAt, token)
 	return adapter
 }
@@ -95,9 +95,10 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 	newPriceFeed := mdl.GetPriceFeedAddr(syncedTill)
 	if newPriceFeed != mdl.Address && newPriceFeed != "" {
-		mdl.Repo.AddSyncAdapter(
-			NewChainlinkPriceFeed(mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo, mdl.GetVersion()),
-		)
+		mdl.Repo.AddTokenFeed(ds.ChainlinkPriceFeed, mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.GetVersion())
+		// mdl.Repo.AddSyncAdapter(
+		// 	NewChainlinkPriceFeed(mdl.Token, mdl.Oracle, newPriceFeed, mdl.LastSync+1, mdl.Client, mdl.Repo, mdl.GetVersion()),
+		// )
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }

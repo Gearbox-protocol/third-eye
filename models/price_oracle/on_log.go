@@ -10,7 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -49,10 +49,11 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			log.Fatal(err)
 		}
 		if priceFeedType == ChainlinkPriceFeed {
-			obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo, version)
-			mdl.Repo.AddSyncAdapter(obj)
+			mdl.Repo.AddTokenFeed(ds.ChainlinkPriceFeed, token, oracle, oracle, blockNum, version)
+			// obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo, version)
+			// mdl.Repo.AddSyncAdapter(obj)
 		} else if priceFeedType == YearnPriceFeed {
-			mdl.Repo.AddYearnFeed(token, oracle, blockNum, version)
+			mdl.Repo.AddTokenFeed(ds.YearnPriceFeed, token, oracle, oracle, blockNum, version)
 			// obj := aggregated_block_feed.NewYearnPriceFeed(token, oracle, blockNum, mdl.SyncAdapter.Client, mdl.Repo, version)
 			// mdl.Repo.AddSyncAdapter(obj)
 		} else {

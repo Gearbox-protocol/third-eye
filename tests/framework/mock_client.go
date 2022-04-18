@@ -127,15 +127,24 @@ func (t *TestClient) FilterLogs(ctx context.Context, query ethereum.FilterQuery)
 	for i := query.FromBlock.Int64(); i <= toBlock; i++ {
 		for _, address := range query.Addresses {
 			if t.events[i] != nil {
-				if len(query.Topics) > 0 && query.Topics[0][0] == topic("Transfer(address,address,uint256)") {
-					for _, txLog := range t.events[i][address.Hex()] {
-						if ContainsHash(query.Topics[2], txLog.Topics[2]) {
+				if len(query.Topics) > 0 {
+					switch query.Topics[0][0] {
+					case topic("Transfer(address,address,uint256)"):
+						for _, txLog := range t.events[i][address.Hex()] {
+							if ContainsHash(query.Topics[2], txLog.Topics[2]) {
+								txLogs = append(txLogs, txLog)
+							}
+						}
+					case topic("AnswerUpdated(int256,uint256,uint256)"):
+						for _, txLog := range t.events[i][address.Hex()] {
 							txLogs = append(txLogs, txLog)
 						}
 					}
 				} else {
 					txLogs = append(txLogs, t.events[i][address.Hex()]...)
 				}
+			} else {
+				txLogs = append(txLogs, t.events[i][address.Hex()]...)
 			}
 		}
 	}

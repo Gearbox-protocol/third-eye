@@ -86,7 +86,7 @@ func (s *SyncAdapter) OnLogs(txLog []types.Log) {
 
 func (s *SyncAdapter) disableOnBlock(currentBlock int64) {
 	if s.BlockToDisableOn != 0 && currentBlock >= s.BlockToDisableOn {
-		log.Warnf("DisableOnBlock at currentBlock(%d) and s.BlockToDisableOn(%d) for %s(%s)",
+		log.Warnf("DisableOnBlock called at currentBlock(%d) and s.BlockToDisableOn(%d) for %s(%s)",
 			currentBlock, s.BlockToDisableOn, s.ContractName, s.Address)
 		s.Disable()
 	}

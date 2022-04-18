@@ -5,6 +5,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 )
 
 // for price oracle/feeds
@@ -65,15 +66,35 @@ func (repo *Repository) AddPriceFeed(blockNum int64, pf *schemas.PriceFeed) {
 	repo.setAndGetBlock(blockNum).AddPriceFeed(pf)
 }
 
-func (repo *Repository) AddYearnFeed(token, oracle string, discoveredAt int64, version int16) {
-	// add token oracle for db
-	// feed is also oracle address for yearn address
-	// we don't relie on underlying feed
-	repo.AddTokenOracle(&schemas.TokenOracle{
-		Token:       token,
-		Oracle:      oracle,
-		Feed:        oracle,
-		BlockNumber: discoveredAt,
-		Version:     version})
-	repo.aggregatedFeed.AddYearnFeedOrToken(token, oracle, discoveredAt, version)
+func (repo *Repository) AddTokenFeed(feedType, token, oracle, feed string, discoveredAt int64, version int16) {
+	switch feedType {
+	case ds.YearnPriceFeed:
+		// add token oracle for db
+		// feed is also oracle address for yearn address
+		// we don't relie on underlying feed
+		repo.AddTokenOracle(&schemas.TokenOracle{
+			Token:       token,
+			Oracle:      oracle,
+			Feed:        oracle,// feed is same as oracle
+			BlockNumber: discoveredAt,
+			Version:     version})
+		repo.aggregatedFeed.AddYearnFeedOrToken(token, oracle, discoveredAt, version)
+	case ds.ChainlinkPriceFeed:
+		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, feed, discoveredAt, repo.client, repo, version)
+		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {
+			oldTokenOracle := repo.tokensCurrentOracle[version][token]
+			if oldTokenOracle.Oracle == oracle && oldTokenOracle.Feed == obj.Address {
+				log.Warnf("Oracle Prev feed(%s) and new feed(%s) for token(%s) are same.",
+					oldTokenOracle.Feed, obj.Address, token)
+				return
+			}
+		}
+		repo.AddTokenOracle(&schemas.TokenOracle{
+			Token:       token,
+			Oracle:      oracle,
+			Feed:        obj.Address,
+			BlockNumber: discoveredAt,
+			Version:     version})
+		repo.AddSyncAdapter(obj)
+	}
 }
