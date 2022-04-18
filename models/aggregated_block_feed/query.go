@@ -3,6 +3,7 @@ package aggregated_block_feed
 import (
 	"math/big"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
@@ -13,6 +14,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
+
 	// "fmt"
 	"sort"
 )
@@ -29,9 +31,11 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	rounds := 0
 	loopStartTime := time.Now()
 	roundStartTime := time.Now()
+	wg := &sync.WaitGroup{}
 	for blockNum := queryFrom; blockNum <= queryTill; blockNum += mdl.Interval {
 		ch <- 1
-		go mdl.queryAsync(blockNum, ch)
+		wg.Add(1)
+		go mdl.queryAsync(blockNum, ch, wg)
 		if rounds%100 == 0 {
 			timeLeft := (time.Now().Sub(loopStartTime).Seconds() * float64(queryTill-blockNum)) /
 				float64(blockNum-mdl.GetLastSync())
@@ -41,7 +45,9 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 		}
 		rounds++
 	}
+	wg.Wait()
 	for _, adapter := range mdl.YearnFeeds {
+		// yearn price feed can't be disabled from v2
 		if queryTill <= adapter.GetLastSync() || adapter.IsDisabled() {
 			continue
 		}
@@ -68,7 +74,7 @@ func powFloat(a *big.Int) *big.Float {
 	return new(big.Float).Quo(big.NewFloat(1), ans)
 }
 
-func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int) {
+func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGroup) {
 	weth := mdl.Repo.GetWETHAddr()
 	pfs, pricesByToken := mdl.QueryData(blockNum, weth, "all")
 	for _, pf := range pfs {
@@ -76,6 +82,7 @@ func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int) {
 	}
 	mdl.updatePrice(pricesByToken)
 	<-ch
+	wg.Done()
 }
 
 func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery string) ([]*schemas.PriceFeed, map[string]*schemas.UniPoolPrices) {
@@ -222,7 +229,7 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 	priceFeedABI := schemas.GetAbi(ds.YearnPriceFeed)
 	//
 	for _, adapter := range mdl.YearnFeeds {
-		if blockNum <= adapter.GetLastSync() || adapter.IsDisabled() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
+		if blockNum <= adapter.GetLastSync() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
 			continue
 		}
 		data, err := priceFeedABI.Pack("latestRoundData")
@@ -233,7 +240,6 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 		}
 		calls = append(calls, call)
 		queryAbleAdapters = append(queryAbleAdapters, adapter)
-		adapter.AfterSyncHook(blockNum)
 	}
 	return
 }
