@@ -20,7 +20,7 @@ import (
 )
 
 func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, config *config.Config, shutdowner fx.Shutdowner) {
-	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl)
+	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl, "Debts")
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and
