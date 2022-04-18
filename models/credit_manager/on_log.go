@@ -68,7 +68,7 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 			case tx.To:
 				amount = tx.Amount.Convert()
 				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, amount)
-				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Deposit %v", tx)
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Deposit %+v", tx)
 			}
 			if blockNum == mdl.lastEventBlock {
 				mdl.setUpdateSession(sessionID)

@@ -57,7 +57,6 @@ type SyncAdapterI interface {
 	GetDiscoveredAt() int64
 	GetDetailsByKey(key string) string
 	GetDetails() core.Json
-	FetchVersion(blockNum int64) int16
 	GetVersion() int16
 }
 
@@ -141,7 +140,7 @@ func NewSyncAdapter(addr, name string, discoveredAt int64, client core.ClientI, 
 	obj.LastSync = obj.FirstLogAt - 1
 	// version in pricefeed is not related to gearbox protocol
 	if name != ChainlinkPriceFeed && name != YearnPriceFeed {
-		obj.V = obj.FetchVersion(discoveredAt)
+		obj.V = schemas.FetchVersion(addr, discoveredAt, client)
 	}
 	return obj
 }
