@@ -30,9 +30,13 @@
       },
     ],
     timestamp: 259200,
+  },
+  '4': {
+    blockNum: 4,
+    timestamp: 345600,
     tokenOracles: [
       {
-        blockNum: 3,
+        blockNum: 4,
         feed: '#ChainlinkPriceFeed_4',
         oracle: '#Oracle_2',
         token: '#Token_2',

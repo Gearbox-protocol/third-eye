@@ -96,7 +96,7 @@ type RepositoryI interface {
 	// oracle and uni
 	AddUniswapPrices(prices *schemas.UniPoolPrices)
 	GetYearnFeedAddrs() []string
-	AddTokenFeed(feedType string, token, oracle, feed string, discoveredAt int64, version int16)
+	AddTokenFeed(feedType string, token, oracle string, discoveredAt int64, version int16)
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64
 	Clear()

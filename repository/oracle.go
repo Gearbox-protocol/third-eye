@@ -66,7 +66,7 @@ func (repo *Repository) AddPriceFeed(blockNum int64, pf *schemas.PriceFeed) {
 	repo.setAndGetBlock(blockNum).AddPriceFeed(pf)
 }
 
-func (repo *Repository) AddTokenFeed(feedType, token, oracle, feed string, discoveredAt int64, version int16) {
+func (repo *Repository) AddTokenFeed(feedType, token, oracle string, discoveredAt int64, version int16) {
 	switch feedType {
 	case ds.YearnPriceFeed:
 		// add token oracle for db
@@ -80,7 +80,7 @@ func (repo *Repository) AddTokenFeed(feedType, token, oracle, feed string, disco
 			Version:     version})
 		repo.aggregatedFeed.AddYearnFeedOrToken(token, oracle, discoveredAt, version)
 	case ds.ChainlinkPriceFeed:
-		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, feed, discoveredAt, repo.client, repo, version)
+		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, discoveredAt, repo.client, repo, version)
 		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {
 			oldTokenOracle := repo.tokensCurrentOracle[version][token]
 			if oldTokenOracle.Oracle == oracle && oldTokenOracle.Feed == obj.Address {

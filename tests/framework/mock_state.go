@@ -36,7 +36,7 @@ func (s *OracleStateStore) GetIndex(oracle string, blockNum int64) int {
 	objs := s.Data[oracle]
 	var index int
 	for i := s.Index[oracle]; i < len(objs); i++ {
-		if objs[i].BlockNum < blockNum {
+		if objs[i].BlockNum <= blockNum {
 			index = i
 		} else {
 			break

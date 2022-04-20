@@ -8,7 +8,7 @@
       version: 1,
     },
     '#Token_2': {
-      blockNum: 3,
+      blockNum: 4,
       feed: '#ChainlinkPriceFeed_4',
       oracle: '#Oracle_2',
       token: '#Token_2',
