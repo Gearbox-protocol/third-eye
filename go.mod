@@ -12,7 +12,7 @@ require (
 )
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20220421115222-456729e6d4dc // indirect
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20220421143144-c8d7dd4c568e // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
