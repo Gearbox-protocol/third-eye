@@ -227,8 +227,8 @@ func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery 
 	return
 }
 
-func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*YearnPriceFeed) {
-	priceFeedABI := schemas.GetAbi(ds.YearnPriceFeed)
+func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*QueryPriceFeed) {
+	priceFeedABI := schemas.GetAbi("PriceFeed")
 	//
 	for _, adapter := range mdl.YearnFeeds {
 		if blockNum <= adapter.GetLastSync() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
@@ -246,8 +246,8 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 	return
 }
 
-func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
-	priceFeedABI := schemas.GetAbi(ds.YearnPriceFeed)
+func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
+	priceFeedABI := schemas.GetAbi("PriceFeed")
 	var priceData *schemas.PriceFeed
 	if entry.Success {
 		roundData := schemas.LatestRounData{}
@@ -271,7 +271,10 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *YearnP
 		}
 		adapter.setNotified(false)
 	} else {
-		priceData = adapter.calculatePriceFeedInternally(blockNum)
+		switch adapter.GetDetailsByKey("pfType") {
+		case ds.YearnPF:
+			priceData = adapter.calculateYearnPFInternally(blockNum)
+		}
 	}
 	priceFeeds := []*schemas.PriceFeed{}
 	for _, token := range adapter.TokensValidAtBlock(blockNum) {

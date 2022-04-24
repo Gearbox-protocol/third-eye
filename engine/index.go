@@ -33,7 +33,7 @@ func NewEngine(config *config.Config,
 		config:  config,
 		repo:    repo,
 		Node: &core.Node{
-			Client:  ec,
+			Client: ec,
 		},
 	}
 	return eng

@@ -17,7 +17,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-type YearnPriceFeed struct {
+type QueryPriceFeed struct {
 	*ds.SyncAdapter
 	contractETH       *yearnPriceFeed.YearnPriceFeed
 	YVaultContract    *yVault.YVault
@@ -26,45 +26,50 @@ type YearnPriceFeed struct {
 	mu                *sync.Mutex
 }
 
-func NewYearnPriceFeed(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *YearnPriceFeed {
+func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *QueryPriceFeed {
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{
 				Address:      oracle,
 				DiscoveredAt: discoveredAt,
 				FirstLogAt:   discoveredAt,
-				ContractName: ds.YearnPriceFeed,
+				ContractName: ds.QueryPriceFeed,
 				Client:       client,
 			},
-			Details:  map[string]interface{}{"token": token},
+			Details:  map[string]interface{}{"token": token, "pfType": pfType},
 			LastSync: discoveredAt - 1,
 			V:        version,
 		},
 		Repo: repo,
 	}
-	return NewYearnPriceFeedFromAdapter(
+	return NewQueryPriceFeedFromAdapter(
 		syncAdapter,
 	)
 }
 
-func NewYearnPriceFeedFromAdapter(adapter *ds.SyncAdapter) *YearnPriceFeed {
-	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(adapter.Address), adapter.Client)
-	if err != nil {
-		log.Fatal(err)
-	}
-	obj := &YearnPriceFeed{
+func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) *QueryPriceFeed {
+	obj := &QueryPriceFeed{
 		SyncAdapter: adapter,
-		contractETH: yearnPFContract,
 		mu:          &sync.Mutex{},
+	}
+	switch adapter.GetDetailsByKey("pfType") {
+	case ds.YearnPF:
+		var err error
+		obj.contractETH, err = yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(adapter.Address), adapter.Client)
+		if err != nil {
+			log.Fatal(err)
+		}
+		// case ds.CurvePF:
+		// log.Info("No contract set for curve pf to use internally")
 	}
 	obj.OnlyQuery = true
 	return obj
 }
 
-func (mdl *YearnPriceFeed) OnLog(txLog types.Log) {
+func (mdl *QueryPriceFeed) OnLog(txLog types.Log) {
 
 }
-func (mdl *YearnPriceFeed) isNotified() bool {
+func (mdl *QueryPriceFeed) isNotified() bool {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	if mdl.Details == nil || mdl.Details["notified"] == nil {
@@ -77,13 +82,13 @@ func (mdl *YearnPriceFeed) isNotified() bool {
 	return value
 }
 
-func (mdl *YearnPriceFeed) setNotified(notified bool) {
+func (mdl *QueryPriceFeed) setNotified(notified bool) {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	mdl.Details["notified"] = notified
 }
 
-func (mdl *YearnPriceFeed) GetTokenAddr() string {
+func (mdl *QueryPriceFeed) GetTokenAddr() string {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	tokenAddr, ok := mdl.Details["token"].(string)
@@ -93,7 +98,7 @@ func (mdl *YearnPriceFeed) GetTokenAddr() string {
 	return tokenAddr
 }
 
-func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *schemas.PriceFeed {
+func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) *schemas.PriceFeed {
 	if mdl.YVaultContract == nil || mdl.PriceFeedContract == nil || mdl.DecimalDivider == nil {
 		mdl.setContracts(blockNum)
 	}
@@ -136,7 +141,7 @@ func (mdl *YearnPriceFeed) calculatePriceFeedInternally(blockNum int64) *schemas
 	}
 }
 
-func (mdl *YearnPriceFeed) setContracts(blockNum int64) {
+func (mdl *QueryPriceFeed) setContracts(blockNum int64) {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
@@ -160,7 +165,7 @@ func (mdl *YearnPriceFeed) setContracts(blockNum int64) {
 	mdl.DecimalDivider = utils.GetExpInt(int8(decimals))
 }
 
-func (mdl *YearnPriceFeed) AddToken(token string, discoveredAt int64) {
+func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 	if mdl.Details == nil {
 		mdl.Details = core.Json{}
 	}
@@ -200,7 +205,7 @@ func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
 			log.Fatal("failed in converting to log array", logs)
 		}
 		for _, ele := range l {
-			obj, ok  := ele.([]interface{})
+			obj, ok := ele.([]interface{})
 			if !ok {
 				log.Fatal("failed in converting to log array element", ele)
 			}
@@ -208,10 +213,10 @@ func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
 			parsedLogs = append(parsedLogs, parsedEle)
 		}
 	}
-	return 
+	return
 }
 
-func (mdl *YearnPriceFeed) DisableToken(token string, disabledAt int64) {
+func (mdl *QueryPriceFeed) DisableToken(token string, disabledAt int64) {
 	obj := map[string]interface{}{}
 	switch mdl.Details["token"].(type) {
 	case string:
@@ -228,7 +233,7 @@ func (mdl *YearnPriceFeed) DisableToken(token string, disabledAt int64) {
 	mdl.Details["token"] = obj
 }
 
-func (mdl *YearnPriceFeed) TokensValidAtBlock(blockNum int64) []string {
+func (mdl *QueryPriceFeed) TokensValidAtBlock(blockNum int64) []string {
 	switch mdl.Details["token"].(type) {
 	case string:
 		tokens := []string{}
@@ -260,13 +265,13 @@ func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
 		for _, int_ := range ints {
 			var parsedInt int64
 			switch int_.(type) {
-				case int64:
-					parsedInt = int_.(int64)
-				case float64:
-					parsedFloat := int_.(float64)
-					parsedInt = int64(parsedFloat)
-				default:
-					log.Fatalf("YearnPriceFeed token start/end block_num not in int format %v", int_)
+			case int64:
+				parsedInt = int_.(int64)
+			case float64:
+				parsedFloat := int_.(float64)
+				parsedInt = int64(parsedFloat)
+			default:
+				log.Fatalf("QueryPriceFeed token start/end block_num not in int format %v", int_)
 			}
 			parsedInts = append(parsedInts, parsedInt)
 		}

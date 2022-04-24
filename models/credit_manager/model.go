@@ -51,7 +51,7 @@ func NewCreditManager(addr string, client core.ClientI, repo ds.RepositoryI, dis
 	cm := NewCreditManagerFromAdapter(
 		ds.NewSyncAdapter(addr, ds.CreditManager, discoveredAt, client, repo),
 	)
-	cm.CommonInit()
+	cm.CommonInit(cm.GetVersion())
 	switch cm.GetVersion() {
 	case 1:
 		cm.addCreditFilter(discoveredAt)

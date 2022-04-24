@@ -44,8 +44,8 @@ func (repo *Repository) Flush() error {
 		}
 		repo.kit.Reset(lvlIndex)
 	}
-	// save yearnPriceFeeds
-	for _, adapter := range repo.aggregatedFeed.GetYearnFeeds() {
+	// save qyery feeds from aggregatedFeed
+	for _, adapter := range repo.aggregatedFeed.GetQueryFeeds() {
 		adapters = append(adapters, adapter.GetAdapterState())
 	}
 	err := tx.Clauses(clause.OnConflict{

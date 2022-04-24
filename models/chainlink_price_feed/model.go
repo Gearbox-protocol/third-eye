@@ -5,11 +5,10 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
-	"math/big"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"math/big"
 )
 
 type ChainlinkPriceFeed struct {
@@ -99,7 +98,7 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 	newPriceFeed, newPhaseId := mdl.GetPriceFeedAddr(syncedTill)
 	if newPriceFeed != mdl.Address && newPriceFeed != "" {
 		discoveredAt := mdl.GetFeedUpdateBlock(newPhaseId, mdl.LastSync+1, syncedTill)
-		mdl.Repo.AddTokenFeed(ds.ChainlinkPriceFeed, mdl.Token, mdl.Oracle, discoveredAt, mdl.GetVersion())
+		mdl.Repo.AddTokenFeed(ds.ChainlinkPF, mdl.Token, mdl.Oracle, discoveredAt, mdl.GetVersion())
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }
@@ -108,34 +107,33 @@ func (mdl *ChainlinkPriceFeed) GetFeedUpdateBlock(newPhaseId uint16, from, to in
 	if from == to {
 		return from
 	}
-	midBlockNum := (from+to)/2
+	midBlockNum := (from + to) / 2
 	phaseId, err := mdl.contractETH.PhaseId(&bind.CallOpts{BlockNumber: big.NewInt(midBlockNum)})
 	log.CheckFatal(err)
 	if phaseId != newPhaseId {
 		return mdl.GetFeedUpdateBlock(newPhaseId, midBlockNum+1, to)
 	} else {
-		return mdl.GetFeedUpdateBlock(newPhaseId, from ,midBlockNum)
+		return mdl.GetFeedUpdateBlock(newPhaseId, from, midBlockNum)
 	}
 }
 
 func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) (string, uint16) {
-	opts, cancel := utils.GetTimeoutOpts(blockNum)
-	defer cancel()
-	phaseId, err := mdl.contractETH.PhaseId(opts)
-	if err != nil {
-		log.Fatal(err)
-		// if err.Error() == "execution aborted (timeout = 20s)" {
-		// } else {
-		// 	mdl.SetError(err)
-		// 	log.Error(mdl.GetAddress(), " feed failed disabling due to ", err)
-		// 	return ""
-		// }
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
 	}
-	opts, cancel = utils.GetTimeoutOpts(blockNum)
-	defer cancel()
-	newPriceFeed, err := mdl.contractETH.PhaseAggregators(opts, phaseId)
+	var err error
+	var phaseId uint16
+	phaseId, err = mdl.contractETH.PhaseId(opts)
+	log.CheckFatal(err)
+	var newPriceFeed common.Address
+	newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, false)
 	if err != nil {
-		log.Fatal(mdl.Address, err)
+		if mdl.GetVersion() == 2 {
+			newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, true)
+		}
+		if err != nil {
+			log.Fatal(mdl.Address, mdl.Details, mdl.GetVersion(), err)
+		}
 	}
 	return newPriceFeed.Hex(), phaseId
 }

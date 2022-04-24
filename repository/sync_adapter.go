@@ -54,8 +54,8 @@ func (repo *Repository) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.SyncAdapt
 		return price_oracle.NewPriceOracleFromAdapter(adapter)
 	case ds.ChainlinkPriceFeed:
 		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter, false)
-	case ds.YearnPriceFeed:
-		return aggregated_block_feed.NewYearnPriceFeedFromAdapter(adapter)
+	case ds.QueryPriceFeed:
+		return aggregated_block_feed.NewQueryPriceFeedFromAdapter(adapter)
 	case ds.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case ds.GearToken:
@@ -100,7 +100,7 @@ func (repo *Repository) addSyncAdapter(adapterI ds.SyncAdapterI) {
 	if ds.GearToken == adapterI.GetName() {
 		repo.GearTokenAddr = adapterI.GetAddress()
 	}
-	if adapterI.GetName() == ds.YearnPriceFeed {
+	if adapterI.GetName() == ds.QueryPriceFeed {
 		repo.aggregatedFeed.AddYearnFeed(adapterI)
 	} else {
 		repo.kit.Add(adapterI)

@@ -31,14 +31,14 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 		blockNum := int64(txLog.BlockNumber)
 		switch txLog.Topics[0] {
 		case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
-			roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[2:], 16, 64)
+			roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
 			if err != nil {
-				log.Fatal("roundid failed")
+				log.Fatal("TxHash", txLog.TxHash.Hex(), "roundid failed", txLog.Topics[2].Hex())
 			}
 
 			answerBI, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
 			if !ok {
-				log.Fatal("answer parsing failed")
+				log.Fatal("answer parsing failed", txLog.Topics[1].Hex())
 			}
 			isPriceInUSD := mdl.GetVersion() > 1
 			var decimals int8 = 18 // for eth

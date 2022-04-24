@@ -224,7 +224,8 @@ local utils = import '../utils.libsonnet';
       ],
       calls: {
         others: {
-          '2495a599': ['#Token_1'],
+          '2495a599': ['#Token_1'],  // underlyingTOken used by pool
+          '6f307dc3': ['#Token_1'],  // underlying used by credit manager version 2
           '36dda7d5': ['#DieselToken_1'],
           '570a7af2': ['#Pool_2'],
           '2f7a1881': ['#CreditFacade_2'],

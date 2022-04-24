@@ -41,10 +41,14 @@ func (repo *Repository) DisableProtocol(blockNum int64, logID uint, txHash, cm, 
 	})
 }
 
+func (repo *Repository) addAllowedToken(atoken *schemas.AllowedToken) {
+	repo.addToken(atoken.Token)
+	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
+}
 func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
+	repo.addAllowedToken(atoken)
 	prevLiqThreshold := repo.GetPreviousLiqThreshold(atoken.CreditManager, atoken.Token)
 	args := core.Json{
 		"liquidityThreshold":       atoken.LiquidityThreshold,
@@ -72,7 +76,7 @@ func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string,
 
 // v2 logic
 // - token emitted.
-// (c1)if the previous lt is not present only store dao operation.
+// (c1)if the previous lt is not present and current lt is not set only store dao operation.
 // (c2)if previous lt is present, set the old lt to new lt. store dao operation, update allowed token state and add allowed token to table.
 // if previous lt has disabledBlock,  set reenabled
 // if previous lt hasn't disabledBlock, disable previous entry
@@ -101,8 +105,8 @@ func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter strin
 	if atoken.LiquidityThreshold == nil { // c2
 		atoken.LiquidityThreshold = prevLiqThreshold
 	}
-	reEnable := repo.isAllowedTokenDisabled(cm, token)
-	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
+	canReEnable := repo.isAllowedTokenDisabled(cm, token)
+	repo.addAllowedToken(atoken)
 	args := core.Json{
 		"liquidityThreshold":       atoken.LiquidityThreshold,
 		"token":                    atoken.Token,
@@ -110,7 +114,7 @@ func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter strin
 		"prevLiquidationThreshold": prevLiqThreshold,
 	}
 	// previous allowed token disabled
-	if reEnable {
+	if canReEnable {
 		args["type"] = "reEnabled"
 	} else if repo.allowedTokens[cm] != nil && repo.allowedTokens[cm][token] != nil {
 		// and previous entries is present has disabledBlock set to 0

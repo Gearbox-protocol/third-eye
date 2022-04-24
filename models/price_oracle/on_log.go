@@ -3,6 +3,7 @@ package price_oracle
 import (
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
@@ -14,11 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-)
-
-const (
-	ChainlinkPriceFeed = iota
-	YearnPriceFeed
 )
 
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
@@ -48,20 +44,19 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal(err)
 		}
-		if priceFeedType == ChainlinkPriceFeed {
-			mdl.Repo.AddTokenFeed(ds.ChainlinkPriceFeed, token, oracle, blockNum, version)
-		} else if priceFeedType == YearnPriceFeed {
-			mdl.Repo.AddTokenFeed(ds.YearnPriceFeed, token, oracle, blockNum, version)
-		} else {
+		switch priceFeedType {
+		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPF:
+			mdl.Repo.AddTokenFeed(priceFeedType, token, oracle, blockNum, version)
+		default:
 			log.Fatal("Unknown PriceFeed type", priceFeedType)
 		}
 	}
 }
 
-func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string) (int, error) {
+func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string) (string, error) {
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracle), mdl.Client)
 	if err != nil {
-		return -1, err
+		return "", err
 	}
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(discoveredAt),
@@ -71,16 +66,22 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 		if utils.Contains([]string{"VM execution error.", "execution reverted"}, err.Error()) {
 			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 			if err != nil {
-				return -1, err
+				return "", err
 			}
 			_, err = yearnContract.YVault(opts)
 			if err != nil {
-				return -1, fmt.Errorf("Neither chainlink nor yearn price feed %s", err)
+				description, err := yearnContract.Description(opts)
+				if !strings.Contains(description, "CurveLP pricefeed") {
+					log.Info(description)
+					return "", fmt.Errorf("Neither chainlink nor yearn nor curve price feed %s", err)
+				} else {
+					return ds.CurvePF, nil
+				}
 			}
-			return YearnPriceFeed, nil
+			return ds.YearnPF, nil
 		}
 	} else {
-		return ChainlinkPriceFeed, nil
+		return ds.ChainlinkPF, nil
 	}
-	return -1, fmt.Errorf("PriceFeed type not found")
+	return "", fmt.Errorf("PriceFeed type not found")
 }

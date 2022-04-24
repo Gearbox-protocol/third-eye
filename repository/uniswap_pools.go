@@ -116,7 +116,7 @@ func (repo *Repository) AddUniPriceAndChainlinkRelation(relation *schemas.UniPri
 }
 
 func (repo *Repository) GetYearnFeedAddrs() (addrs []string) {
-	feeds := repo.aggregatedFeed.GetYearnFeeds()
+	feeds := repo.aggregatedFeed.GetQueryFeeds()
 	for _, adapter := range feeds {
 		addrs = append(addrs, adapter.GetAddress())
 	}
@@ -126,7 +126,7 @@ func (repo *Repository) GetYearnFeedAddrs() (addrs []string) {
 func (repo *Repository) GetAdapter(addr string) ds.SyncAdapterI {
 	adapter := repo.kit.GetAdapter(addr)
 	if adapter == nil {
-		feeds := repo.aggregatedFeed.GetYearnFeeds()
+		feeds := repo.aggregatedFeed.GetQueryFeeds()
 		for _, feed := range feeds {
 			if feed.GetAddress() == addr {
 				return feed

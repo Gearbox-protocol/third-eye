@@ -44,7 +44,7 @@ func (repo *Repository) AddTokenOracle(tokenOracle *schemas.TokenOracle) {
 				currentFeed, tokenOracle.Feed, tokenOracle.Token)
 			return
 		}
-		if adapter.GetName() != ds.YearnPriceFeed {
+		if adapter.GetName() != ds.QueryPriceFeed {
 			adapter.SetBlockToDisableOn(tokenOracle.BlockNumber)
 		} else {
 			repo.aggregatedFeed.DisableYearnFeed(tokenOracle.Token, currentFeed, tokenOracle.BlockNumber)
@@ -68,18 +68,18 @@ func (repo *Repository) AddPriceFeed(blockNum int64, pf *schemas.PriceFeed) {
 
 func (repo *Repository) AddTokenFeed(feedType, token, oracle string, discoveredAt int64, version int16) {
 	switch feedType {
-	case ds.YearnPriceFeed:
+	case ds.CurvePF, ds.YearnPF:
 		// add token oracle for db
 		// feed is also oracle address for yearn address
 		// we don't relie on underlying feed
 		repo.AddTokenOracle(&schemas.TokenOracle{
 			Token:       token,
 			Oracle:      oracle,
-			Feed:        oracle,// feed is same as oracle
+			Feed:        oracle, // feed is same as oracle
 			BlockNumber: discoveredAt,
 			Version:     version})
-		repo.aggregatedFeed.AddYearnFeedOrToken(token, oracle, discoveredAt, version)
-	case ds.ChainlinkPriceFeed:
+		repo.aggregatedFeed.AddFeedOrToken(token, oracle, feedType, discoveredAt, version)
+	case ds.ChainlinkPF:
 		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, discoveredAt, repo.client, repo, version)
 		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {
 			oldTokenOracle := repo.tokensCurrentOracle[version][token]

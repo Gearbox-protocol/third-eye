@@ -9,11 +9,17 @@ const (
 	CreditManager       = "CreditManager"
 	Pool                = "Pool"
 	ChainlinkPriceFeed  = "ChainlinkPriceFeed"
-	YearnPriceFeed      = "YearnPriceFeed"
+	QueryPriceFeed      = "QueryPriceFeed"
 	CreditFilter        = "CreditFilter"
 	GearToken           = "GearToken"
 	Treasury            = "Treasury"
 	AccountManager      = "AccountManager"
 	AggregatedBlockFeed = "AggregatedBlockFeed"
 	CreditConfigurator  = "CreditConfigurator"
+)
+
+const (
+	ChainlinkPF = "ChainlinkPF"
+	YearnPF     = "YearnPF"
+	CurvePF     = "CurvePF"
 )

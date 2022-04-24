@@ -1,8 +1,8 @@
 package data_compressor
 
 import (
-	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 

@@ -1,5 +1,5 @@
--- update sync_adapters set last_sync = firstlog_at - 1 where type not in ('YearnPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
-update sync_adapters set last_sync = firstlog_at - 1 where type not in ('GearToken','Treasury','YearnPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
+-- update sync_adapters set last_sync = firstlog_at - 1 where type not in ('QueryPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
+update sync_adapters set last_sync = firstlog_at - 1 where type not in ('GearToken','Treasury','QueryPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
 update sync_adapters set details='{}' where type='AccountManager' ;
 delete from pool_ledger;
 delete from account_operations;
@@ -21,7 +21,7 @@ delete from no_session_transfers;
 
 -- delete from gear_balances;delete from treasury_snapshots;delete from treasury_transfers;
 
--- update sync_adapters set last_sync = 14047535 - 1 where type not in ('YearnPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
+-- update sync_adapters set last_sync = 14047535 - 1 where type not in ('QueryPriceFeed', 'ChainlinkPriceFeed', 'AddressProvider', 'PriceOracle');
 -- delete from pool_ledger where block_num >= 14047535;
 -- delete from account_operations where block_num >= 14047535;
 -- delete from allowed_protocols where block_num >= 14047535;

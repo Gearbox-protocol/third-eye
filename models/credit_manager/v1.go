@@ -2,6 +2,7 @@ package credit_manager
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -13,16 +14,26 @@ import (
 	"math/big"
 )
 
-func (mdl *CreditManager) CommonInit() {
-	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)
+func (mdl *CreditManager) CommonInit(version int16) {
 	// do state changes
 	// create underlying token
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(mdl.DiscoveredAt),
 	}
-	underlyingToken, err := cmContract.UnderlyingToken(opts)
-	if err != nil {
-		log.Fatal(err)
+	var underlyingToken common.Address
+	var err error
+	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)
+	log.CheckFatal(err)
+
+	switch version {
+	case 1:
+		underlyingToken, err = cmContract.UnderlyingToken(opts)
+		log.CheckFatal(err)
+	case 2:
+		contract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(mdl.Address), mdl.Client)
+		log.CheckFatal(err)
+		underlyingToken, err = contract.Underlying(opts)
+		log.CheckFatal(err)
 	}
 	mdl.Repo.AddToken(underlyingToken.Hex())
 	//

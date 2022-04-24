@@ -31,3 +31,9 @@ create table transfer_account_allowed(
 );
 
 -- update sync_adapters set details='{"priceOracles":[]}' where type='AddressProvider';
+
+
+--
+-- new v2 updates
+update type='QueryPriceFeed' from sync_adapters  where type='YearnPriceFeed';
+update sync_adapters set details=replace(details::TEXT,'"token"','"pfType":"YearnPF", "token"')::jsonb    WHERE type='QueryPriceFeed';
