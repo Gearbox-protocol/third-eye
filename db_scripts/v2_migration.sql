@@ -35,5 +35,6 @@ create table transfer_account_allowed(
 
 --
 -- new v2 updates
-update type='QueryPriceFeed' from sync_adapters  where type='YearnPriceFeed';
+update sync_adapters set type='QueryPriceFeed' where type='YearnPriceFeed';
+select * from sync_adapters  where type='QueryPriceFeed';
 update sync_adapters set details=replace(details::TEXT,'"token"','"pfType":"YearnPF", "token"')::jsonb    WHERE type='QueryPriceFeed';

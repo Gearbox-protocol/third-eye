@@ -146,13 +146,13 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 		return
 	}
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
-	log.Infof("Sync %s(%s) from %d to %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill)
 	addrsForLogs := []common.Address{common.HexToAddress(mdl.GetAddress())}
 	if mdl.GetName() == ds.CreditManager && mdl.GetVersion() == 2 {
 		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("facade")))
 		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("configurator")))
 	}
 	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, [][]common.Hash{})
+	log.Infof("Sync %s(%s) from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill, len(txLogs))
 	if err != nil {
 		log.Fatal(err)
 	}
