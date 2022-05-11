@@ -11,6 +11,7 @@
       collateralUnderlying: 6500,
       profitUSD: -1000,
       profitUnderlying: -1000,
+      repayAmount: 0,
       sessionId: '#Account_1_4_0',
     },
   ],

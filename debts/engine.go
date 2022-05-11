@@ -1,6 +1,9 @@
 package debts
 
 import (
+	"math/big"
+	"sort"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -10,8 +13,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
-	"sort"
 )
 
 func (eng *DebtEngine) SaveProfile(profile string) {
@@ -322,39 +323,67 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 }
 
 func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
-	var amountToPool *big.Int
+	var amountToPool, calRemainingFunds *big.Int
 	sessionSnapshot := eng.lastCSS[session.ID]
 	// amount to pool
 	// if account is liquidable
-	if debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 0 {
-		amountToPool, _, _ = eng.calCloseAmount(session.CreditManager, session.Version, debt.CalTotalValueBI, true,
-			debt.CalBorrowedAmountPlusInterestBI.Convert(),
-			sessionSnapshot.BorrowedAmountBI.Convert())
-	} else {
-		amountToPool, _, _ = eng.calCloseAmount(session.CreditManager, session.Version, debt.CalTotalValueBI, false,
-			debt.CalBorrowedAmountPlusInterestBI.Convert(),
-			sessionSnapshot.BorrowedAmountBI.Convert())
-	}
-	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)
+	accountIsLiquidable := debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 0
+	amountToPool, calRemainingFunds, _, _ = eng.calCloseAmount(session.CreditManager, session.Version, debt.CalTotalValueBI, accountIsLiquidable,
+		debt.CalBorrowedAmountPlusInterestBI.Convert(),
+		sessionSnapshot.BorrowedAmountBI.Convert())
+
 	// calculate profit
+	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)
 	var remainingFunds *big.Int
-	// if not closed, or the blocknum is not having close event or on repay we don't have remainingFunds
-	if session.Version == 2 && session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
-		remainingFunds = new(big.Int)
-		prices := core.JsonFloatMap{}
-		for token := range *session.Balances {
-			tokenPrice := eng.GetTokenLastPrice(token, session.Version)
-			price := utils.GetFloat64Decimal(tokenPrice, 8)
-			prices[token] = price
+	if session.Version == 2 {
+		repayAmount := new(big.Int)
+		// while close account on v2 we calculate remainingFunds from all the token transfer from the user
+		if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
+			prices := core.JsonFloatMap{}
+			for token, balance := range *session.Balances {
+				tokenPrice := eng.GetTokenLastPrice(token, session.Version)
+				price := utils.GetFloat64Decimal(tokenPrice, 8)
+				prices[token] = price
+				if balance.BI.Convert().Cmp(new(big.Int)) < 0 {
+					repayAmount = new(big.Int).Mul(balance.BI.Convert(), big.NewInt(-1))
+				}
+			}
+			// set price for underlying token
+			prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version), 8)
+			remainingFunds = session.Balances.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
+		} else {
+			if calRemainingFunds.Cmp(new(big.Int)) != 0 { // v2  can be liquidated.
+				remainingFunds = calRemainingFunds
+			} else {
+				remainingFunds = new(big.Int).Sub(debt.CalTotalValueBI.Convert(), amountToPool)
+				// if remainingFunds.Cmp(new(big.Int)) < 0 {
+				// 	remainingFunds = new(big.Int)
+				// }
+			}
+			// for account not closed yet and account liquidated
+			// get underlying balance
+			underlying := (*session.Balances)[cumIndexAndUToken.Token]
+			underlyingBalance := new(big.Int)
+			if underlying != nil {
+				underlyingBalance = underlying.BI.Convert()
+			}
+			// repayAmount
+			if new(big.Int).Sub(underlyingBalance, new(big.Int).Add(amountToPool, remainingFunds)).Cmp(big.NewInt(1)) > 0 {
+				repayAmount = new(big.Int)
+			} else {
+				repayAmount = new(big.Int).Sub(new(big.Int).Add(amountToPool, remainingFunds), underlyingBalance)
+			}
 		}
-		remainingFunds = session.Balances.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
-		// v1 open/repay
-	} else if (session.ClosedAt == 0 || session.ClosedAt != debt.BlockNumber+1) || session.Status == schemas.Repaid {
-		remainingFunds = new(big.Int).Sub(debt.CalTotalValueBI.Convert(), debt.AmountToPoolBI.Convert())
-		// for v1 close/liquidate and v2 liquidate
+		debt.RepayAmountBI = (*core.BigInt)(repayAmount)
 	} else {
-		remainingFunds = (*big.Int)(session.RemainingFunds)
+		if session.ClosedAt == debt.BlockNumber+1 && (session.Status == schemas.Closed || session.Status == schemas.Liquidated) {
+			remainingFunds = (*big.Int)(session.RemainingFunds)
+		} else {
+			remainingFunds = calRemainingFunds
+		}
+		debt.RepayAmountBI = (*core.BigInt)(new(big.Int).Add(amountToPool, remainingFunds))
 	}
+
 	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds, session.Version)
 	debt.ProfitInUnderlying = utils.GetFloat64Decimal(remainingFunds, cumIndexAndUToken.Decimals) - debt.CollateralInUnderlying
 	debt.CollateralInUnderlying = sessionSnapshot.CollateralInUnderlying

@@ -38,3 +38,8 @@ create table transfer_account_allowed(
 update sync_adapters set type='QueryPriceFeed' where type='YearnPriceFeed';
 select * from sync_adapters  where type='QueryPriceFeed';
 update sync_adapters set details=replace(details::TEXT,'"token"','"pfType":"YearnPF", "token"')::jsonb    WHERE type='QueryPriceFeed';
+
+
+-- alter table current_debts add repay_amount DOUBLE PRECISION, add    repay_amount_bi varchar(80);
+-- update table current_debts set repay_amount=amount_to_pool, repay_amount_bi=amount_to_pool_bi ;
+-- alter table current_debts drop column amount_to_pool, drop column amount_to_pool_bi;

@@ -9,9 +9,10 @@
       calTotalValue: 5750,  // totalvalue
       collateralUSD: 6500,  // 2000 yfi + 2000 usdc + 2500 worth eth
       collateralUnderlying: 6500,
-      profitUSD: 5750 - (5109.25 + 6500),
+      profitUSD: 5750 - (5109.25 + 6500),  // (total value  amountToPool , - collateral)
       profitUnderlying: 5750 - (5109.25 + 6500),
       sessionId: '#Account_1_3_3',
+      repayAmount: 5750,
     },
   ],
   debts: [{

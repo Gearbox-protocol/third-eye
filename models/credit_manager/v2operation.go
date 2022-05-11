@@ -2,6 +2,9 @@ package credit_manager
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -9,8 +12,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"strings"
 )
 
 func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
@@ -190,9 +191,10 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	for token := range *session.Balances {
 		tokens = append(tokens, token)
 	}
+	tokens = append(tokens, mdl.GetUnderlyingToken())
 	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
-	log.Info(prices)
-	log.Info(utils.ToJson(session.Balances))
+	// log.Info(prices)
+	// log.Info(utils.ToJson(session.Balances))
 	session.RemainingFunds = (*core.BigInt)(session.Balances.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
 

@@ -109,19 +109,20 @@ func (eng *DebtEngine) Clear() {
 	eng.repo.Clear()
 }
 
-func (eng *DebtEngine) calCloseAmount(creditManager string, version int16, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
+func (eng *DebtEngine) calCloseAmount(creditManager string, version int16, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, remainingFunds, profit, loss *big.Int) {
 	switch version {
 	case 1:
 		return eng.calCloseAmountV1(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
 	case 2:
-		amountToPool, _, profit, loss = eng.calCloseAmountV2(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
+		amountToPool, remainingFunds, profit, loss = eng.calCloseAmountV2(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
 	}
 	return
 }
-func (eng *DebtEngine) calCloseAmountV1(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, profit, loss *big.Int) {
+func (eng *DebtEngine) calCloseAmountV1(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, remainingFunds, profit, loss *big.Int) {
 	params := eng.lastParameters[creditManager]
 	loss = big.NewInt(0)
 	profit = big.NewInt(0)
+	remainingFunds = new(big.Int)
 	var totalFunds *big.Int
 	if isLiquidated {
 		totalFunds = utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
@@ -144,6 +145,9 @@ func (eng *DebtEngine) calCloseAmountV1(creditManager string, totalValue *core.B
 
 		if totalFunds.Cmp(amountToPool) <= 0 {
 			amountToPool = new(big.Int).Sub(totalFunds, big.NewInt(1))
+		} else {
+			remainingFunds = new(big.Int).Sub(totalFunds, amountToPool)
+			// remainingFunds = new(big.Int).Sub(new(big.Int).Sub(totalFunds, amountToPool), big.NewInt(1))
 		}
 		profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
 	}
@@ -154,6 +158,7 @@ func (eng *DebtEngine) calCloseAmountV2(creditManager string, totalValue *core.B
 	params := eng.lastParameters[creditManager]
 	loss = big.NewInt(0)
 	profit = big.NewInt(0)
+	remainingFunds = new(big.Int)
 
 	amountToPool = utils.PercentMul(
 		new(big.Int).Sub(borrowedAmountWithInterest, borrowedAmount),
