@@ -1,10 +1,11 @@
 package ds
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"math/big"
 )
 
 type EngineI interface {
@@ -34,7 +35,7 @@ type RepositoryI interface {
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
 	AddTokenOracle(*schemas.TokenOracle)
-	AddPriceFeed(blockNum int64, pf *schemas.PriceFeed)
+	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol)
 	DisableProtocol(blockNum int64, logID uint, txHash, cm, creditFilter, protocol string)

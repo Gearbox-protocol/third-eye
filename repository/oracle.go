@@ -1,6 +1,9 @@
 package repository
 
 import (
+	"math/big"
+
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -60,15 +63,16 @@ func (repo *Repository) AddTokenOracle(tokenOracle *schemas.TokenOracle) {
 	)
 }
 
-func (repo *Repository) AddPriceFeed(blockNum int64, pf *schemas.PriceFeed) {
+func (repo *Repository) AddPriceFeed(pf *schemas.PriceFeed) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.setAndGetBlock(blockNum).AddPriceFeed(pf)
+	repo.setAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 }
 
+// called from chainlink feed and price oracle
 func (repo *Repository) AddTokenFeed(feedType, token, oracle string, discoveredAt int64, version int16) {
 	switch feedType {
-	case ds.CurvePF, ds.YearnPF:
+	case ds.CurvePF, ds.YearnPF, ds.ZeroPF:
 		// add token oracle for db
 		// feed is also oracle address for yearn address
 		// we don't relie on underlying feed
@@ -78,7 +82,18 @@ func (repo *Repository) AddTokenFeed(feedType, token, oracle string, discoveredA
 			Feed:        oracle, // feed is same as oracle
 			BlockNumber: discoveredAt,
 			Version:     version})
-		repo.aggregatedFeed.AddFeedOrToken(token, oracle, feedType, discoveredAt, version)
+		if feedType != ds.ZeroPF {
+			repo.aggregatedFeed.AddFeedOrToken(token, oracle, feedType, discoveredAt, version)
+		} else {
+			repo.AddPriceFeed(&schemas.PriceFeed{
+				BlockNumber: discoveredAt,
+				Token:       token,
+				Feed:        oracle,
+				RoundId:     0,
+				PriceBI:     (*core.BigInt)(new(big.Int)),
+				Price:       0,
+			})
+		}
 	case ds.ChainlinkPF:
 		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, discoveredAt, repo.client, repo, version)
 		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {

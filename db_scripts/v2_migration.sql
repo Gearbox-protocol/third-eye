@@ -41,5 +41,5 @@ update sync_adapters set details=replace(details::TEXT,'"token"','"pfType":"Year
 
 
 -- alter table current_debts add repay_amount DOUBLE PRECISION, add    repay_amount_bi varchar(80);
--- update table current_debts set repay_amount=amount_to_pool, repay_amount_bi=amount_to_pool_bi ;
+-- update current_debts set repay_amount=amount_to_pool, repay_amount_bi=amount_to_pool_bi ;
 -- alter table current_debts drop column amount_to_pool, drop column amount_to_pool_bi;

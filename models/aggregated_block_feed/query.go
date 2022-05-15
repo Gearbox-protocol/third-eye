@@ -80,7 +80,7 @@ func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int, wg *sync
 	weth := mdl.Repo.GetWETHAddr()
 	pfs, pricesByToken := mdl.QueryData(blockNum, weth, "all")
 	for _, pf := range pfs {
-		mdl.Repo.AddPriceFeed(pf.BlockNumber, pf)
+		mdl.Repo.AddPriceFeed(pf)
 	}
 	mdl.updatePrice(pricesByToken)
 	<-ch

@@ -22,4 +22,5 @@ const (
 	ChainlinkPF = "ChainlinkPF"
 	YearnPF     = "YearnPF"
 	CurvePF     = "CurvePF"
+	ZeroPF      = "ZeroPF"
 )

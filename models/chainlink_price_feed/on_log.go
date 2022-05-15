@@ -75,7 +75,7 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 					priceFeed.UniPriceFetchBlock = uniPoolPrice.BlockNum
 				}
 			}
-			mdl.Repo.AddPriceFeed(blockNum, priceFeed)
+			mdl.Repo.AddPriceFeed(priceFeed)
 			mdl.prevPriceFeed = priceFeed
 		}
 	}
