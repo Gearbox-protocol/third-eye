@@ -118,7 +118,7 @@ func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) *schemas.P
 	if !(pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0) {
 		if !mdl.isNotified() {
 			mdl.setNotified(true)
-			log.Warnf("PricePerShare(%d) is not btw lower limit(%d) and upper limit(%d).", pricePerShare, lowerBound, uppwerBound)
+			log.Warnf("PricePerShare(%s) %d is not btw lower limit(%d) and upper limit(%d).", mdl.Address, pricePerShare, lowerBound, uppwerBound)
 		}
 	} else {
 		mdl.Details["notified"] = false
