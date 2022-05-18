@@ -1,18 +1,18 @@
-package ds
+package dc_wrapper
 
 import (
 	"context"
 	"fmt"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor"
+	"sort"
+	"strconv"
+	"sync"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"sort"
-	"strconv"
-	"sync"
 )
 
 type DataCompressorWrapper struct {
@@ -20,16 +20,19 @@ type DataCompressorWrapper struct {
 	// blockNumbers of dc in asc order
 	DCBlockNum     []int64
 	BlockNumToName map[int64]string
-	dcOldKovan     *dataCompressor.DataCompressor
+	oldKovanDC     *oldKovanDC
+	v2DC           *v2DC
 	dcMainnet      *mainnet.DataCompressor
-	NameToAddr     map[string]string
-	client         core.ClientI
-	testing        *DCTesting
+
+	NameToAddr map[string]string
+	client     core.ClientI
+	testing    *DCTesting
 }
 
 var OLDKOVAN = "OLDKOVAN"
 var MAINNET = "MAINNET"
 var TESTING = "TESTING"
+var DCV2 = "DCV2"
 
 func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 	return &DataCompressorWrapper{
@@ -69,13 +72,20 @@ func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string)
 	log.CheckFatal(err)
 	var key string
 	if chainId.Int64() == 1 {
-		key = MAINNET
+		switch len(dcw.DCBlockNum) {
+		case 0:
+			key = MAINNET
+		case 1:
+			key = DCV2
+		}
 	} else if chainId.Int64() == 42 {
 		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = OLDKOVAN
 		case 1:
 			key = MAINNET
+		case 2:
+			key = DCV2
 		}
 	} else {
 		key = TESTING
@@ -116,35 +126,10 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 	switch key {
 	case OLDKOVAN:
 		dcw.setOldKovan()
-		data, err := dcw.dcOldKovan.GetCreditAccountDataExtended(opts, creditManager, borrower)
-		if err != nil {
-			log.Fatal(err)
-		}
-		latestFormat := mainnet.DataTypesCreditAccountDataExtended{
-			Addr:                       data.Addr,
-			Borrower:                   data.Borrower,
-			InUse:                      data.InUse,
-			CreditManager:              data.CreditManager,
-			UnderlyingToken:            data.UnderlyingToken,
-			BorrowedAmountPlusInterest: data.BorrowedAmountPlusInterest,
-			TotalValue:                 data.TotalValue,
-			HealthFactor:               data.HealthFactor,
-			BorrowRate:                 data.BorrowRate,
-
-			RepayAmount:           data.RepayAmount,
-			LiquidationAmount:     data.LiquidationAmount,
-			CanBeClosed:           data.CanBeClosed,
-			BorrowedAmount:        data.BorrowedAmount,
-			CumulativeIndexAtOpen: data.CumulativeIndexAtOpen,
-			Since:                 data.Since,
-		}
-		for _, balance := range data.Balances {
-			latestFormat.Balances = append(latestFormat.Balances, mainnet.DataTypesTokenBalance{
-				Token:   balance.Token,
-				Balance: balance.Balance,
-			})
-		}
-		return latestFormat, err
+		return dcw.oldKovanDC.GetCreditAccountDataExtended(opts, creditManager, borrower)
+	case DCV2:
+		dcw.setV2()
+		return dcw.v2DC.GetCreditAccountData(opts, creditManager, borrower)
 	case MAINNET:
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetCreditAccountDataExtended(opts, creditManager, borrower)
@@ -164,28 +149,10 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _cre
 	switch key {
 	case OLDKOVAN:
 		dcw.setOldKovan()
-		data, err := dcw.dcOldKovan.GetCreditManagerData(opts, _creditManager, borrower)
-		log.CheckFatal(err)
-		latestFormat := mainnet.DataTypesCreditManagerData{
-			Addr:               data.Addr,
-			HasAccount:         data.HasAccount,
-			UnderlyingToken:    data.UnderlyingToken,
-			IsWETH:             data.IsWETH,
-			CanBorrow:          data.CanBorrow,
-			BorrowRate:         data.BorrowRate,
-			MinAmount:          data.MinAmount,
-			MaxAmount:          data.MaxAmount,
-			MaxLeverageFactor:  data.MaxLeverageFactor,
-			AvailableLiquidity: data.AvailableLiquidity,
-			AllowedTokens:      data.AllowedTokens,
-		}
-		for _, adapter := range data.Adapters {
-			latestFormat.Adapters = append(latestFormat.Adapters, mainnet.DataTypesContractAdapter{
-				Adapter:         adapter.Adapter,
-				AllowedContract: adapter.AllowedContract,
-			})
-		}
-		return latestFormat, err
+		return dcw.oldKovanDC.GetCreditManagerData(opts, _creditManager, borrower)
+	case DCV2:
+		dcw.setV2()
+		return dcw.v2DC.GetCreditManagerData(opts, _creditManager)
 	case MAINNET:
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetCreditManagerData(opts, _creditManager, borrower)
@@ -205,26 +172,10 @@ func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.
 	switch key {
 	case OLDKOVAN:
 		dcw.setOldKovan()
-		data, err := dcw.dcOldKovan.GetPoolData(opts, _pool)
-		log.CheckFatal(err)
-		latestFormat := mainnet.DataTypesPoolData{
-			Addr:                   data.Addr,
-			IsWETH:                 data.IsWETH,
-			UnderlyingToken:        data.UnderlyingToken,
-			DieselToken:            data.DieselToken,
-			LinearCumulativeIndex:  data.LinearCumulativeIndex,
-			AvailableLiquidity:     data.AvailableLiquidity,
-			ExpectedLiquidity:      data.ExpectedLiquidity,
-			ExpectedLiquidityLimit: data.ExpectedLiquidityLimit,
-			TotalBorrowed:          data.TotalBorrowed,
-			DepositAPYRAY:          data.DepositAPYRAY,
-			BorrowAPYRAY:           data.BorrowAPYRAY,
-			DieselRateRAY:          data.DieselRateRAY,
-			WithdrawFee:            data.WithdrawFee,
-			CumulativeIndexRAY:     data.CumulativeIndexRAY,
-			TimestampLU:            data.TimestampLU,
-		}
-		return latestFormat, err
+		return dcw.oldKovanDC.GetPoolData(opts, _pool)
+	case DCV2:
+		dcw.setV2()
+		return dcw.v2DC.GetPoolData(opts, _pool)
 	case MAINNET:
 		dcw.setMainnet()
 		return dcw.dcMainnet.GetPoolData(opts, _pool)
@@ -235,11 +186,9 @@ func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.
 }
 
 func (dcw *DataCompressorWrapper) setOldKovan() {
-	if dcw.dcOldKovan == nil {
+	if dcw.oldKovanDC == nil {
 		addr := dcw.NameToAddr[OLDKOVAN]
-		var err error
-		dcw.dcOldKovan, err = dataCompressor.NewDataCompressor(common.HexToAddress(addr), dcw.client)
-		log.CheckFatal(err)
+		dcw.oldKovanDC = NewOldKovanDC(common.HexToAddress(addr), dcw.client)
 	}
 }
 
@@ -249,6 +198,13 @@ func (dcw *DataCompressorWrapper) setMainnet() {
 		var err error
 		dcw.dcMainnet, err = mainnet.NewDataCompressor(common.HexToAddress(addr), dcw.client)
 		log.CheckFatal(err)
+	}
+}
+
+func (dcw *DataCompressorWrapper) setV2() {
+	if dcw.v2DC == nil {
+		addr := dcw.NameToAddr[DCV2]
+		dcw.v2DC = NewV2DC(common.HexToAddress(addr), dcw.client)
 	}
 }
 

@@ -78,6 +78,12 @@ github.com/Gearbox-protocol/sdk-go v0.0.0-20220424121245-541b3a481680 h1:iZNUIIa
 github.com/Gearbox-protocol/sdk-go v0.0.0-20220424121245-541b3a481680/go.mod h1:wGy7qznNQ5vjMwi7I1ykE9Kc7fphexQmLqdiaYu/MKg=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20220511114344-c4b5ec9832ef h1:yDY/Dmy6J4N9sYHEekFkmoy8QyAL5P9f5iT3EzS4+Kk=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20220511114344-c4b5ec9832ef/go.mod h1:0jMSTuFya6WE/bptWINKfSAOov0W3sZbiidG2A1Hp1Q=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20220518104405-f9bddc65ae64 h1:ODtaTtixrQv1/kjf4hBnv85fZ7s9QCJ83FxUh4LGDIE=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20220518104405-f9bddc65ae64/go.mod h1:0jMSTuFya6WE/bptWINKfSAOov0W3sZbiidG2A1Hp1Q=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20220518104721-792b8e649a50 h1:I+ZQjIZyRV+tp1sV1J4MB03/Ma290s+9jG2c0l153ow=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20220518104721-792b8e649a50/go.mod h1:0jMSTuFya6WE/bptWINKfSAOov0W3sZbiidG2A1Hp1Q=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20220518105159-03e8224f2c19 h1:RX2kV3wvnEebjE9VZTgqQbq/Q3WhtcX8VvgKIWsn8uA=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20220518105159-03e8224f2c19/go.mod h1:0jMSTuFya6WE/bptWINKfSAOov0W3sZbiidG2A1Hp1Q=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=

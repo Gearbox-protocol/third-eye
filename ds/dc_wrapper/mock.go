@@ -1,10 +1,11 @@
-package ds
+package dc_wrapper
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type DCTesting struct {

@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
 
 type EngineI interface {
@@ -62,7 +63,7 @@ type RepositoryI interface {
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *schemas.CreditSessionSnapshot)
 	// dc
-	GetDCWrapper() *DataCompressorWrapper
+	GetDCWrapper() *dc_wrapper.DataCompressorWrapper
 	AddDataCompressor(blockNum int64, addr string)
 	// pools
 	AddPoolStat(ps *schemas.PoolStat)

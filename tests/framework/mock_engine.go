@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -187,7 +188,7 @@ func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 	otherCalls := make(map[int64]map[string][]string)
 	for blockNum, block := range inputFile.Blocks {
 		otherCalls[blockNum] = block.Calls.OtherCalls
-		calls := ds.NewDCCalls()
+		calls := dc_wrapper.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
 			calls.Pools[poolCall.Addr] = poolCall
 		}

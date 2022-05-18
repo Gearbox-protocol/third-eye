@@ -169,7 +169,7 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	log.CheckFatal(err)
 	info := tx.Commit()
 	if info.Error != nil {
-		log.Fatal(info.Error, *info.Statement)
+		log.Fatal(info.Error)
 	}
 	eng.debts = []*schemas.Debt{}
 }

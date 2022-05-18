@@ -3,17 +3,19 @@ package framework
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"strings"
+	"testing"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"strings"
-	"testing"
 )
 
 type TestMask struct {
@@ -22,9 +24,9 @@ type TestMask struct {
 }
 
 type TestCall struct {
-	Pools         []ds.TestPoolCallData              `json:"pools"`
-	CMs           []ds.TestCMCallData                `json:"cms"`
-	Accounts      []ds.TestAccountCallData           `json:"accounts"`
+	Pools         []dc_wrapper.TestPoolCallData      `json:"pools"`
+	CMs           []dc_wrapper.TestCMCallData        `json:"cms"`
+	Accounts      []dc_wrapper.TestAccountCallData   `json:"accounts"`
 	Masks         []TestMask                         `json:"masks"`
 	ExecuteOnCM   map[string][]*ds.KnownCall         `json:"executeOnCM"`
 	MainEventLogs map[string][]*ds.FuncWithMultiCall `json:"mainEventLogs"`

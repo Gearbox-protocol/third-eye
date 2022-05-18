@@ -123,11 +123,16 @@ func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) *schemas.P
 	} else {
 		mdl.Details["notified"] = false
 	}
-
+	// decimalDivider https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/oracles/curve/AbstractCurveLPPriceFeed.sol#L36
+	// it is 18 for curve as the lp is denotated in eth.
+	// for yearn it is based on the vault. https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/oracles/yearn/YearnPriceFeed.sol#L54
 	newAnswer := new(big.Int).Quo(
 		new(big.Int).Mul(pricePerShare, roundData.Answer),
 		mdl.DecimalDivider,
 	)
+	/// decimals is based on https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/oracles/curve/AbstractCurveLPPriceFeed.sol#L22
+	// if the feed is usd it is 8 else 18.
+	//
 	isPriceInUSD := mdl.GetVersion() > 1
 	var decimals int8 = 18 // for eth
 	if isPriceInUSD {
@@ -164,6 +169,10 @@ func (mdl *QueryPriceFeed) setContracts(blockNum int64) {
 	log.CheckFatal(err)
 	mdl.DecimalDivider = utils.GetExpInt(int8(decimals))
 }
+
+///////////////////////
+// details for token
+///////////////////////
 
 func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 	if mdl.Details == nil {

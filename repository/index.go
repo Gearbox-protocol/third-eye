@@ -13,6 +13,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"gorm.io/gorm"
 )
@@ -29,7 +30,7 @@ type Repository struct {
 	config                *config.Config
 	kit                   *ds.AdapterKit
 	executeParser         ds.ExecuteParserI
-	dcWrapper             *ds.DataCompressorWrapper
+	dcWrapper             *dc_wrapper.DataCompressorWrapper
 	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
 	allowedTokens         map[string]map[string]*schemas.AllowedToken
@@ -67,7 +68,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 		sessions:              make(map[string]*schemas.CreditSession),
 		poolUniqueUsers:       make(map[string]map[string]bool),
 		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
-		dcWrapper:             ds.NewDataCompressorWrapper(client),
+		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
 		allowedTokens:         make(map[string]map[string]*schemas.AllowedToken),
 		// for dao events to get diff
@@ -90,7 +91,7 @@ func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 	return r
 }
 
-func (repo *Repository) GetDCWrapper() *ds.DataCompressorWrapper {
+func (repo *Repository) GetDCWrapper() *dc_wrapper.DataCompressorWrapper {
 	return repo.dcWrapper
 }
 

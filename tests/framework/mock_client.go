@@ -175,23 +175,6 @@ func (t *TestClient) CallContract(ctx context.Context, call ethereum.CallMsg, bl
 	// convert on priceOracle
 	if sig == "b66102df" {
 		return common.HexToHash(fmt.Sprintf("%x", t.convertPrice(blockNum, call.Data))).Bytes(), nil
-		s := 4
-		amount, ok := new(big.Int).SetString(hex.EncodeToString(call.Data[s:s+32]), 16)
-		if !ok {
-			log.Fatal("failed in parsing int")
-		}
-		s += 32
-		token0 := common.BytesToAddress(call.Data[s : s+32]).Hex()
-		decimalT0 := t.token[token0]
-		s += 32
-		token1 := common.BytesToAddress(call.Data[s : s+32]).Hex()
-		decimalT1 := t.token[token1]
-		price0 := t.getPrice(blockNum, token0)
-		price1 := t.getPrice(blockNum, token1)
-		newAmount := new(big.Int).Mul(amount, price0)
-		newAmount = utils.GetInt64(newAmount, decimalT0-decimalT1)
-		newAmount = new(big.Int).Quo(newAmount, price1)
-		return common.HexToHash(fmt.Sprintf("%x", newAmount)).Bytes(), nil
 		// enabledmask on creditfilter for account
 		// v1 or v2 get mask
 	} else if sig == "b451cecc" || sig == "8991b2f1" {
