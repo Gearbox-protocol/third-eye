@@ -40,6 +40,49 @@ Adapters are of two types: `Event` and `Query` based.
     * prices from yearn and curve feeds.
     * uni v3 TWAP, uniswap v2 quoted price and uniswap v3 quoted price. 
 
+## Repo
+Repo is used by both sync and debt engines to get data from DB and store fetched data to DB. It acts as an intermediate between different adapters. Repo syncs all this data to DB using a single transaction in `save.go`, this provides the atomic guarantee that either all data is saved or nothing. On crash, the sync engine will restart with the previous state fetched from DB.
 
 ## Debt Engine
 
+This engine calculates debt parameters. These are:
+ - total value
+ - borrowed amount with interest
+ - repayAmount 
+ - pnl in underlying asset and USD denomination
+
+This requires tracking the state of Gearbox protocols so that the calculated values are in sync with on-chain data. All this data is fetched using the sync engine and stored in DB. Repo provides an interface for this data, which the debt engine uses. Following values are tracked for calculating required parameters:
+
+- CreditAccount `balance` and current `cumulative Index RAY`.
+- `Price` of tokens
+- `Liquidity Threshold`.
+- `Pool Cumulative Index` and `blockNumber` of last operation on pool(add/remove liquidity and repay/borrow)
+
+There were around 20k active accounts in Kovan on 15 Jan 2022, storing entries on every block or even on the block where any value changes would result in hundreds of millions of rows in the debt table. To prevent the debt table from unexpected growth, we added throttling to slow the calculation of the debt parameters. The conditions for throttling are:
+
+- Calculate for the block where we have an event for the credit Account. In such a case, `Credit Session Snapshot` will be present for that block. This is a `forced condition` and entry will always be added to DB.
+- in the config, we have `ThrottleByHrsStr` variable which set the limit for how many times values can be calculated in a day.
+- if the current debt entry's totalValue or borrowedAmountWithInterest deviates more than 5% from the previous debt entry present in DB.  
+- if the previous debt entry's healthFactor is on different side of 10k than the current debt's healthFactor. 
+
+### Checks for consistency in Debt Engine
+
+The debt parameters calculated by the debt engine can deviate from on-chain data. Debt engine has to check in place to prevent this from happening and be alerted if that's the case. 
+- If Credit Session Snapshot is present for that block, then the calculated totalValue and borrowedAmountWithInterest are checked to be within the precision of the underlying token. For eg, for WBTC we can tolerate a deviation of 0.001 BTC.
+- If `DebtDCMatching` is enabled then for each credit account whenever debt parameters are calculated data from data compressor is fetched for that account. And values are checked to be within tolerable precision error.
+
+
+### Current debt table
+
+We also want to have snapshots of the latest state for each credit session. This goal can't be achieved with the debt table as due to throttling the debt parameters are calculated at different block numbers, and it can happen last debt blocks are different for each credit session. Apart from this, debt table is still very large with millions of entries. So queries on this debt takes some time. 
+
+To solve this, another table for debts called `current_debts` is used. After the sync engine completes syncing till block number `x`, the debt engine firstly calculates debt snapshots for credit accounts for blocks that the sync engine fetched. Then for block number `x`, the debt parameters are calculated and stored in `current_debts` table. If there are accounts that are closed before `x`, then the current_debt logic skips those accounts. These accounts have their current debt calculated in the debt logic. Refer: [debt module](https://github.com/Gearbox-protocol/third-eye/blob/master/debts/engine.go#L221-L224) and [current_debt module](https://github.com/Gearbox-protocol/third-eye/blob/master/debts/current_debt.go#L36-L37).
+
+
+### Notification for liquidations
+
+Whenever the healthfactor of any credit account goes below or above 10k, the account becomes liquidable and safe respectively.
+We store at which block the account becomes liquidable so that we can calculate the average liquidation time. This block number and whether the liquidable notification has been sent are stored in `liquidable_accounts` table.
+
+
+__Note__: At some places, credit account and credit sessions are used interchangeably. As credit session is an abstract concept there is no contract representing it. Once a credit account is assigned by the credit manager to a borrower, it gets initialized with balance and some state, resulting in a credit session.
