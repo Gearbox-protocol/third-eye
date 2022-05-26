@@ -1,6 +1,9 @@
 package framework
 
 import (
+	"testing"
+
+	"github.com/Gearbox-protocol/sdk-go/ethclient"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -8,12 +11,11 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/repository"
-	"testing"
 )
 
 func NewEngs(t *testing.T, inputFiles []string) (MockRepo, ds.DebtEngineI) {
 	log.SetTestLogging(t)
-	client := NewTestClient()
+	client := ethclient.NewTestClient()
 	cfg := &config.Config{}
 	ep := NewMockExecuteParser()
 	repo := repository.GetRepository(nil, client, cfg, ep)

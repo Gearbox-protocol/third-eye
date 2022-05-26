@@ -9,6 +9,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/ethclient"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -128,7 +129,7 @@ type BlockInput struct {
 type TestInput struct {
 	Blocks    map[int64]BlockInput `json:"blocks"`
 	MockFiles map[string]string    `json:"mocks"`
-	States    TestState            `json:"states"`
+	States    ethclient.TestState  `json:"states"`
 }
 
 func (testInput *TestInput) Get(file string, addressMap core.AddressMap, t *testing.T) *SyncAdapterMock {

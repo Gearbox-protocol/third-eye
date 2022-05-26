@@ -9,6 +9,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/ethclient"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -42,7 +43,7 @@ type SyncAdapterMock struct {
 
 type MockRepo struct {
 	Repo         ds.RepositoryI
-	client       *TestClient
+	client       *ethclient.TestClient
 	InputFile    *TestInput
 	AddressMap   core.AddressMap
 	SyncAdapters []*ds.SyncAdapter
@@ -54,7 +55,7 @@ type MockRepo struct {
 	executeParser *MockExecuteParser
 }
 
-func NewMockRepo(repo ds.RepositoryI, client *TestClient,
+func NewMockRepo(repo ds.RepositoryI, client *ethclient.TestClient,
 	t *testing.T, eng ds.EngineI, ep *MockExecuteParser) MockRepo {
 	return MockRepo{
 		Repo:          repo,
@@ -178,9 +179,9 @@ func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
 			}
 		}
 	}
-	m.client.setEvents(events)
+	m.client.SetEvents(events)
 	// log.Info(utils.ToJson(prices))
-	m.client.setPrices(prices)
+	m.client.SetPrices(prices)
 }
 func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 	accountMask := make(map[int64]map[string]*big.Int)
@@ -212,12 +213,12 @@ func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 		wrapper.SetCalls(blockNum, calls)
 	}
 	m.client.SetOtherCalls(otherCalls)
-	m.client.setMasks(accountMask)
+	m.client.SetMasks(accountMask)
 }
 
 func (m *MockRepo) ProcessState(inputFile *TestInput) {
 	for _, oracle := range inputFile.States.Oracles {
-		m.client.setOracleState(oracle)
+		m.client.SetOracleState(oracle)
 	}
 }
 
