@@ -9,8 +9,8 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/ethclient"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
@@ -43,7 +43,7 @@ type SyncAdapterMock struct {
 
 type MockRepo struct {
 	Repo         ds.RepositoryI
-	client       *ethclient.TestClient
+	client       *test.TestClient
 	InputFile    *TestInput
 	AddressMap   core.AddressMap
 	SyncAdapters []*ds.SyncAdapter
@@ -55,7 +55,7 @@ type MockRepo struct {
 	executeParser *MockExecuteParser
 }
 
-func NewMockRepo(repo ds.RepositoryI, client *ethclient.TestClient,
+func NewMockRepo(repo ds.RepositoryI, client *test.TestClient,
 	t *testing.T, eng ds.EngineI, ep *MockExecuteParser) MockRepo {
 	return MockRepo{
 		Repo:          repo,
