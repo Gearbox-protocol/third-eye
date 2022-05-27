@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV3Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnAdapter"
@@ -21,9 +22,10 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type ExecuteParams struct {
@@ -136,7 +138,7 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 
 var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
 	uniswapV2Adapter.UniswapV2AdapterABI, uniswapV3Adapter.UniswapV3AdapterABI,
-	iSwapRouter.ISwapRouterABI,
+	iSwapRouter.ISwapRouterABI, testAdapter.TestAdapterABI,
 	// creditfacade for credit manager onlogs
 }
 
