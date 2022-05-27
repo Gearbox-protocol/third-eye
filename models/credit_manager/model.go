@@ -1,6 +1,8 @@
 package credit_manager
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
@@ -11,7 +13,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type Collateral struct {
@@ -148,12 +149,24 @@ func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	data, err := cm.Repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
-		common.HexToAddress(cm.GetAddress()),
-		common.HexToAddress(borrower),
-	)
+	var err error
+	var data mainnet.DataTypesCreditAccountDataExtended
+	// TODO: later detect if the test adapter is used
+	// check is added as hack func is called in kovan https://kovan.etherscan.io/tx/0x2e9c3c8c55cd9817c996ffb3d8afeff59754e7370ce4df152b51e1124b741cb7
+	// for addressProvider: 0xA526311C39523F60b184709227875b5f34793bD4
+	if borrower == "0xeE5998268707e9d57Ab1156b3A87cD7476274362" {
+		data, err = cm.Repo.GetDCWrapper().GetCreditAccountDataExtendedForHack(opts,
+			common.HexToAddress(cm.GetAddress()),
+			common.HexToAddress(borrower),
+		)
+	} else {
+		data, err = cm.Repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
+			common.HexToAddress(cm.GetAddress()),
+			common.HexToAddress(borrower),
+		)
+	}
 	if err != nil {
-		log.Fatalf("CM:%s Borrower:%s %s", cm.GetAddress(), borrower, err)
+		log.Fatalf("For blockNum %d CM:%s Borrower:%s %s", blockNum, cm.GetAddress(), borrower, err)
 	}
 	return &data
 }

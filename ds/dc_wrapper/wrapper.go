@@ -3,10 +3,12 @@ package dc_wrapper
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"sort"
 	"strconv"
 	"sync"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditAccount"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -135,6 +137,47 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 		return dcw.dcMainnet.GetCreditAccountDataExtended(opts, creditManager, borrower)
 	case TESTING:
 		return dcw.testing.getAccountData(opts.BlockNumber.Int64(), fmt.Sprintf("%s_%s", creditManager, borrower))
+	}
+	panic(fmt.Sprintf("data compressor number %s not found for credit account data extended", key))
+}
+
+func (dcw *DataCompressorWrapper) GetCreditAccountDataExtendedForHack(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
+	dcw.mu.Lock()
+	defer dcw.mu.Unlock()
+	if opts == nil || opts.BlockNumber == nil {
+		panic("opts or blockNumber is nil")
+	}
+	key := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
+	switch key {
+	case MAINNET:
+		dcw.setMainnet()
+		data, err := dcw.dcMainnet.GetCreditAccountData(opts, creditManager, borrower)
+		log.CheckFatal(err)
+		account, err := creditAccount.NewCreditAccount(data.Addr, dcw.client)
+		log.CheckFatal(err)
+		cumIndex, err := account.CumulativeIndexAtOpen(opts)
+		log.CheckFatal(err)
+		borrowedAmount, err := account.BorrowedAmount(opts)
+		log.CheckFatal(err)
+		return mainnet.DataTypesCreditAccountDataExtended{
+			Addr:                       data.Addr,
+			Borrower:                   data.Borrower,
+			InUse:                      data.InUse,
+			CreditManager:              data.CreditManager,
+			UnderlyingToken:            data.UnderlyingToken,
+			BorrowedAmountPlusInterest: data.BorrowedAmountPlusInterest,
+			TotalValue:                 data.TotalValue,
+			HealthFactor:               data.HealthFactor,
+			BorrowRate:                 data.BorrowRate,
+
+			RepayAmount:           borrowedAmount,
+			LiquidationAmount:     borrowedAmount,
+			CanBeClosed:           false,
+			BorrowedAmount:        borrowedAmount,
+			CumulativeIndexAtOpen: cumIndex,
+			Since:                 new(big.Int),
+			Balances:              data.Balances,
+		}, nil
 	}
 	panic(fmt.Sprintf("data compressor number %s not found for credit account data", key))
 }

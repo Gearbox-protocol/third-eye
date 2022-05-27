@@ -7,20 +7,21 @@
 package config
 
 import (
-	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/go-playground/validator/v10"
-	"github.com/joho/godotenv"
 	"os"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/go-playground/validator/v10"
+	"github.com/joho/godotenv"
 )
 
 func NewConfig() *Config {
 
 	var config Config
 
-	filenames := []string{".env", ".env.local"}
+	filenames := []string{".env", "../.env"}
 
 	for _, filename := range filenames {
 		cwd, err := os.Getwd()
