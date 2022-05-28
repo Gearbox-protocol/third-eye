@@ -141,7 +141,7 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 	panic(fmt.Sprintf("data compressor number %s not found for credit account data extended", key))
 }
 
-func (dcw *DataCompressorWrapper) GetCreditAccountDataExtendedForHack(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
+func (dcw *DataCompressorWrapper) GetCreditAccountDataExtendedForHack(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (*mainnet.DataTypesCreditAccountDataExtended, error) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
 	if opts == nil || opts.BlockNumber == nil {
@@ -152,14 +152,22 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtendedForHack(opts *bind
 	case MAINNET:
 		dcw.setMainnet()
 		data, err := dcw.dcMainnet.GetCreditAccountData(opts, creditManager, borrower)
-		log.CheckFatal(err)
+		if err != nil {
+			return nil, err
+		}
 		account, err := creditAccount.NewCreditAccount(data.Addr, dcw.client)
-		log.CheckFatal(err)
+		if err != nil {
+			return nil, err
+		}
 		cumIndex, err := account.CumulativeIndexAtOpen(opts)
-		log.CheckFatal(err)
+		if err != nil {
+			return nil, err
+		}
 		borrowedAmount, err := account.BorrowedAmount(opts)
-		log.CheckFatal(err)
-		return mainnet.DataTypesCreditAccountDataExtended{
+		if err != nil {
+			return nil, err
+		}
+		return &mainnet.DataTypesCreditAccountDataExtended{
 			Addr:                       data.Addr,
 			Borrower:                   data.Borrower,
 			InUse:                      data.InUse,

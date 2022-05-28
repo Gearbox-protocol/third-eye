@@ -149,21 +149,26 @@ func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	var err error
-	var data mainnet.DataTypesCreditAccountDataExtended
 	// TODO: later detect if the test adapter is used
 	// check is added as hack func is called in kovan https://kovan.etherscan.io/tx/0x2e9c3c8c55cd9817c996ffb3d8afeff59754e7370ce4df152b51e1124b741cb7
 	// for addressProvider: 0xA526311C39523F60b184709227875b5f34793bD4
-	if borrower == "0xeE5998268707e9d57Ab1156b3A87cD7476274362" {
-		data, err = cm.Repo.GetDCWrapper().GetCreditAccountDataExtendedForHack(opts,
+	// 0xeE5998268707e9d57Ab1156b3A87cD7476274362 is a test account
+	data, err := cm.Repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
+		common.HexToAddress(cm.GetAddress()),
+		common.HexToAddress(borrower),
+	)
+	// check if the dc call is failing due to totalvalue being zero
+	if err != nil && err.Error() == "VM execution error." {
+		// variables are shadowed on purpose
+		// so that outer error is preserved
+		data, err := cm.Repo.GetDCWrapper().GetCreditAccountDataExtendedForHack(opts,
 			common.HexToAddress(cm.GetAddress()),
 			common.HexToAddress(borrower),
 		)
-	} else {
-		data, err = cm.Repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
-			common.HexToAddress(cm.GetAddress()),
-			common.HexToAddress(borrower),
-		)
+		log.CheckFatal(err)
+		if data.TotalValue.Cmp(big.NewInt(0)) == 0 {
+			return data
+		}
 	}
 	if err != nil {
 		log.Fatalf("For blockNum %d CM:%s Borrower:%s %s", blockNum, cm.GetAddress(), borrower, err)
