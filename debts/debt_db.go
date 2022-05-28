@@ -11,26 +11,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-type NetworkUI struct {
-	ExplorerUrl string
-	ChartUrl    string
-}
-
-func (eng *DebtEngine) networkUIUrl() NetworkUI {
-	switch eng.config.ChainId {
-	case 1:
-		return NetworkUI{
-			ExplorerUrl: "https://etherscan.io",
-			ChartUrl:    "https://charts.gearbox.fi",
-		}
-	case 42:
-		return NetworkUI{
-			ExplorerUrl: "https://kovan.etherscan.io",
-			ChartUrl:    "https://charts.kovan.gearbox.fi",
-		}
-	}
-	return NetworkUI{}
-}
 func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower string, token *ds.CumIndexAndUToken) {
 	lastDebt := eng.lastDebts[debt.SessionId]
 	if lastDebt != nil {
@@ -56,7 +36,7 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 		eng.liquidableBlockTracker[debt.SessionId] != nil &&
 		(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 &&
 		!eng.liquidableBlockTracker[debt.SessionId].NotifiedIfLiquidable {
-		urls := eng.networkUIUrl()
+		urls := core.NetworkUIUrl(eng.config.ChainId)
 		eng.notifiedIfLiquidable(debt.SessionId, true)
 		eng.repo.RecentEventMsg(debt.BlockNumber, `HealthFactor low:
 				Session: %s
