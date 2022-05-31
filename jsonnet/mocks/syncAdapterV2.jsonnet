@@ -7,7 +7,7 @@
         dc:
           // data compressor should be deployed before it is used
           { '1': '#DC_1' },
-        priceOracles: ['#PriceOracle_0', '#PriceOracle_1'],
+        priceOracles: { '1': '#PriceOracle_0', '2': '#PriceOracle_1' },
       },
       lastSync: 1,
       version: 1,

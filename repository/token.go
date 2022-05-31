@@ -149,14 +149,18 @@ func (repo *Repository) GetActivePriceOracleByBlockNum(blockNum int64) (string, 
 		return "", fmt.Errorf("Not Found")
 	}
 }
+
 func (repo *Repository) GetPriceOracleByVersion(version int16) (string, error) {
 	addrProviderAddr := repo.kit.GetAdapterAddressByName(ds.AddressProvider)
 	addrProvider := repo.kit.GetAdapter(addrProviderAddr[0])
 	details := addrProvider.GetDetails()
 	if details != nil {
-		priceOracles := details["priceOracles"]
-		if priceOracles != nil {
-			return utils.ConvertToListOfString(priceOracles)[version-1], nil
+		priceOracles, ok := details["priceOracles"].(map[string]interface{})
+		if ok {
+			value, ok := priceOracles[fmt.Sprintf("%d", version)].(string)
+			if ok {
+				return value, nil
+			}
 		}
 	}
 	return "", fmt.Errorf("Not Found")
@@ -165,7 +169,9 @@ func (repo *Repository) GetPriceOracleByVersion(version int16) (string, error) {
 // This function is used for getting the collateral value in usd and underlying
 func (repo *Repository) GetValueInCurrency(blockNum int64, version int16, token, currency string, amount *big.Int) *big.Int {
 	oracle, err := repo.GetPriceOracleByVersion(version)
-	log.CheckFatal(err)
+	if err != nil {
+		log.Fatalf("err %s version: %d", err, version)
+	}
 	poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
 	log.CheckFatal(err)
 	opts := &bind.CallOpts{

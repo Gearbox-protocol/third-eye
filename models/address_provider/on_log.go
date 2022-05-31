@@ -1,9 +1,10 @@
 package address_provider
 
 import (
+	"strconv"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -38,11 +39,20 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})
 			}
-			var priceOracles []string
-			if mdl.Details["priceOracles"] != nil {
-				priceOracles = append(priceOracles, utils.ConvertToListOfString(mdl.Details["priceOracles"])...)
+			// price oracles
+			priceOracles, ok := mdl.Details["priceOracles"].(map[string]interface{})
+			if !ok {
+				if priceOracles == nil {
+					priceOracles = map[string]interface{}{}
+				}
 			}
-			priceOracles = append(priceOracles, address)
+			var lastVersion int64
+			for versionStr := range priceOracles {
+				version, err := strconv.ParseInt(versionStr, 10, 64)
+				log.CheckFatal(err)
+				lastVersion = version
+			}
+			priceOracles[fmt.Sprintf("%d", lastVersion+1)] = address
 			mdl.Details["priceOracles"] = priceOracles
 			//
 			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)

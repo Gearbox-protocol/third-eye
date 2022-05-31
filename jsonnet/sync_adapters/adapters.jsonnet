@@ -7,10 +7,10 @@
           '3': '#DC_1',
           '5': '#DC_2',
         },
-        priceOracles: [
-          '#PriceOracle_1',
-          '#PriceOracle_2',
-        ],
+        priceOracles: {
+          '1': '#PriceOracle_1',
+          '2': '#PriceOracle_2',
+        },
       },
       disabled: false,
       disabled_at: 0,
