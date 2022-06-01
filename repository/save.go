@@ -89,8 +89,8 @@ func (repo *Repository) Flush() error {
 	log.Infof("created session sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
-	blocksToSync := make([]*schemas.Block, 0, len(repo.blocks))
-	for _, block := range repo.blocks {
+	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
+	for _, block := range repo.GetBlocks() {
 		blocksToSync = append(blocksToSync, block)
 	}
 	err = tx.Clauses(clause.OnConflict{
@@ -129,9 +129,9 @@ func check(err error) {
 
 func (repo *Repository) Clear() {
 	var maxBlockNum int64
-	for num := range repo.blocks {
+	for num := range repo.GetBlocks() {
 		maxBlockNum = utils.Max(maxBlockNum, num)
 	}
 	repo.SessionRepo.Clear(maxBlockNum)
-	repo.blocks = map[int64]*schemas.Block{}
+	repo.BlocksRepo.Clear()
 }

@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -14,19 +15,20 @@ import (
 type AllowedTokenRepo struct {
 	allowedTokens  map[string]map[string]*schemas.AllowedToken
 	disabledTokens []*schemas.AllowedToken
+	blocks         *BlocksRepo
 	mu             *sync.Mutex
 }
 
-func NewAllowedTokenRepo() *AllowedTokenRepo {
+func NewAllowedTokenRepo(blocks *BlocksRepo) *AllowedTokenRepo {
 	return &AllowedTokenRepo{
 		allowedTokens: make(map[string]map[string]*schemas.AllowedToken),
 		mu:            &sync.Mutex{},
+		blocks:        blocks,
 	}
 }
 
 // internal functions
-
-func (repo *AllowedTokenRepo) AddAllowedTokenState(entry *schemas.AllowedToken, usingV2 bool) {
+func (repo *AllowedTokenRepo) addAllowedTokenState(entry *schemas.AllowedToken, usingV2 bool) {
 	tokensForCM := repo.allowedTokens[entry.CreditManager]
 	if tokensForCM == nil {
 		repo.allowedTokens[entry.CreditManager] = make(map[string]*schemas.AllowedToken)
@@ -53,11 +55,30 @@ func (repo *AllowedTokenRepo) isAllowedTokenDisabled(cm, token string) bool {
 	return repo.allowedTokens[cm][token].DisableBlock != 0
 }
 
-// external functions
+// for allowed token
+func (repo *AllowedTokenRepo) addAllowedToken(atoken *schemas.AllowedToken) {
+	repo.tokens.AddToken(atoken.Token)
+	repo.blocks.SetAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
+}
 
-func (repo *AllowedTokenRepo) AddAllowedToken(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) *schemas.DAOOperation {
+// external functions
+func (repo *AllowedTokenRepo) LoadAllowedTokensState(db *gorm.DB) {
+	defer utils.Elapsed("loadAllowedTokensState")()
+	data := []*schemas.AllowedToken{}
+	// v1 query
+	// err := repo.db.Raw("SELECT * FROM allowed_tokens where disable_block = 0 order by block_num").Find(&data).Error
+	// v2 query
+	err := db.Raw("SELECT distinct on (credit_manager, token) * FROM allowed_tokens order by credit_manager, token, block_num DESC").Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		repo.addAllowedTokenState(entry, false)
+	}
+}
+
+func (repo *AllowedTokenRepo) AddAllowedToken(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	repo.addAllowedToken(atoken)
 	prevLiqThreshold := repo.getPreviousLiqThreshold(atoken.CreditManager, atoken.Token)
 	args := core.Json{
 		"liquidityThreshold":       atoken.LiquidityThreshold,
@@ -65,15 +86,15 @@ func (repo *AllowedTokenRepo) AddAllowedToken(logID uint, txHash, creditFilter s
 		"creditManager":            atoken.CreditManager,
 		"prevLiquidationThreshold": prevLiqThreshold,
 	}
-	repo.AddAllowedTokenState(atoken, false)
-	return &schemas.DAOOperation{
+	repo.addAllowedTokenState(atoken, false)
+	repo.blocks.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: atoken.BlockNumber,
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
 		Type:        schemas.TokenAllowed,
 		Args:        &args,
-	}
+	})
 }
 
 // allowed token
@@ -91,14 +112,14 @@ func (repo *AllowedTokenRepo) AddAllowedToken(logID uint, txHash, creditFilter s
 // if previous lt hasn't disabledBlock, disable previous entry
 // - liquiditythreshold emitted.
 // (c3)store dao operation, update allowed token state and add allowed token to table.
-func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) (*schemas.AllowedToken, *schemas.DAOOperation) {
+func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	cm := atoken.CreditManager
 	token := atoken.Token
 	prevLiqThreshold := repo.getPreviousLiqThreshold(cm, token)
 	if prevLiqThreshold.Convert().Int64() == 0 && atoken.LiquidityThreshold == nil { // c1
-		return nil, &schemas.DAOOperation{
+		repo.blocks.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: atoken.BlockNumber,
 			LogID:       logID,
 			TxHash:      txHash,
@@ -108,11 +129,14 @@ func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter
 				"token":         atoken.Token,
 				"creditManager": atoken.CreditManager,
 			},
-		}
+		})
+		return
 	}
 	if atoken.LiquidityThreshold == nil { // c2
 		atoken.LiquidityThreshold = prevLiqThreshold
 	}
+	repo.addAllowedToken(atoken)
+	//
 	canReEnable := repo.isAllowedTokenDisabled(cm, token)
 	args := core.Json{
 		"liquidityThreshold":       atoken.LiquidityThreshold,
@@ -130,24 +154,24 @@ func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter
 		prevToken.DisableBlock = atoken.BlockNumber
 		repo.disabledTokens = append(repo.disabledTokens, prevToken)
 	}
-	repo.AddAllowedTokenState(atoken, true)
+	repo.addAllowedTokenState(atoken, true)
 	var daoEventType uint
 	if atoken.LiquidityThreshold == nil {
 		daoEventType = schemas.TokenAllowedV2
 	} else {
 		daoEventType = schemas.LTUpdated
 	}
-	return atoken, &schemas.DAOOperation{
+	repo.blocks.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: atoken.BlockNumber,
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
 		Type:        daoEventType,
 		Args:        &args,
-	}
+	})
 }
 
-func (repo *AllowedTokenRepo) DisableAllowedToken(blockNum int64, logID uint, txHash, creditManager, creditFilter, token string) *schemas.DAOOperation {
+func (repo *AllowedTokenRepo) DisableAllowedToken(blockNum int64, logID uint, txHash, creditManager, creditFilter, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	atoken := repo.allowedTokens[creditManager][token]
@@ -159,17 +183,19 @@ func (repo *AllowedTokenRepo) DisableAllowedToken(blockNum int64, logID uint, tx
 	}
 	// for v2 we shouldn't delete the previous state as it will be required for lt if only token is emitted.
 	// delete(repo.allowedTokens[creditManager], token)
-	return &schemas.DAOOperation{
+	repo.blocks.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: atoken.DisableBlock,
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
 		Type:        schemas.TokenForbidden,
 		Args:        &args,
-	}
+	})
 }
 
 func (repo *AllowedTokenRepo) GetDisabledTokens() []*schemas.AllowedToken {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	return repo.disabledTokens
 }
 

@@ -25,6 +25,7 @@ type Repository struct {
 	*handlers.AllowedTokenRepo
 	*handlers.ParamsRepo
 	*handlers.PoolUsersRepo
+	*handlers.BlocksRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
@@ -40,38 +41,35 @@ type Repository struct {
 	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
 	// blocks/token
-	blocks map[int64]*schemas.Block
 	tokens map[string]*schemas.Token
 	// version  to token to oracle
 	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle // done
 	// treasury
 	treasurySnapshot *schemas.TreasurySnapshot
 	lastTreasureTime time.Time
-	BlockDatePairs   map[int64]*schemas.BlockDate
 	dieselTokens     map[string]*schemas.UTokenAndPool
 	accountManager   *ds.AccountTokenManager
 	relations        []*schemas.UniPriceAndChainlink
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) *Repository {
+	blocksRepo := handlers.NewBlocksRepo(db, client)
 	repo := &Repository{
 		SessionRepo:           handlers.NewSessionRepo(),
-		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(),
-		ParamsRepo:            handlers.NewParamsRepo(),
+		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(blocksRepo),
+		ParamsRepo:            handlers.NewParamsRepo(blocksRepo),
 		PoolUsersRepo:         handlers.NewPoolUsersRepo(),
+		BlocksRepo:            blocksRepo,
 		mu:                    &sync.Mutex{},
 		db:                    db,
 		client:                client,
 		config:                config,
-		blocks:                make(map[int64]*schemas.Block),
 		executeParser:         ep,
 		kit:                   ds.NewAdapterKit(),
 		tokens:                make(map[string]*schemas.Token),
 		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
 		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
-		// for treasury to get the date
-		BlockDatePairs: make(map[int64]*schemas.BlockDate),
 		// for getting the diesel tokens
 		dieselTokens:   make(map[string]*schemas.UTokenAndPool),
 		accountManager: ds.NewAccountTokenManager(),
@@ -118,17 +116,17 @@ func (repo *Repository) init() {
 	repo.loadCreditManagers()
 	repo.loadGearBalances()
 	// required for disabling allowed tokens
-	repo.loadAllowedTokensState()
+	repo.LoadAllowedTokensState(repo.db)
 	// fastcheck and new parameters
 	repo.ParamsRepo.LoadAllParams(repo.db)
 	// treasury funcs
-	repo.loadBlockDatePair()
+	repo.LoadBlockDatePair()
 	repo.loadLastTreasuryTs()
 	repo.loadTreasurySnapshot()
 	// for direct token transfer
 	repo.loadAccountLastSession()
 	// credit_sessions
-	repo.loadCreditSessions(lastDebtSync)
+	repo.LoadCreditSessions(repo.db, lastDebtSync)
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *schemas.AccountOperation) {
@@ -137,7 +135,7 @@ func (repo *Repository) AddAccountOperation(accountOperation *schemas.AccountOpe
 	if accountOperation.SessionId == "" {
 		panic(utils.ToJson(accountOperation))
 	}
-	repo.setAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
+	repo.SetAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
 }
 
 func (repo *Repository) SetWETHAddr(addr string) {
@@ -152,13 +150,6 @@ func (repo *Repository) GetUSDCAddr() string {
 }
 func (repo *Repository) GetGearTokenAddr() string {
 	return repo.GearTokenAddr
-}
-
-func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
-	ts := eng.SetAndGetBlock(blockNum).Timestamp
-	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
-		log.Msgf(msg, args...)
-	}
 }
 
 type LastSyncAndType struct {
@@ -204,5 +195,5 @@ func (repo *Repository) GetChainId() uint {
 func (repo *Repository) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.setAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
+	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
 }

@@ -14,14 +14,16 @@ type ParamsRepo struct {
 	cmParams          map[string]*schemas.Parameters
 	cmFastCheckParams map[string]*schemas.FastCheckParams
 	mu                *sync.Mutex
+	blocks            *BlocksRepo
 }
 
-func NewParamsRepo() *ParamsRepo {
+func NewParamsRepo(blocks *BlocksRepo) *ParamsRepo {
 	return &ParamsRepo{
 		// for dao events to get diff
 		cmParams:          make(map[string]*schemas.Parameters),
 		cmFastCheckParams: make(map[string]*schemas.FastCheckParams),
 		mu:                &sync.Mutex{},
+		blocks:            blocks,
 	}
 }
 
@@ -46,9 +48,10 @@ func (repo *ParamsRepo) LoadAllParams(db *gorm.DB) {
 	}
 }
 
-func (repo *ParamsRepo) AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *schemas.FastCheckParams) *schemas.DAOOperation {
+func (repo *ParamsRepo) AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *schemas.FastCheckParams) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	repo.blocks.SetAndGetBlock(fcParams.BlockNum).AddFastCheckParams(fcParams)
 	// set the dao action
 	oldFCParams := repo.cmFastCheckParams[fcParams.CreditManager]
 	if oldFCParams == nil {
@@ -59,21 +62,21 @@ func (repo *ParamsRepo) AddFastCheckParams(logID uint, txHash, cm, creditFilter 
 
 	//
 	repo.cmFastCheckParams[fcParams.CreditManager] = fcParams
-	return &schemas.DAOOperation{
+	repo.blocks.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: fcParams.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,
 		Contract:    creditFilter,
 		Args:        args,
 		Type:        schemas.NewFastCheckParameters,
-	}
+	})
 }
 
 // params on credit filter
-func (repo *ParamsRepo) AddParameters(logID uint, txHash string, params *schemas.Parameters, token string) *schemas.DAOOperation {
+func (repo *ParamsRepo) AddParameters(logID uint, txHash string, params *schemas.Parameters, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	// repo.setAndGetBlock(params.BlockNum).AddParameters(params)
+	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(params)
 	// cal dao action
 	oldCMParams := repo.cmParams[params.CreditManager]
 	if oldCMParams == nil {
@@ -82,18 +85,18 @@ func (repo *ParamsRepo) AddParameters(logID uint, txHash string, params *schemas
 	args := oldCMParams.Diff(params)
 	(*args)["token"] = token
 	repo.cmParams[params.CreditManager] = params
-	return &schemas.DAOOperation{
+	repo.blocks.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: params.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,
 		Type:        schemas.EventNewParameters,
 		Contract:    params.CreditManager,
 		Args:        args,
-	}
+	})
 }
 
 // params on credit configurator
-func (repo *ParamsRepo) paramsDAOV2(logID uint, txHash, creditConfigurator string, params *schemas.Parameters, fieldToRemove []string, daoEventType uint) *schemas.DAOOperation {
+func (repo *ParamsRepo) paramsDAOV2(logID uint, txHash, creditConfigurator string, params *schemas.Parameters, fieldToRemove []string, daoEventType uint) {
 	oldCMParams := repo.cmParams[params.CreditManager]
 	if oldCMParams == nil {
 		oldCMParams = schemas.NewParameters()
@@ -103,17 +106,17 @@ func (repo *ParamsRepo) paramsDAOV2(logID uint, txHash, creditConfigurator strin
 		delete(*args, field)
 	}
 	(*args)["creditManager"] = params.CreditManager
-	return &schemas.DAOOperation{
+	repo.blocks.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: params.BlockNum,
 		LogID:       logID,
 		TxHash:      txHash,
 		Type:        daoEventType,
 		Contract:    creditConfigurator,
 		Args:        args,
-	}
+	})
 }
 
-func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) (*schemas.Parameters, *schemas.DAOOperation) {
+func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// cal dao action
@@ -121,7 +124,7 @@ func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator stri
 	if oldCMParams == nil {
 		oldCMParams = schemas.NewParameters()
 	}
-	daoOperation := repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
+	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{"feeLiquidation", "LiquidationDiscount", "feeInterest", "maxLeverage"}, schemas.LimitsUpdated)
 	newParams := &schemas.Parameters{
 		MinAmount:           params.MinAmount,
@@ -133,10 +136,10 @@ func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator stri
 		CreditManager:       params.CreditManager,
 	}
 	repo.cmParams[params.CreditManager] = newParams
-	return newParams, daoOperation
+	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)
 }
 
-func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) (*schemas.Parameters, *schemas.DAOOperation) {
+func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// cal dao action
@@ -144,7 +147,7 @@ func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string
 	if oldCMParams == nil {
 		oldCMParams = schemas.NewParameters()
 	}
-	daoOperation := repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
+	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{"maxAmount", "maxLeverage", "minAmount"}, schemas.FeesUpdated)
 	newParams := &schemas.Parameters{
 		MinAmount:           oldCMParams.MinAmount,
@@ -156,5 +159,5 @@ func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string
 		CreditManager:       params.CreditManager,
 	}
 	repo.cmParams[params.CreditManager] = newParams
-	return newParams, daoOperation
+	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)
 }

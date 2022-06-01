@@ -58,15 +58,9 @@ func (repo *Repository) AddTokenOracle(tokenOracle *schemas.TokenOracle) {
 		tokenOracle,
 	)
 	// token oracle
-	repo.setAndGetBlock(tokenOracle.BlockNumber).AddTokenOracle(
+	repo.SetAndGetBlock(tokenOracle.BlockNumber).AddTokenOracle(
 		tokenOracle,
 	)
-}
-
-func (repo *Repository) AddPriceFeed(pf *schemas.PriceFeed) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 }
 
 // called from chainlink feed and price oracle

@@ -16,9 +16,9 @@ import (
 func (repo *Repository) AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.blocks[p.BlockNumber].AddAllowedProtocol(p)
+	repo.SetAndGetBlock(p.BlockNumber).AddAllowedProtocol(p)
 	args := core.Json{"adapter": p.Adapter, "protocol": p.Protocol, "creditManager": p.CreditManager}
-	repo.addDAOOperation(&schemas.DAOOperation{
+	repo.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: p.BlockNumber,
 		LogID:       logID,
 		TxHash:      txHash,
@@ -32,7 +32,7 @@ func (repo *Repository) DisableProtocol(blockNum int64, logID uint, txHash, cm, 
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	args := core.Json{"protocol": protocol, "creditManager": cm}
-	repo.addDAOOperation(&schemas.DAOOperation{
+	repo.AddDAOOperation(&schemas.DAOOperation{
 		BlockNumber: blockNum,
 		LogID:       logID,
 		TxHash:      txHash,
@@ -40,33 +40,6 @@ func (repo *Repository) DisableProtocol(blockNum int64, logID uint, txHash, cm, 
 		Type:        schemas.ContractForbidden,
 		Args:        &args,
 	})
-}
-
-// for allowed token
-func (repo *Repository) addAllowedToken(atoken *schemas.AllowedToken) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.addToken(atoken.Token)
-	repo.setAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
-}
-
-func (repo *Repository) DisableAllowedToken(blockNum int64, logID uint, txHash, creditManager, creditFilter, token string) {
-	daoOperation := repo.AllowedTokenRepo.DisableAllowedToken(blockNum, logID, txHash, creditManager, creditFilter, token)
-	repo.addDAOOperation(daoOperation)
-}
-
-func (repo *Repository) AddAllowedToken(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) {
-	repo.addAllowedToken(atoken)
-	daoOperation := repo.AllowedTokenRepo.AddAllowedToken(logID, txHash, creditFilter, atoken)
-	repo.addDAOOperation(daoOperation)
-}
-
-func (repo *Repository) AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) {
-	atoken, daoOperation := repo.AllowedTokenRepo.AddAllowedTokenV2(logID, txHash, creditFilter, atoken)
-	if atoken != nil {
-		repo.addAllowedToken(atoken)
-	}
-	repo.addDAOOperation(daoOperation)
 }
 
 func (repo *Repository) AddCreditManagerToFilter(cmAddr, cfAddr string) {

@@ -7,6 +7,8 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
+	"gorm.io/gorm"
 )
 
 type SessionRepo struct {
@@ -19,6 +21,28 @@ func NewSessionRepo() *SessionRepo {
 		sessions: map[string]*schemas.CreditSession{},
 	}
 }
+
+// where clause is for debts
+// so that all the credit sessions that were present at lastDebtsync +1 can be loaded from db.
+//
+// join with css is not dependent on lastdebtsync block
+// these values are for use by sync engine
+func (repo *SessionRepo) loadCreditSessions(db *gorm.DB, lastDebtSync int64) {
+	defer utils.Elapsed("loadCreditSessions")()
+	data := []*schemas.CreditSession{}
+	err := db.Raw(`SELECT * FROM credit_sessions cs 
+	JOIN (SELECT distinct on (session_id) collateral_usd, collateral_underlying, session_id FROM credit_session_snapshots ORDER BY session_id, block_num DESC) css
+	ON css.session_id = cs.id
+	WHERE status = ? OR (status <> ? AND closed_at > ?)`,
+		schemas.Active, schemas.Active, lastDebtSync).Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, session := range data {
+		repo.AddCreditSession(session, true)
+	}
+}
+
 func (repo *SessionRepo) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool) {
 	if repo.sessions[session.ID] == nil {
 		if !loadedFromDB {

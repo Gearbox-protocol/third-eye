@@ -2,18 +2,19 @@ package repository
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"math/big"
 )
 
 func (repo *Repository) AddCreditSessionSnapshot(css *schemas.CreditSessionSnapshot) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	css.ID = 0
-	repo.setAndGetBlock(css.BlockNum).AddCreditSessionSnapshot(css)
+	repo.SetAndGetBlock(css.BlockNum).AddCreditSessionSnapshot(css)
 }
 
 func (repo *Repository) ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*core.JsonBalance, error) {

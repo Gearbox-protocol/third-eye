@@ -27,19 +27,13 @@ func (repo *Repository) IsDieselToken(token string) bool {
 	return repo.dieselTokens[token] != nil
 }
 
-func (repo *Repository) AddPoolStat(ps *schemas.PoolStat) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(ps.BlockNum).AddPoolStat(ps)
-}
-
 func (repo *Repository) AddPoolLedger(pl *schemas.PoolLedger) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if "AddLiquidity" == pl.Event {
 		repo.AddPoolUniqueUser(pl.Pool, pl.User)
 	}
-	repo.setAndGetBlock(pl.BlockNumber).AddPoolLedger(pl)
+	repo.SetAndGetBlock(pl.BlockNumber).AddPoolLedger(pl)
 }
 
 func (repo *Repository) AddDieselToken(dieselToken, underlyingToken, pool string) {

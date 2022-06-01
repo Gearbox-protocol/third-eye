@@ -58,27 +58,9 @@ func (repo *Repository) GetUnderlyingDecimal(cmAddr string) int8 {
 	return repo.GetToken(cm.UnderlyingToken).Decimals
 }
 
-func (repo *Repository) AddCreditManagerStats(cms *schemas.CreditManagerStat) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(cms.BlockNum).AddCreditManagerStats(cms)
-}
-
-func (repo *Repository) AddRepayOnCM(blockNum int64, cmAddr string, pnlOnRepay schemas.PnlOnRepay) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(blockNum).AddRepayOnCM(cmAddr, &pnlOnRepay)
-}
-
-func (repo *Repository) GetRepayOnCM(blockNum int64, cmAddr string) *schemas.PnlOnRepay {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	return repo.blocks[blockNum].GetRepayOnCM(cmAddr)
-}
-
 func (repo *Repository) AddAccountTokenTransfer(tt *schemas.TokenTransfer) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.setBlock(tt.BlockNum)
+	repo.SetBlock(tt.BlockNum)
 	repo.accountManager.AddTokenTransfer(tt)
 }

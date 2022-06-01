@@ -7,22 +7,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
-func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
-	defer utils.Elapsed("loadCreditSessions")()
-	data := []*schemas.CreditSession{}
-	err := repo.db.Raw(`SELECT * FROM credit_sessions cs 
-	JOIN (SELECT distinct on (session_id) collateral_usd, collateral_underlying, session_id FROM credit_session_snapshots ORDER BY session_id, block_num DESC) css
-	ON css.session_id = cs.id
-	WHERE status = ? OR (status <> ? AND closed_at > ?)`,
-		schemas.Active, schemas.Active, lastDebtSync).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, session := range data {
-		repo.SessionRepo.AddCreditSession(session, true)
-	}
-}
-
 func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
 	repo.dcWrapper.AddDataCompressor(blockNum, addr)
 }

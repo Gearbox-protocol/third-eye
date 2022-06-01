@@ -1,28 +1,19 @@
 package repository
 
 import (
+	"math/big"
+	"time"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"math/big"
-	"time"
 )
-
-func (repo *Repository) AddDAOOperation(operation *schemas.DAOOperation) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.addDAOOperation(operation)
-}
-
-func (repo *Repository) addDAOOperation(operation *schemas.DAOOperation) {
-	repo.setAndGetBlock(operation.BlockNumber).AddDAOOperation(operation)
-}
 
 func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	block := repo.setAndGetBlock(blockNum)
+	block := repo.SetAndGetBlock(blockNum)
 	// treasury transfer
 	block.AddTreasuryTransfer(&schemas.TreasuryTransfer{
 		BlockNum: blockNum,
@@ -64,7 +55,7 @@ func (repo *Repository) saveTreasurySnapshot() {
 	}
 	repo.CalFieldsOfTreasurySnapshot(blockDate.BlockNum, tss)
 	log.Info(utils.ToJson(tss))
-	repo.setAndGetBlock(blockDate.BlockNum).AddTreasurySnapshot(tss)
+	repo.SetAndGetBlock(blockDate.BlockNum).AddTreasurySnapshot(tss)
 }
 
 func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *schemas.TreasurySnapshot) {
@@ -89,7 +80,7 @@ func (repo *Repository) AfterSync(syncTill int64) {
 	for _, txs := range repo.accountManager.GetNoSessionTxs() {
 		for _, tx := range txs {
 			repo.RecentEventMsg(tx.BlockNum, "No session account token transfer: %v", tx)
-			repo.setAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
+			repo.SetAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
 		}
 	}
 	// for direct token transfer
@@ -147,28 +138,6 @@ func (repo *Repository) loadLastTreasuryTs() {
 	repo.lastTreasureTime = time.Unix(data.LastCalculatedAt, 0)
 	if repo.lastTreasureTime.Unix() != 0 {
 		repo.lastTreasureTime = utils.TimeToDateEndTime(repo.lastTreasureTime)
-	}
-}
-
-func (repo *Repository) loadBlockDatePair() {
-	defer utils.Elapsed("loadBlockDatePair")()
-	data := []*schemas.BlockDate{}
-	sql := `select b.*, a.timestamp from blocks a 
-	JOIN (select timezone('UTC', to_timestamp(timestamp))::date as date,max(id) as block_num from blocks group by date) b 
-	ON a.id=b.block_num order by block_num`
-	if err := repo.db.Raw(sql).Find(&data).Error; err != nil {
-		log.Fatal(err)
-	}
-	for _, entry := range data {
-		repo.addBlockDate(entry)
-	}
-}
-
-func (repo *Repository) addBlockDate(entry *schemas.BlockDate) {
-	ts := utils.TimeToDateEndTs(time.Unix(entry.Timestamp, 0))
-	previousEntry := repo.BlockDatePairs[ts]
-	if previousEntry == nil || previousEntry.BlockNum < entry.BlockNum {
-		repo.BlockDatePairs[ts] = entry
 	}
 }
 
