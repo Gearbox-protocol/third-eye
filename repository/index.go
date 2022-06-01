@@ -30,10 +30,9 @@ type Repository struct {
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
-	db            *gorm.DB
-	client        core.ClientI
-	config        *config.Config
-	executeParser ds.ExecuteParserI
+	db     *gorm.DB
+	client core.ClientI
+	config *config.Config
 	// treasury
 	treasurySnapshot *schemas.TreasurySnapshot
 	lastTreasureTime time.Time
@@ -41,7 +40,7 @@ type Repository struct {
 	relations        []*schemas.UniPriceAndChainlink
 }
 
-func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, ep ds.ExecuteParserI) *Repository {
+func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
 	blocksRepo := handlers.NewBlocksRepo(db, client)
 	tokensRepo := handlers.NewTokensRepo(client)
 	repo := &Repository{
@@ -51,27 +50,22 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, ep ds.E
 		PoolUsersRepo:    handlers.NewPoolUsersRepo(),
 		TokensRepo:       tokensRepo,
 		BlocksRepo:       blocksRepo,
-		ExtrasRepo:       handlers.NewExtraRepo(client),
+		ExtrasRepo:       extras,
 		mu:               &sync.Mutex{},
 		db:               db,
 		client:           client,
 		config:           cfg,
-		executeParser:    ep,
 		accountManager:   ds.NewAccountTokenManager(),
 	}
-	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, repo.ExtrasRepo)
+	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
 	return repo
 }
 
-func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) ds.RepositoryI {
+func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *handlers.ExtrasRepo) ds.RepositoryI {
 	r := GetRepository(db, client, config, ep)
 	r.init()
 	return r
-}
-
-func (repo *Repository) GetExecuteParser() ds.ExecuteParserI {
-	return repo.executeParser
 }
 
 func (repo *Repository) init() {

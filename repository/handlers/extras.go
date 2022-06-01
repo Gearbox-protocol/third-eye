@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,14 +20,16 @@ type ExtrasRepo struct {
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
 	client                core.ClientI
 	mu                    *sync.Mutex
+	executeParser         ds.ExecuteParserI
 }
 
-func NewExtraRepo(client core.ClientI) *ExtrasRepo {
+func NewExtraRepo(client core.ClientI, ep ds.ExecuteParserI) *ExtrasRepo {
 	return &ExtrasRepo{
 		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
 		client:                client,
 		mu:                    &sync.Mutex{},
+		executeParser:         ep,
 	}
 }
 
@@ -69,4 +72,8 @@ func (repo *ExtrasRepo) GetMask(blockNum int64, cmAddr, accountAddr string, vers
 		return mask
 	}
 	return nil
+}
+
+func (repo *ExtrasRepo) GetExecuteParser() ds.ExecuteParserI {
+	return repo.executeParser
 }
