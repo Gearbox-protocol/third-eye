@@ -6,15 +6,12 @@ import (
 
 	"fmt"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers"
 	"gorm.io/gorm"
 )
@@ -27,19 +24,16 @@ type Repository struct {
 	*handlers.PoolUsersRepo
 	*handlers.BlocksRepo
 	*handlers.TokensRepo
+	*handlers.ExtrasRepo
+	*handlers.SyncAdaptersRepo
+	*handlers.TokenOracleRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
-	db                    *gorm.DB
-	client                core.ClientI
-	config                *config.Config
-	kit                   *ds.AdapterKit
-	executeParser         ds.ExecuteParserI
-	dcWrapper             *dc_wrapper.DataCompressorWrapper
-	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
-	creditManagerToFilter map[string]*creditFilter.CreditFilter
-	// version  to token to oracle
-	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle // done
+	db            *gorm.DB
+	client        core.ClientI
+	config        *config.Config
+	executeParser ds.ExecuteParserI
 	// treasury
 	treasurySnapshot *schemas.TreasurySnapshot
 	lastTreasureTime time.Time
@@ -47,30 +41,26 @@ type Repository struct {
 	relations        []*schemas.UniPriceAndChainlink
 }
 
-func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) *Repository {
+func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, ep ds.ExecuteParserI) *Repository {
 	blocksRepo := handlers.NewBlocksRepo(db, client)
 	tokensRepo := handlers.NewTokensRepo(client)
 	repo := &Repository{
-		SessionRepo:           handlers.NewSessionRepo(),
-		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(blocksRepo, tokensRepo),
-		ParamsRepo:            handlers.NewParamsRepo(blocksRepo),
-		PoolUsersRepo:         handlers.NewPoolUsersRepo(),
-		TokensRepo:            tokensRepo,
-		BlocksRepo:            blocksRepo,
-		mu:                    &sync.Mutex{},
-		db:                    db,
-		client:                client,
-		config:                config,
-		executeParser:         ep,
-		kit:                   ds.NewAdapterKit(),
-		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
-		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
-		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
-		accountManager:        ds.NewAccountTokenManager(),
+		SessionRepo:      handlers.NewSessionRepo(),
+		AllowedTokenRepo: handlers.NewAllowedTokenRepo(blocksRepo, tokensRepo),
+		ParamsRepo:       handlers.NewParamsRepo(blocksRepo),
+		PoolUsersRepo:    handlers.NewPoolUsersRepo(),
+		TokensRepo:       tokensRepo,
+		BlocksRepo:       blocksRepo,
+		ExtrasRepo:       handlers.NewExtraRepo(client),
+		mu:               &sync.Mutex{},
+		db:               db,
+		client:           client,
+		config:           cfg,
+		executeParser:    ep,
+		accountManager:   ds.NewAccountTokenManager(),
 	}
-	// aggregated block feed
-	repo.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(repo.client, repo, repo.config.Interval)
-	repo.kit.Add(repo.aggregatedFeed)
+	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, repo.ExtrasRepo)
+	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
 	return repo
 }
 
@@ -80,16 +70,8 @@ func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 	return r
 }
 
-func (repo *Repository) GetDCWrapper() *dc_wrapper.DataCompressorWrapper {
-	return repo.dcWrapper
-}
-
 func (repo *Repository) GetExecuteParser() ds.ExecuteParserI {
 	return repo.executeParser
-}
-
-func (repo *Repository) GetKit() *ds.AdapterKit {
-	return repo.kit
 }
 
 func (repo *Repository) init() {
@@ -97,12 +79,12 @@ func (repo *Repository) init() {
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
 	repo.TokensRepo.LoadTokens(repo.db)
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
-	repo.loadSyncAdapters()
+	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
 	repo.loadChainlinkPrevState()
 	//
 	repo.loadUniswapPools()
 	// for disabling previous token oracle if new oracle is set
-	repo.loadCurrentTokenOracle()
+	repo.LoadCurrentTokenOracle(repo.db)
 	// load state for sync_adapters
 	repo.loadPool()
 	repo.LoadPoolUniqueUsers(repo.db)

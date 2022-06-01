@@ -12,12 +12,13 @@ import (
 )
 
 type TokensRepo struct {
+	// export vars
+	wethAddr      string
+	usdcAddr      string
+	gearTokenAddr string
 	// blocks/token
-	tokens        map[string]*schemas.Token
-	WETHAddr      string
-	USDCAddr      string
-	GearTokenAddr string
-	dieselTokens  map[string]*schemas.UTokenAndPool
+	tokens       map[string]*schemas.Token
+	dieselTokens map[string]*schemas.UTokenAndPool
 	//
 	mu     *sync.Mutex
 	client core.ClientI
@@ -48,6 +49,7 @@ func (repo *TokensRepo) LoadTokens(db *gorm.DB) {
 }
 
 func (repo *TokensRepo) Save(tx *gorm.DB) {
+	defer utils.Elapsed("tokens sql statements")()
 	tokens := make([]*schemas.Token, 0, len(repo.tokens))
 	for _, token := range repo.tokens {
 		tokens = append(tokens, token)
@@ -63,10 +65,13 @@ func (repo *TokensRepo) Save(tx *gorm.DB) {
 func (repo *TokensRepo) addTokenObj(t *schemas.Token) {
 	// set usdc addr in repo
 	if t.Symbol == "USDC" {
-		repo.USDCAddr = t.Address
+		repo.usdcAddr = t.Address
 	}
 	if t.Symbol == "WETH" {
-		repo.WETHAddr = t.Address
+		repo.wethAddr = t.Address
+	}
+	if t.Symbol == "GEAR" {
+		repo.gearTokenAddr = t.Address
 	}
 	if repo.tokens[t.Address] == nil {
 		repo.tokens[t.Address] = t
@@ -111,8 +116,8 @@ func (repo *TokensRepo) GetTokens() []string {
 	for addr, _ := range repo.tokens {
 		tokens = append(tokens, addr)
 	}
-	if repo.GearTokenAddr != "" {
-		tokens = append(tokens, repo.GearTokenAddr)
+	if repo.gearTokenAddr != "" {
+		tokens = append(tokens, repo.gearTokenAddr)
 	}
 	return tokens
 }
@@ -127,6 +132,12 @@ func (repo *TokensRepo) AddDieselToken(dieselToken, underlyingToken, pool string
 	repo.addToken(dieselToken)
 }
 
+func (repo *TokensRepo) GetDieselToken(dieselToken string) *schemas.UTokenAndPool {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	return repo.dieselTokens[dieselToken]
+}
+
 // testing purpose
 func (repo *TokensRepo) AddTokenObj(obj *schemas.Token) {
 	repo.mu.Lock()
@@ -135,18 +146,18 @@ func (repo *TokensRepo) AddTokenObj(obj *schemas.Token) {
 }
 
 // get specific tokens
-func (repo *TokensRepo) setWETHAddr(addr string) {
-	repo.WETHAddr = addr
+func (repo *TokensRepo) setwethAddr(addr string) {
+	repo.wethAddr = addr
 }
 
 func (repo *TokensRepo) GetWETHAddr() string {
-	return repo.WETHAddr
+	return repo.wethAddr
 }
 func (repo *TokensRepo) GetUSDCAddr() string {
-	return repo.USDCAddr
+	return repo.usdcAddr
 }
 func (repo *TokensRepo) GetGearTokenAddr() string {
-	return repo.GearTokenAddr
+	return repo.gearTokenAddr
 }
 
 func (repo *TokensRepo) IsDieselToken(token string) bool {

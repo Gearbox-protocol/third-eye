@@ -7,10 +7,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
-func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
-	repo.dcWrapper.AddDataCompressor(blockNum, addr)
-}
-
 func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string, logID uint) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -54,7 +50,7 @@ func (repo *Repository) GetAccountManager() *ds.AccountTokenManager {
 // add account addr with account manager
 // this func is currently used by account factory
 func (repo *Repository) AddAccountAddr(account string) {
-	addrs := repo.kit.GetAdapterAddressByName(ds.AccountManager)
+	addrs := repo.GetKit().GetAdapterAddressByName(ds.AccountManager)
 	if len(addrs) == 1 {
 		adapter := repo.GetAdapter(addrs[0])
 		adapter.SetDetails(account)

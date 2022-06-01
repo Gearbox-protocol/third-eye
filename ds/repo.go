@@ -63,7 +63,6 @@ type RepositoryI interface {
 	AddCreditSessionSnapshot(css *schemas.CreditSessionSnapshot)
 	// dc
 	GetDCWrapper() *dc_wrapper.DataCompressorWrapper
-	AddDataCompressor(blockNum int64, addr string)
 	// pools
 	AddPoolStat(ps *schemas.PoolStat)
 	AddPoolLedger(pl *schemas.PoolLedger)

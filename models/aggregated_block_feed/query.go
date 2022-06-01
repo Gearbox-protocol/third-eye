@@ -291,6 +291,8 @@ func (mdl *AggregatedBlockFeed) Clear() {
 	mdl.UniPricesByTokens = map[string]schemas.SortedUniPoolPrices{}
 }
 
+// called on next level in the adapter kit
+// so mu is not required as write operation is not performed at that levelAggre
 func (mdl *AggregatedBlockFeed) GetUniPricesByToken(token string) []*schemas.UniPoolPrices {
 	return mdl.UniPricesByTokens[token]
 }

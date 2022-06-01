@@ -77,6 +77,20 @@ func (repo *AllowedTokenRepo) LoadAllowedTokensState(db *gorm.DB) {
 	}
 }
 
+func (repo *AllowedTokenRepo) Save(tx *gorm.DB) {
+	defer utils.Elapsed("allowed token sql statements")()
+	// add disabled tokens after the block num and allowed tokens are synced to db
+	if len(repo.disabledTokens) > 0 {
+		err := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(repo.disabledTokens, 50).Error
+		log.CheckFatal(err)
+		repo.disabledTokens = []*schemas.AllowedToken{}
+	}
+}
+
+// external funcs
+
 func (repo *AllowedTokenRepo) AddAllowedToken(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -199,15 +213,4 @@ func (repo *AllowedTokenRepo) GetDisabledTokens() []*schemas.AllowedToken {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	return repo.disabledTokens
-}
-
-func (repo *AllowedTokenRepo) Save(tx *gorm.DB) {
-	// add disabled tokens after the block num and allowed tokens are synced to db
-	if len(repo.disabledTokens) > 0 {
-		err := tx.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).CreateInBatches(repo.disabledTokens, 50).Error
-		log.CheckFatal(err)
-		repo.disabledTokens = []*schemas.AllowedToken{}
-	}
 }

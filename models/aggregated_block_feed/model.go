@@ -1,14 +1,15 @@
 package aggregated_block_feed
 
 import (
+	"math"
+	"sync"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math"
-	"sync"
 )
 
 type AggregatedBlockFeed struct {
@@ -50,6 +51,7 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 	}
 }
 
+// only called by priceoracle
 func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter ds.SyncAdapterI) {
 	yearnFeed, ok := adapter.(*QueryPriceFeed)
 	if !ok {

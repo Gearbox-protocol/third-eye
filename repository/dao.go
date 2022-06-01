@@ -42,7 +42,7 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 
 func (repo *Repository) saveTreasurySnapshot() {
 	ts := repo.lastTreasureTime.Unix()
-	blockDate := repo.BlockDatePairs[ts]
+	blockDate := repo.GetBlockDatePairs(ts)
 	balances := core.JsonFloatMap{}
 	for token, amt := range *repo.treasurySnapshot.Balances {
 		balances[token] = amt
@@ -61,7 +61,7 @@ func (repo *Repository) CalFieldsOfTreasurySnapshot(blockNum int64, tss *schemas
 	var totalValueInUSD float64
 	var tokenAddrs []string
 	for token := range *tss.Balances {
-		if token == repo.GearTokenAddr || token == repo.WETHAddr {
+		if token == repo.GetGearTokenAddr() || token == repo.GetWETHAddr() {
 			continue
 		}
 		tokenAddrs = append(tokenAddrs, token)
@@ -85,7 +85,7 @@ func (repo *Repository) AfterSync(syncTill int64) {
 	// for direct token transfer
 	repo.accountManager.Clear()
 	// chainlink and uniswap prices
-	repo.aggregatedFeed.Clear()
+	repo.AggregatedFeed.Clear()
 }
 func (repo *Repository) CalCurrentTreasuryValue(blockNum int64) {
 	repo.CalFieldsOfTreasurySnapshot(blockNum, repo.treasurySnapshot)
@@ -97,7 +97,7 @@ func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core
 	var tokenForCalls []string
 	var poolForDieselRate []string
 	for _, token := range tokenAddrs {
-		uTokenAndPool := repo.dieselTokens[token]
+		uTokenAndPool := repo.GetDieselToken(token)
 		if uTokenAndPool != nil {
 			tokenForCalls = append(tokenForCalls, uTokenAndPool.UToken)
 			poolForDieselRate = append(poolForDieselRate, uTokenAndPool.Pool)
@@ -110,8 +110,7 @@ func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core
 	var poolIndex int
 	for i, token := range tokenAddrs {
 		var price *big.Int
-		uTokenAndPool := repo.dieselTokens[token]
-		if uTokenAndPool != nil {
+		if repo.IsDieselToken(token) {
 			dieselRate := dieselRates[poolIndex]
 			poolIndex++
 			price = new(big.Int).Mul(dieselRate, prices[i])
@@ -121,8 +120,8 @@ func (repo *Repository) GetPricesInUSD(blockNum int64, tokenAddrs []string) core
 		}
 		priceByToken[token] = utils.GetFloat64Decimal(price, 8)
 	}
-	if repo.kit.GetAdapter(priceOracle).GetVersion() == 1 {
-		priceByToken[repo.WETHAddr] = 1
+	if repo.GetKit().GetAdapter(priceOracle).GetVersion() == 1 {
+		priceByToken[repo.GetWETHAddr()] = 1
 	}
 	return priceByToken
 }

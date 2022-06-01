@@ -12,12 +12,13 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/core/types"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type BlocksRepo struct {
 	blocks map[int64]*schemas.Block
 	// for treasury to get the date
-	BlockDatePairs map[int64]*schemas.BlockDate
+	blockDatePairs map[int64]*schemas.BlockDate
 	mu             *sync.Mutex
 	client         core.ClientI
 	db             *gorm.DB
@@ -26,7 +27,7 @@ type BlocksRepo struct {
 func NewBlocksRepo(db *gorm.DB, client core.ClientI) *BlocksRepo {
 	return &BlocksRepo{
 		blocks:         make(map[int64]*schemas.Block),
-		BlockDatePairs: map[int64]*schemas.BlockDate{},
+		blockDatePairs: map[int64]*schemas.BlockDate{},
 		//
 		mu:     &sync.Mutex{},
 		client: client,
@@ -48,10 +49,29 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	}
 }
 
+func (repo *BlocksRepo) Save(tx *gorm.DB) {
+	defer utils.Elapsed("blocks sql statements")()
+	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
+	for _, block := range repo.GetBlocks() {
+		blocksToSync = append(blocksToSync, block)
+	}
+	err := tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).CreateInBatches(blocksToSync, 100).Error
+	log.CheckFatal(err)
+}
+
+// external funcs
 func (repo *BlocksRepo) GetBlocks() map[int64]*schemas.Block {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	return repo.blocks
+}
+
+func (repo *BlocksRepo) GetBlockDatePairs(ts int64) *schemas.BlockDate {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	return repo.blockDatePairs[ts]
 }
 
 func (repo *BlocksRepo) fetchBlock(blockNum int64) *types.Block {
@@ -91,9 +111,9 @@ func (repo *BlocksRepo) SetAndGetBlock(blockNum int64) *schemas.Block {
 // for treasury calculations
 func (repo *BlocksRepo) addBlockDate(entry *schemas.BlockDate) {
 	ts := utils.TimeToDateEndTs(time.Unix(entry.Timestamp, 0))
-	previousEntry := repo.BlockDatePairs[ts]
+	previousEntry := repo.blockDatePairs[ts]
 	if previousEntry == nil || previousEntry.BlockNum < entry.BlockNum {
-		repo.BlockDatePairs[ts] = entry
+		repo.blockDatePairs[ts] = entry
 	}
 }
 

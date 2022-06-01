@@ -18,7 +18,7 @@ func (repo *Repository) GetActivePriceOracleByBlockNum(blockNum int64) (string, 
 	var disabledLastOracle, activeFirstOracle string
 	var disabledOracleBlock, activeOracleBlock int64
 	activeOracleBlock = math.MaxInt64
-	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
+	oracles := repo.GetKit().GetAdapterAddressByName(ds.PriceOracle)
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
 		if oracleAdapter.GetDiscoveredAt() <= blockNum {
@@ -45,8 +45,8 @@ func (repo *Repository) GetActivePriceOracleByBlockNum(blockNum int64) (string, 
 }
 
 func (repo *Repository) GetPriceOracleByVersion(version int16) (string, error) {
-	addrProviderAddr := repo.kit.GetAdapterAddressByName(ds.AddressProvider)
-	addrProvider := repo.kit.GetAdapter(addrProviderAddr[0])
+	addrProviderAddr := repo.GetKit().GetAdapterAddressByName(ds.AddressProvider)
+	addrProvider := repo.GetKit().GetAdapter(addrProviderAddr[0])
 	details := addrProvider.GetDetails()
 	if details != nil {
 		priceOracles, ok := details["priceOracles"].(map[string]interface{})
@@ -71,7 +71,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version int16, token,
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	currencyAddr := common.HexToAddress(repo.USDCAddr)
+	currencyAddr := common.HexToAddress(repo.GetUSDCAddr())
 	if currency != "USDC" {
 		currencyAddr = common.HexToAddress(currency)
 	}

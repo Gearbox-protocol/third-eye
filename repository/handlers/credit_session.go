@@ -3,24 +3,30 @@ package handlers
 import (
 	"math/big"
 	"reflect"
+	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type SessionRepo struct {
 	// changed during syncing
 	sessions map[string]*schemas.CreditSession
+	mu       *sync.Mutex
 }
 
 func NewSessionRepo() *SessionRepo {
 	return &SessionRepo{
 		sessions: map[string]*schemas.CreditSession{},
+		mu:       &sync.Mutex{},
 	}
 }
+
+// load/save
 
 // where clause is for debts
 // so that all the credit sessions that were present at lastDebtsync +1 can be loaded from db.
@@ -43,7 +49,23 @@ func (repo *SessionRepo) LoadCreditSessions(db *gorm.DB, lastDebtSync int64) {
 	}
 }
 
+func (repo *SessionRepo) Save(tx *gorm.DB) {
+	utils.Elapsed("session sql statements")()
+	for _, session := range repo.GetSessions() {
+		if session.IsDirty {
+			err := tx.Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).Create(session).Error
+			log.CheckFatal(err)
+			session.IsDirty = false
+		}
+	}
+}
+
+// external funcs
 func (repo *SessionRepo) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	if repo.sessions[session.ID] == nil {
 		if !loadedFromDB {
 			log.Infof("Add session %s", session.ID)
@@ -55,6 +77,8 @@ func (repo *SessionRepo) AddCreditSession(session *schemas.CreditSession, loaded
 }
 
 func (repo *SessionRepo) GetCreditSession(sessionId string) *schemas.CreditSession {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	return repo.sessions[sessionId]
 }
 
@@ -63,6 +87,8 @@ func (repo *SessionRepo) GetSessions() map[string]*schemas.CreditSession {
 }
 
 func (repo *SessionRepo) UpdateCreditSession(sessionId string, values map[string]interface{}) *schemas.CreditSession {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	session := repo.sessions[sessionId]
 	session.IsDirty = true
 	ref := reflect.ValueOf(session).Elem()
@@ -86,6 +112,8 @@ func (repo *SessionRepo) UpdateCreditSession(sessionId string, values map[string
 }
 
 func (repo *SessionRepo) Clear(closedBefore int64) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	for _, session := range repo.sessions {
 		if session.ClosedAt != 0 && closedBefore >= session.ClosedAt {
 			delete(repo.sessions, session.ID)

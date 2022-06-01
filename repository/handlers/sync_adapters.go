@@ -1,8 +1,12 @@
-package repository
+package handlers
 
 import (
+	"sync"
+
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/account_factory"
 	"github.com/Gearbox-protocol/third-eye/models/account_manager"
@@ -17,31 +21,107 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
-func (repo *Repository) loadSyncAdapters() {
+type SyncAdaptersRepo struct {
+	kit            *ds.AdapterKit
+	AggregatedFeed *aggregated_block_feed.AggregatedBlockFeed
+	r              ds.RepositoryI
+	client         core.ClientI
+	extras         *ExtrasRepo
+	rollback       string
+	mu             *sync.Mutex
+}
+
+func NewSyncAdaptersRepo(client core.ClientI, repo ds.RepositoryI, cfg *config.Config, extras *ExtrasRepo) *SyncAdaptersRepo {
+	obj := &SyncAdaptersRepo{
+		kit:      ds.NewAdapterKit(),
+		client:   client,
+		r:        repo,
+		extras:   extras,
+		rollback: cfg.Rollback,
+		mu:       &sync.Mutex{},
+	}
+	// aggregated block feed
+	obj.AggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, repo, cfg.Interval)
+	obj.kit.Add(obj.AggregatedFeed)
+	return obj
+}
+
+func (repo *SyncAdaptersRepo) addSyncAdapter(adapterI ds.SyncAdapterI) {
+	// if ds.GearToken == adapterI.GetName() {
+	// 	repo.GearTokenAddr = adapterI.GetAddress()
+	// }
+	if adapterI.GetName() == ds.QueryPriceFeed {
+		repo.AggregatedFeed.AddYearnFeed(adapterI)
+	} else {
+		repo.kit.Add(adapterI)
+	}
+}
+
+func (repo *SyncAdaptersRepo) LoadSyncAdapters(db *gorm.DB) {
 	defer utils.Elapsed("loadSyncAdapters")()
 	//
 	data := []*ds.SyncAdapter{}
-	err := repo.db.Find(&data, "disabled = ? OR type = 'PriceOracle'", false).Error
+	err := db.Find(&data, "disabled = ? OR type = 'PriceOracle'", false).Error
 	if err != nil {
 		log.Fatal(err)
 	}
 	for _, adapter := range data {
-		repo.addSyncAdapter(repo.PrepareSyncAdapter(adapter))
+		p := repo.PrepareSyncAdapter(adapter)
+		repo.addSyncAdapter(p)
 	}
 }
 
-func (repo *Repository) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
+func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
+	defer utils.Elapsed("sync adapters sql statements")()
+	adapters := make([]*ds.SyncAdapter, 0, repo.kit.Len())
+	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
+		for repo.kit.Next(lvlIndex) {
+			adapter := repo.kit.Get(lvlIndex)
+			if adapter.GetName() != ds.AggregatedBlockFeed {
+				adapters = append(adapters, adapter.GetAdapterState())
+			}
+			if adapter.HasUnderlyingState() {
+				err := tx.Clauses(clause.OnConflict{
+					UpdateAll: true,
+				}).Create(adapter.GetUnderlyingState()).Error
+				log.CheckFatal(err)
+			}
+		}
+		repo.kit.Reset(lvlIndex)
+	}
+	// save qyery feeds from AggregatedFeed
+	for _, adapter := range repo.AggregatedFeed.GetQueryFeeds() {
+		adapters = append(adapters, adapter.GetAdapterState())
+	}
+	err := tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).CreateInBatches(adapters, 50).Error
+	log.CheckFatal(err)
+
+	if uniPools := repo.AggregatedFeed.GetUniswapPools(); len(uniPools) > 0 {
+		err := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(uniPools, 50).Error
+		log.CheckFatal(err)
+	}
+}
+
+// external funcs
+// for testing and load from db
+func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
 	adapter.Client = repo.client
-	adapter.Repo = repo
+	adapter.Repo = repo.r
 	switch adapter.ContractName {
 	case ds.ACL:
 		return acl.NewACLFromAdapter(adapter)
 	case ds.AddressProvider:
 		ap := address_provider.NewAddressProviderFromAdapter(adapter)
 		if ap.Details["dc"] != nil {
-			repo.dcWrapper.LoadMultipleDC(ap.Details["dc"])
+			repo.extras.GetDCWrapper().LoadMultipleDC(ap.Details["dc"])
 		}
 		return ap
 	case ds.AccountFactory:
@@ -69,7 +149,7 @@ func (repo *Repository) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.SyncAdapt
 	case ds.CreditFilter:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)
-			repo.AddCreditManagerToFilter(cmAddr, adapter.GetAddress())
+			repo.extras.AddCreditManagerToFilter(cmAddr, adapter.GetAddress())
 		} else {
 			log.Fatal("Credit filter doesn't have credit manager", adapter.GetAddress())
 		}
@@ -78,10 +158,10 @@ func (repo *Repository) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.SyncAdapt
 	return nil
 }
 
-func (repo *Repository) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
+func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.config.ROLLBACK == "1" {
+	if repo.rollback == "1" {
 		return
 	}
 	if newAdapterI.GetName() == ds.PriceOracle {
@@ -96,13 +176,6 @@ func (repo *Repository) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.addSyncAdapter(newAdapterI)
 }
 
-func (repo *Repository) addSyncAdapter(adapterI ds.SyncAdapterI) {
-	if ds.GearToken == adapterI.GetName() {
-		repo.GearTokenAddr = adapterI.GetAddress()
-	}
-	if adapterI.GetName() == ds.QueryPriceFeed {
-		repo.aggregatedFeed.AddYearnFeed(adapterI)
-	} else {
-		repo.kit.Add(adapterI)
-	}
+func (repo *SyncAdaptersRepo) GetKit() *ds.AdapterKit {
+	return repo.kit
 }
