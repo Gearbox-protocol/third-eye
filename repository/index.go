@@ -22,6 +22,7 @@ import (
 type Repository struct {
 	// repos
 	*handlers.SessionRepo
+	*handlers.AllowedTokenRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
@@ -36,8 +37,6 @@ type Repository struct {
 	dcWrapper             *dc_wrapper.DataCompressorWrapper
 	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
-	allowedTokens         map[string]map[string]*schemas.AllowedToken
-	disabledTokens        []*schemas.AllowedToken
 	// blocks/token
 	blocks map[int64]*schemas.Block
 	tokens map[string]*schemas.Token
@@ -60,6 +59,7 @@ type Repository struct {
 func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) *Repository {
 	repo := &Repository{
 		SessionRepo:           handlers.NewSessionRepo(),
+		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(),
 		mu:                    &sync.Mutex{},
 		db:                    db,
 		client:                client,
@@ -72,7 +72,6 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
 		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
-		allowedTokens:         make(map[string]map[string]*schemas.AllowedToken),
 		// for dao events to get diff
 		cmParams:          make(map[string]*schemas.Parameters),
 		cmFastCheckParams: make(map[string]*schemas.FastCheckParams),
@@ -208,9 +207,6 @@ func (repo *Repository) GetChainId() uint {
 
 func (repo *Repository) GetTokenOracles() map[int16]map[string]*schemas.TokenOracle {
 	return repo.tokensCurrentOracle
-}
-func (repo *Repository) GetDisabledTokens() []*schemas.AllowedToken {
-	return repo.disabledTokens
 }
 
 func (repo *Repository) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {

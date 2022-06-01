@@ -104,14 +104,7 @@ func (repo *Repository) Flush() error {
 		repo.relations = []*schemas.UniPriceAndChainlink{}
 	}
 
-	// add disabled tokens after the block num and allowed tokens are synced to db
-	if len(repo.disabledTokens) > 0 {
-		err = tx.Clauses(clause.OnConflict{
-			UpdateAll: true,
-		}).CreateInBatches(repo.disabledTokens, 50).Error
-		log.CheckFatal(err)
-		repo.disabledTokens = []*schemas.AllowedToken{}
-	}
+	repo.AllowedTokenRepo.Save(tx)
 
 	// save current treasury snapshot
 	if repo.treasurySnapshot.Date != "" {

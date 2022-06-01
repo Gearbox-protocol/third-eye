@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOracle"
-	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -89,33 +88,8 @@ func (repo *Repository) loadAllowedTokensState() {
 	err := repo.db.Raw("SELECT distinct on (credit_manager, token) * FROM allowed_tokens order by credit_manager, token, block_num DESC").Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
-		repo.addAllowedTokenState(entry, false)
+		repo.AddAllowedTokenState(entry, false)
 	}
-}
-
-func (repo *Repository) addAllowedTokenState(entry *schemas.AllowedToken, usingV2 bool) {
-	tokensForCM := repo.allowedTokens[entry.CreditManager]
-	if tokensForCM == nil {
-		repo.allowedTokens[entry.CreditManager] = make(map[string]*schemas.AllowedToken)
-		tokensForCM = repo.allowedTokens[entry.CreditManager]
-	}
-	if tokensForCM[entry.Token] != nil && !usingV2 {
-		log.Warnf("Token already enabled: new %#v, previous entry: %#v", entry, tokensForCM[entry.Token])
-	}
-	tokensForCM[entry.Token] = entry
-}
-
-func (repo *Repository) GetPreviousLiqThreshold(cm, token string) *core.BigInt {
-	if repo.allowedTokens[cm] == nil || repo.allowedTokens[cm][token] == nil {
-		return (*core.BigInt)(new(big.Int))
-	}
-	return repo.allowedTokens[cm][token].LiquidityThreshold
-}
-func (repo *Repository) isAllowedTokenDisabled(cm, token string) bool {
-	if repo.allowedTokens[cm] == nil || repo.allowedTokens[cm][token] == nil {
-		return false
-	}
-	return repo.allowedTokens[cm][token].DisableBlock != 0
 }
 
 // return the active first oracle under blockNum
