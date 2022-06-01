@@ -148,3 +148,9 @@ func (repo *TokensRepo) GetUSDCAddr() string {
 func (repo *TokensRepo) GetGearTokenAddr() string {
 	return repo.GearTokenAddr
 }
+
+func (repo *TokensRepo) IsDieselToken(token string) bool {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	return repo.dieselTokens[token] != nil
+}

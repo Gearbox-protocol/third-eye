@@ -16,15 +16,8 @@ func (repo *Repository) loadPool() {
 	for _, pool := range data {
 		adapter := repo.GetAdapter(pool.Address)
 		adapter.SetUnderlyingState(pool)
-		repo.dieselTokens[pool.DieselToken] = &schemas.UTokenAndPool{
-			Pool:   pool.Address,
-			UToken: pool.UnderlyingToken,
-		}
+		repo.AddDieselToken(pool.DieselToken, pool.UnderlyingToken, pool.Address)
 	}
-}
-
-func (repo *Repository) IsDieselToken(token string) bool {
-	return repo.dieselTokens[token] != nil
 }
 
 func (repo *Repository) AddPoolLedger(pl *schemas.PoolLedger) {

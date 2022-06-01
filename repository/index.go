@@ -43,7 +43,6 @@ type Repository struct {
 	// treasury
 	treasurySnapshot *schemas.TreasurySnapshot
 	lastTreasureTime time.Time
-	dieselTokens     map[string]*schemas.UTokenAndPool
 	accountManager   *ds.AccountTokenManager
 	relations        []*schemas.UniPriceAndChainlink
 }
