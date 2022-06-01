@@ -113,3 +113,7 @@ func (repo *Repository) AddTokenFeed(feedType, token, oracle string, discoveredA
 		repo.AddSyncAdapter(obj)
 	}
 }
+
+func (repo *Repository) GetTokenOracles() map[int16]map[string]*schemas.TokenOracle {
+	return repo.tokensCurrentOracle
+}

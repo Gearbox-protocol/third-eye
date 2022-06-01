@@ -24,6 +24,7 @@ type Repository struct {
 	*handlers.SessionRepo
 	*handlers.AllowedTokenRepo
 	*handlers.ParamsRepo
+	*handlers.PoolUsersRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
@@ -41,10 +42,8 @@ type Repository struct {
 	// blocks/token
 	blocks map[int64]*schemas.Block
 	tokens map[string]*schemas.Token
-	// changed during syncing
-	poolUniqueUsers map[string]map[string]bool
 	// version  to token to oracle
-	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle
+	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle // done
 	// treasury
 	treasurySnapshot *schemas.TreasurySnapshot
 	lastTreasureTime time.Time
@@ -59,6 +58,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 		SessionRepo:           handlers.NewSessionRepo(),
 		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(),
 		ParamsRepo:            handlers.NewParamsRepo(),
+		PoolUsersRepo:         handlers.NewPoolUsersRepo(),
 		mu:                    &sync.Mutex{},
 		db:                    db,
 		client:                client,
@@ -67,7 +67,6 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 		executeParser:         ep,
 		kit:                   ds.NewAdapterKit(),
 		tokens:                make(map[string]*schemas.Token),
-		poolUniqueUsers:       make(map[string]map[string]bool),
 		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
 		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
@@ -114,7 +113,7 @@ func (repo *Repository) init() {
 	repo.loadCurrentTokenOracle()
 	// load state for sync_adapters
 	repo.loadPool()
-	repo.loadPoolUniqueUsers()
+	repo.LoadPoolUniqueUsers(repo.db)
 	// load credit manager
 	repo.loadCreditManagers()
 	repo.loadGearBalances()
@@ -200,10 +199,6 @@ func (repo *Repository) InitChecks() {
 
 func (repo *Repository) GetChainId() uint {
 	return repo.config.ChainId
-}
-
-func (repo *Repository) GetTokenOracles() map[int16]map[string]*schemas.TokenOracle {
-	return repo.tokensCurrentOracle
 }
 
 func (repo *Repository) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
