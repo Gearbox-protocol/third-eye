@@ -1,12 +1,13 @@
 package repository
 
 import (
+	"time"
+
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm/clause"
-	"time"
 )
 
 func (repo *Repository) Flush() error {
@@ -75,7 +76,7 @@ func (repo *Repository) Flush() error {
 	log.Infof("created tokens sql statements in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
-	for _, session := range repo.sessions {
+	for _, session := range repo.GetSessions() {
 		if session.IsDirty {
 			err := tx.Clauses(clause.OnConflict{
 				UpdateAll: true,
@@ -138,10 +139,6 @@ func (repo *Repository) Clear() {
 	for num := range repo.blocks {
 		maxBlockNum = utils.Max(maxBlockNum, num)
 	}
-	for _, session := range repo.sessions {
-		if session.ClosedAt != 0 && maxBlockNum >= session.ClosedAt {
-			delete(repo.sessions, session.ID)
-		}
-	}
+	repo.SessionRepo.Clear(maxBlockNum)
 	repo.blocks = map[int64]*schemas.Block{}
 }

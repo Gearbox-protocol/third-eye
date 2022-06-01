@@ -15,10 +15,13 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/repository/handlers"
 	"gorm.io/gorm"
 )
 
 type Repository struct {
+	// repos
+	*handlers.SessionRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
@@ -39,7 +42,6 @@ type Repository struct {
 	blocks map[int64]*schemas.Block
 	tokens map[string]*schemas.Token
 	// changed during syncing
-	sessions        map[string]*schemas.CreditSession
 	poolUniqueUsers map[string]map[string]bool
 	// version  to token to oracle
 	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle
@@ -57,6 +59,7 @@ type Repository struct {
 
 func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) *Repository {
 	repo := &Repository{
+		SessionRepo:           handlers.NewSessionRepo(),
 		mu:                    &sync.Mutex{},
 		db:                    db,
 		client:                client,
@@ -65,7 +68,6 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 		executeParser:         ep,
 		kit:                   ds.NewAdapterKit(),
 		tokens:                make(map[string]*schemas.Token),
-		sessions:              make(map[string]*schemas.CreditSession),
 		poolUniqueUsers:       make(map[string]map[string]bool),
 		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
 		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),

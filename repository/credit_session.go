@@ -1,10 +1,6 @@
 package repository
 
 import (
-	"math/big"
-	"reflect"
-
-	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -23,7 +19,7 @@ func (repo *Repository) loadCreditSessions(lastDebtSync int64) {
 		log.Fatal(err)
 	}
 	for _, session := range data {
-		repo.addCreditSession(session, true)
+		repo.SessionRepo.AddCreditSession(session, true)
 	}
 }
 
@@ -31,21 +27,10 @@ func (repo *Repository) AddDataCompressor(blockNum int64, addr string) {
 	repo.dcWrapper.AddDataCompressor(blockNum, addr)
 }
 
-func (repo *Repository) addCreditSession(session *schemas.CreditSession, loadedFromDB bool) {
-	if repo.sessions[session.ID] == nil {
-		if !loadedFromDB {
-			log.Infof("Add session %s", session.ID)
-		}
-		repo.sessions[session.ID] = session
-	} else {
-		log.Fatalf("Credit session already present %s", session.ID)
-	}
-}
-
 func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string, logID uint) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.addCreditSession(session, loadedFromDB)
+	repo.SessionRepo.AddCreditSession(session, loadedFromDB)
 	repo.accountManager.AddAccountDetails(&ds.SessionData{
 		Since:         session.Since,
 		Account:       session.Account,
@@ -54,36 +39,6 @@ func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedF
 		OpenTxHash:    txHash,
 		OpenLogId:     logID,
 	})
-}
-
-func (repo *Repository) GetCreditSession(sessionId string) *schemas.CreditSession {
-	return repo.sessions[sessionId]
-}
-func (repo *Repository) UpdateCreditSession(sessionId string, values map[string]interface{}) *schemas.CreditSession {
-	session := repo.sessions[sessionId]
-	session.IsDirty = true
-	ref := reflect.ValueOf(session).Elem()
-	for k, v := range values {
-		switch v.(type) {
-		case string:
-			ref.FieldByName(k).SetString(v.(string))
-		case int64:
-			ref.FieldByName(k).SetInt(v.(int64))
-		case int:
-			ref.FieldByName(k).SetInt(int64(v.(int)))
-		case *big.Int:
-			val := (*core.BigInt)(v.(*big.Int))
-			pointer := reflect.ValueOf(val)
-			ref.FieldByName(k).Set(pointer)
-		default:
-			log.Fatal("Not able to set %s %v", k, v)
-		}
-	}
-	return session
-}
-
-func (repo *Repository) GetSessions() map[string]*schemas.CreditSession {
-	return repo.sessions
 }
 
 // for account manager

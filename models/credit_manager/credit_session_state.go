@@ -84,7 +84,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	if err != nil {
 		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
 	}
-	// for close credit account operation on gearbox v2 
+	// for close credit account operation on gearbox v2
 	// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditFacade.sol#L235
 	// there is a skipTokenMask which can be used to skip certain tokens from getting transferred to borrower
 	// this can decrease the gas used by credit manager and saving money for borrower
