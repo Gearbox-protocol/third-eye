@@ -23,6 +23,7 @@ type Repository struct {
 	// repos
 	*handlers.SessionRepo
 	*handlers.AllowedTokenRepo
+	*handlers.ParamsRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
@@ -44,9 +45,6 @@ type Repository struct {
 	poolUniqueUsers map[string]map[string]bool
 	// version  to token to oracle
 	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle
-	// for params diff calculation
-	cmParams          map[string]*schemas.Parameters
-	cmFastCheckParams map[string]*schemas.FastCheckParams
 	// treasury
 	treasurySnapshot *schemas.TreasurySnapshot
 	lastTreasureTime time.Time
@@ -60,6 +58,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 	repo := &Repository{
 		SessionRepo:           handlers.NewSessionRepo(),
 		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(),
+		ParamsRepo:            handlers.NewParamsRepo(),
 		mu:                    &sync.Mutex{},
 		db:                    db,
 		client:                client,
@@ -72,9 +71,6 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
 		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
-		// for dao events to get diff
-		cmParams:          make(map[string]*schemas.Parameters),
-		cmFastCheckParams: make(map[string]*schemas.FastCheckParams),
 		// for treasury to get the date
 		BlockDatePairs: make(map[int64]*schemas.BlockDate),
 		// for getting the diesel tokens
@@ -86,6 +82,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 	repo.kit.Add(repo.aggregatedFeed)
 	return repo
 }
+
 func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) ds.RepositoryI {
 	r := GetRepository(db, client, config, ep)
 	r.init()
@@ -124,7 +121,7 @@ func (repo *Repository) init() {
 	// required for disabling allowed tokens
 	repo.loadAllowedTokensState()
 	// fastcheck and new parameters
-	repo.loadAllParams()
+	repo.ParamsRepo.LoadAllParams(repo.db)
 	// treasury funcs
 	repo.loadBlockDatePair()
 	repo.loadLastTreasuryTs()

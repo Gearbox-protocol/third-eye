@@ -103,26 +103,3 @@ func (repo *Repository) GetMask(blockNum int64, cmAddr, accountAddr string, vers
 	}
 	return nil
 }
-
-func (repo *Repository) AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *schemas.FastCheckParams) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(fcParams.BlockNum).AddFastCheckParams(fcParams)
-	// set the dao action
-	oldFCParams := repo.cmFastCheckParams[fcParams.CreditManager]
-	if oldFCParams == nil {
-		oldFCParams = schemas.NewFastCheckParams()
-	}
-	args := oldFCParams.Diff(fcParams)
-	(*args)["creditManager"] = cm
-	repo.addDAOOperation(&schemas.DAOOperation{
-		BlockNumber: fcParams.BlockNum,
-		LogID:       logID,
-		TxHash:      txHash,
-		Contract:    creditFilter,
-		Args:        args,
-		Type:        schemas.NewFastCheckParameters,
-	})
-	//
-	repo.cmFastCheckParams[fcParams.CreditManager] = fcParams
-}

@@ -67,6 +67,8 @@ func (repo *Repository) GetAccountManager() *ds.AccountTokenManager {
 	return repo.accountManager
 }
 
+// add account addr with account manager
+// this func is currently used by account factory
 func (repo *Repository) AddAccountAddr(account string) {
 	addrs := repo.kit.GetAdapterAddressByName(ds.AccountManager)
 	if len(addrs) == 1 {
