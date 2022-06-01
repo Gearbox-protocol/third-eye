@@ -2,7 +2,6 @@ package repository
 
 import (
 	"sync"
-	"time"
 
 	"fmt"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers"
+	"github.com/Gearbox-protocol/third-eye/repository/handlers/treasury"
 	"gorm.io/gorm"
 )
 
@@ -27,17 +27,15 @@ type Repository struct {
 	*handlers.ExtrasRepo
 	*handlers.SyncAdaptersRepo
 	*handlers.TokenOracleRepo
+	*treasury.TreasuryRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
-	db     *gorm.DB
-	client core.ClientI
-	config *config.Config
-	// treasury
-	treasurySnapshot *schemas.TreasurySnapshot
-	lastTreasureTime time.Time
-	accountManager   *ds.AccountTokenManager
-	relations        []*schemas.UniPriceAndChainlink
+	db             *gorm.DB
+	client         core.ClientI
+	config         *config.Config
+	accountManager *ds.AccountTokenManager
+	relations      []*schemas.UniPriceAndChainlink
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
@@ -59,6 +57,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 	}
 	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
+	repo.TreasuryRepo = treasury.NewTreasuryRepo(tokensRepo, blocksRepo, repo.SyncAdaptersRepo, client)
 	return repo
 }
 
@@ -69,6 +68,7 @@ func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *
 }
 
 func (repo *Repository) init() {
+	// lastdebtsync is required to load credit session which are active or closed after lastdebtsync block number
 	lastDebtSync := repo.LoadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
 	repo.TokensRepo.LoadTokens(repo.db)
@@ -91,8 +91,8 @@ func (repo *Repository) init() {
 	repo.ParamsRepo.LoadAllParams(repo.db)
 	// treasury funcs
 	repo.BlocksRepo.LoadBlockDatePair()
-	repo.loadLastTreasuryTs()
-	repo.loadTreasurySnapshot()
+	repo.LoadLastTreasuryTs(repo.db)
+	repo.TreasuryRepo.LoadTreasurySnapshot(repo.db)
 	// for direct token transfer
 	repo.loadAccountLastSession()
 	// credit_sessions
@@ -148,8 +148,16 @@ func (repo *Repository) GetChainId() uint {
 	return repo.config.ChainId
 }
 
-func (repo *Repository) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
+func (repo *Repository) AfterSync(syncTill int64) {
+	// for direct token transfer
+	for _, txs := range repo.accountManager.GetNoSessionTxs() {
+		for _, tx := range txs {
+			repo.RecentEventMsg(tx.BlockNum, "No session account token transfer: %v", tx)
+			repo.SetAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
+		}
+	}
+	// for direct token transfer
+	repo.accountManager.Clear()
+	// chainlink and uniswap prices
+	repo.AggregatedFeed.Clear()
 }

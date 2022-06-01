@@ -1,4 +1,4 @@
-package repository
+package treasury
 
 import (
 	"math/big"
@@ -12,13 +12,44 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type PriceCallParams struct {
-	Address common.Address
+// used for treasury calculation and for remainingFunds on close v2
+func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+	priceByToken := core.JsonFloatMap{}
+	var tokenForCalls []string
+	var poolForDieselRate []string
+	for _, token := range tokenAddrs {
+		uTokenAndPool := repo.tokens.GetDieselToken(token)
+		if uTokenAndPool != nil {
+			tokenForCalls = append(tokenForCalls, uTokenAndPool.UToken)
+			poolForDieselRate = append(poolForDieselRate, uTokenAndPool.Pool)
+		} else {
+			tokenForCalls = append(tokenForCalls, token)
+		}
+	}
+	priceOracle, _ := repo.adapters.GetActivePriceOracleByBlockNum(blockNum)
+	prices, dieselRates := repo.getPricesInBatch(priceOracle, blockNum, false, tokenForCalls, poolForDieselRate)
+	var poolIndex int
+	for i, token := range tokenAddrs {
+		var price *big.Int
+		if repo.tokens.IsDieselToken(token) {
+			dieselRate := dieselRates[poolIndex]
+			poolIndex++
+			price = new(big.Int).Mul(dieselRate, prices[i])
+			price = utils.GetInt64(price, 27)
+		} else {
+			price = prices[i]
+		}
+		priceByToken[token] = utils.GetFloat64Decimal(price, 8)
+	}
+	if repo.adapters.GetKit().GetAdapter(priceOracle).GetVersion() == 1 {
+		priceByToken[repo.tokens.GetWETHAddr()] = 1
+	}
+	return priceByToken
 }
 
 // multicall for getting price in batch
 // For only getting the prices for calculating the treasury value
-func (repo *Repository) getPricesInBatch(oracle string, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
+func (repo *TreasuryRepo) getPricesInBatch(oracle string, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	calls := []multicall.Multicall2Call{}
 
 	if oracle == "" {
@@ -32,9 +63,9 @@ func (repo *Repository) getPricesInBatch(oracle string, blockNum int64, successR
 	}
 	oracleABI := schemas.GetAbi(ds.PriceOracle)
 	for _, token := range tokenAddrs {
-		tokenObj := repo.GetToken(token)
+		tokenObj := repo.tokens.GetToken(token)
 		amount := utils.GetExpInt(tokenObj.Decimals)
-		data, err := oracleABI.Pack("convert", amount, common.HexToAddress(token), common.HexToAddress(repo.GetUSDCAddr()))
+		data, err := oracleABI.Pack("convert", amount, common.HexToAddress(token), common.HexToAddress(repo.tokens.GetUSDCAddr()))
 		log.CheckFatal(err)
 		calls = append(calls, multicall.Multicall2Call{
 			Target:   common.HexToAddress(oracle),

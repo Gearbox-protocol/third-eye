@@ -1,12 +1,9 @@
 package repository
 
 import (
-	"time"
-
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"gorm.io/gorm/clause"
 )
 
 func (repo *Repository) Flush() error {
@@ -43,16 +40,7 @@ func (repo *Repository) Flush() error {
 	repo.AllowedTokenRepo.Save(tx)
 
 	// save current treasury snapshot
-	now := time.Now()
-	if repo.treasurySnapshot.Date != "" {
-		err := tx.Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "block_num"}},
-			DoUpdates: clause.AssignmentColumns([]string{"date_str", "prices_in_usd", "balances", "value_in_usd"}),
-		}).Create(repo.treasurySnapshot).Error
-		log.CheckFatal(err)
-	}
-
-	log.Infof("created blocks sql update in %f sec", time.Now().Sub(now).Seconds())
+	repo.TreasuryRepo.Save(tx)
 	info := tx.Commit()
 	log.CheckFatal(info.Error)
 	return nil

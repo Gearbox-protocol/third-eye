@@ -169,6 +169,10 @@ func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 	repo.SetAndGetBlock(ps.BlockNum).AddPoolStat(ps)
 }
 
+func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
+	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
+}
+
 // getter
 func (repo *BlocksRepo) GetRepayOnCM(blockNum int64, cmAddr string) *schemas.PnlOnRepay {
 	repo.mu.Lock()
