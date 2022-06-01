@@ -35,13 +35,3 @@ func (repo *Repository) AddPoolLedger(pl *schemas.PoolLedger) {
 	}
 	repo.SetAndGetBlock(pl.BlockNumber).AddPoolLedger(pl)
 }
-
-func (repo *Repository) AddDieselToken(dieselToken, underlyingToken, pool string) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.dieselTokens[dieselToken] = &schemas.UTokenAndPool{
-		UToken: underlyingToken,
-		Pool:   pool,
-	}
-	repo.addToken(dieselToken)
-}

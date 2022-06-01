@@ -17,13 +17,15 @@ type AllowedTokenRepo struct {
 	disabledTokens []*schemas.AllowedToken
 	blocks         *BlocksRepo
 	mu             *sync.Mutex
+	tokens         *TokensRepo
 }
 
-func NewAllowedTokenRepo(blocks *BlocksRepo) *AllowedTokenRepo {
+func NewAllowedTokenRepo(blocks *BlocksRepo, tokens *TokensRepo) *AllowedTokenRepo {
 	return &AllowedTokenRepo{
 		allowedTokens: make(map[string]map[string]*schemas.AllowedToken),
 		mu:            &sync.Mutex{},
 		blocks:        blocks,
+		tokens:        tokens,
 	}
 }
 
@@ -57,7 +59,7 @@ func (repo *AllowedTokenRepo) isAllowedTokenDisabled(cm, token string) bool {
 
 // for allowed token
 func (repo *AllowedTokenRepo) addAllowedToken(atoken *schemas.AllowedToken) {
-	repo.tokens.AddToken(atoken.Token)
+	repo.tokens.GetToken(atoken.Token)
 	repo.blocks.SetAndGetBlock(atoken.BlockNumber).AddAllowedToken(atoken)
 }
 

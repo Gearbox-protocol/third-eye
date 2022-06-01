@@ -36,8 +36,7 @@ func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 		poolv3Addr.Hex() == "0x0000000000000000000000000000000000000000" {
 		log.Fatalf("pool not fetched for v2/v3: %s/%s", token, repo.WETHAddr)
 	}
-	tokenInfo, err := repo.getTokenWithError(token)
-	log.CheckFatal(err)
+	tokenInfo := repo.GetToken(token)
 	repo.aggregatedFeed.AddUniPools(tokenInfo, &schemas.UniswapPools{
 		V2:      poolv2Addr.Hex(),
 		V3:      poolv3Addr.Hex(),
@@ -76,20 +75,13 @@ func (repo *Repository) GetFactoryv3Address(blockNum int64) common.Address {
 	return v3Factory
 }
 
-func (repo *Repository) AddUniswapPrices(prices *schemas.UniPoolPrices) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
-}
-
 func (repo *Repository) loadUniswapPools() {
 	defer utils.Elapsed("loadUniswapPools")()
 	data := []*schemas.UniswapPools{}
 	err := repo.db.Raw(`SELECT * from uniswap_pools`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
-		tokenInfo, err := repo.getTokenWithError(entry.Token)
-		log.CheckFatal(err)
+		tokenInfo := repo.GetToken(entry.Token)
 		repo.aggregatedFeed.AddUniPools(tokenInfo, entry)
 	}
 }

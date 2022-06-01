@@ -64,14 +64,7 @@ func (repo *Repository) Flush() error {
 	log.Infof("created sync adapters sql update in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()
 
-	tokens := make([]*schemas.Token, 0, len(repo.tokens))
-	for _, token := range repo.tokens {
-		tokens = append(tokens, token)
-	}
-	err = tx.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).CreateInBatches(tokens, 50).Error
-	log.CheckFatal(err)
+	repo.TokensRepo.Save(tx)
 
 	log.Infof("created tokens sql statements in %f sec", time.Now().Sub(now).Seconds())
 	now = time.Now()

@@ -1,6 +1,8 @@
 package credit_manager
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -11,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 )
 
 func (mdl *CreditManager) CommonInit(version int16) {
@@ -35,7 +36,7 @@ func (mdl *CreditManager) CommonInit(version int16) {
 		underlyingToken, err = contract.Underlying(opts)
 		log.CheckFatal(err)
 	}
-	mdl.Repo.AddToken(underlyingToken.Hex())
+	mdl.Repo.GetToken(underlyingToken.Hex())
 	//
 	poolAddr, err := cmContract.PoolService(opts)
 	if err != nil {

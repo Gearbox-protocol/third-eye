@@ -27,7 +27,7 @@ func NewSessionRepo() *SessionRepo {
 //
 // join with css is not dependent on lastdebtsync block
 // these values are for use by sync engine
-func (repo *SessionRepo) loadCreditSessions(db *gorm.DB, lastDebtSync int64) {
+func (repo *SessionRepo) LoadCreditSessions(db *gorm.DB, lastDebtSync int64) {
 	defer utils.Elapsed("loadCreditSessions")()
 	data := []*schemas.CreditSession{}
 	err := db.Raw(`SELECT * FROM credit_sessions cs 

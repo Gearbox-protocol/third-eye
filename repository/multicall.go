@@ -32,8 +32,7 @@ func (repo *Repository) getPricesInBatch(oracle string, blockNum int64, successR
 	}
 	oracleABI := schemas.GetAbi(ds.PriceOracle)
 	for _, token := range tokenAddrs {
-		tokenObj, err := repo.getTokenWithError(token)
-		log.CheckFatal(err)
+		tokenObj := repo.GetToken(token)
 		amount := utils.GetExpInt(tokenObj.Decimals)
 		data, err := oracleABI.Pack("convert", amount, common.HexToAddress(token), common.HexToAddress(repo.USDCAddr))
 		log.CheckFatal(err)

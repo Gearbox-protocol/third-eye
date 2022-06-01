@@ -72,7 +72,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: (*core.BigInt)(tokenEvent.LiquidityThreshold),
 		})
-		mdl.Repo.AddToken(tokenEvent.Token.Hex())
+		mdl.Repo.GetToken(tokenEvent.Token.Hex())
 	case core.Topic("TransferPluginAllowed(address,bool)"):
 		transferPlugin, err := mdl.filterContract.ParseTransferPluginAllowed(txLog)
 		log.CheckFatal(err)

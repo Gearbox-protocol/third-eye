@@ -26,12 +26,10 @@ type Repository struct {
 	*handlers.ParamsRepo
 	*handlers.PoolUsersRepo
 	*handlers.BlocksRepo
+	*handlers.TokensRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
-	WETHAddr              string
-	USDCAddr              string
-	GearTokenAddr         string
 	db                    *gorm.DB
 	client                core.ClientI
 	config                *config.Config
@@ -40,8 +38,6 @@ type Repository struct {
 	dcWrapper             *dc_wrapper.DataCompressorWrapper
 	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
 	creditManagerToFilter map[string]*creditFilter.CreditFilter
-	// blocks/token
-	tokens map[string]*schemas.Token
 	// version  to token to oracle
 	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle // done
 	// treasury
@@ -54,11 +50,13 @@ type Repository struct {
 
 func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) *Repository {
 	blocksRepo := handlers.NewBlocksRepo(db, client)
+	tokensRepo := handlers.NewTokensRepo(client)
 	repo := &Repository{
 		SessionRepo:           handlers.NewSessionRepo(),
-		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(blocksRepo),
+		AllowedTokenRepo:      handlers.NewAllowedTokenRepo(blocksRepo, tokensRepo),
 		ParamsRepo:            handlers.NewParamsRepo(blocksRepo),
 		PoolUsersRepo:         handlers.NewPoolUsersRepo(),
+		TokensRepo:            tokensRepo,
 		BlocksRepo:            blocksRepo,
 		mu:                    &sync.Mutex{},
 		db:                    db,
@@ -66,13 +64,10 @@ func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep d
 		config:                config,
 		executeParser:         ep,
 		kit:                   ds.NewAdapterKit(),
-		tokens:                make(map[string]*schemas.Token),
 		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
 		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
 		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
-		// for getting the diesel tokens
-		dieselTokens:   make(map[string]*schemas.UTokenAndPool),
-		accountManager: ds.NewAccountTokenManager(),
+		accountManager:        ds.NewAccountTokenManager(),
 	}
 	// aggregated block feed
 	repo.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(repo.client, repo, repo.config.Interval)
@@ -101,7 +96,7 @@ func (repo *Repository) GetKit() *ds.AdapterKit {
 func (repo *Repository) init() {
 	lastDebtSync := repo.LoadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
-	repo.loadToken()
+	repo.TokensRepo.LoadTokens(repo.db)
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.loadSyncAdapters()
 	repo.loadChainlinkPrevState()
@@ -120,7 +115,7 @@ func (repo *Repository) init() {
 	// fastcheck and new parameters
 	repo.ParamsRepo.LoadAllParams(repo.db)
 	// treasury funcs
-	repo.LoadBlockDatePair()
+	repo.BlocksRepo.LoadBlockDatePair()
 	repo.loadLastTreasuryTs()
 	repo.loadTreasurySnapshot()
 	// for direct token transfer
@@ -136,20 +131,6 @@ func (repo *Repository) AddAccountOperation(accountOperation *schemas.AccountOpe
 		panic(utils.ToJson(accountOperation))
 	}
 	repo.SetAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
-}
-
-func (repo *Repository) SetWETHAddr(addr string) {
-	repo.WETHAddr = addr
-}
-
-func (repo *Repository) GetWETHAddr() string {
-	return repo.WETHAddr
-}
-func (repo *Repository) GetUSDCAddr() string {
-	return repo.USDCAddr
-}
-func (repo *Repository) GetGearTokenAddr() string {
-	return repo.GearTokenAddr
 }
 
 type LastSyncAndType struct {

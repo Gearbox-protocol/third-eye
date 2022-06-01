@@ -35,8 +35,7 @@ func (repo *Repository) AddTreasuryTransfer(blockNum int64, logID uint, token st
 	// set the current treasury snapshot fields
 	repo.treasurySnapshot.Date = utils.TimeToDate(currentTime)
 	balance := (*repo.treasurySnapshot.Balances)[token]
-	tokenObj, err := repo.getTokenWithError(token)
-	log.CheckFatal(err)
+	tokenObj := repo.GetToken(token)
 	amt := utils.GetFloat64Decimal(amount, tokenObj.Decimals)
 	(*repo.treasurySnapshot.Balances)[token] = balance + amt
 }

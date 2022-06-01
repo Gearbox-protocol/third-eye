@@ -1,6 +1,8 @@
 package pool
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolService"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -8,7 +10,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type Pool struct {
@@ -35,7 +36,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	if err != nil {
 		log.Fatal(err)
 	}
-	repo.AddToken(underlyingToken.Hex())
+	repo.GetToken(underlyingToken.Hex())
 	dieselToken, err := pool.contractETH.DieselToken(opts)
 	if err != nil {
 		log.Fatal(err)

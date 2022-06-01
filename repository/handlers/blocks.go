@@ -25,7 +25,9 @@ type BlocksRepo struct {
 
 func NewBlocksRepo(db *gorm.DB, client core.ClientI) *BlocksRepo {
 	return &BlocksRepo{
-		blocks: make(map[int64]*schemas.Block),
+		blocks:         make(map[int64]*schemas.Block),
+		BlockDatePairs: map[int64]*schemas.BlockDate{},
+		//
 		mu:     &sync.Mutex{},
 		client: client,
 		db:     db,
