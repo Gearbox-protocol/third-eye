@@ -64,7 +64,7 @@ func (repo *TokenOracleRepo) AddTokenOracle(tokenOracle *schemas.TokenOracle) {
 		currentFeed := repo.tokensCurrentOracle[tokenOracle.Version][tokenOracle.Token].Feed
 		log.Warnf("New feed(%s) discovered at %d for token(%s) old feed: %s",
 			tokenOracle.Feed, tokenOracle.BlockNumber, tokenOracle.Token, currentFeed)
-		adapter := repo.adapters.GetKit().GetAdapter(currentFeed)
+		adapter := repo.adapters.GetAdapter(currentFeed)
 		if currentFeed == tokenOracle.Feed {
 			log.Warnf("Oracle Prev feed(%s) and new feed(%s) for token(%s) are same.",
 				currentFeed, tokenOracle.Feed, tokenOracle.Token)

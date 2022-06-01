@@ -41,7 +41,7 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 		}
 		priceByToken[token] = utils.GetFloat64Decimal(price, 8)
 	}
-	if repo.adapters.GetKit().GetAdapter(priceOracle).GetVersion() == 1 {
+	if repo.adapters.GetAdapter(priceOracle).GetVersion() == 1 {
 		priceByToken[repo.tokens.GetWETHAddr()] = 1
 	}
 	return priceByToken

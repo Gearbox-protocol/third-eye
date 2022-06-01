@@ -63,6 +63,7 @@ func (repo *SyncAdaptersRepo) addSyncAdapter(adapterI ds.SyncAdapterI) {
 	}
 }
 
+// load/save
 func (repo *SyncAdaptersRepo) LoadSyncAdapters(db *gorm.DB) {
 	defer utils.Elapsed("loadSyncAdapters")()
 	//
@@ -169,7 +170,7 @@ func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	if newAdapterI.GetName() == ds.PriceOracle {
 		oldPriceOracleAddrs := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 		for _, addr := range oldPriceOracleAddrs {
-			oldPriceOracle := repo.kit.GetAdapter(addr)
+			oldPriceOracle := repo.GetAdapter(addr)
 			if !oldPriceOracle.IsDisabled() {
 				oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
 			}
@@ -180,6 +181,27 @@ func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 
 func (repo *SyncAdaptersRepo) GetKit() *ds.AdapterKit {
 	return repo.kit
+}
+
+func (repo *SyncAdaptersRepo) GetAdapter(addr string) ds.SyncAdapterI {
+	adapter := repo.GetKit().GetAdapter(addr)
+	if adapter == nil {
+		feeds := repo.AggregatedFeed.GetQueryFeeds()
+		for _, feed := range feeds {
+			if feed.GetAddress() == addr {
+				return feed
+			}
+		}
+	}
+	return adapter
+}
+
+func (repo *SyncAdaptersRepo) GetYearnFeedAddrs() (addrs []string) {
+	feeds := repo.AggregatedFeed.GetQueryFeeds()
+	for _, adapter := range feeds {
+		addrs = append(addrs, adapter.GetAddress())
+	}
+	return
 }
 
 ////////////////////
@@ -194,7 +216,7 @@ func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (st
 	activeOracleBlock = math.MaxInt64
 	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 	for _, addr := range oracles {
-		oracleAdapter := repo.kit.GetAdapter(addr)
+		oracleAdapter := repo.GetAdapter(addr)
 		if oracleAdapter.GetDiscoveredAt() <= blockNum {
 			if oracleAdapter.IsDisabled() {
 				if disabledOracleBlock < oracleAdapter.GetDiscoveredAt() {
@@ -220,7 +242,7 @@ func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (st
 
 func (repo *SyncAdaptersRepo) GetPriceOracleByVersion(version int16) (string, error) {
 	addrProviderAddr := repo.kit.GetAdapterAddressByName(ds.AddressProvider)
-	addrProvider := repo.kit.GetAdapter(addrProviderAddr[0])
+	addrProvider := repo.GetAdapter(addrProviderAddr[0])
 	details := addrProvider.GetDetails()
 	if details != nil {
 		priceOracles, ok := details["priceOracles"].(map[string]interface{})
