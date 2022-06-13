@@ -57,32 +57,46 @@ func (repo *TokenOracleRepo) addTokenCurrentOracle(oracle *schemas.TokenOracle) 
 	repo.tokensCurrentOracle[oracle.Version][oracle.Token] = oracle
 }
 
-func (repo *TokenOracleRepo) AddTokenOracle(tokenOracle *schemas.TokenOracle) {
+func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle, feedType string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.tokensCurrentOracle[tokenOracle.Version] != nil && repo.tokensCurrentOracle[tokenOracle.Version][tokenOracle.Token] != nil {
-		currentFeed := repo.tokensCurrentOracle[tokenOracle.Version][tokenOracle.Token].Feed
-		log.Warnf("New feed(%s) discovered at %d for token(%s) old feed: %s",
-			tokenOracle.Feed, tokenOracle.BlockNumber, tokenOracle.Token, currentFeed)
-		adapter := repo.adapters.GetAdapter(currentFeed)
-		if currentFeed == tokenOracle.Feed {
+	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
+		repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
+		oldFeed := oldTokenOracle.Feed
+		// log
+		if feedType == ds.ChainlinkPF {
+			if oldTokenOracle.Oracle != newTokenOracle.Oracle {
+				log.Updatef("Chainlink proxy changed in gearbox protocol from (%s) to %s for token(%s) at %d",
+					oldTokenOracle.Oracle, newTokenOracle.Oracle, newTokenOracle.Token, newTokenOracle.BlockNumber)
+			} else if oldFeed != newTokenOracle.Feed {
+				log.Updatef("Chainlink feed changed internally from (%s) to %s for token(%s) at %d",
+					oldFeed, newTokenOracle.Feed, newTokenOracle.Token, newTokenOracle.BlockNumber)
+			}
+		} else {
+			log.Updatef("%s changed from %s to %s for token(%s) at %d",
+				feedType, oldFeed, newTokenOracle.Feed, newTokenOracle.Token, newTokenOracle.BlockNumber)
+		}
+		//
+		adapter := repo.adapters.GetAdapter(oldFeed)
+		if oldFeed == newTokenOracle.Feed {
 			log.Warnf("Oracle Prev feed(%s) and new feed(%s) for token(%s) are same.",
-				currentFeed, tokenOracle.Feed, tokenOracle.Token)
+				oldFeed, newTokenOracle.Feed, newTokenOracle.Token)
 			return
 		}
 		if adapter.GetName() != ds.QueryPriceFeed {
-			adapter.SetBlockToDisableOn(tokenOracle.BlockNumber)
+			adapter.SetBlockToDisableOn(newTokenOracle.BlockNumber)
 		} else {
-			repo.adapters.AggregatedFeed.DisableYearnFeed(tokenOracle.Token, currentFeed, tokenOracle.BlockNumber)
+			repo.adapters.AggregatedFeed.DisableYearnFeed(newTokenOracle.Token, oldFeed, newTokenOracle.BlockNumber)
 		}
 	}
 	// set current state of oracle for token.
 	repo.addTokenCurrentOracle(
-		tokenOracle,
+		newTokenOracle,
 	)
 	// token oracle
-	repo.blocks.SetAndGetBlock(tokenOracle.BlockNumber).AddTokenOracle(
-		tokenOracle,
+	repo.blocks.SetAndGetBlock(newTokenOracle.BlockNumber).AddTokenOracle(
+		newTokenOracle,
 	)
 }
 
@@ -98,7 +112,7 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			Oracle:      oracle,
 			Feed:        oracle, // feed is same as oracle
 			BlockNumber: discoveredAt,
-			Version:     version})
+			Version:     version}, feedType)
 		if feedType != ds.ZeroPF {
 			repo.adapters.AggregatedFeed.AddFeedOrToken(token, oracle, feedType, discoveredAt, version)
 		} else {
@@ -126,7 +140,7 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			Oracle:      oracle,
 			Feed:        obj.Address,
 			BlockNumber: discoveredAt,
-			Version:     version})
+			Version:     version}, feedType)
 		repo.adapters.AddSyncAdapter(obj)
 	}
 }

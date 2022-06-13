@@ -127,7 +127,7 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	if debtLen == 0 {
 		return
 	}
-	log.Infof("Flushing %d for block:%d", debtLen, newDebtSyncTill)
+	log.Infof("Flushing %d till block:%d", debtLen, newDebtSyncTill)
 	tx := eng.db.Begin()
 	err := tx.Clauses(clause.OnConflict{
 		UpdateAll: true,

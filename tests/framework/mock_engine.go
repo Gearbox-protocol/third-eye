@@ -124,7 +124,7 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 				Oracle:      oracle,
 				Feed:        actualAdapter.GetAddress(),
 				BlockNumber: actualAdapter.GetDiscoveredAt(),
-				Version:     actualAdapter.GetVersion()})
+				Version:     actualAdapter.GetVersion()}, ds.ChainlinkPF)
 		case ds.CreditManager:
 			for _, state := range obj.CMState {
 				if state.Address == actualAdapter.GetAddress() {

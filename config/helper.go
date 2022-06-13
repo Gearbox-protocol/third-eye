@@ -126,7 +126,7 @@ func validate(config interface{}) {
 		}
 
 		for _, err := range err.(validator.ValidationErrors) {
-			log.Debugf("Configuration problem: %s doesn't set\n", err.Namespace())
+			log.Warnf("Configuration problem: %s doesn't set\n", err.Namespace())
 		}
 
 		// from here you can create your own error messages in whatever language you wish

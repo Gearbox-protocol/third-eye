@@ -144,9 +144,9 @@ func (eng *DebtEngine) CalculateDebt() {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
 		}
-		if len(sessionsUpdated) > 0 {
-			log.Verbosef("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
-		}
+		// if len(sessionsUpdated) > 0 {
+		// log.Verbosef("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
+		// }
 	}
 }
 

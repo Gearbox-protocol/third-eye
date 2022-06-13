@@ -1,6 +1,9 @@
 package credit_manager
 
 import (
+	"math/big"
+	"sort"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -8,8 +11,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"sort"
 )
 
 func (mdl *CreditManager) processExecuteEvents() {
@@ -63,12 +64,12 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 			switch session.Account {
 			case tx.From:
 				amount = new(big.Int).Neg(tx.Amount.Convert())
-				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Withdrawn %v, id: %s", tx, sessionID)
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Withdrawn(%s): %s", sessionID, tx)
 				log.Fatalf("Token withdrawn directly from account %v", tx)
 			case tx.To:
 				amount = tx.Amount.Convert()
 				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, amount)
-				mdl.Repo.RecentEventMsg(tx.BlockNum, "Direct Token Deposit %+v", tx)
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Deposit: %s", tx)
 			}
 			if blockNum == mdl.lastEventBlock {
 				mdl.setUpdateSession(sessionID)

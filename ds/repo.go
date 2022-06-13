@@ -35,7 +35,7 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	AddTokenOracle(*schemas.TokenOracle)
+	AddTokenOracle(tokenOracle *schemas.TokenOracle, feedType string)
 	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol)
