@@ -49,7 +49,6 @@ type RepositoryI interface {
 	TransferAccountAllowed(*schemas.TransferAccountAllowed)
 	GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap
 	//
-	AddToken(token string) *schemas.Token
 	GetToken(addr string) *schemas.Token
 	GetTokens() []string
 	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*core.JsonBalance, error)
@@ -64,14 +63,11 @@ type RepositoryI interface {
 	AddCreditSessionSnapshot(css *schemas.CreditSessionSnapshot)
 	// dc
 	GetDCWrapper() *dc_wrapper.DataCompressorWrapper
-	AddDataCompressor(blockNum int64, addr string)
 	// pools
 	AddPoolStat(ps *schemas.PoolStat)
 	AddPoolLedger(pl *schemas.PoolLedger)
 	GetPoolUniqueUserLen(pool string) int
 	IsDieselToken(token string) bool
-	// weth
-	SetWETHAddr(address string)
 	GetWETHAddr() string
 	GetUSDCAddr() string
 	GetGearTokenAddr() string

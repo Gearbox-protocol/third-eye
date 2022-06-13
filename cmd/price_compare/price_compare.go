@@ -3,6 +3,11 @@ package main
 import (
 	"context"
 	"flag"
+	"math"
+	"math/big"
+	"sort"
+	"time"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -11,10 +16,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"gorm.io/gorm/clause"
-	"math"
-	"math/big"
-	"sort"
-	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/repository"

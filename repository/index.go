@@ -2,136 +2,101 @@ package repository
 
 import (
 	"sync"
-	"time"
 
 	"fmt"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/repository/handlers"
+	"github.com/Gearbox-protocol/third-eye/repository/handlers/treasury"
 	"gorm.io/gorm"
 )
 
 type Repository struct {
+	// repos
+	*handlers.SessionRepo
+	*handlers.AllowedTokenRepo
+	*handlers.ParamsRepo
+	*handlers.PoolUsersRepo
+	*handlers.BlocksRepo
+	*handlers.TokensRepo
+	*handlers.ExtrasRepo
+	*handlers.SyncAdaptersRepo
+	*handlers.TokenOracleRepo
+	*treasury.TreasuryRepo
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
-	WETHAddr              string
-	USDCAddr              string
-	GearTokenAddr         string
-	db                    *gorm.DB
-	client                core.ClientI
-	config                *config.Config
-	kit                   *ds.AdapterKit
-	executeParser         ds.ExecuteParserI
-	dcWrapper             *dc_wrapper.DataCompressorWrapper
-	aggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
-	creditManagerToFilter map[string]*creditFilter.CreditFilter
-	allowedTokens         map[string]map[string]*schemas.AllowedToken
-	disabledTokens        []*schemas.AllowedToken
-	// blocks/token
-	blocks map[int64]*schemas.Block
-	tokens map[string]*schemas.Token
-	// changed during syncing
-	sessions        map[string]*schemas.CreditSession
-	poolUniqueUsers map[string]map[string]bool
-	// version  to token to oracle
-	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle
-	// for params diff calculation
-	cmParams          map[string]*schemas.Parameters
-	cmFastCheckParams map[string]*schemas.FastCheckParams
-	// treasury
-	treasurySnapshot *schemas.TreasurySnapshot
-	lastTreasureTime time.Time
-	BlockDatePairs   map[int64]*schemas.BlockDate
-	dieselTokens     map[string]*schemas.UTokenAndPool
-	accountManager   *ds.AccountTokenManager
-	relations        []*schemas.UniPriceAndChainlink
+	db             *gorm.DB
+	client         core.ClientI
+	config         *config.Config
+	accountManager *ds.AccountTokenManager
+	relations      []*schemas.UniPriceAndChainlink
 }
 
-func GetRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) *Repository {
+func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
+	blocksRepo := handlers.NewBlocksRepo(db, client)
+	tokensRepo := handlers.NewTokensRepo(client)
 	repo := &Repository{
-		mu:                    &sync.Mutex{},
-		db:                    db,
-		client:                client,
-		config:                config,
-		blocks:                make(map[int64]*schemas.Block),
-		executeParser:         ep,
-		kit:                   ds.NewAdapterKit(),
-		tokens:                make(map[string]*schemas.Token),
-		sessions:              make(map[string]*schemas.CreditSession),
-		poolUniqueUsers:       make(map[string]map[string]bool),
-		tokensCurrentOracle:   make(map[int16]map[string]*schemas.TokenOracle),
-		dcWrapper:             dc_wrapper.NewDataCompressorWrapper(client),
-		creditManagerToFilter: make(map[string]*creditFilter.CreditFilter),
-		allowedTokens:         make(map[string]map[string]*schemas.AllowedToken),
-		// for dao events to get diff
-		cmParams:          make(map[string]*schemas.Parameters),
-		cmFastCheckParams: make(map[string]*schemas.FastCheckParams),
-		// for treasury to get the date
-		BlockDatePairs: make(map[int64]*schemas.BlockDate),
-		// for getting the diesel tokens
-		dieselTokens:   make(map[string]*schemas.UTokenAndPool),
-		accountManager: ds.NewAccountTokenManager(),
+		SessionRepo:      handlers.NewSessionRepo(),
+		AllowedTokenRepo: handlers.NewAllowedTokenRepo(blocksRepo, tokensRepo),
+		ParamsRepo:       handlers.NewParamsRepo(blocksRepo),
+		PoolUsersRepo:    handlers.NewPoolUsersRepo(),
+		TokensRepo:       tokensRepo,
+		BlocksRepo:       blocksRepo,
+		ExtrasRepo:       extras,
+		mu:               &sync.Mutex{},
+		db:               db,
+		client:           client,
+		config:           cfg,
+		accountManager:   ds.NewAccountTokenManager(),
 	}
-	// aggregated block feed
-	repo.aggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(repo.client, repo, repo.config.Interval)
-	repo.kit.Add(repo.aggregatedFeed)
+	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
+	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
+	repo.TreasuryRepo = treasury.NewTreasuryRepo(tokensRepo, blocksRepo, repo.SyncAdaptersRepo, client)
 	return repo
 }
-func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep ds.ExecuteParserI) ds.RepositoryI {
+
+func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *handlers.ExtrasRepo) ds.RepositoryI {
 	r := GetRepository(db, client, config, ep)
 	r.init()
 	return r
 }
 
-func (repo *Repository) GetDCWrapper() *dc_wrapper.DataCompressorWrapper {
-	return repo.dcWrapper
-}
-
-func (repo *Repository) GetExecuteParser() ds.ExecuteParserI {
-	return repo.executeParser
-}
-
-func (repo *Repository) GetKit() *ds.AdapterKit {
-	return repo.kit
-}
-
 func (repo *Repository) init() {
+	// lastdebtsync is required to load credit session which are active or closed after lastdebtsync block number
 	lastDebtSync := repo.LoadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
-	repo.loadToken()
+	repo.TokensRepo.LoadTokens(repo.db)
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
-	repo.loadSyncAdapters()
+	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
 	repo.loadChainlinkPrevState()
 	//
 	repo.loadUniswapPools()
 	// for disabling previous token oracle if new oracle is set
-	repo.loadCurrentTokenOracle()
+	repo.LoadCurrentTokenOracle(repo.db)
 	// load state for sync_adapters
 	repo.loadPool()
-	repo.loadPoolUniqueUsers()
+	repo.LoadPoolUniqueUsers(repo.db)
 	// load credit manager
 	repo.loadCreditManagers()
 	repo.loadGearBalances()
 	// required for disabling allowed tokens
-	repo.loadAllowedTokensState()
+	repo.LoadAllowedTokensState(repo.db)
 	// fastcheck and new parameters
-	repo.loadAllParams()
+	repo.ParamsRepo.LoadAllParams(repo.db)
 	// treasury funcs
-	repo.loadBlockDatePair()
-	repo.loadLastTreasuryTs()
-	repo.loadTreasurySnapshot()
+	repo.BlocksRepo.LoadBlockDatePair()
+	repo.LoadLastTreasuryTs(repo.db)
+	repo.TreasuryRepo.LoadTreasurySnapshot(repo.db)
 	// for direct token transfer
 	repo.loadAccountLastSession()
 	// credit_sessions
-	repo.loadCreditSessions(lastDebtSync)
+	repo.LoadCreditSessions(repo.db, lastDebtSync)
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *schemas.AccountOperation) {
@@ -140,28 +105,7 @@ func (repo *Repository) AddAccountOperation(accountOperation *schemas.AccountOpe
 	if accountOperation.SessionId == "" {
 		panic(utils.ToJson(accountOperation))
 	}
-	repo.setAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
-}
-
-func (repo *Repository) SetWETHAddr(addr string) {
-	repo.WETHAddr = addr
-}
-
-func (repo *Repository) GetWETHAddr() string {
-	return repo.WETHAddr
-}
-func (repo *Repository) GetUSDCAddr() string {
-	return repo.USDCAddr
-}
-func (repo *Repository) GetGearTokenAddr() string {
-	return repo.GearTokenAddr
-}
-
-func (eng *Repository) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
-	ts := eng.SetAndGetBlock(blockNum).Timestamp
-	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
-		log.Msgf(msg, args...)
-	}
+	repo.SetAndGetBlock(accountOperation.BlockNumber).AddAccountOperation(accountOperation)
 }
 
 type LastSyncAndType struct {
@@ -204,15 +148,16 @@ func (repo *Repository) GetChainId() uint {
 	return repo.config.ChainId
 }
 
-func (repo *Repository) GetTokenOracles() map[int16]map[string]*schemas.TokenOracle {
-	return repo.tokensCurrentOracle
-}
-func (repo *Repository) GetDisabledTokens() []*schemas.AllowedToken {
-	return repo.disabledTokens
-}
-
-func (repo *Repository) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
+func (repo *Repository) AfterSync(syncTill int64) {
+	// for direct token transfer
+	for _, txs := range repo.accountManager.GetNoSessionTxs() {
+		for _, tx := range txs {
+			repo.RecentEventMsg(tx.BlockNum, "No session account token transfer: %v", tx)
+			repo.SetAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
+		}
+	}
+	// for direct token transfer
+	repo.accountManager.Clear()
+	// chainlink and uniswap prices
+	repo.AggregatedFeed.Clear()
 }

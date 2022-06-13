@@ -18,27 +18,26 @@ import (
 func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.config.ChainId != 1 || repo.aggregatedFeed.UniPoolByToken[token] != nil {
+	if repo.config.ChainId != 1 || repo.AggregatedFeed.UniPoolByToken[token] != nil {
 		return
 	}
 	v2FactoryAddr := repo.GetFactoryv2Address(blockNum)
 	v3FactoryAddr := repo.GetFactoryv3Address(blockNum)
 	v2Factory, err := uniswapv2Factory.NewUniswapv2Factory(v2FactoryAddr, repo.client)
 	log.CheckFatal(err)
-	poolv2Addr, err := v2Factory.GetPair(nil, common.HexToAddress(token), common.HexToAddress(repo.WETHAddr))
+	poolv2Addr, err := v2Factory.GetPair(nil, common.HexToAddress(token), common.HexToAddress(repo.GetWETHAddr()))
 	log.CheckFatal(err)
 	//
 	v3Factory, err := uniswapv3Factory.NewUniswapv3Factory(v3FactoryAddr, repo.client)
 	log.CheckFatal(err)
-	poolv3Addr, err := v3Factory.GetPool(nil, common.HexToAddress(token), common.HexToAddress(repo.WETHAddr), big.NewInt(3000))
+	poolv3Addr, err := v3Factory.GetPool(nil, common.HexToAddress(token), common.HexToAddress(repo.GetWETHAddr()), big.NewInt(3000))
 	log.CheckFatal(err)
 	if poolv2Addr.Hex() == "0x0000000000000000000000000000000000000000" ||
 		poolv3Addr.Hex() == "0x0000000000000000000000000000000000000000" {
-		log.Fatalf("pool not fetched for v2/v3: %s/%s", token, repo.WETHAddr)
+		log.Fatalf("pool not fetched for v2/v3: %s/%s", token, repo.GetWETHAddr())
 	}
-	tokenInfo, err := repo.getTokenWithError(token)
-	log.CheckFatal(err)
-	repo.aggregatedFeed.AddUniPools(tokenInfo, &schemas.UniswapPools{
+	tokenInfo := repo.GetToken(token)
+	repo.AggregatedFeed.AddUniPools(tokenInfo, &schemas.UniswapPools{
 		V2:      poolv2Addr.Hex(),
 		V3:      poolv3Addr.Hex(),
 		Updated: true,
@@ -49,7 +48,7 @@ func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 func (repo *Repository) AddLastSyncForToken(token string, lastSync int64) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.aggregatedFeed.AddLastSyncForToken(token, lastSync)
+	repo.AggregatedFeed.AddLastSyncForToken(token, lastSync)
 }
 
 func (repo *Repository) GetFactoryv2Address(blockNum int64) common.Address {
@@ -76,21 +75,14 @@ func (repo *Repository) GetFactoryv3Address(blockNum int64) common.Address {
 	return v3Factory
 }
 
-func (repo *Repository) AddUniswapPrices(prices *schemas.UniPoolPrices) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.setAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
-}
-
 func (repo *Repository) loadUniswapPools() {
 	defer utils.Elapsed("loadUniswapPools")()
 	data := []*schemas.UniswapPools{}
 	err := repo.db.Raw(`SELECT * from uniswap_pools`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
-		tokenInfo, err := repo.getTokenWithError(entry.Token)
-		log.CheckFatal(err)
-		repo.aggregatedFeed.AddUniPools(tokenInfo, entry)
+		tokenInfo := repo.GetToken(entry.Token)
+		repo.AggregatedFeed.AddUniPools(tokenInfo, entry)
 	}
 }
 
@@ -107,31 +99,10 @@ func (repo *Repository) loadChainlinkPrevState() {
 }
 
 func (repo *Repository) GetUniPricesByToken(token string) []*schemas.UniPoolPrices {
-	return repo.aggregatedFeed.GetUniPricesByToken(token)
+	return repo.AggregatedFeed.GetUniPricesByToken(token)
 }
 func (repo *Repository) AddUniPriceAndChainlinkRelation(relation *schemas.UniPriceAndChainlink) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.relations = append(repo.relations, relation)
-}
-
-func (repo *Repository) GetYearnFeedAddrs() (addrs []string) {
-	feeds := repo.aggregatedFeed.GetQueryFeeds()
-	for _, adapter := range feeds {
-		addrs = append(addrs, adapter.GetAddress())
-	}
-	return
-}
-
-func (repo *Repository) GetAdapter(addr string) ds.SyncAdapterI {
-	adapter := repo.kit.GetAdapter(addr)
-	if adapter == nil {
-		feeds := repo.aggregatedFeed.GetQueryFeeds()
-		for _, feed := range feeds {
-			if feed.GetAddress() == addr {
-				return feed
-			}
-		}
-	}
-	return adapter
 }

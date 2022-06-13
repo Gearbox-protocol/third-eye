@@ -64,9 +64,9 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			if mdl.Details == nil {
 				mdl.Details = make(map[string]interface{})
 			}
-			mdl.Repo.SetWETHAddr(address)
-			mdl.Repo.AddToken(address)
+			mdl.Repo.GetToken(address)
 		case "GEAR_TOKEN":
+			mdl.Repo.GetToken(address)
 			gt := gear_token.NewGearToken(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
 			mdl.Repo.AddSyncAdapter(gt)
 		case "TREASURY_CONTRACT":
@@ -85,7 +85,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			}
 			dcObj[fmt.Sprintf("%d", blockNum)] = address
 			mdl.Details["dc"] = dcObj
-			mdl.Repo.AddDataCompressor(int64(txLog.BlockNumber), address)
+			mdl.Repo.GetDCWrapper().AddDataCompressor(int64(txLog.BlockNumber), address)
 		}
 	}
 }
