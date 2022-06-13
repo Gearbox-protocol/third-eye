@@ -55,22 +55,24 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 
 func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
 	curDebt := schemas.CurrentDebt{
-		SessionId:                       debt.SessionId,
-		BlockNumber:                     debt.BlockNumber,
-		CalHealthFactor:                 debt.CalHealthFactor,
-		CalTotalValue:                   utils.GetFloat64Decimal(debt.CalTotalValueBI.Convert(), decimals),
-		CalTotalValueBI:                 core.NewBigInt(debt.CalTotalValueBI),
-		CalBorrowedAmountPlusInterest:   utils.GetFloat64Decimal((debt.CalBorrowedAmountPlusInterestBI).Convert(), decimals),
-		CalBorrowedAmountPlusInterestBI: core.NewBigInt(debt.CalBorrowedAmountPlusInterestBI),
-		CalThresholdValue:               utils.GetFloat64Decimal((debt.CalThresholdValueBI).Convert(), decimals),
-		CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
-		RepayAmountBI:                   debt.RepayAmountBI,
-		AmountToPool:                    utils.GetFloat64Decimal(debt.AmountToPoolBI.Convert(), decimals),
-		RepayAmount:                     utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
-		ProfitInUSD:                     debt.ProfitInUSD,
-		ProfitInUnderlying:              debt.ProfitInUnderlying,
-		CollateralInUnderlying:          debt.CollateralInUnderlying,
-		CollateralInUSD:                 debt.CollateralInUSD,
+		SessionId: debt.SessionId,
+		CommonDebtFields: schemas.CommonDebtFields{
+			BlockNumber:                     debt.BlockNumber,
+			CalHealthFactor:                 debt.CalHealthFactor,
+			CalTotalValueBI:                 core.NewBigInt(debt.CalTotalValueBI),
+			CalBorrowedAmountPlusInterestBI: core.NewBigInt(debt.CalBorrowedAmountPlusInterestBI),
+			CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
+			ProfitInUSD:                     debt.ProfitInUSD,
+			ProfitInUnderlying:              debt.ProfitInUnderlying,
+			CollateralInUnderlying:          debt.CollateralInUnderlying,
+			CollateralInUSD:                 debt.CollateralInUSD,
+		},
+		CalTotalValue:                 utils.GetFloat64Decimal(debt.CalTotalValueBI.Convert(), decimals),
+		CalBorrowedAmountPlusInterest: utils.GetFloat64Decimal((debt.CalBorrowedAmountPlusInterestBI).Convert(), decimals),
+		CalThresholdValue:             utils.GetFloat64Decimal((debt.CalThresholdValueBI).Convert(), decimals),
+		RepayAmountBI:                 debt.RepayAmountBI,
+		AmountToPool:                  utils.GetFloat64Decimal(debt.AmountToPoolBI.Convert(), decimals),
+		RepayAmount:                   utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
 	}
 	eng.currentDebts = append(eng.currentDebts, &curDebt)
 }
@@ -98,7 +100,7 @@ func (eng *DebtEngine) addDebt(debt *schemas.Debt) {
 	eng.debts = append(eng.debts, debt)
 }
 
-func (eng *DebtEngine) loadLastDebts() {
+func (eng *DebtEngine) loadLastDebts(lastDebtSync int64) {
 	defer utils.Elapsed("Debt(loadLastDebts)")()
 	data := []*schemas.Debt{}
 	// from debts
@@ -106,8 +108,8 @@ func (eng *DebtEngine) loadLastDebts() {
 	// 		(SELECT max(block_num), session_id FROM debts GROUP BY session_id) debt_max_block
 	// 		JOIN debts ON debt_max_block.max = debts.block_num AND debt_max_block.session_id = debts.session_id`
 	// from current_debts
-	query := `SELECT * FROM current_debts;`
-	err := eng.db.Raw(query).Find(&data).Error
+	query := `SELECT * FROM current_debts WHERE block_num <= ?;`
+	err := eng.db.Raw(query, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"reflect"
+
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -44,8 +46,16 @@ func (repo *Repository) loadSessionIdToBorrower() {
 	}
 }
 
+// safe
 func (repo *Repository) GetCMState(cmAddr string) *schemas.CreditManagerState {
-	state := repo.GetAdapter(cmAddr).GetUnderlyingState()
+	adapter := repo.GetAdapter(cmAddr)
+	// if cm doesn't exist return nil, it is used by debt engine
+	// if the block_num is before cm exist don't error
+	// adapter not equal to nil is not used as underlying type of adapter is not nil
+	if reflect.ValueOf(adapter).IsZero() {
+		return nil
+	}
+	state := adapter.GetUnderlyingState()
 	cm, ok := state.(*schemas.CreditManagerState)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")

@@ -17,7 +17,7 @@
   ],
   debts: [{
     blockNum: 7,
-    calBorrowedAmountWithInterest: '5000000000',
+    calBorrowedAmountPlusInterest: '5000000000',
     calHealthFactor: '9600',
     calThresholdValue: '4800000000',
     calTotalValue: '5750000000',
