@@ -366,7 +366,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 	// amount to pool
 	// if account is liquidable
 	accountIsLiquidable := debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 0
-	amountToPool, calRemainingFunds, _, _ = eng.calCloseAmount(session.CreditManager, session.Version, debt.CalTotalValueBI, accountIsLiquidable,
+	amountToPool, calRemainingFunds, _, _ = schemas.CalCloseAmount(eng.lastParameters[session.CreditManager], session.Version, debt.CalTotalValueBI.Convert(), accountIsLiquidable,
 		debt.CalBorrowedAmountPlusInterestBI.Convert(),
 		sessionSnapshot.BorrowedAmountBI.Convert())
 

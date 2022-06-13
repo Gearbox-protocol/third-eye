@@ -8,8 +8,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm"
-
-	"math/big"
 )
 
 type DebtEngine struct {
@@ -108,84 +106,6 @@ func (eng *DebtEngine) Clear() {
 	eng.debts = []*schemas.Debt{}
 	// clear repo after calculating debt as debt uses repository for calculations
 	eng.repo.Clear()
-}
-
-func (eng *DebtEngine) calCloseAmount(creditManager string, version int16, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, remainingFunds, profit, loss *big.Int) {
-	switch version {
-	case 1:
-		return eng.calCloseAmountV1(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
-	case 2:
-		amountToPool, remainingFunds, profit, loss = eng.calCloseAmountV2(creditManager, totalValue, isLiquidated, borrowedAmountWithInterest, borrowedAmount)
-	}
-	return
-}
-func (eng *DebtEngine) calCloseAmountV1(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, remainingFunds, profit, loss *big.Int) {
-	params := eng.lastParameters[creditManager]
-	loss = big.NewInt(0)
-	profit = big.NewInt(0)
-	remainingFunds = new(big.Int)
-	var totalFunds *big.Int
-	if isLiquidated {
-		totalFunds = utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
-	} else {
-		totalFunds = totalValue.Convert()
-	}
-	// borrow amt is greater than total funds
-	if totalFunds.Cmp(borrowedAmountWithInterest) < 0 {
-		amountToPool = new(big.Int).Sub(totalFunds, big.NewInt(1))
-		loss = new(big.Int).Sub(borrowedAmountWithInterest, amountToPool)
-	} else {
-		if isLiquidated {
-			amountToPool = utils.PercentMul(totalFunds, params.FeeLiquidation.Convert())
-			amountToPool = new(big.Int).Add(borrowedAmountWithInterest, amountToPool)
-		} else {
-			interestAmt := new(big.Int).Sub(borrowedAmountWithInterest, borrowedAmount)
-			fee := utils.PercentMul(interestAmt, params.FeeInterest.Convert())
-			amountToPool = new(big.Int).Add(borrowedAmountWithInterest, fee)
-		}
-
-		if totalFunds.Cmp(amountToPool) <= 0 {
-			amountToPool = new(big.Int).Sub(totalFunds, big.NewInt(1))
-		} else {
-			remainingFunds = new(big.Int).Sub(totalFunds, amountToPool)
-			// remainingFunds = new(big.Int).Sub(new(big.Int).Sub(totalFunds, amountToPool), big.NewInt(1))
-		}
-		profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
-	}
-	return
-}
-
-func (eng *DebtEngine) calCloseAmountV2(creditManager string, totalValue *core.BigInt, isLiquidated bool, borrowedAmountWithInterest, borrowedAmount *big.Int) (amountToPool, remainingFunds, profit, loss *big.Int) {
-	params := eng.lastParameters[creditManager]
-	loss = big.NewInt(0)
-	profit = big.NewInt(0)
-	remainingFunds = new(big.Int)
-
-	amountToPool = utils.PercentMul(
-		new(big.Int).Sub(borrowedAmountWithInterest, borrowedAmount),
-		params.FeeInterest.Convert(),
-	)
-	amountToPool = new(big.Int).Add(amountToPool, borrowedAmountWithInterest)
-
-	if isLiquidated {
-		totalFunds := utils.PercentMul(totalValue.Convert(), params.LiquidationDiscount.Convert())
-		liquidationFeeToPool := utils.PercentMul(totalValue.Convert(), params.FeeLiquidation.Convert())
-		amountToPool = new(big.Int).Add(amountToPool, liquidationFeeToPool)
-		if totalFunds.Cmp(amountToPool) > 0 {
-			remainingFunds = new(big.Int).Sub(totalFunds, new(big.Int).Add(amountToPool, big.NewInt(1)))
-		} else {
-			amountToPool = totalFunds
-		}
-
-		if totalFunds.Cmp(borrowedAmountWithInterest) >= 0 {
-			profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
-		} else {
-			loss = new(big.Int).Sub(borrowedAmountWithInterest, amountToPool)
-		}
-	} else {
-		profit = new(big.Int).Sub(amountToPool, borrowedAmountWithInterest)
-	}
-	return
 }
 
 func (eng *DebtEngine) loadLiquidableAccounts(lastDebtSync int64) {
