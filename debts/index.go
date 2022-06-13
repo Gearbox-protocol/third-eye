@@ -65,23 +65,24 @@ func (eng *DebtEngine) ProcessBackLogs() {
 		return
 	}
 	// synced till
-	lastDebtSync := eng.repo.LoadLastDebtSync()
-	eng.loadLastCSS(lastDebtSync)
-	eng.loadTokenLastPrice(lastDebtSync)
-	eng.loadAllowedTokenThreshold(lastDebtSync)
-	eng.loadPoolLastInterestData(lastDebtSync)
-	eng.loadLastDebts()
-	eng.loadParameters(lastDebtSync)
-	eng.loadLiquidableAccounts(lastDebtSync)
+	lastDebtSynced := eng.repo.LoadLastDebtSync()
+	eng.loadLastCSS(lastDebtSynced)
+	eng.loadTokenLastPrice(lastDebtSynced)
+	eng.loadAllowedTokenThreshold(lastDebtSynced)
+	eng.loadPoolLastInterestData(lastDebtSynced)
+	eng.loadLastDebts(lastDebtSynced)
+	eng.loadParameters(lastDebtSynced)
+	eng.loadLiquidableAccounts(lastDebtSynced)
 	// process blocks for calculating debts
 	adaptersSyncedTill := eng.repo.LoadLastAdapterSync()
 	var batchSize int64 = 5000
-	for ; lastDebtSync+batchSize < adaptersSyncedTill; lastDebtSync += batchSize {
-		eng.processBlocksInBatch(lastDebtSync, lastDebtSync+batchSize)
+	for ; lastDebtSynced+batchSize < adaptersSyncedTill; lastDebtSynced += batchSize {
+		eng.processBlocksInBatch(lastDebtSynced, lastDebtSynced+batchSize)
 	}
-	eng.processBlocksInBatch(lastDebtSync, adaptersSyncedTill)
+	eng.processBlocksInBatch(lastDebtSynced, adaptersSyncedTill)
 }
 
+// load blocks from > and to <=
 func (eng *DebtEngine) processBlocksInBatch(from, to int64) {
 	if from == to {
 		return

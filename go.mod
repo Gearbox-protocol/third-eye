@@ -54,4 +54,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 )
 
-// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20220528125351-63f4cb2932d9 => ../sdk-go
+replace github.com/Gearbox-protocol/sdk-go v0.0.0-20220528125351-63f4cb2932d9 => ../sdk-go

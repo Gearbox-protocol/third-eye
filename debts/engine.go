@@ -22,95 +22,132 @@ func (eng *DebtEngine) SaveProfile(profile string) {
 	}
 }
 
+func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (poolsUpdated []string, tokensUpdated map[string]bool, sessionsUpdated map[string]bool) {
+	//////////////////////////////////////
+	// Load data
+	//////////////////////////////////////
+	// L1 params
+	// L2 poolinterestdata
+	// L3 credit session snapshots
+	// L4 lt
+	// L5 pricefeeds
+	//
+	// L1:update params
+	for _, params := range block.GetParams() {
+		eng.addLastParameters(params)
+	}
+
+	///////////////////////////////////
+	// calc debt conditions
+	///////////////////////////////////
+	// C1 If pool cumIndex changes
+	// C2 If new css is present, meaning balance or new token added
+	// C3 If account related token(either have balance or underlying token) has some data change, lt or price
+
+	// update pool borrow rate and cumulative index
+	// C1: UPDATE BASED ON POOL CUM INDEX
+	for _, ps := range block.GetPoolStats() {
+		poolsUpdated = append(poolsUpdated, ps.Address)
+		// L2
+		eng.AddPoolLastInterestData(&schemas.PoolInterestData{
+			Address:            ps.Address,
+			BlockNum:           ps.BlockNum,
+			CumulativeIndexRAY: ps.CumulativeIndexRAY,
+			BorrowAPYBI:        ps.BorrowAPYBI,
+			Timestamp:          block.Timestamp,
+		})
+	}
+
+	// update balance of last credit session snapshot and create credit session snapshots
+	// C2: UPDATE BASED ON CSS
+	sessionsUpdated = make(map[string]bool)
+	for _, css := range block.GetCSS() {
+		// L3
+		eng.AddLastCSS(css)
+		sessionsUpdated[css.SessionId] = true
+	}
+
+	// C3: UPDATE BASED ON TOKEN
+	// C3.a: updated threshold
+	tokensUpdated = make(map[string]bool)
+	for _, allowedToken := range block.GetAllowedTokens() {
+		// L4
+		eng.AddAllowedTokenThreshold(allowedToken)
+		tokensUpdated[allowedToken.Token] = true
+	}
+
+	// C3.b: updated price
+	for _, pf := range block.GetPriceFeeds() {
+		// if pf.Token == "0x6B175474E89094C44Da98b954EedeAC495271d0F" {
+		// 	log.Info(blockNum, utils.ToJson(pf))
+		// }
+		// L5
+		eng.AddTokenLastPrice(pf)
+		tokensUpdated[pf.Token] = true
+	}
+	// updates complete
+	return poolsUpdated, tokensUpdated, sessionsUpdated
+}
+
 func (eng *DebtEngine) CalculateDebt() {
 	blocks := eng.repo.GetBlocks()
 	sessions := eng.repo.GetSessions()
+	// sort block numbers
 	noOfBlock := len(blocks)
 	blockNums := make([]int64, 0, noOfBlock)
 	for blockNum := range blocks {
 		blockNums = append(blockNums, blockNum)
 	}
 	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
+	//
 	for _, blockNum := range blockNums {
 		block := blocks[blockNum]
-		// update threshold
-		ltChangedTokens := []string{}
-		for _, allowedToken := range block.GetAllowedTokens() {
-			eng.AddAllowedTokenThreshold(allowedToken)
-			ltChangedTokens = append(ltChangedTokens, allowedToken.Token)
-		}
-		// update pool borrow rate and cumulative index
-		for _, ps := range block.GetPoolStats() {
-			eng.AddPoolLastInterestData(&schemas.PoolInterestData{
-				Address:            ps.Address,
-				BlockNum:           ps.BlockNum,
-				CumulativeIndexRAY: ps.CumulativeIndexRAY,
-				BorrowAPYBI:        ps.BorrowAPYBI,
-				Timestamp:          block.Timestamp,
-			})
-		}
+		poolsUpdated, tokensUpdated, sessionsUpdated := eng.updateLocalState(blockNum, block)
+		// get pool cumulative interest rate
+		cmToPoolDetails := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
 
-		// update balance of last credit session snapshot and create credit session snapshots
-		sessionsToUpdate := make(map[string]bool)
-		for _, css := range block.GetCSS() {
-			eng.AddLastCSS(css)
-			sessionsToUpdate[css.SessionId] = true
-		}
-		// set the price session list to update
-		sessionWithTokens := make(map[string][]string)
+		// check if session's debt needs to be recalculated
 		for _, session := range sessions {
 			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
 				continue
 			}
+			// #C1
+			if utils.Contains(poolsUpdated, cmToPoolDetails[session.CreditManager].PoolAddr) {
+				sessionsUpdated[session.ID] = true
+			}
+			// #C3
 			sessionSnapshot := eng.lastCSS[session.ID]
 			for tokenAddr := range *sessionSnapshot.Balances {
-				sessionWithTokens[tokenAddr] = append(sessionWithTokens[tokenAddr], session.ID)
+				if tokensUpdated[tokenAddr] {
+					sessionsUpdated[session.ID] = true
+				}
+			}
+			// #C3
+			underlyingToken := cmToPoolDetails[session.CreditManager].Token
+			if tokensUpdated[underlyingToken] {
+				sessionsUpdated[session.ID] = true
 			}
 		}
-		// update price
-		for _, pf := range block.GetPriceFeeds() {
-			eng.AddTokenLastPrice(pf)
-			// set the price session list to update
-			for _, sessionId := range sessionWithTokens[pf.Token] {
-				sessionsToUpdate[sessionId] = true
-			}
-		}
-		for _, token := range ltChangedTokens {
-			for _, sessionId := range sessionWithTokens[token] {
-				sessionsToUpdate[sessionId] = true
-			}
-		}
-		for _, params := range block.GetParams() {
-			eng.addLastParameters(params)
-		}
-		// get pool cumulative interest rate
-		var cmAddrToCumIndex map[string]*ds.CumIndexAndUToken
-		if len(sessionsToUpdate) > 0 {
-			cmAddrToCumIndex = eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
-		}
+		//
 		// calculate each session debt
-		for sessionId := range sessionsToUpdate {
+		for sessionId := range sessionsUpdated {
 			session := sessions[sessionId]
 			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
 				continue
 			}
 			cmAddr := session.CreditManager
 			// pool cum index is when the pool is not registered
-			if cmAddrToCumIndex[cmAddr] != nil {
-				eng.SessionDebtHandler(blockNum, session, cmAddrToCumIndex[cmAddr])
+			if cmToPoolDetails[cmAddr] != nil {
+				eng.SessionDebtHandler(blockNum, session, cmToPoolDetails[cmAddr])
 				// send notification when account is liquidated
 			} else {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
 		}
-		if len(sessionsToUpdate) > 0 {
-			log.Verbosef("Calculated %d debts for block %d", len(sessionsToUpdate), blockNum)
+		if len(sessionsUpdated) > 0 {
+			log.Verbosef("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
 		}
-		// eng.flushDebt(blockNum)
 	}
-	// if noOfBlock > 0 {
-	// 	eng.flushDebt(blockNums[noOfBlock-1])
-	// }
 }
 
 func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt int64, status int) {
@@ -145,34 +182,38 @@ func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt in
 }
 
 func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uint64) map[string]*ds.CumIndexAndUToken {
+	// this is assuming that credit managers are not disabled
 	cmAddrs := eng.repo.GetKit().GetAdapterAddressByName(ds.CreditManager)
-	poolToCI := make(map[string]*ds.CumIndexAndUToken)
+	cmToCumIndex := make(map[string]*ds.CumIndexAndUToken)
 	for _, cmAddr := range cmAddrs {
-		poolAddr := eng.repo.GetCMState(cmAddr).PoolAddress
+		cmState := eng.repo.GetCMState(cmAddr)
+		// if block_num is before cm exists cmState will be nil
+		if cmState == nil {
+			continue
+		}
+		poolAddr := cmState.PoolAddress
 		poolInterestData := eng.poolLastInterestData[poolAddr]
-		if poolInterestData == nil {
-			poolToCI[poolAddr] = nil
-		} else {
+		var cumIndexNormalized *big.Int
+		if poolInterestData != nil {
 			tsDiff := new(big.Int).SetInt64(int64(ts - poolInterestData.Timestamp))
 			newInterest := new(big.Int).Mul(poolInterestData.BorrowAPYBI.Convert(), tsDiff)
 			newInterestPerSec := new(big.Int).Quo(newInterest, big.NewInt(3600*365*24))
 			predicate := new(big.Int).Add(newInterestPerSec, utils.GetExpInt(27))
 			cumIndex := new(big.Int).Mul(poolInterestData.CumulativeIndexRAY.Convert(), predicate)
-			cumIndexNormalized := utils.GetInt64(cumIndex, 27)
-			tokenAddr := eng.repo.GetCMState(cmAddr).UnderlyingToken
-			token := eng.repo.GetToken(tokenAddr)
-			poolToCI[cmAddr] = &ds.CumIndexAndUToken{
-				CumulativeIndex: cumIndexNormalized,
-				Token:           tokenAddr,
-				Symbol:          token.Symbol,
-				Decimals:        token.Decimals,
-				PriceInETH:      eng.GetTokenLastPrice(tokenAddr, 1, true),
-				PriceInUSD:      eng.GetTokenLastPrice(tokenAddr, 2, true),
-			}
-			// log.Infof("blockNum%d newInterest:%s tsDiff:%s cumIndexDecimal:%s predicate:%s cumIndex:%s",blockNum ,newInterest, tsDiff, cumIndexNormalized, predicate, cumIndex)
+			cumIndexNormalized = utils.GetInt64(cumIndex, 27)
+		}
+		// set fields
+		tokenAddr := cmState.UnderlyingToken
+		token := eng.repo.GetToken(tokenAddr)
+		cmToCumIndex[cmAddr] = &ds.CumIndexAndUToken{
+			CumulativeIndex: cumIndexNormalized,
+			Token:           tokenAddr,
+			Symbol:          token.Symbol,
+			Decimals:        token.Decimals,
+			PoolAddr:        poolAddr,
 		}
 	}
-	return poolToCI
+	return cmToCumIndex
 }
 
 func (eng *DebtEngine) getTokenPriceFeed(token string, version int16) *schemas.PriceFeed {
@@ -211,8 +252,8 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 		}
 		debt, profile = eng.CalculateSessionDebt(blockNum, session, cumIndexAndUToken)
 		if profile != nil {
-			log.Fatalf("Debt fields different from data compressor fields: %s", profile.Json())
-			eng.SaveProfile(string(profile.Json()))
+			log.Fatalf("Debt fields different from data compressor fields: %s", profile)
+			eng.SaveProfile(profile.String())
 
 		}
 	}
@@ -258,7 +299,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 
 	}
 	// the value of credit account is in terms of underlying asset
-	underlyingPrice := cumIndexAndUToken.GetPrice(session.Version)
+	underlyingPrice := eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version)
 	calThresholdValue = new(big.Int).Quo(calThresholdValue, underlyingPrice)
 	calTotalValue = new(big.Int).Quo(calTotalValue, underlyingPrice)
 	// borrowed + interest and normalized threshold value
@@ -268,13 +309,15 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	calReducedThresholdValue := big.NewInt(0).Quo(calThresholdValue, big.NewInt(10000))
 	// set debt fields
 	debt := &schemas.Debt{
-		BlockNumber:                     blockNum,
-		SessionId:                       sessionId,
-		CalHealthFactor:                 (*core.BigInt)(big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest)),
-		CalTotalValueBI:                 (*core.BigInt)(calTotalValue),
-		CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
-		CalThresholdValueBI:             (*core.BigInt)(calReducedThresholdValue),
-		CollateralInUnderlying:          sessionSnapshot.CollateralInUnderlying,
+		CommonDebtFields: schemas.CommonDebtFields{
+			BlockNumber:                     blockNum,
+			CalHealthFactor:                 (*core.BigInt)(big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest)),
+			CalTotalValueBI:                 (*core.BigInt)(calTotalValue),
+			CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
+			CalThresholdValueBI:             (*core.BigInt)(calReducedThresholdValue),
+			CollateralInUnderlying:          sessionSnapshot.CollateralInUnderlying,
+		},
+		SessionId: sessionId,
 	}
 	var notMatched bool
 	profile := ds.DebtProfile{}
@@ -283,12 +326,9 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		data := eng.SessionDataFromDC(blockNum, cmAddr, sessionSnapshot.Borrower)
 		utils.ToJson(data)
 		// set debt data fetched from dc
-		debt.HealthFactor = (*core.BigInt)(data.HealthFactor)
-		debt.TotalValueBI = (*core.BigInt)(data.TotalValue)
-		debt.BorrowedAmountPlusInterestBI = (*core.BigInt)(data.BorrowedAmountPlusInterest)
-		if !CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, cumIndexAndUToken) ||
-			!CompareBalance(debt.CalBorrowedAmountPlusInterestBI, debt.BorrowedAmountPlusInterestBI, cumIndexAndUToken) ||
-			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) {
+		if !CompareBalance(debt.CalTotalValueBI, (*core.BigInt)(data.TotalValue), cumIndexAndUToken) ||
+			!CompareBalance(debt.CalBorrowedAmountPlusInterestBI, (*core.BigInt)(data.BorrowedAmountPlusInterest), cumIndexAndUToken) ||
+			core.ValueDifferSideOf10000(debt.CalHealthFactor, (*core.BigInt)(data.HealthFactor)) {
 			mask := eng.repo.GetMask(blockNum, cmAddr, accountAddr, session.Version)
 			var err error
 			profile.RPCBalances, err = eng.repo.ConvertToBalanceWithMask(data.Balances, mask)
@@ -299,13 +339,11 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		}
 		// even if data compressor matching is disabled check the values  with values at which last credit snapshot was taken
 	} else if sessionSnapshot.BlockNum == blockNum {
-		debt.HealthFactor = sessionSnapshot.HealthFactor
-		debt.TotalValueBI = sessionSnapshot.TotalValueBI
-		if !CompareBalance(debt.CalTotalValueBI, debt.TotalValueBI, cumIndexAndUToken) ||
+		if !CompareBalance(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, cumIndexAndUToken) ||
 			// hf value calculated are on different side of 1
-			core.ValueDifferSideOf10000(debt.CalHealthFactor, debt.HealthFactor) ||
+			core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor) ||
 			// if healhFactor diff by 4 %
-			core.DiffMoreThanFraction(debt.CalHealthFactor, debt.HealthFactor, big.NewFloat(0.04)) {
+			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)) {
 			profile.RPCBalances = sessionSnapshot.Balances.Copy()
 			notMatched = true
 		}
@@ -423,7 +461,7 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ..
 			return eng.tokenLastPriceV2[addr].PriceBI.Convert()
 		}
 	}
-	if len(dontFail) > 0 && dontFail[0] == true {
+	if len(dontFail) > 0 && dontFail[0] {
 		return nil
 	}
 	log.Fatalf("Price not found for %s version: %d", addr, version)
@@ -447,6 +485,7 @@ func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string
 func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string, isPriceInUSD bool) {
 	// PFFIX
 	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(feed), eng.client)
+	log.CheckFatal(err)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}

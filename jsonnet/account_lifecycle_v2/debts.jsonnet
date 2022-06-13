@@ -2,7 +2,7 @@
   debts: [
     {
       blockNum: 4,
-      calBorrowedAmountWithInterest: '5000000000',
+      calBorrowedAmountPlusInterest: '5000000000',
       calHealthFactor: '10800',
       calThresholdValue: '5400000000',
       calTotalValue: '6000000000',
@@ -15,7 +15,7 @@
     },
     {
       blockNum: 5,
-      calBorrowedAmountWithInterest: '4500000000',
+      calBorrowedAmountPlusInterest: '4500000000',
       calHealthFactor: '15444',
       calThresholdValue: '6950000000',
       calTotalValue: '8000000000',
@@ -28,7 +28,7 @@
     },
     {
       blockNum: 6,
-      calBorrowedAmountWithInterest: '4500000000',
+      calBorrowedAmountPlusInterest: '4500000000',
       calHealthFactor: '14333',
       calThresholdValue: '6450000000',
       calTotalValue: '8000000000',
@@ -41,7 +41,7 @@
     },
     {
       blockNum: 7,
-      calBorrowedAmountWithInterest: '4500000000',
+      calBorrowedAmountPlusInterest: '4500000000',
       calHealthFactor: '16333',
       calThresholdValue: '7350000000',
       calTotalValue: '9000000000',
