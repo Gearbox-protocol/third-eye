@@ -5,7 +5,6 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
-	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -61,7 +60,7 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, blockNum int64, succes
 		}
 		return
 	}
-	oracleABI := schemas.GetAbi(ds.PriceOracle)
+	oracleABI := core.GetAbi(ds.PriceOracle)
 	for _, token := range tokenAddrs {
 		tokenObj := repo.tokens.GetToken(token)
 		amount := utils.GetExpInt(tokenObj.Decimals)
@@ -73,7 +72,7 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, blockNum int64, succes
 		})
 	}
 
-	poolABI := schemas.GetAbi(ds.Pool)
+	poolABI := core.GetAbi(ds.Pool)
 	for _, pool := range poolForDieselRate {
 		data, err := poolABI.Pack("getDieselRate_RAY")
 		log.CheckFatal(err)

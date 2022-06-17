@@ -68,9 +68,9 @@ func NewCreditManager(addr string, client core.ClientI, repo ds.RepositoryI, dis
 func (mdl *CreditManager) GetAbi() {
 	switch mdl.GetVersion() {
 	case 1:
-		mdl.ABI = schemas.GetAbi(mdl.ContractName)
+		mdl.ABI = core.GetAbi(mdl.ContractName)
 	case 2:
-		mdl.ABI = schemas.GetAbi("CreditFacade")
+		mdl.ABI = core.GetAbi("CreditFacade")
 	}
 }
 

@@ -95,8 +95,8 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 	result := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
 	//
 	yearnFeedLen := len(queryAbleAdapters)
-	v2ABI := schemas.GetAbi("Uniswapv2Pool")
-	v3ABI := schemas.GetAbi("Uniswapv3Pool")
+	v2ABI := core.GetAbi("Uniswapv2Pool")
+	v3ABI := core.GetAbi("Uniswapv3Pool")
 	var pfs []*schemas.PriceFeed
 	pricesByToken := map[string]*schemas.UniPoolPrices{}
 	for i, entry := range result {
@@ -194,8 +194,8 @@ func squareIt(a *big.Int) *big.Int {
 	return new(big.Int).Mul(a, a)
 }
 func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery string) (calls []multicall.Multicall2Call, tokens []string) {
-	v2ABI := schemas.GetAbi("Uniswapv2Pool")
-	v3ABI := schemas.GetAbi("Uniswapv3Pool")
+	v2ABI := core.GetAbi("Uniswapv2Pool")
+	v3ABI := core.GetAbi("Uniswapv3Pool")
 	for token, pools := range mdl.UniPoolByToken {
 		if whatToQuery != "all" && whatToQuery != token {
 			continue
@@ -228,7 +228,7 @@ func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery 
 }
 
 func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*QueryPriceFeed) {
-	priceFeedABI := schemas.GetAbi("PriceFeed")
+	priceFeedABI := core.GetAbi("PriceFeed")
 	//
 	for _, adapter := range mdl.YearnFeeds {
 		if blockNum <= adapter.GetLastSync() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
@@ -247,7 +247,7 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 }
 
 func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
-	priceFeedABI := schemas.GetAbi("PriceFeed")
+	priceFeedABI := core.GetAbi("PriceFeed")
 	var priceData *schemas.PriceFeed
 	if entry.Success {
 		roundData := schemas.LatestRounData{}
@@ -255,9 +255,9 @@ func (mdl *AggregatedBlockFeed) processPriceData(blockNum int64, adapter *QueryP
 		log.CheckFatal(err)
 		roundData.RoundId = *abi.ConvertType(value[0], new(*big.Int)).(**big.Int)
 		roundData.Answer = *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
-		roundData.StartedAt = *abi.ConvertType(value[2], new(*big.Int)).(**big.Int)
-		roundData.UpdatedAt = *abi.ConvertType(value[3], new(*big.Int)).(**big.Int)
-		roundData.AnsweredInRound = *abi.ConvertType(value[4], new(*big.Int)).(**big.Int)
+		// roundData.StartedAt = *abi.ConvertType(value[2], new(*big.Int)).(**big.Int)
+		// roundData.UpdatedAt = *abi.ConvertType(value[3], new(*big.Int)).(**big.Int)
+		// roundData.AnsweredInRound = *abi.ConvertType(value[4], new(*big.Int)).(**big.Int)
 		isPriceInUSD := adapter.GetVersion() > 1
 		var decimals int8 = 18 // for eth
 		if isPriceInUSD {
