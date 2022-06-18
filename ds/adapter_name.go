@@ -19,8 +19,8 @@ const (
 )
 
 const (
-	ChainlinkPF = "ChainlinkPF"
-	YearnPF     = "YearnPF"
-	CurvePF     = "CurvePF"
-	ZeroPF      = "ZeroPF"
+	UnknownPF = "UnknownPF"
+	YearnPF   = "YearnPF"
+	CurvePF   = "CurvePF"
+	ZeroPF    = "ZeroPF"
 )

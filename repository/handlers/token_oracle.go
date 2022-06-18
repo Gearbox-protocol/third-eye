@@ -65,7 +65,7 @@ func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle,
 		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
 		oldFeed := oldTokenOracle.Feed
 		// log
-		if feedType == ds.ChainlinkPF {
+		if feedType == ds.ChainlinkPriceFeed {
 			if oldTokenOracle.Oracle != newTokenOracle.Oracle {
 				log.Updatef("Chainlink proxy changed in gearbox protocol from (%s) to %s for token(%s) at %d",
 					oldTokenOracle.Oracle, newTokenOracle.Oracle, newTokenOracle.Token, newTokenOracle.BlockNumber)
@@ -125,7 +125,7 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 				Price:       0,
 			})
 		}
-	case ds.ChainlinkPF:
+	case ds.ChainlinkPriceFeed:
 		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, discoveredAt, repo.client, repo.repo, version)
 		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {
 			oldTokenOracle := repo.tokensCurrentOracle[version][token]

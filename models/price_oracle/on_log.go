@@ -45,7 +45,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			log.Fatal(err)
 		}
 		switch priceFeedType {
-		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPF, ds.ZeroPF:
+		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF:
 			mdl.Repo.AddTokenFeed(priceFeedType, token, oracle, blockNum, version)
 		default:
 			log.Fatal("Unknown PriceFeed type", priceFeedType)
@@ -56,7 +56,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string) (string, error) {
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracle), mdl.Client)
 	if err != nil {
-		return "", err
+		return ds.UnknownPF, err
 	}
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(discoveredAt),
@@ -66,7 +66,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 		if utils.Contains([]string{"VM execution error.", "execution reverted"}, err.Error()) {
 			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 			if err != nil {
-				return "", err
+				return ds.UnknownPF, err
 			}
 			_, err = yearnContract.YVault(opts)
 			if err != nil {
@@ -77,13 +77,13 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 					return ds.ZeroPF, nil
 				} else {
 					log.Info(description, oracle)
-					return "", fmt.Errorf("Neither chainlink nor yearn nor curve price feed %s", err)
+					return ds.UnknownPF, fmt.Errorf("Neither chainlink nor yearn nor curve price feed %s", err)
 				}
 			}
 			return ds.YearnPF, nil
 		}
 	} else {
-		return ds.ChainlinkPF, nil
+		return ds.ChainlinkPriceFeed, nil
 	}
-	return "", fmt.Errorf("PriceFeed type not found")
+	return ds.UnknownPF, fmt.Errorf("PriceFeed type not found")
 }

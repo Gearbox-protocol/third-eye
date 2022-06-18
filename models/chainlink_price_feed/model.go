@@ -1,6 +1,8 @@
 package chainlink_price_feed
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -8,7 +10,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type ChainlinkPriceFeed struct {
@@ -98,7 +99,7 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 	newPriceFeed, newPhaseId := mdl.GetPriceFeedAddr(syncedTill)
 	if newPriceFeed != mdl.Address && newPriceFeed != "" {
 		discoveredAt := mdl.GetFeedUpdateBlock(newPhaseId, mdl.LastSync+1, syncedTill)
-		mdl.Repo.AddTokenFeed(ds.ChainlinkPF, mdl.Token, mdl.Oracle, discoveredAt, mdl.GetVersion())
+		mdl.Repo.AddTokenFeed(ds.ChainlinkPriceFeed, mdl.Token, mdl.Oracle, discoveredAt, mdl.GetVersion())
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }
