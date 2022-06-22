@@ -160,58 +160,6 @@ func init() {
 	}
 	creditFacadeParser = abiParser
 }
-func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
-	hexData, err := hex.DecodeString(input[2:])
-	method, err := creditFacadeParser.MethodById(hexData[:4])
-	if err != nil {
-		return nil, err
-	}
-	// unpack in the map
-	data := map[string]interface{}{}
-	err = method.Inputs.UnpackIntoMap(data, hexData[4:])
-	if err != nil {
-		log.Fatal(err)
-	}
-	multicalls, ok := data["calls"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("Not able to parse(%s) multicalls", data["calls"])
-	}
-	return &ds.FuncWithMultiCall{
-		Name:          method.Name,
-		MultiCallsLen: len(multicalls),
-	}, nil
-}
-
-//https://ethereum.stackexchange.com/questions/29809/how-to-decode-input-data-with-abi-using-golang/100247
-func ParseCallData(input string) (string, *core.Json) {
-	hexData, err := hex.DecodeString(input[2:])
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, parser := range abiParsers {
-		// check if the methods for parser matches the input sig
-		method, err := parser.MethodById(hexData[:4])
-		if err != nil {
-			continue
-		}
-		// unpack in the map
-		data := map[string]interface{}{}
-		err = method.Inputs.UnpackIntoMap(data, hexData[4:])
-		if err != nil {
-			log.Fatal(err)
-		}
-		// add order
-		var argNames []interface{}
-		for _, input := range method.Inputs {
-			argNames = append(argNames, input.Name)
-		}
-		data["_order"] = argNames
-		jsonData := core.Json(data)
-		return method.Sig, &jsonData
-	}
-	log.Fatal("No method for input: ", input)
-	return "", nil
-}
 
 // parser functions for v2
 func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FuncWithMultiCall {
@@ -221,10 +169,6 @@ func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.Fun
 		log.Fatal(err.Error(), "for txHash", txHash)
 	}
 	return data
-}
-func (ep *ExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, accounts []string) core.Transfers {
-	trace := ep.GetTxTrace(txHash)
-	return ep.getTransfersToUser(trace, borrower, account, underlyingToken, accounts)
 }
 
 func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*ds.FuncWithMultiCall, error) {
@@ -256,11 +200,42 @@ func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) 
 	return mainEvents, nil
 }
 
+func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
+	hexData, err := hex.DecodeString(input[2:])
+	if err != nil {
+		return nil, err
+	}
+	method, err := creditFacadeParser.MethodById(hexData[:4])
+	if err != nil {
+		return nil, err
+	}
+	// unpack in the map
+	data := map[string]interface{}{}
+	err = method.Inputs.UnpackIntoMap(data, hexData[4:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	multicalls, ok := data["calls"].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("Not able to parse(%s) multicalls", data["calls"])
+	}
+	return &ds.FuncWithMultiCall{
+		Name:          method.Name,
+		MultiCallsLen: len(multicalls),
+	}, nil
+}
+
+/// v2
+func (ep *ExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, accounts []string) core.Transfers {
+	trace := ep.GetTxTrace(txHash)
+	return ep.getTransfersToUser(trace, borrower, account, underlyingToken, accounts)
+}
+
 func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, borrower, account, underlyingToken string, accounts []string) core.Transfers {
 	transfers := core.Transfers{}
 	for _, raw := range trace.Logs {
 		eventLog := raw.Raw
-		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" {
+		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" { // transfer event
 			to := common.HexToAddress(eventLog.Topics[2])
 			from := common.HexToAddress(eventLog.Topics[1]).Hex()
 			token := common.HexToAddress(eventLog.Address).Hex()

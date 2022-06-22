@@ -1,12 +1,14 @@
 package services
 
 import (
+	"encoding/hex"
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 type ExecuteFilter struct {
@@ -42,6 +44,7 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*ds.KnownCall {
 	return calls
 }
 
+// this is called after ExecuteOrder event is seen on credit manager for both v1 and v2
 func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) && dappAddr == common.HexToAddress(call.To) {
 		name, arguments := ParseCallData(call.Input)
@@ -71,7 +74,7 @@ func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) 
 		eventLog := raw.Raw
 		eventSig := eventLog.Topics[0]
 		eventLogAddress := common.HexToAddress(eventLog.Address).Hex()
-		// if any creditmanager event add to the execute
+		// if any other creditmanager event is emitted add to the execute
 		if utils.Contains(cmEvents, eventSig) && parsingTransfer {
 			execEventBalances = append(execEventBalances, balances)
 			balances = make(core.Transfers)
@@ -107,4 +110,35 @@ func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) 
 		execEventBalances = append(execEventBalances, balances)
 	}
 	return execEventBalances
+}
+
+//https://ethereum.stackexchange.com/questions/29809/how-to-decode-input-data-with-abi-using-golang/100247
+func ParseCallData(input string) (string, *core.Json) {
+	hexData, err := hex.DecodeString(input[2:])
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, parser := range abiParsers {
+		// check if the methods for parser matches the input sig
+		method, err := parser.MethodById(hexData[:4])
+		if err != nil {
+			continue
+		}
+		// unpack in the map
+		data := map[string]interface{}{}
+		err = method.Inputs.UnpackIntoMap(data, hexData[4:])
+		if err != nil {
+			log.Fatal(err)
+		}
+		// add order
+		var argNames []interface{}
+		for _, input := range method.Inputs {
+			argNames = append(argNames, input.Name)
+		}
+		data["_order"] = argNames
+		jsonData := core.Json(data)
+		return method.Sig, &jsonData
+	}
+	log.Fatal("No method for input: ", input)
+	return "", nil
 }
