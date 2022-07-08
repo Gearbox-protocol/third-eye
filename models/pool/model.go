@@ -41,7 +41,6 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	if err != nil {
 		log.Fatal(err)
 	}
-	repo.AddDieselToken(dieselToken.Hex(), underlyingToken.Hex(), addr)
 	pool.SetUnderlyingState(&schemas.PoolState{
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),

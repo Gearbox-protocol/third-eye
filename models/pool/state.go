@@ -12,6 +12,7 @@ func (mdl *Pool) SetUnderlyingState(obj interface{}) {
 		log.Fatal("Type assertion for credit manager state failed")
 	}
 	mdl.State = state
+	mdl.Repo.AddDieselToken(mdl.State.DieselToken, mdl.State.UnderlyingToken, mdl.Address)
 }
 
 func (mdl *Pool) GetUnderlyingState() interface{} {

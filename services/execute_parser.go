@@ -13,8 +13,8 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV2Adapter"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapV3Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnAdapter"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -137,7 +137,7 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 }
 
 var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
-	uniswapV2Adapter.UniswapV2AdapterABI, uniswapV3Adapter.UniswapV3AdapterABI,
+	uniswapv2Adapter.Uniswapv2AdapterABI, uniswapv3Adapter.Uniswapv3AdapterABI,
 	iSwapRouter.ISwapRouterABI, testAdapter.TestAdapterABI,
 	// creditfacade for credit manager onlogs
 }
@@ -161,7 +161,10 @@ func init() {
 	creditFacadeParser = abiParser
 }
 
+//////////////////////////
 // parser functions for v2
+//////////////////////////
+// GetMainEventLogs
 func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FuncWithMultiCall {
 	trace := ep.GetTxTrace(txHash)
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
@@ -225,7 +228,7 @@ func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
 	}, nil
 }
 
-/// v2
+/// GetTransfers
 func (ep *ExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, accounts []string) core.Transfers {
 	trace := ep.GetTxTrace(txHash)
 	return ep.getTransfersToUser(trace, borrower, account, underlyingToken, accounts)

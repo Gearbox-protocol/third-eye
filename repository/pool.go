@@ -16,7 +16,6 @@ func (repo *Repository) loadPool() {
 	for _, pool := range data {
 		adapter := repo.GetAdapter(pool.Address)
 		adapter.SetUnderlyingState(pool)
-		repo.AddDieselToken(pool.DieselToken, pool.UnderlyingToken, pool.Address)
 	}
 }
 

@@ -1,13 +1,14 @@
 package pool
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"math/big"
 )
 
 func (p *Pool) calculatePoolStat(blockNum int64) {
@@ -44,10 +45,11 @@ func (p *Pool) calculatePoolStat(blockNum int64) {
 		BorrowAPYBI: (*core.BigInt)(state.BorrowAPYRAY),
 		BorrowAPY:   utils.GetFloat64Decimal(state.BorrowAPYRAY, 25),
 
+		// dieselrate is how much each diesel rate is worth in terms of underlying token
+		// that's why it is divide by 27 not 25. it is not a percentage.
 		DieselRateBI:       (*core.BigInt)(state.DieselRateRAY),
 		DieselRate:         utils.GetFloat64Decimal(state.DieselRateRAY, 27),
 		WithdrawFee:        int(state.WithdrawFee.Int64()),
 		CumulativeIndexRAY: (*core.BigInt)(state.LinearCumulativeIndex),
-		ID:                 0,
 	})
 }

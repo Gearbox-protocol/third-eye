@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	_ds "github.com/Gearbox-protocol/sdk-go/ds"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
 
@@ -83,7 +84,7 @@ type RepositoryI interface {
 	AddParameters(logID uint, txHash string, params *schemas.Parameters, token string)
 	AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *schemas.FastCheckParams)
 	AfterSync(blockNum int64)
-	GetAccountManager() *AccountTokenManager
+	GetAccountManager() *_ds.DirectTransferManager
 	AddAccountAddr(account string)
 	// dao
 	AddDAOOperation(operation *schemas.DAOOperation)

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	_ds "github.com/Gearbox-protocol/sdk-go/ds"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -11,7 +12,7 @@ func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedF
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.SessionRepo.AddCreditSession(session, loadedFromDB)
-	repo.accountManager.AddAccountDetails(&ds.SessionData{
+	repo.accountManager.AddAccountDetails(&_ds.SessionData{
 		Since:         session.Since,
 		Account:       session.Account,
 		CreditManager: session.CreditManager,
@@ -24,7 +25,7 @@ func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedF
 // for account manager
 func (repo *Repository) loadAccountLastSession() {
 	defer utils.Elapsed("loadAccountLastSession")()
-	data := []*ds.SessionData{}
+	data := []*_ds.SessionData{}
 	err := repo.db.Raw(`SELECT t1.*,t2.*, t3.closed_tx_hash, t3.closed_log_id 
 		FROM (SELECT DISTINCT ON (account) credit_manager, since, id, closed_at, account 
 				FROM credit_sessions ORDER BY account, since DESC) t1 JOIN 
@@ -43,7 +44,7 @@ func (repo *Repository) loadAccountLastSession() {
 	}
 }
 
-func (repo *Repository) GetAccountManager() *ds.AccountTokenManager {
+func (repo *Repository) GetAccountManager() *_ds.DirectTransferManager {
 	return repo.accountManager
 }
 
