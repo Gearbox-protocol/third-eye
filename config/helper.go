@@ -61,9 +61,15 @@ func NewConfig() *Config {
 
 	interval, err := strconv.Atoi(config.IntervalStr)
 	if err != nil {
-		log.Fatal("Cant get chain id")
+		log.Fatal("Cant get interval")
 	}
 	config.Interval = int64(interval)
+	//
+	batchSizeForHistory, err := strconv.Atoi(config.BatchSizeForHistoryStr)
+	if err != nil {
+		log.Fatal("Cant get batchSizeForHistory", config.BatchSizeForHistoryStr)
+	}
+	config.BatchSizeForHistory = int64(batchSizeForHistory)
 
 	if config.DebtDCMatchingStr == "1" {
 		config.DebtDCMatching = true

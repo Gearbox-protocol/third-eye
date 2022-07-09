@@ -113,7 +113,6 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.CollateralInUnderlying = session.CollateralInUnderlying
 	css.Borrower = session.Borrower
 	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
-	log.Info(css.HealthFactor)
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account, session.Version)

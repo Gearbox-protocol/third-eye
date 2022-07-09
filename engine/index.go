@@ -1,6 +1,9 @@
 package engine
 
 import (
+	"sync"
+	"time"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -10,28 +13,28 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"sync"
-	"time"
 )
 
 type Engine struct {
 	*core.Node
-	config       *config.Config
-	repo         ds.RepositoryI
-	debtEng      ds.DebtEngineI
-	UsingThreads bool
+	config              *config.Config
+	repo                ds.RepositoryI
+	debtEng             ds.DebtEngineI
+	batchSizeForHistory int64
+	UsingThreads        bool
 }
 
-var syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
+// var syncBlockBatchSize = 1000 * core.NoOfBlocksPerMin
 
 func NewEngine(config *config.Config,
 	ec core.ClientI,
 	debtEng ds.DebtEngineI,
 	repo ds.RepositoryI) ds.EngineI {
 	eng := &Engine{
-		debtEng: debtEng,
-		config:  config,
-		repo:    repo,
+		debtEng:             debtEng,
+		config:              config,
+		repo:                repo,
+		batchSizeForHistory: config.BatchSizeForHistory,
 		Node: &core.Node{
 			Client: ec,
 		},
@@ -71,7 +74,7 @@ func (e *Engine) SyncHandler() {
 	latestBlockNum := e.GetLatestBlockNumber()
 	lastSyncedTill := e.getLastSyncedTill()
 	// only do batch sync if latestblock is far from currently synced block
-	if lastSyncedTill+syncBlockBatchSize <= latestBlockNum {
+	if lastSyncedTill+e.batchSizeForHistory <= latestBlockNum {
 		syncedTill := e.syncLoop(lastSyncedTill, latestBlockNum)
 		log.Infof("Synced till %d sleeping for 5 mins", syncedTill)
 	}
@@ -85,18 +88,18 @@ func (e *Engine) SyncHandler() {
 
 func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 	loopStartBlock := syncedTill
-	syncTill := syncedTill + syncBlockBatchSize
+	syncTill := syncedTill + e.batchSizeForHistory
 	loopStartTime := time.Now()
 	for syncTill <= latestBlockNum {
 		roundStartTime := time.Now()
 		e.SyncAndFlush(syncTill)
 		syncedTill = syncTill
-		roundSyncDur := (time.Now().Sub(roundStartTime).Minutes())
-		timePerBlock := time.Now().Sub(loopStartTime).Minutes() / float64(syncedTill-loopStartBlock)
+		roundSyncDur := (time.Since(roundStartTime).Minutes()) // Since ==  Now().Sub
+		timePerBlock := time.Since(loopStartTime).Minutes() / float64(syncedTill-loopStartBlock)
 		remainingTime := (timePerBlock * float64(latestBlockNum-syncedTill)) / (60)
 		log.Infof("Synced till %d in %f mins. Remaining time %f hrs ", syncedTill, roundSyncDur, remainingTime)
 		// new sync target
-		syncTill += syncBlockBatchSize
+		syncTill += e.batchSizeForHistory
 	}
 	return syncedTill
 }

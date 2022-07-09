@@ -9,23 +9,22 @@ import (
 func (repo *Repository) Flush() error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	// preferred order adapter => token => pools => cm => credit session => blocks => allowedTokens
+	// preferred order (adapter | token) => pools => cm => credit session => blocks => allowedTokens
 
 	// credit manager depends on pools
 	// allowed token depends on credit managers
 	// credit sesion depends on credit manager
 	// credit session snapshot on credit session
 
-	// will be depended in future
 	// block->pricefeed on token
 	// block->protocols on creditManager
 	// block->AccountOperation on session
 	// block->AllowedTOken on session
 
 	tx := repo.db.Begin()
-	repo.SyncAdaptersRepo.Save(tx)
-
 	repo.TokensRepo.Save(tx)
+
+	repo.SyncAdaptersRepo.Save(tx)
 
 	repo.SessionRepo.Save(tx)
 

@@ -55,6 +55,7 @@ func (repo *BlocksRepo) Save(tx *gorm.DB) {
 	for _, block := range repo.GetBlocks() {
 		blocksToSync = append(blocksToSync, block)
 	}
+	// clauses not needed here
 	err := tx.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(blocksToSync, 100).Error

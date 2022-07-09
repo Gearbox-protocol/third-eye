@@ -12,3 +12,5 @@ CREATE TABLE account_operations (
     args jsonb,
     transfers hstore
 );
+alter table account_operations add main_action integer ;
+alter table account_operations add constraint main_action_c FOREIGN KEY(main_action) references account_operations(id);

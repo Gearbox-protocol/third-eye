@@ -37,14 +37,18 @@ ALTER TABLE ONLY pool_stats
     ADD CONSTRAINT pool_stats_block_num_fkey FOREIGN KEY (block_num) REFERENCES blocks(id) ON DELETE CASCADE;
 ALTER TABLE ONLY pool_stats
     ADD CONSTRAINT pool_stats_pool_fkey FOREIGN KEY (pool) REFERENCES pools(address);
-
+alter table pool_stats add primary key(block_num, pool);
 
 CREATE TABLE pool_ledger (
     id SERIAL NOT NULL,
     block_num integer,
     log_id integer,
     pool character varying(42),
-    address character varying(42),
     event character varying(50),
-    liquidity character varying(80)
+    tx_hash varchar(66), 
+    session_id varchar(100),
+    user_address varchar(42),
+    amount double precision,
+    amount_bi varchar(80)
 );
+alter table pool_ledger add primary key (pool, block_num, log_id);
