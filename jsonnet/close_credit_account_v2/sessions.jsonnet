@@ -27,7 +27,6 @@
   borrower: '#User_1',
   closedAt: 9,
   creditManager: '#CreditManager_1',
-  healthFactor: '16333',
   sessionId: '#Account_1_4_0',
   since: 4,
   status: 1,

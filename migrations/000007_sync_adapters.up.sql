@@ -4,6 +4,7 @@ CREATE TABLE sync_adapters (
     last_sync integer,
     firstlog_at integer,
     details jsonb,
+    disabled_at integer,
     type character varying(40),
     error character varying(200),
     version smallint,

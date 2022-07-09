@@ -44,7 +44,7 @@ create table no_session_transfers (
     isto_account boolean,
     PRIMARY KEY (block_num, log_id));
 
-drop table dao_descriptions;
+drop table IF EXISTS dao_descriptions;
 create table dao_descriptions (
     tx_hash varchar(66),
     description text,

@@ -2,14 +2,15 @@ package credit_manager
 
 import (
 	"fmt"
+	"math/big"
+	"strings"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
-	"strings"
 )
 
 func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, account string,

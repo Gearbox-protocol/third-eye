@@ -1,7 +1,7 @@
-drop MATERIALIZED VIEW ranking_7d;
-drop MATERIALIZED VIEW ranking_30d;
-drop procedure rankings;
-drop FUNCTION ranking_by_period;
+drop MATERIALIZED VIEW IF EXISTS ranking_7d;
+drop MATERIALIZED VIEW IF EXISTS ranking_30d;
+drop procedure IF EXISTS rankings;
+drop FUNCTION  IF EXISTS ranking_by_period;
 create OR REPLACE FUNCTION ranking_by_period(BIGINT)
 returns table (
 		old_collateral DOUBLE PRECISION,

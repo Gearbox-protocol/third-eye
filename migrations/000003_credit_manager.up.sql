@@ -1,4 +1,4 @@
-CREATE EXTENSION hstore;
+CREATE EXTENSION  IF NOT EXISTS hstore;
 CREATE TABLE credit_managers (
     address varchar(42) PRIMARY KEY,
     pool_address varchar(42),

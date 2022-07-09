@@ -1,11 +1,12 @@
 package credit_manager
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"math/big"
 )
 
 func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
@@ -38,7 +39,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 		return
 	}
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
-	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	var amountToPool *big.Int
 	switch closeDetails.Status {
@@ -74,7 +74,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.CollateralInUSD = session.CollateralInUSD
 	css.CollateralInUnderlying = session.CollateralInUnderlying
 	css.Borrower = session.Borrower
-	css.HealthFactor = session.HealthFactor
+	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account, session.Version)
@@ -103,7 +103,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	session := mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{})
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
-	session.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
 	// create session snapshot
@@ -113,7 +112,8 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.CollateralInUSD = session.CollateralInUSD
 	css.CollateralInUnderlying = session.CollateralInUnderlying
 	css.Borrower = session.Borrower
-	css.HealthFactor = session.HealthFactor
+	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
+	log.Info(css.HealthFactor)
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account, session.Version)

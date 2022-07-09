@@ -7,6 +7,7 @@ Third-eye is used for getting gearbox contracts-related data from evm compatible
 
 ### Instructions to run
 ```
+migrate -path migrations -database "$DURL" up
 go build ./cmd/main.go && ./main
 ```
 

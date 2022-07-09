@@ -39,7 +39,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation)
 		mdl.setUpdateSession(mainAction.SessionId)
 		tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint256)"
 	case "liquidateCreditAccount":
-		tenderlyEventName = "LiquidateCreditAccount(address,address,uint256)"
+		tenderlyEventName = "LiquidateCreditAccount(address,address,address,uint256)"
 	case "closeCreditAccount":
 		tenderlyEventName = "CloseCreditAccount(address,address)"
 	}
@@ -195,14 +195,14 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
 	// log.Info(prices)
 	// log.Info(utils.ToJson(session.Balances))
-	session.RemainingFunds = (*core.BigInt)(session.Balances.ValueInUnderlying(
+	remainingFunds := (session.Balances.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
-
+	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
-		// RemainingFunds: remainingFunds,
-		Status:   schemas.Closed,
-		TxHash:   txLog.TxHash.Hex(),
-		Borrower: owner,
+		RemainingFunds: remainingFunds,
+		Status:         schemas.Closed,
+		TxHash:         txLog.TxHash.Hex(),
+		Borrower:       owner,
 	}
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
@@ -291,6 +291,7 @@ func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token 
 	mdl.AddCollateralToSession(blockNum, sessionId, token, value)
 }
 
+// amount can be negative, if decrease borrowamount, add pool repay event
 func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int, eventName string) error {
 	// manager state
 	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, amount)
