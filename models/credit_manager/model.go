@@ -36,6 +36,7 @@ type CreditManager struct {
 	LastTxHash       string
 	executeParams    []ds.ExecuteParams
 	State            *schemas.CreditManagerState
+	pnlOnCM          *PnlCM
 	lastEventBlock   int64
 	UpdatedSessions  map[string]int
 	ClosedSessions   map[string]*SessionCloseDetails
@@ -80,6 +81,7 @@ func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 		UpdatedSessions: make(map[string]int),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 		multicall:       MultiCallProcessor{},
+		pnlOnCM:         NewPnlCM(),
 	}
 	obj.GetAbi()
 	switch obj.GetVersion() {

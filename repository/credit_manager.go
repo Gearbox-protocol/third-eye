@@ -74,3 +74,8 @@ func (repo *Repository) AddAccountTokenTransfer(tt *schemas.TokenTransfer) {
 	repo.SetBlock(tt.BlockNum)
 	repo.accountManager.AddTokenTransfer(tt)
 }
+
+func (repo *Repository) AddRepayOnCM(cmAddr string, pnlOnRepay schemas.PnlOnRepay) {
+	adapter := repo.GetAdapter(cmAddr)
+	adapter.SetUnderlyingState(&pnlOnRepay)
+}

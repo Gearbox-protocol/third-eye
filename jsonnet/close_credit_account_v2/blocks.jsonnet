@@ -128,7 +128,7 @@
         amount: 4500,
         blockNum: 9,
         event: 'Repay',
-        logId: 0,
+        logId: 3,
         pool: '#Pool_1',
         sessionId: '#Account_1_4_0',
         txHash: '#Hash_12',

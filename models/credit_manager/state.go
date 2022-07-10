@@ -21,6 +21,9 @@ func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	case (map[string]string):
 		sessions := obj.(map[string]string)
 		mdl.State.Sessions = sessions
+	case *schemas.PnlOnRepay:
+		pnl := obj.(*schemas.PnlOnRepay)
+		mdl.pnlOnCM.Set(pnl)
 	default:
 		log.Fatal("Type assertion for credit manager state failed")
 	}
@@ -67,13 +70,13 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	}
 	mdl.State.IsWETH = state.IsWETH
 	// pnl on repay
-	pnlOnRepay := mdl.Repo.GetRepayOnCM(blockNum, mdl.GetAddress())
-	if pnlOnRepay != nil {
-		mdl.State.TotalBorrowedBI = core.SubCoreAndInt(mdl.State.TotalBorrowedBI, pnlOnRepay.BorrowedAmount)
+	pnl := mdl.pnlOnCM.Get(blockNum)
+	if pnl != nil {
+		mdl.State.TotalBorrowedBI = core.SubCoreAndInt(mdl.State.TotalBorrowedBI, pnl.BorrowedAmount)
 		mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
-		mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, pnlOnRepay.Loss)
+		mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, pnl.Loss)
 		mdl.State.TotalLosses = utils.GetFloat64Decimal(mdl.State.TotalLossesBI.Convert(), mdl.GetUnderlyingDecimal())
-		mdl.State.TotalProfitBI = core.AddCoreAndInt(mdl.State.TotalProfitBI, pnlOnRepay.Profit)
+		mdl.State.TotalProfitBI = core.AddCoreAndInt(mdl.State.TotalProfitBI, pnl.Profit)
 		mdl.State.TotalProfit = utils.GetFloat64Decimal(mdl.State.TotalProfitBI.Convert(), mdl.GetUnderlyingDecimal())
 	}
 	mdl.State.MinAmount = (*core.BigInt)(state.MinAmount)

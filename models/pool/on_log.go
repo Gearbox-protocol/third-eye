@@ -1,12 +1,13 @@
 package pool
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 )
 
 func (mdl *Pool) createPoolStat() {
@@ -63,7 +64,8 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		mdl.Repo.AddRepayOnCM(blockNum, repayEvent.CreditManager.Hex(), schemas.PnlOnRepay{
+		mdl.Repo.AddRepayOnCM(repayEvent.CreditManager.Hex(), schemas.PnlOnRepay{
+			BlockNum:       blockNum,
 			BorrowedAmount: repayEvent.BorrowedAmount,
 			Profit:         repayEvent.Profit,
 			Loss:           repayEvent.Loss,

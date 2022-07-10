@@ -79,8 +79,7 @@ type RepositoryI interface {
 	AddCreditManagerStats(cms *schemas.CreditManagerStat)
 	GetCMState(cmAddr string) *schemas.CreditManagerState
 	GetUnderlyingDecimal(cmAddr string) int8
-	AddRepayOnCM(blockNum int64, cm string, pnl schemas.PnlOnRepay)
-	GetRepayOnCM(blockNum int64, cm string) *schemas.PnlOnRepay
+	AddRepayOnCM(cm string, pnl schemas.PnlOnRepay)
 	AddParameters(logID uint, txHash string, params *schemas.Parameters, token string)
 	AddFastCheckParams(logID uint, txHash, cm, creditFilter string, fcParams *schemas.FastCheckParams)
 	AfterSync(blockNum int64)

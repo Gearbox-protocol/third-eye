@@ -157,10 +157,6 @@ func (repo *BlocksRepo) AddCreditManagerStats(cms *schemas.CreditManagerStat) {
 	repo.SetAndGetBlock(cms.BlockNum).AddCreditManagerStats(cms)
 }
 
-func (repo *BlocksRepo) AddRepayOnCM(blockNum int64, cmAddr string, pnlOnRepay schemas.PnlOnRepay) {
-	repo.SetAndGetBlock(blockNum).AddRepayOnCM(cmAddr, &pnlOnRepay)
-}
-
 func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	repo.SetAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 }
@@ -175,11 +171,4 @@ func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 
 func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
-}
-
-// getter
-func (repo *BlocksRepo) GetRepayOnCM(blockNum int64, cmAddr string) *schemas.PnlOnRepay {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	return repo.blocks[blockNum].GetRepayOnCM(cmAddr)
 }
