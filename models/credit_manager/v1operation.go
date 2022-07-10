@@ -89,6 +89,7 @@ func (mdl *CreditManager) onCloseCreditAccount(txLog *types.Log, owner, to strin
 	}
 	mdl.AddAccountOperation(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         schemas.Closed,
 		TxHash:         txLog.TxHash.Hex(),
@@ -122,6 +123,7 @@ func (mdl *CreditManager) onLiquidateCreditAccount(txLog *types.Log, owner, liqu
 	}
 	mdl.AddAccountOperation(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         schemas.Liquidated,
 		TxHash:         txLog.TxHash.Hex(),

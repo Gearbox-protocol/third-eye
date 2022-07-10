@@ -8,6 +8,9 @@ package main
 
 import (
 	"context"
+	_ "net/http/pprof"
+	"time"
+
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/debts"
@@ -18,8 +21,13 @@ import (
 	"github.com/Gearbox-protocol/third-eye/services"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"go.uber.org/fx"
-	"time"
 )
+
+// func init() {
+// 	go func() {
+// 		http.ListenAndServe(":8080", nil)
+// 	}()
+// }
 
 func StartServer(lc fx.Lifecycle, engine ds.EngineI, config *config.Config) {
 	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl, "Third-eye")

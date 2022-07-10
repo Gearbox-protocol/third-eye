@@ -199,6 +199,7 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         schemas.Closed,
 		TxHash:         txLog.TxHash.Hex(),
@@ -251,6 +252,7 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 	// process multicalls
 	mdl.multiCallHandler(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         schemas.Liquidated,
 		TxHash:         txLog.TxHash.Hex(),

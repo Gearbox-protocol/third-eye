@@ -49,6 +49,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 		amountToPool = data.LiquidationAmount
 	}
 	// pool repay
+	// check for avoiding db errors
 	mdl.PoolRepay(blockNum,
 		closeDetails.LogId,
 		closeDetails.TxHash,
