@@ -26,6 +26,8 @@ type QueryPriceFeed struct {
 	mu                *sync.Mutex
 }
 
+// single querypricefeed can be valid for multiple tokens so we have to maintain tokens within the details
+// details->token is token map to start and end block
 func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *QueryPriceFeed {
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
@@ -36,7 +38,7 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 				ContractName: ds.QueryPriceFeed,
 				Client:       client,
 			},
-			Details:  map[string]interface{}{"token": token, "pfType": pfType},
+			Details:  map[string]interface{}{"token": map[string]interface{}{token: []int64{discoveredAt}}, "pfType": pfType},
 			LastSync: discoveredAt - 1,
 			V:        version,
 		},
@@ -118,7 +120,7 @@ func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) *schemas.P
 	if !(pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0) {
 		if !mdl.isNotified() {
 			mdl.setNotified(true)
-			log.Warnf("PricePerShare(%s) %d is not btw lower limit(%d) and upper limit(%d).", mdl.Address, pricePerShare, lowerBound, uppwerBound)
+			mdl.Repo.RecentEventMsg(blockNum, "PricePerShare(%s) %d is not btw lower limit(%d) and upper limit(%d).", mdl.Address, pricePerShare, lowerBound, uppwerBound)
 		}
 	} else {
 		mdl.Details["notified"] = false
@@ -181,13 +183,6 @@ func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 	if mdl.Details["token"] != nil {
 		obj := map[string]interface{}{}
 		switch mdl.Details["token"].(type) {
-		case string:
-			prevToken := mdl.Details["token"].(string)
-			obj[prevToken] = []int64{mdl.DiscoveredAt}
-			if prevToken == token {
-				log.Warnf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, mdl.DiscoveredAt, discoveredAt)
-				return
-			}
 		case map[string]interface{}:
 			obj, _ = mdl.Details["token"].(map[string]interface{})
 			ints := ConvertToListOfInt64(obj[token])
@@ -228,8 +223,6 @@ func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
 func (mdl *QueryPriceFeed) DisableToken(token string, disabledAt int64) {
 	obj := map[string]interface{}{}
 	switch mdl.Details["token"].(type) {
-	case string:
-		obj[token] = []int64{mdl.DiscoveredAt, disabledAt}
 	case map[string]interface{}:
 		obj = mdl.Details["token"].(map[string]interface{})
 		ints := ConvertToListOfInt64(obj[token])
@@ -242,14 +235,9 @@ func (mdl *QueryPriceFeed) DisableToken(token string, disabledAt int64) {
 	mdl.Details["token"] = obj
 }
 
+// read method
 func (mdl *QueryPriceFeed) TokensValidAtBlock(blockNum int64) []string {
 	switch mdl.Details["token"].(type) {
-	case string:
-		tokens := []string{}
-		if mdl.DiscoveredAt <= blockNum {
-			tokens = append(tokens, mdl.Details["token"].(string))
-		}
-		return tokens
 	case map[string]interface{}:
 		tokens := []string{}
 		obj := mdl.Details["token"].(map[string]interface{})
@@ -265,12 +253,8 @@ func (mdl *QueryPriceFeed) TokensValidAtBlock(blockNum int64) []string {
 }
 
 func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
-	switch list.(type) {
+	switch ints := list.(type) {
 	case []interface{}:
-		ints, ok := list.([]interface{})
-		if !ok {
-			panic("parsing list of int failed")
-		}
 		for _, int_ := range ints {
 			var parsedInt int64
 			switch int_.(type) {
@@ -285,10 +269,6 @@ func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
 			parsedInts = append(parsedInts, parsedInt)
 		}
 	case []int64:
-		ints, ok := list.([]int64)
-		if !ok {
-			panic("parsing accounts list for token transfer failed")
-		}
 		parsedInts = ints
 	}
 	return

@@ -6,8 +6,8 @@ create table liquidable_accounts (
 create table profiles (profile text);
 
 CREATE TABLE current_debts (
-    block_num integer,
     session_id varchar(80) PRIMARY KEY,
+    block_num integer,
     cal_health_factor varchar(80),
     cal_threshold_value DOUBLE PRECISION,
     cal_threshold_value_bi varchar(80),
@@ -17,10 +17,10 @@ CREATE TABLE current_debts (
     cal_total_value_bi varchar(80),
     profit_usd DOUBLE PRECISION,
     profit_underlying DOUBLE PRECISION,
-    amount_to_pool DOUBLE PRECISION,
-    amount_to_pool_bi varchar(80),
     collateral_usd DOUBLE PRECISION,
-    collateral_underlying DOUBLE PRECISION);
+    collateral_underlying DOUBLE PRECISION,
+    repay_amount DOUBLE PRECISION,
+    repay_amount_bi varchar(80));
 
 ALTER TABLE ONLY current_debts
     ADD CONSTRAINT current_debts_block_num_fkey FOREIGN KEY (block_num) REFERENCES blocks(id) ON DELETE CASCADE;
