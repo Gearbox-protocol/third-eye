@@ -78,11 +78,12 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		pfAddr, _ := obj.GetPriceFeedAddr(adapter.DiscoveredAt)
 		obj.SetAddress(pfAddr)
 	}
+	// get the last log before the chainlink feed is added to price oracle.
 	if includeLastLogBeforeDiscover {
 		if lastLogBeforeDiscoverNum, err := obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
 			core.Topic("AnswerUpdated(int256,uint256,uint256)"),
 		}); err != nil {
-			log.Fatal(err)
+			log.Fatal(err, "for chainlink", adapter.GetAddress(), "with discovered_at", obj.DiscoveredAt)
 		} else {
 			if lastLogBeforeDiscoverNum != 0 {
 				obj.LastSync = lastLogBeforeDiscoverNum - 1
@@ -91,6 +92,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		}
 	}
 	obj.HasOnLogs = true
+	// for getting the uniswap prices for this chainlink from last_sync
 	obj.Repo.AddLastSyncForToken(token, obj.GetLastSync())
 	return obj
 }

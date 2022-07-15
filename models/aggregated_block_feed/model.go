@@ -58,6 +58,7 @@ func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter ds.SyncAdapterI) {
 		log.Fatal("Failed in parsing yearn feed for aggregated yearn feed")
 	}
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
+	log.Info(adapter.GetAddress(), "added to aggregatedpricefeed has last_sync", adapter.GetLastSync())
 	mdl.YearnFeeds[adapter.GetAddress()] = yearnFeed
 }
 
@@ -79,6 +80,7 @@ func (mdl *AggregatedBlockFeed) AddUniPools(token *schemas.Token, uniswapPools *
 	mdl.tokenInfos[token.Address] = token
 }
 
+// for getting the uniswap prices for chainlink token/usdc uniswap pairs.
 func (mdl *AggregatedBlockFeed) AddLastSyncForToken(token string, lastSync int64) {
 	mdl.LastSync = utils.Min(lastSync, mdl.LastSync)
 	// there is new oracle/feed added for a token

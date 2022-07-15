@@ -74,6 +74,7 @@ func (repo *TokenOracleRepo) addTokenCurrentOracle(oracle *schemas.TokenOracle) 
 func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle, feedType string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	log.Info(newTokenOracle.String())
 	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
 		repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token] != nil {
 		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
@@ -94,8 +95,7 @@ func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle,
 		//
 		adapter := repo.adapters.GetAdapter(oldFeed)
 		if oldFeed == newTokenOracle.Feed {
-			log.Warnf("Oracle Prev feed(%s) and new feed(%s) for token(%s) are same.",
-				oldFeed, newTokenOracle.Feed, newTokenOracle.Token)
+			log.Warnf("Same feed(%s) added for token(%s)", newTokenOracle.Feed, newTokenOracle.Token)
 			return
 		}
 		// disable the corresponding adapter
@@ -152,8 +152,7 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {
 			oldTokenOracle := repo.tokensCurrentOracle[version][token]
 			if oldTokenOracle.Oracle == oracle && oldTokenOracle.Feed == obj.Address {
-				log.Warnf("Oracle Prev feed(%s) and new feed(%s) for token(%s) are same.",
-					oldTokenOracle.Feed, obj.Address, token)
+				log.Warnf("Same chainlinkfeed(%s) added for token(%s)", oldTokenOracle.Feed, token)
 				return
 			}
 		}

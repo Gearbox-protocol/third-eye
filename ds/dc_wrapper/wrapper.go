@@ -60,14 +60,14 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 	chainId, err := dcw.client.ChainID(context.TODO())
 	log.CheckFatal(err)
 	var key string
-	if chainId.Int64() == 1 || chainId.Int64() == 42 {
+	if chainId.Int64() == 1 {
 		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = MAINNET
 		case 1:
 			key = DCV2
 		}
-		// } else if chainId.Int64() == 42 {
+	} else if chainId.Int64() == 42 {
 		// 	switch len(dcw.DCBlockNum) {
 		// for old address provider 0xA526311C39523F60b184709227875b5f34793bD4
 		// we had a datacompressor which was used while first gearbox test deployment for users, that happened in nov 2021
@@ -79,6 +79,12 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 		// 	case 2:
 		// 		key = DCV2
 		// }
+		switch len(dcw.DCBlockNum) {
+		case 0:
+			key = MAINNET
+		case 1, 2, 3:
+			key = DCV2
+		}
 	} else {
 		key = TESTING
 	}

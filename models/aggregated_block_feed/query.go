@@ -38,16 +38,16 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 		wg.Add(1)
 		go mdl.queryAsync(blockNum, ch, wg)
 		if rounds%100 == 0 {
-			timeLeft := (time.Now().Sub(loopStartTime).Seconds() * float64(queryTill-blockNum)) /
+			timeLeft := (time.Since(loopStartTime).Seconds() * float64(queryTill-blockNum)) /
 				float64(blockNum-mdl.GetLastSync())
 			timeLeft /= 60
-			log.Infof("Synced %d in %d rounds(%fs): TimeLeft %f mins", blockNum, rounds, time.Now().Sub(roundStartTime).Seconds(), timeLeft)
+			log.Infof("Synced %d in %d rounds(%fs): TimeLeft %f mins", blockNum, rounds, time.Since(roundStartTime).Seconds(), timeLeft)
 			roundStartTime = time.Now()
 		}
 		rounds++
 	}
 	wg.Wait()
-
+	// set last_sync on querypricefeed
 	for _, adapter := range mdl.YearnFeeds {
 		// yearn price feed can't be disabled from v2
 		if queryTill <= adapter.GetLastSync() || adapter.IsDisabled() {
