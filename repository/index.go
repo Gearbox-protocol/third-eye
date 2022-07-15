@@ -40,7 +40,7 @@ type Repository struct {
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
-	blocksRepo := handlers.NewBlocksRepo(db, client)
+	blocksRepo := handlers.NewBlocksRepo(db, client, cfg)
 	tokensRepo := handlers.NewTokensRepo(client)
 	repo := &Repository{
 		SessionRepo:      handlers.NewSessionRepo(),
@@ -143,10 +143,6 @@ func (repo *Repository) InitChecks() {
 		cmLastSync < accountManagerLastSync {
 		log.Fatal("Account manager/credit manager/AccountFactory are not synchronised: ", str)
 	}
-}
-
-func (repo *Repository) GetChainId() uint {
-	return repo.config.ChainId
 }
 
 func (repo *Repository) AfterSync(syncTill int64) {

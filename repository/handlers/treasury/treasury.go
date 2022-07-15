@@ -94,7 +94,7 @@ func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint, token 
 		// this check is there for edge case in the redeployment of gearbox for testing v2 on kovan.
 		// the events and then chainlink/yearn feeds were missing for 29 june, so we don't have the blockNum for that date.
 		// ignore only this transfer of 30 june which tries to save snapshot of 29 june.
-		if blockNum != 32476006 {
+		if !(blockNum == 32476006 && repo.blocks.GetChainId() == 42) {
 			repo.saveTreasurySnapshot()
 		}
 	}

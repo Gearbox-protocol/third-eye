@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/ethereum/go-ethereum/core/types"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -21,17 +22,19 @@ type BlocksRepo struct {
 	blockDatePairs map[int64]*schemas.BlockDate
 	mu             *sync.Mutex
 	client         core.ClientI
+	chainId        uint
 	db             *gorm.DB
 }
 
-func NewBlocksRepo(db *gorm.DB, client core.ClientI) *BlocksRepo {
+func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config) *BlocksRepo {
 	return &BlocksRepo{
 		blocks:         make(map[int64]*schemas.Block),
 		blockDatePairs: map[int64]*schemas.BlockDate{},
 		//
-		mu:     &sync.Mutex{},
-		client: client,
-		db:     db,
+		mu:      &sync.Mutex{},
+		client:  client,
+		chainId: cfg.ChainId,
+		db:      db,
 	}
 }
 
@@ -171,4 +174,8 @@ func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 
 func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
+}
+
+func (repo *BlocksRepo) GetChainId() uint {
+	return repo.chainId
 }
