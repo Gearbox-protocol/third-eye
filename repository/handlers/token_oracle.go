@@ -21,6 +21,7 @@ type TokenOracleRepo struct {
 	blocks              *BlocksRepo
 	repo                ds.RepositoryI
 	client              core.ClientI
+	zeroPFs             map[string]bool
 }
 
 func NewTokenOracleRepo(adapters *SyncAdaptersRepo, blocks *BlocksRepo, repo ds.RepositoryI, client core.ClientI) *TokenOracleRepo {
@@ -31,6 +32,7 @@ func NewTokenOracleRepo(adapters *SyncAdaptersRepo, blocks *BlocksRepo, repo ds.
 		blocks:              blocks,
 		repo:                repo,
 		client:              client,
+		zeroPFs:             map[string]bool{},
 	}
 }
 
@@ -84,7 +86,9 @@ func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle,
 				oldFeed, newTokenOracle.Feed, newTokenOracle.Token)
 			return
 		}
-		if adapter.GetName() != ds.QueryPriceFeed {
+		if adapter == nil && repo.zeroPFs[oldFeed] {
+			// no adapter is used for zeroPF as the price is always zero.
+		} else if adapter.GetName() != ds.QueryPriceFeed {
 			adapter.SetBlockToDisableOn(newTokenOracle.BlockNumber)
 		} else {
 			repo.adapters.AggregatedFeed.DisableYearnFeed(newTokenOracle.Token, oldFeed, newTokenOracle.BlockNumber)
@@ -114,8 +118,6 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			BlockNumber: discoveredAt,
 			Version:     version}, feedType)
 		if feedType != ds.ZeroPF {
-			repo.adapters.AggregatedFeed.AddFeedOrToken(token, oracle, feedType, discoveredAt, version)
-		} else {
 			repo.blocks.AddPriceFeed(&schemas.PriceFeed{
 				BlockNumber: discoveredAt,
 				Token:       token,
@@ -124,6 +126,9 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 				PriceBI:     (*core.BigInt)(new(big.Int)),
 				Price:       0,
 			})
+			repo.zeroPFs[oracle] = true // oracle and feed are same for non-chainlink price feed
+		} else {
+			repo.adapters.AggregatedFeed.AddFeedOrToken(token, oracle, feedType, discoveredAt, version)
 		}
 	case ds.ChainlinkPriceFeed:
 		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, discoveredAt, repo.client, repo.repo, version)
