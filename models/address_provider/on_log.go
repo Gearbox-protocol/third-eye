@@ -1,8 +1,6 @@
 package address_provider
 
 import (
-	"strconv"
-
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/common"
@@ -26,7 +24,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		address := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
 		blockNum := int64(txLog.BlockNumber)
 
-		log.Infof("AddressSet: %s, %s", contract, address)
+		log.Infof("AddressSet: %s, %s at blockNum %d", contract, address, blockNum)
 		switch contract {
 		case "ACL":
 			obj := acl.NewACL(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
@@ -46,16 +44,10 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 					priceOracles = map[string]interface{}{}
 				}
 			}
-			var lastVersion int64
-			for versionStr := range priceOracles {
-				version, err := strconv.ParseInt(versionStr, 10, 64)
-				log.CheckFatal(err)
-				lastVersion = version
-			}
-			priceOracles[fmt.Sprintf("%d", lastVersion+1)] = address
-			mdl.Details["priceOracles"] = priceOracles
 			//
 			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			priceOracles[fmt.Sprintf("%d", po.GetVersion())] = address
+			mdl.Details["priceOracles"] = priceOracles
 			mdl.Repo.AddSyncAdapter(po)
 		case "ACCOUNT_FACTORY":
 			af := account_factory.NewAccountFactory(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)

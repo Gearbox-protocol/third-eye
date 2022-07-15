@@ -23,7 +23,13 @@ func NewV2DC(addr common.Address, client core.ClientI) *v2DC {
 
 func (obj *v2DC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (mainnet.DataTypesPoolData, error) {
 	data, err := obj.dcV2.GetPoolData(opts, _pool)
-	log.CheckFatal(err)
+	if err != nil {
+		var blockNum int64
+		if opts != nil {
+			blockNum = opts.BlockNumber.Int64()
+		}
+		log.Fatal(err, blockNum)
+	}
 	latestFormat := mainnet.DataTypesPoolData{
 		Addr:                   data.Addr,
 		IsWETH:                 data.IsWETH,

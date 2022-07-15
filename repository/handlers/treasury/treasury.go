@@ -90,7 +90,13 @@ func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint, token 
 		} else {
 			repo.lastTreasureTime = utils.TimeToDateEndTime(repo.lastTreasureTime.AddDate(0, 0, 1))
 		}
-		repo.saveTreasurySnapshot()
+		// for kovan
+		// this check is there for edge case in the redeployment of gearbox for testing v2 on kovan.
+		// the events and then chainlink/yearn feeds were missing for 29 june, so we don't have the blockNum for that date.
+		// ignore only this transfer of 30 june which tries to save snapshot of 29 june.
+		if blockNum != 32476006 {
+			repo.saveTreasurySnapshot()
+		}
 	}
 	// set the current treasury snapshot fields
 	repo.treasurySnapshot.Date = utils.TimeToDate(currentTime)
@@ -100,6 +106,7 @@ func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint, token 
 	(*repo.treasurySnapshot.Balances)[token] = balance + amt
 }
 
+// saves snapshot for previous/last day
 func (repo *TreasuryRepo) saveTreasurySnapshot() {
 	ts := repo.lastTreasureTime.Unix()
 	blockDate := repo.blocks.GetBlockDatePairs(ts)

@@ -54,11 +54,6 @@ func NewConfig() *Config {
 		}
 	}
 
-	chainId, err := strconv.Atoi(config.NetworkId)
-	if err != nil {
-		log.Fatal("Cant get interval")
-	}
-
 	interval, err := strconv.Atoi(config.IntervalStr)
 	if err != nil {
 		log.Fatal("Cant get interval")
@@ -95,15 +90,14 @@ func NewConfig() *Config {
 		config.ThrottleByHrs = int64(throttleHr)
 	}
 
-	config.ChainId = uint(chainId)
-	switch config.ChainId {
-	case 1:
-		config.EthProvider = config.EthProviderMainnet
-	case 42:
-		config.EthProvider = config.EthProviderKovan
-	case 1337:
-		config.EthProvider = config.EthProviderFork
-	}
+	// switch config.ChainId {
+	// case 1:
+	// 	config.EthProvider = config.EthProviderMainnet
+	// case 42:
+	// 	config.EthProvider = config.EthProviderKovan
+	// case 1337:
+	// 	config.EthProvider = config.EthProviderFork
+	// }
 
 	validate(&config)
 	return &config

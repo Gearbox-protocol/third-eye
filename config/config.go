@@ -12,13 +12,9 @@ type Config struct {
 	Env string `env:"ENV" default:"development" validate:"required"`
 
 	// Ethereum
-	EthProvider        string `validate:"required"`
-	EthProviderMainnet string `env:"ETH_PROVIDER_MAINNET" validate:"required"`
-	EthProviderKovan   string `env:"ETH_PROVIDER_KOVAN" validate:"required"`
-	EthProviderFork    string `env:"ETH_PROVIDER_FORK"`
+	EthProvider string `env:"ETH_PROVIDER" validate:"required"`
 
-	ChainId   uint   `validate:"required"`
-	NetworkId string `env:"REACT_APP_CHAIN_ID" validate:"required"`
+	ChainId uint
 
 	Port                   string `env:"PORT" default:"8080" validate:"required"`
 	AMPQUrl                string `env:"CLOUDAMQP_URL" validate:"required"`

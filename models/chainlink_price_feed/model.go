@@ -129,8 +129,9 @@ func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) (string, uint16)
 	var newPriceFeed common.Address
 	newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, false)
 	if err != nil {
-		if mdl.GetVersion() == 2 {
-			newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, true)
+		if mdl.Repo.GetChainId() == 42 {
+			newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, true) // try with method name phaseAggregator instead of phaseAggregator
+			// true is sets typo=true so that phaseAggregator method is used.
 		}
 		if err != nil {
 			log.Fatal(mdl.Address, mdl.Details, mdl.GetVersion(), err)
