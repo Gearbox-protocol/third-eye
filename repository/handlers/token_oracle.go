@@ -47,8 +47,20 @@ func (repo *TokenOracleRepo) LoadCurrentTokenOracle(db *gorm.DB) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	for _, oracle := range data {
-		repo.addTokenCurrentOracle(oracle)
+	for _, tokenOracle := range data {
+		repo.addTokenCurrentOracle(tokenOracle)
+	}
+	repo.loadZeroPFs(db)
+}
+
+func (repo *TokenOracleRepo) loadZeroPFs(db *gorm.DB) {
+	data := []schemas.TokenOracle{}
+	err := db.Where("feed_type = 'ZeroPF'").Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, tokenOracle := range data {
+		repo.zeroPFs[tokenOracle.Feed] = true
 	}
 }
 
@@ -86,8 +98,12 @@ func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle,
 				oldFeed, newTokenOracle.Feed, newTokenOracle.Token)
 			return
 		}
+		// disable the corresponding adapter
 		if adapter == nil && repo.zeroPFs[oldFeed] {
 			// no adapter is used for zeroPF as the price is always zero.
+			// we can just work with 'adapter==nil' but we want to check if the adapter is null for other pricefeed by mistake. like disabled for chainlink etc.
+		} else if adapter == nil {
+			log.Error("Adapter not found for", oldFeed)
 		} else if adapter.GetName() != ds.QueryPriceFeed {
 			adapter.SetBlockToDisableOn(newTokenOracle.BlockNumber)
 		} else {
@@ -116,8 +132,9 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			Oracle:      oracle,
 			Feed:        oracle, // feed is same as oracle
 			BlockNumber: discoveredAt,
-			Version:     version}, feedType)
-		if feedType != ds.ZeroPF {
+			Version:     version,
+			FeedType:    feedType}, feedType)
+		if feedType == ds.ZeroPF {
 			repo.blocks.AddPriceFeed(&schemas.PriceFeed{
 				BlockNumber: discoveredAt,
 				Token:       token,
@@ -145,7 +162,8 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			Oracle:      oracle,
 			Feed:        obj.Address,
 			BlockNumber: discoveredAt,
-			Version:     version}, feedType)
+			Version:     version,
+			FeedType:    feedType}, feedType)
 		repo.adapters.AddSyncAdapter(obj)
 	}
 }

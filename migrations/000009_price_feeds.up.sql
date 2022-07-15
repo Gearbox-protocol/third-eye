@@ -35,6 +35,7 @@ CREATE TABLE token_oracle (
     feed character varying(42),
     block_num integer NOT NULL,
     version smallint,
+    feed_type varchar(25),
     PRIMARY KEY (block_num, token));
 
 CREATE TABLE uniswap_pools (
