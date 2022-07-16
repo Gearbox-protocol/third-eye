@@ -79,10 +79,10 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 		// 	case 2:
 		// 		key = DCV2
 		// }
-		switch len(dcw.DCBlockNum) {
-		case 0:
+		switch length := len(dcw.DCBlockNum); {
+		case length == 0:
 			key = MAINNET
-		case 1, 2, 3:
+		case length < 8:
 			key = DCV2
 		}
 	} else {
