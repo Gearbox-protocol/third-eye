@@ -111,9 +111,15 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	// creditConfigurator events for test
 	// we only require CreditFacadeUpgraded so that we can update the details for credit manager and
 	if mdl.GetDetailsByKey("configurator") == txLog.Address.Hex() {
-		if txLog.Topics[0] == core.Topic("CreditFacadeUpgraded(address)") {
+		switch txLog.Topics[0] {
+		case core.Topic("CreditFacadeUpgraded(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
 			mdl.SetCreditFacadeContract(common.HexToAddress(facade))
+		case core.Topic("LimitsUpdated(uint256,uint256)"): // SET min/max BorrowAmount
+			minAmount := new(big.Int).SetBytes(txLog.Data[:32])
+			maxAmount := new(big.Int).SetBytes(txLog.Data[32:])
+			mdl.State.MinAmount = (*core.BigInt)(minAmount)
+			mdl.State.MaxAmount = (*core.BigInt)(maxAmount)
 		}
 		return
 	}
