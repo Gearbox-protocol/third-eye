@@ -23,12 +23,12 @@ type DataCompressorWrapper struct {
 	DCBlockNum     []int64
 	BlockNumToName map[int64]string
 	oldKovanDC     *oldKovanDC
-	v2DC           *v2DC
+	v2DC           map[int64]*v2DC
 	dcMainnet      *mainnet.DataCompressor
 
-	NameToAddr map[string]string
-	client     core.ClientI
-	testing    *DCTesting
+	discoveredAtToAddr map[int64]string
+	client             core.ClientI
+	testing            *DCTesting
 }
 
 var OLDKOVAN = "OLDKOVAN"
@@ -38,10 +38,11 @@ var DCV2 = "DCV2"
 
 func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 	return &DataCompressorWrapper{
-		mu:             &sync.Mutex{},
-		BlockNumToName: make(map[int64]string),
-		NameToAddr:     make(map[string]string),
-		client:         client,
+		mu:                 &sync.Mutex{},
+		BlockNumToName:     make(map[int64]string),
+		discoveredAtToAddr: make(map[int64]string),
+		client:             client,
+		v2DC:               make(map[int64]*v2DC),
 		testing: &DCTesting{
 			calls: map[int64]*DCCalls{},
 		},
@@ -82,14 +83,14 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 		switch length := len(dcw.DCBlockNum); {
 		case length == 0:
 			key = MAINNET
-		case length < 8:
+		case length < 9:
 			key = DCV2
 		}
 	} else {
 		key = TESTING
 	}
 	dcw.BlockNumToName[blockNum] = key
-	dcw.NameToAddr[key] = addr
+	dcw.discoveredAtToAddr[blockNum] = addr
 	dcw.DCBlockNum = append(dcw.DCBlockNum, blockNum)
 }
 
@@ -127,16 +128,16 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtended(opts *bind.CallOp
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
-	key := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
+	key, discoveredAt := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
 	switch key {
 	case OLDKOVAN:
-		dcw.setOldKovan()
+		dcw.setOldKovan(discoveredAt)
 		return dcw.oldKovanDC.GetCreditAccountDataExtended(opts, creditManager, borrower)
 	case DCV2:
-		dcw.setV2()
-		return dcw.v2DC.GetCreditAccountData(opts, creditManager, borrower)
+		dcw.setV2(discoveredAt)
+		return dcw.v2DC[discoveredAt].GetCreditAccountData(opts, creditManager, borrower)
 	case MAINNET:
-		dcw.setMainnet()
+		dcw.setMainnet(discoveredAt)
 		return dcw.dcMainnet.GetCreditAccountDataExtended(opts, creditManager, borrower)
 	case TESTING:
 		return dcw.testing.getAccountData(opts.BlockNumber.Int64(), fmt.Sprintf("%s_%s", creditManager, borrower))
@@ -148,10 +149,10 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtendedForHack(opts *bind
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
-	key := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
+	key, discoveredAt := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
 	switch key {
 	case MAINNET:
-		dcw.setMainnet()
+		dcw.setMainnet(discoveredAt)
 		data, err := dcw.dcMainnet.GetCreditAccountData(opts, creditManager, borrower)
 		if err != nil {
 			return nil, err
@@ -195,16 +196,16 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _cre
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
-	key := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
+	key, discoveredAt := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
 	switch key {
 	case OLDKOVAN:
-		dcw.setOldKovan()
+		dcw.setOldKovan(discoveredAt)
 		return dcw.oldKovanDC.GetCreditManagerData(opts, _creditManager, borrower)
 	case DCV2:
-		dcw.setV2()
-		return dcw.v2DC.GetCreditManagerData(opts, _creditManager)
+		dcw.setV2(discoveredAt)
+		return dcw.v2DC[discoveredAt].GetCreditManagerData(opts, _creditManager)
 	case MAINNET:
-		dcw.setMainnet()
+		dcw.setMainnet(discoveredAt)
 		return dcw.dcMainnet.GetCreditManagerData(opts, _creditManager, borrower)
 	case TESTING:
 		return dcw.testing.getCMData(opts.BlockNumber.Int64(), _creditManager.Hex())
@@ -216,16 +217,16 @@ func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
-	key := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
+	key, discoveredAt := dcw.getDataCompressorIndex(opts.BlockNumber.Int64())
 	switch key {
 	case OLDKOVAN:
-		dcw.setOldKovan()
+		dcw.setOldKovan(discoveredAt)
 		return dcw.oldKovanDC.GetPoolData(opts, _pool)
 	case DCV2:
-		dcw.setV2()
-		return dcw.v2DC.GetPoolData(opts, _pool)
+		dcw.setV2(discoveredAt)
+		return dcw.v2DC[discoveredAt].GetPoolData(opts, _pool)
 	case MAINNET:
-		dcw.setMainnet()
+		dcw.setMainnet(discoveredAt)
 		return dcw.dcMainnet.GetPoolData(opts, _pool)
 	case TESTING:
 		return dcw.testing.getPoolData(opts.BlockNumber.Int64(), _pool.Hex())
@@ -234,47 +235,47 @@ func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.
 }
 
 //
-func (dcw *DataCompressorWrapper) getDataCompressorIndex(blockNum int64) string {
+func (dcw *DataCompressorWrapper) getDataCompressorIndex(blockNum int64) (name string, discoveredAt int64) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
-	var name string
 	for _, num := range dcw.DCBlockNum {
 		// dc should be deployed before it is queried
 		if num < blockNum {
 			name = dcw.BlockNumToName[num]
+			discoveredAt = num
 		} else {
 			break
 		}
 	}
-	return name
+	return
 }
 
-func (dcw *DataCompressorWrapper) setOldKovan() {
+func (dcw *DataCompressorWrapper) setOldKovan(discoveredAt int64) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
 	if dcw.oldKovanDC == nil {
-		addr := dcw.NameToAddr[OLDKOVAN]
+		addr := dcw.discoveredAtToAddr[discoveredAt]
 		dcw.oldKovanDC = NewOldKovanDC(common.HexToAddress(addr), dcw.client)
 	}
 }
 
-func (dcw *DataCompressorWrapper) setMainnet() {
+func (dcw *DataCompressorWrapper) setMainnet(discoveredAt int64) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
 	if dcw.dcMainnet == nil {
-		addr := dcw.NameToAddr[MAINNET]
+		addr := dcw.discoveredAtToAddr[discoveredAt]
 		var err error
 		dcw.dcMainnet, err = mainnet.NewDataCompressor(common.HexToAddress(addr), dcw.client)
 		log.CheckFatal(err)
 	}
 }
 
-func (dcw *DataCompressorWrapper) setV2() {
+func (dcw *DataCompressorWrapper) setV2(discoveredAt int64) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
-	if dcw.v2DC == nil {
-		addr := dcw.NameToAddr[DCV2]
-		dcw.v2DC = NewV2DC(common.HexToAddress(addr), dcw.client)
+	if dcw.v2DC[discoveredAt] == nil {
+		addr := dcw.discoveredAtToAddr[discoveredAt]
+		dcw.v2DC[discoveredAt] = NewV2DC(common.HexToAddress(addr), dcw.client)
 	}
 }
 
