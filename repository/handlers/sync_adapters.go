@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"math"
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -210,34 +209,23 @@ func (repo *SyncAdaptersRepo) GetYearnFeedAddrs() (addrs []string) {
 
 // return the active first oracle under blockNum
 // if all disabled return the last one
-func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (string, error) {
-	var disabledLastOracle, activeFirstOracle string
-	var disabledOracleBlock, activeOracleBlock int64
-	activeOracleBlock = math.MaxInt64
+func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle string, version int16, err error) {
+	var latestBlock int64 = 0
 	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
 		if oracleAdapter.GetDiscoveredAt() <= blockNum {
-			if oracleAdapter.IsDisabled() {
-				if disabledOracleBlock < oracleAdapter.GetDiscoveredAt() {
-					disabledOracleBlock = oracleAdapter.GetDiscoveredAt()
-					disabledLastOracle = addr
-				}
-			} else {
-				if activeOracleBlock > oracleAdapter.GetDiscoveredAt() {
-					activeOracleBlock = oracleAdapter.GetDiscoveredAt()
-					activeFirstOracle = addr
-				}
+			if latestBlock < oracleAdapter.GetDiscoveredAt() {
+				latestBlock = oracleAdapter.GetDiscoveredAt()
+				latestOracle = addr
+				version = oracleAdapter.GetVersion()
 			}
 		}
 	}
-	if activeFirstOracle != "" {
-		return activeFirstOracle, nil
-	} else if disabledLastOracle != "" {
-		return disabledLastOracle, nil
-	} else {
-		return "", fmt.Errorf("Not Found")
+	if latestOracle == "" {
+		err = fmt.Errorf("not Found")
 	}
+	return
 }
 
 func (repo *SyncAdaptersRepo) GetPriceOracleByVersion(version int16) (string, error) {

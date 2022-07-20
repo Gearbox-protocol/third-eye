@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOracle"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOraclev2"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -15,8 +16,6 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version int16, token,
 	if err != nil {
 		log.Fatalf("err %s version: %d", err, version)
 	}
-	poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
-	log.CheckFatal(err)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
@@ -24,8 +23,23 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version int16, token,
 	if currency != "USDC" {
 		currencyAddr = common.HexToAddress(currency)
 	}
-	usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
-	log.CheckFatal(err)
-	// convert to 8 decimals
-	return usdcAmount
+	switch version {
+	case 1:
+		poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
+		log.CheckFatal(err)
+		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
+		if err != nil {
+			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
+		}
+		return usdcAmount
+	case 2:
+		poContract, err := priceOraclev2.NewPriceOraclev2(common.HexToAddress(oracle), repo.client)
+		log.CheckFatal(err)
+		usdcAmount, err := poContract.Convert(opts, common.Address{}, amount, common.HexToAddress(token), currencyAddr)
+		if err != nil {
+			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
+		}
+		return usdcAmount
+	}
+	return nil
 }

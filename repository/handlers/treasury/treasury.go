@@ -128,7 +128,7 @@ func (repo *TreasuryRepo) calFieldsOfTreasurySnapshot(blockNum int64, tss *schem
 	var totalValueInUSD float64
 	var tokenAddrs []string
 	for token := range *tss.Balances {
-		if token == repo.tokens.GetGearTokenAddr() || token == repo.tokens.GetWETHAddr() {
+		if token == repo.tokens.GetGearTokenAddr() {
 			continue
 		}
 		tokenAddrs = append(tokenAddrs, token)
