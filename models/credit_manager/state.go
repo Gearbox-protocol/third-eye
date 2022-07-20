@@ -43,9 +43,9 @@ func (mdl *CreditManager) RemoveCreditOwnerSession(owner string) {
 
 func (mdl *CreditManager) GetCreditOwnerSession(owner string, dontFail ...bool) string {
 	sessionId := mdl.State.Sessions[owner]
-	if len(dontFail) == 0 && sessionId == "" {
+	if (len(dontFail) == 0 || !dontFail[0]) && sessionId == "" {
 		panic(
-			fmt.Sprintf("session id not found for %s in %+v\n", owner, mdl.State.Sessions),
+			fmt.Sprintf("session id not found for %s in %+v %s\n", owner, mdl.State.Sessions, mdl.Address),
 		)
 	}
 	return sessionId

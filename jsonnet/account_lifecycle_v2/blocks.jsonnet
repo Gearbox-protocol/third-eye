@@ -2,7 +2,7 @@
   '4': {
     accountOperations: [
       {
-        action: 'OpenCreditAccount(address,address,uint256,uint256)',
+        action: 'OpenCreditAccount(address,address,uint256,uint16)',
         adapterCall: false,
         args: {
           _order: [

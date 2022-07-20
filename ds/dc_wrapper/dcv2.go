@@ -99,7 +99,7 @@ func (obj *v2DC) GetCreditManagerData(opts *bind.CallOpts, _creditManager common
 		MaxAmount:          data.MaxAmount,
 		MaxLeverageFactor:  data.MaxLeverageFactor,
 		AvailableLiquidity: data.AvailableLiquidity,
-		AllowedTokens:      data.AllowedTokens,
+		AllowedTokens:      data.CollateralTokens,
 	}
 	for _, adapter := range data.Adapters {
 		latestFormat.Adapters = append(latestFormat.Adapters, mainnet.DataTypesContractAdapter{

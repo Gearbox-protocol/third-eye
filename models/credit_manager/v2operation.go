@@ -37,7 +37,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation)
 		tenderlyEventName = "MultiCallStarted(address)"
 	case "openCreditAccountMulticall":
 		mdl.setUpdateSession(mainAction.SessionId)
-		tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint256)"
+		tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint16)"
 	case "liquidateCreditAccount":
 		tenderlyEventName = "LiquidateCreditAccount(address,address,address,uint256)"
 	case "closeCreditAccount":
@@ -116,8 +116,8 @@ func (mdl *CreditManager) getProcessedExecuteEvents(txHash string, executeParams
 // Main actions
 ///////////////////////
 func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, account string,
-	borrowAmount,
-	referralCode *big.Int) error {
+	borrowAmount *big.Int,
+	referralCode uint16) error {
 	mdl.CMStatsOnOpenAccount(borrowAmount)
 	// other operations
 	cmAddr := txLog.Address.Hex()

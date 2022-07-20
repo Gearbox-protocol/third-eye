@@ -21,13 +21,13 @@ local newCollateral = 1;
           // open account without multicall
           address: '#CreditFacade_1',
           topics: [
-            'OpenCreditAccount(address,address,uint256,uint256)',
+            'OpenCreditAccount(address,address,uint256,uint16)',
             '#User_1',
             '#Account_1',
           ],
           data: [
             utils.bigIntTopic(borrowedAmount, 6),
-            'bigint:0',
+            'uint16:0',
           ],
           txHash: '!#Hash_4',
         },
