@@ -127,7 +127,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    mdl.Address,
 			Args:        &core.Json{"oldConfigurator": oldConfigurator, "configurator": newConfigurator},
-			Type:        schemas.NewFastCheckParameters,
+			Type:        schemas.NewConfigurator,
 		})
 		if oldConfigurator != newConfigurator {
 			mdl.Repo.GetKit().GetAdapter(oldConfigurator).SetBlockToDisableOn(int64(txLog.BlockNumber))

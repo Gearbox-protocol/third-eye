@@ -80,9 +80,9 @@
         },
         BlockNumber: 5,
         Contract: '#CreditManager_1',
-        LogID: 8,
+        LogID: 7,
         TxHash: '#Hash_13',
-        Type: 4,
+        Type: 26,
       },
       {
         Args: {
@@ -132,24 +132,24 @@
         TxHash: '#Hash_7',
         Type: 3,
       },
-      {
-        Args: {
-          chiThreshold: [
-            '0',
-            '7500',
-          ],
-          creditManager: '#CreditManager_1',
-          fastDelay: [
-            '0',
-            '7500',
-          ],
-        },
-        BlockNumber: 5,
-        Contract: '#CreditConfigurator_1',
-        LogID: 4,
-        TxHash: '#Hash_8',
-        Type: 4,
-      },
+      // {
+      //   Args: {
+      //     chiThreshold: [
+      //       '0',
+      //       '7500',
+      //     ],
+      //     creditManager: '#CreditManager_1',
+      //     fastDelay: [
+      //       '0',
+      //       '7500',
+      //     ],
+      //   },
+      //   BlockNumber: 5,
+      //   Contract: '#CreditConfigurator_1',
+      //   LogID: 4,
+      //   TxHash: '#Hash_8',
+      //   Type: 4,
+      // },
       {
         Args: {
           creditManager: '#CreditManager_1',
@@ -157,7 +157,7 @@
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
-        LogID: 5,
+        LogID: 4,
         TxHash: '#Hash_9',
         Type: 6,
       },
@@ -175,7 +175,7 @@
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
-        LogID: 6,
+        LogID: 5,
         TxHash: '#Hash_11',
         Type: 23,
       },
@@ -197,7 +197,7 @@
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
-        LogID: 7,
+        LogID: 6,
         TxHash: '#Hash_12',
         Type: 24,
       },
@@ -208,9 +208,9 @@
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
-        LogID: 9,
+        LogID: 8,
         TxHash: '#Hash_14',
-        Type: 4,
+        Type: 25,
       },
     ],
   },

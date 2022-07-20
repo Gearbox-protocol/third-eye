@@ -121,6 +121,9 @@ func (obj *v2DC) GetCreditManagerData(opts *bind.CallOpts, _creditManager common
 	return latestFormat, err
 }
 
+// there was a smartcontractbug in 8 th dcv2 contract for july 2022 kovan deployment.
+// dc address "0x47DE3e0d505B6ed8f8FA3bbB9Ab9b303E2ebCe39"
+// in that address for ceditaccount opened with creditmanager v2, will fail till the next dc which is added to addressprovider at 32832988
 func (obj *v2DC) manualAccountCall(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
 	calls := []multicall.Multicall2Call{}
 	blockNum := opts.BlockNumber.Int64()

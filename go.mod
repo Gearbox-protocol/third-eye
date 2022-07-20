@@ -3,7 +3,7 @@ module github.com/Gearbox-protocol/third-eye
 go 1.17
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20220720185221-cab903e51429
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20220720232844-448f9e303b94
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/heroku/x v0.0.42
@@ -59,4 +59,4 @@ require (
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
-replace github.com/Gearbox-protocol/sdk-go v0.0.0-20220720185221-cab903e51429 => ../sdk-go
+replace github.com/Gearbox-protocol/sdk-go v0.0.0-20220720224608-7b23f8262461 => ../sdk-go

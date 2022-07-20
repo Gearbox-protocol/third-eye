@@ -50,11 +50,11 @@ local utils = import '../utils.libsonnet';
           // credit filter on usdc
           address: '#CreditConfigurator_1',
           topics: [
-            'TokenLiquidationThresholdUpdated(address,uint256)',
+            'TokenLiquidationThresholdUpdated(address,uint16)',
             '#Token_1',
           ],
           data: [
-            utils.bigIntTopic(9000, 0),
+            'uint16:9000',
           ],
           txHash: '!#Hash_1',
         },
@@ -77,15 +77,15 @@ local utils = import '../utils.libsonnet';
           address: '#CreditConfigurator_1',
           txHash: '!#Hash_2',
           topics: [
-            'FeesUpdated(uint256,uint256,uint256)',
+            'FeesUpdated(uint16,uint16,uint16)',
           ],
           data: [
             // feeInterest
-            utils.bigIntTopic(1000, 0),
+            'uint16:1000',
             // feeLiquidation
-            utils.bigIntTopic(200, 0),
+            'uint16:200',
             // liquidationDiscount
-            utils.bigIntTopic(9500, 0),
+            'uint16:9500',
           ],
         },
         {

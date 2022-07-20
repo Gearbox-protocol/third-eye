@@ -65,11 +65,11 @@ local borrowedAmount = 4000;
           // credit configurator add liquidity threshold
           address: '#CreditConfigurator_1',
           topics: [
-            'TokenLiquidationThresholdUpdated(address,uint256)',
+            'TokenLiquidationThresholdUpdated(address,uint16)',
             '#Token_1',
           ],
           data: [
-            'bigint:7500',
+            'uint16:7500',
           ],
           txHash: '!#Hash_2',
         },
@@ -81,11 +81,11 @@ local borrowedAmount = 4000;
           // credit configurator updated liquidity threshold
           address: '#CreditConfigurator_1',
           topics: [
-            'TokenLiquidationThresholdUpdated(address,uint256)',
+            'TokenLiquidationThresholdUpdated(address,uint16)',
             '#Token_1',
           ],
           data: [
-            'bigint:8000',
+            'uint16:8000',
           ],
           txHash: '!#Hash_3',
         },
@@ -130,18 +130,18 @@ local borrowedAmount = 4000;
           ],
           txHash: '!#Hash_7',
         },
-        {
-          // chidelay and hfcheck
-          address: '#CreditConfigurator_1',
-          topics: [
-            'FastCheckParametersUpdated(uint256,uint256)',
-          ],
-          data: [
-            'bigint:7500',
-            'bigint:7500',
-          ],
-          txHash: '!#Hash_8',
-        },
+        // {
+        //   // chidelay and hfcheck
+        //   address: '#CreditConfigurator_1',
+        //   topics: [
+        //     'FastCheckParametersUpdated(uint256,uint256)',
+        //   ],
+        //   data: [
+        //     'bigint:7500',
+        //     'bigint:7500',
+        //   ],
+        //   txHash: '!#Hash_8',
+        // },
         {
           // credit manager on usdc
           address: '#CreditConfigurator_1',
@@ -169,15 +169,15 @@ local borrowedAmount = 4000;
           // credit manager on usdc
           address: '#CreditConfigurator_1',
           topics: [
-            'FeesUpdated(uint256,uint256,uint256)',
+            'FeesUpdated(uint16,uint16,uint16)',
           ],
           data: [
             // feeInterest
-            utils.bigIntTopic(1000, 0),
+            'uint16:1000',
             // feeLiquidation
-            utils.bigIntTopic(200, 0),
+            'uint16:200',
             // liquidationDiscount
-            utils.bigIntTopic(9500, 0),
+            'uint16:9500',
           ],
           txHash: '!#Hash_12',
         },

@@ -153,11 +153,11 @@ local newCollateral = 1;
           // credit filter on usdc
           address: '#CreditConfigurator_1',
           topics: [
-            'TokenLiquidationThresholdUpdated(address,uint256)',
+            'TokenLiquidationThresholdUpdated(address,uint16)',
             '#Token_3',
           ],
           data: [
-            utils.bigIntTopic(8000, 0),
+            'uint16:8000',
           ],
           txHash: '!#Hash_6',
         },
@@ -376,11 +376,11 @@ local newCollateral = 1;
           // credit filter on usdc
           address: '#CreditConfigurator_1',
           topics: [
-            'TokenLiquidationThresholdUpdated(address,uint256)',
+            'TokenLiquidationThresholdUpdated(address,uint16)',
             '#Token_2',
           ],
           data: [
-            utils.bigIntTopic(9000, 0),
+            'uint16:9000',
           ],
           txHash: '!#Hash_9',
         },
