@@ -120,6 +120,14 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("FeesUpdated(uint16,uint16,uint16)"):
 		feesEvent, err := mdl.cfgContract.ParseFeesUpdated(txLog)
 		log.CheckFatal(err)
+		if mdl.underlyingToken != nil {
+			mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
+				BlockNumber:        blockNum,
+				CreditManager:      creditManager,
+				Token:              mdl.underlyingToken.Hex(),
+				LiquidityThreshold: (*core.BigInt)(big.NewInt(int64(feesEvent.LiquidationPremium - feesEvent.FeeLiquidation))),
+			})
+		}
 		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &schemas.Parameters{
 			BlockNum:            int64(txLog.BlockNumber),
 			CreditManager:       creditManager,
@@ -127,6 +135,8 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			FeeLiquidation:      (*core.BigInt)(big.NewInt(int64(feesEvent.FeeLiquidation))),
 			LiquidationDiscount: (*core.BigInt)(big.NewInt(int64(feesEvent.LiquidationPremium))),
 		})
+	//
+	// Previous fastcheck has some security issues, we change it for better security
 	// case core.Topic("FastCheckParametersUpdated(uint256,uint256)"):
 	// 	fcParams, err := mdl.cfgContract.ParseFastCheckParametersUpdated(txLog)
 	// 	log.CheckFatal(err)
@@ -136,6 +146,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	// 		ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),
 	// 		HFCheckInterval: (*core.BigInt)(fcParams.FastCheckDelay),
 	// 	})
+	//
 	//
 	// we are add dao event on here instead of in logs of creditmanager
 	// as it might happen that this event is emitted before the first event on credit manager
