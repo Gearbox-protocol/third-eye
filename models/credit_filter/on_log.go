@@ -120,7 +120,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("FeesUpdated(uint16,uint16,uint16)"):
 		feesEvent, err := mdl.cfgContract.ParseFeesUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.addFees(txLog.TxIndex, blockNum, txLog.TxHash.Hex(),
+		mdl.addFees(txLog.Index, blockNum, txLog.TxHash.Hex(),
 			feesEvent.FeeInterest, feesEvent.FeeLiquidation, feesEvent.LiquidationPremium)
 	//
 	// Previous fastcheck has some security issues, we change it for better security

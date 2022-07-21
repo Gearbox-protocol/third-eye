@@ -24,8 +24,13 @@ func NewCreditFilter(addr, contractName, creditManager string, discoveredAt int6
 	mdl := NewCreditFilterFromAdapter(
 		syncAdapter,
 	)
-	mdl.addFees(0, discoveredAt, common.Hash{}.Hex(),
-		1000, 200, 9500)
+	// 	DEFAULT_FEE_INTEREST, 1000
+	// DEFAULT_FEE_LIQUIDATION 200,
+	// PERCENTAGE_FACTOR = 10000 - DEFAULT_LIQUIDATION_PREMIUM = 500
+	if mdl.GetVersion() == 2 {
+		mdl.addFees(0, discoveredAt, common.Hash{}.Hex(),
+			1000, 200, 9500)
+	}
 	return mdl
 }
 
