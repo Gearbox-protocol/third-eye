@@ -120,21 +120,8 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	case core.Topic("FeesUpdated(uint16,uint16,uint16)"):
 		feesEvent, err := mdl.cfgContract.ParseFeesUpdated(txLog)
 		log.CheckFatal(err)
-		if mdl.underlyingToken != nil {
-			mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
-				BlockNumber:        blockNum,
-				CreditManager:      creditManager,
-				Token:              mdl.underlyingToken.Hex(),
-				LiquidityThreshold: (*core.BigInt)(big.NewInt(int64(feesEvent.LiquidationPremium - feesEvent.FeeLiquidation))),
-			})
-		}
-		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &schemas.Parameters{
-			BlockNum:            int64(txLog.BlockNumber),
-			CreditManager:       creditManager,
-			FeeInterest:         (*core.BigInt)(big.NewInt(int64(feesEvent.FeeInterest))),
-			FeeLiquidation:      (*core.BigInt)(big.NewInt(int64(feesEvent.FeeLiquidation))),
-			LiquidationDiscount: (*core.BigInt)(big.NewInt(int64(feesEvent.LiquidationPremium))),
-		})
+		mdl.addFees(txLog.TxIndex, blockNum, txLog.TxHash.Hex(),
+			feesEvent.FeeInterest, feesEvent.FeeLiquidation, feesEvent.LiquidationPremium)
 	//
 	// Previous fastcheck has some security issues, we change it for better security
 	// case core.Topic("FastCheckParametersUpdated(uint256,uint256)"):
@@ -163,4 +150,26 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			Type:        schemas.CreditFacadeUpgraded,
 		})
 	}
+}
+
+func (mdl *CreditFilter) addFees(logId uint, blockNum int64, txHash string, feeInterest, feeLiquidation, liquidationPremium uint16) {
+	creditManager, ok := mdl.Details["creditManager"].(string)
+	if !ok {
+		log.Fatal("Failed in asserting credit manager(%v) for credit filter %s", mdl.Details["creditManager"], mdl.GetAddress())
+	}
+	if mdl.underlyingToken != nil {
+		mdl.Repo.AddAllowedTokenV2(logId, txHash, mdl.Address, &schemas.AllowedToken{
+			BlockNumber:        blockNum,
+			CreditManager:      creditManager,
+			Token:              mdl.underlyingToken.Hex(),
+			LiquidityThreshold: (*core.BigInt)(big.NewInt(int64(liquidationPremium - feeLiquidation))),
+		})
+	}
+	mdl.Repo.UpdateFees(logId, txHash, mdl.GetAddress(), &schemas.Parameters{
+		BlockNum:            blockNum,
+		CreditManager:       creditManager,
+		FeeInterest:         (*core.BigInt)(big.NewInt(int64(feeInterest))),
+		FeeLiquidation:      (*core.BigInt)(big.NewInt(int64(feeLiquidation))),
+		LiquidationDiscount: (*core.BigInt)(big.NewInt(int64(liquidationPremium))),
+	})
 }

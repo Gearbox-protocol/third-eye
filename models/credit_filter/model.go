@@ -21,9 +21,12 @@ type CreditFilter struct {
 func NewCreditFilter(addr, contractName, creditManager string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *CreditFilter {
 	syncAdapter := ds.NewSyncAdapter(addr, contractName, discoveredAt, client, repo)
 	syncAdapter.Details = map[string]interface{}{"creditManager": creditManager}
-	return NewCreditFilterFromAdapter(
+	mdl := NewCreditFilterFromAdapter(
 		syncAdapter,
 	)
+	mdl.addFees(0, discoveredAt, common.Hash{}.Hex(),
+		1000, 200, 9500)
+	return mdl
 }
 
 func NewCreditFilterFromAdapter(adapter *ds.SyncAdapter) *CreditFilter {
