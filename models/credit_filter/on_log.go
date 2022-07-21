@@ -158,7 +158,7 @@ func (mdl *CreditFilter) addFees(logId uint, blockNum int64, txHash string, feeI
 		log.Fatal("Failed in asserting credit manager(%v) for credit filter %s", mdl.Details["creditManager"], mdl.GetAddress())
 	}
 	if mdl.underlyingToken != nil {
-		mdl.Repo.AddAllowedTokenV2(logId, txHash, mdl.Address, &schemas.AllowedToken{
+		mdl.Repo.AddAllowedTokenV2(logId+100000, txHash, mdl.Address, &schemas.AllowedToken{
 			BlockNumber:        blockNum,
 			CreditManager:      creditManager,
 			Token:              mdl.underlyingToken.Hex(),

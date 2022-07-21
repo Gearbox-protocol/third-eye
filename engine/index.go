@@ -150,6 +150,7 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 	}
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	addrsForLogs := []common.Address{common.HexToAddress(mdl.GetAddress())}
+	// credit manager v2 has multiple addresses to take care of
 	if mdl.GetName() == ds.CreditManager && mdl.GetVersion() == 2 {
 		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("facade")))
 		addrsForLogs = append(addrsForLogs, common.HexToAddress(mdl.GetDetailsByKey("configurator")))

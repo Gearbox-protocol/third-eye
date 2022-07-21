@@ -1,6 +1,8 @@
 package credit_filter
 
 import (
+	"math/rand"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditConfigurator"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFilter"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -28,7 +30,7 @@ func NewCreditFilter(addr, contractName, creditManager string, discoveredAt int6
 	// DEFAULT_FEE_LIQUIDATION 200,
 	// PERCENTAGE_FACTOR = 10000 - DEFAULT_LIQUIDATION_PREMIUM = 500
 	if mdl.GetVersion() == 2 {
-		mdl.addFees(0, discoveredAt, common.Hash{}.Hex(),
+		mdl.addFees(uint(rand.Intn(50000)+50000), discoveredAt, common.Hash{}.Hex(),
 			1000, 200, 9500)
 	}
 	return mdl
