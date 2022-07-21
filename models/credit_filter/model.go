@@ -40,7 +40,8 @@ func NewCreditFilterFromAdapter(adapter *ds.SyncAdapter) *CreditFilter {
 		log.CheckFatal(err)
 		obj.cfgContract = cfgContract
 		if utils.Contains([]string{"0x3c81C60c2Ca83b7FE5279a10138ea9243f511edb", "0x6144112c74D9a1392b31bd8Ec6d75A0aCa616D1a", "0xbFcbF17b77cc82A685a925A79b3B6E0972e23624"}, obj.Address) {
-			*obj.underlyingToken, err = cfgContract.Underlying(nil)
+			underlyingToken, err := cfgContract.Underlying(nil)
+			obj.underlyingToken = &underlyingToken
 			log.CheckFatal(err)
 		}
 	}
