@@ -62,10 +62,12 @@ local newCollateral = 1;
           address: '#CreditFacade_1',
           topics: [
             'IncreaseBorrowedAmount(address,uint256)',
-            '#User_1',  // borrower
+            // borrower
+            '#User_1',
           ],
           data: [
-            utils.bigIntTopic(extraBorrowedAmount, 6),  // amount
+            // amount
+            utils.bigIntTopic(extraBorrowedAmount, 6),
           ],
           txHash: '!#Hash_5',
         },
@@ -188,10 +190,12 @@ local newCollateral = 1;
           address: '#CreditFacade_1',
           topics: [
             'DecreaseBorrowedAmount(address,uint256)',
-            '#User_1',  // borrower
+            // borrower
+            '#User_1',
           ],
           data: [
-            utils.bigIntTopic(extraBorrowedAmount / 2, 6),  // amount
+            // amount
+            utils.bigIntTopic(extraBorrowedAmount / 2, 6),
           ],
           txHash: '!#Hash_7',
         },

@@ -123,20 +123,9 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		}
 		return
 	}
-	// on txHash
-	switch mdl.GetVersion() {
-	case 1:
-		// storing execute order in a single tx and processing them in a single go on next tx
-		// for credit session stats
-		//
-		// execute events are matched with tenderly response to get transfers for each events
-		if mdl.LastTxHash != txLog.TxHash.Hex() {
-			mdl.processExecuteEvents()
-			mdl.LastTxHash = txLog.TxHash.Hex()
-		}
-	case 2:
-		mdl.onNewTxHashV2(txLog.TxHash.Hex())
-	}
+
+	//
+	mdl.onTxHash(txLog.TxHash.Hex())
 	// on new block
 	// for credit manager stats
 	blockNum := int64(txLog.BlockNumber)
@@ -151,5 +140,23 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		mdl.checkLogV1(txLog)
 	case 2:
 		mdl.checkLogV2(txLog)
+	}
+}
+
+// handles for v2(for multicalls) and v1 (for executeorder)
+func (mdl *CreditManager) onTxHash(newTxHash string) {
+	// on txHash
+	if mdl.LastTxHash != newTxHash {
+		switch mdl.GetVersion() {
+		case 1:
+			// storing execute order in a single tx and processing them in a single go on next tx
+			// for credit session stats
+			//
+			// execute events are matched with tenderly response to get transfers for each events
+			mdl.processExecuteEvents()
+		case 2:
+			mdl.onNewTxHashV2()
+		}
+		mdl.LastTxHash = newTxHash
 	}
 }

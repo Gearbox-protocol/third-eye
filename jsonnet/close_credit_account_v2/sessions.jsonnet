@@ -28,6 +28,7 @@
   closedAt: 9,
   creditManager: '#CreditManager_1',
   sessionId: '#Account_1_4_0',
+  initialAmount: '1000000000',
   since: 4,
   status: 1,
 }

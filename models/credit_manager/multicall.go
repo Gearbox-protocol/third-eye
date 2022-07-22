@@ -17,15 +17,24 @@ type MultiCallProcessor struct {
 }
 
 func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperation) {
-	if !p.running {
-		p.nonMultiCallEvents = append(p.nonMultiCallEvents, operation)
-		return
+	if !p.running { // non multicall
+		// open credit account without multicall (done to calculate initialamount)
+		if p.OpenEvent != nil && operation.Action == "AddCollateral(address,address,uint256)" {
+			if len(p.OpenEvent.MultiCall) != 0 {
+				log.Info("previous addcollateral for openevent found", utils.ToJson(operation))
+			}
+			p.OpenEvent.MultiCall = make([]*schemas.AccountOperation, 0, 1)
+			p.OpenEvent.MultiCall = append(p.OpenEvent.MultiCall, operation)
+		} else {
+			p.nonMultiCallEvents = append(p.nonMultiCallEvents, operation)
+		}
+	} else { // multicall
+		if operation.TxHash != p.txHash {
+			log.Info("While multicall is running, event(%s) has different txhash %s", utils.ToJson(p.events), operation.TxHash)
+		}
+		operation.Borrower = p.borrower
+		p.events = append(p.events, operation)
 	}
-	if operation.TxHash != p.txHash {
-		log.Info("While multicall is running, event(%s) has different txhash %s", utils.ToJson(p.events), p.txHash)
-	}
-	operation.Borrower = p.borrower
-	p.events = append(p.events, operation)
 }
 func (p *MultiCallProcessor) AddOpenEvent(openEvent *schemas.AccountOperation) {
 	if len(p.events) > 0 {
@@ -34,6 +43,9 @@ func (p *MultiCallProcessor) AddOpenEvent(openEvent *schemas.AccountOperation) {
 	if len(p.nonMultiCallEvents) > 0 {
 		log.Fatal("There can't be non multicall events while multicall is running",
 			utils.ToJson(p.nonMultiCallEvents))
+	}
+	if p.OpenEvent != nil {
+		log.Fatal("2 opencreditaccount event are in same txhash", utils.ToJson(p.OpenEvent), utils.ToJson(openEvent))
 	}
 	p.OpenEvent = openEvent
 }
@@ -72,8 +84,4 @@ func (p *MultiCallProcessor) popNonMulticallEventsV2() []*schemas.AccountOperati
 	calls := p.nonMultiCallEvents
 	p.nonMultiCallEvents = []*schemas.AccountOperation{}
 	return calls
-}
-
-func (p *MultiCallProcessor) GetTxHash() string {
-	return p.txHash
 }

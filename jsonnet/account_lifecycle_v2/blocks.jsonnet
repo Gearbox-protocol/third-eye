@@ -15,6 +15,7 @@
           creditAccount: '#Account_1',
           onBehalfOf: '#User_1',
           referralCode: 0,
+          initialAmount: '1000000000',
         },
         blockNum: 4,
         borrower: '#User_1',
@@ -25,30 +26,32 @@
         transfers: {
           '#Token_1': 4000000000,
         },
-        txHash: '#Hash_4',
-      },
-      {
-        action: 'AddCollateral(address,address,uint256)',
-        adapterCall: false,
-        args: {
-          _order: [
-            'onBehalfOf',
-            'token',
-            'value',
-          ],
-          onBehalfOf: '#User_1',
-          token: '#Token_1',
-          value: 1000000000,
-        },
-        blockNum: 4,
-        borrower: '#User_1',
-        dapp: '#CreditFacade_1',
-        depth: 0,
-        logId: 1,
-        sessionId: '#Account_1_4_0',
-        transfers: {
-          '#Token_1': 1000000000,
-        },
+        multicalls: [
+          {
+            action: 'AddCollateral(address,address,uint256)',
+            adapterCall: false,
+            args: {
+              _order: [
+                'onBehalfOf',
+                'token',
+                'value',
+              ],
+              onBehalfOf: '#User_1',
+              token: '#Token_1',
+              value: 1000000000,
+            },
+            blockNum: 4,
+            borrower: '#User_1',
+            dapp: '#CreditFacade_1',
+            depth: 0,
+            logId: 1,
+            sessionId: '#Account_1_4_0',
+            transfers: {
+              '#Token_1': 1000000000,
+            },
+            txHash: '#Hash_4',
+          },
+        ],
         txHash: '#Hash_4',
       },
       {

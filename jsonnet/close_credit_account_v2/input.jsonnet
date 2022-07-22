@@ -72,7 +72,8 @@ local extraBorrowedAmount = 1000;
           topics: [
             'CloseCreditAccount(address,address)',
             '#User_1',  // borrower
-            '#User_2',  // to
+            // to
+            '#User_2',
           ],
           txHash: '!#Hash_12',
         },

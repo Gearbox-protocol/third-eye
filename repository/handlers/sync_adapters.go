@@ -214,8 +214,12 @@ func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (la
 	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
+		// only get the oracles that are present at the blocknumg
 		if oracleAdapter.GetDiscoveredAt() <= blockNum {
-			if latestBlock < oracleAdapter.GetDiscoveredAt() {
+			// if the oracle is discoverdat later
+			if latestBlock < oracleAdapter.GetDiscoveredAt() ||
+				// if the oracles are discoveredat at same time but the version of oracle is more
+				(latestBlock == oracleAdapter.GetDiscoveredAt() && oracleAdapter.GetVersion() > version) {
 				latestBlock = oracleAdapter.GetDiscoveredAt()
 				latestOracle = addr
 				version = oracleAdapter.GetVersion()

@@ -136,24 +136,30 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	}
 }
 
-func (mdl *CreditManager) onNewTxHashV2(newTxHash string) {
-	if mdl.multicall.GetTxHash() == newTxHash {
-		return
-	}
+func (mdl *CreditManager) onNewTxHashV2() {
 	mdl.processRemainingMultiCalls()
 	mdl.processNonMultiCalls()
 }
+
+// opencreditaccount
+// addcollateral
+// increase/decase borrow amount
+// executeorder
+// are added to multicall manager
+//
 func (mdl *CreditManager) processRemainingMultiCalls() {
 	// opencreditaccount
 	mainAction := mdl.multicall.OpenEvent
 	// if not present use multicall
-	if mainAction == nil {
+	if mainAction == nil { // other multicall operations
 		mainAction = mdl.multicall.MultiCallStartEvent
-		// old open credit account
+		// open credit account without multicall
 	} else if mdl.multicall.lenOfMultiCalls() == 0 {
 		mdl.setUpdateSession(mainAction.SessionId)
 		mdl.Repo.AddAccountOperation(mainAction)
+		mdl.openCreditAccountInitialAmount(mainAction.BlockNumber, mainAction)
 	}
+	//
 	if mdl.multicall.lenOfMultiCalls() > 0 {
 		mdl.multiCallHandler(mainAction)
 	}
@@ -190,4 +196,41 @@ func (mdl *CreditManager) processNonMultiCalls() {
 	if len(executeEvents) > 0 {
 		mdl.handleExecuteEvents(executeEvents)
 	}
+}
+
+func (mdl *CreditManager) getInitialAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
+	balances := map[string]*big.Int{}
+	for _, event := range mainAction.MultiCall {
+		if event.Action == "AddCollateral(address,address,uint256)" {
+			for token, amount := range *event.Transfers {
+				if balances[token] == nil {
+					balances[token] = new(big.Int)
+				}
+				balances[token] = new(big.Int).Add(balances[token], amount)
+			}
+		}
+	}
+	tokens := make([]string, 0, len(balances))
+	for token := range balances {
+		tokens = append(tokens, token)
+	}
+	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
+	underlyingDecimals := mdl.GetUnderlyingDecimal()
+	underlyingToken := mdl.GetUnderlyingToken()
+	totalValue := new(big.Float)
+
+	// sigma(tokenAmount(i)*price(i)/exp(tokendecimals- underlyingToken))/price(underlying)
+	for token, amount := range balances {
+		value := new(big.Float).Mul(new(big.Float).SetInt(amount), big.NewFloat(prices[token]))
+		decimals := utils.GetExpFloat(mdl.Repo.GetToken(token).Decimals - underlyingDecimals)
+		totalValue = new(big.Float).Add(totalValue, new(big.Float).Quo(value, decimals))
+	}
+	initialAmount, _ := new(big.Float).Quo(totalValue, big.NewFloat(prices[underlyingToken])).Int(nil)
+	return initialAmount
+}
+
+func (mdl *CreditManager) openCreditAccountInitialAmount(blockNum int64, mainAction *schemas.AccountOperation) {
+	initialAmount := mdl.getInitialAmount(blockNum, mainAction)
+	(*mainAction.Args)["initialAmount"] = initialAmount.String()
+	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": initialAmount})
 }

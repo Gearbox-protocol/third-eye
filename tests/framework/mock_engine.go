@@ -123,6 +123,7 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 				Token:       token,
 				Oracle:      oracle,
 				Feed:        actualAdapter.GetAddress(),
+				FeedType:    ds.ChainlinkPriceFeed,
 				BlockNumber: actualAdapter.GetDiscoveredAt(),
 				Version:     actualAdapter.GetVersion()}, ds.ChainlinkPriceFeed)
 		case ds.CreditManager:

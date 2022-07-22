@@ -62,7 +62,9 @@ func (obj *v2DC) GetCreditAccountData(opts *bind.CallOpts, creditManager common.
 	if err != nil {
 		// CHECK FOR: edge case
 		if obj.addr == "0x47DE3e0d505B6ed8f8FA3bbB9Ab9b303E2ebCe39" {
-			return obj.manualAccountCall(opts, creditManager, borrower)
+			if core.FetchVersion(creditManager.Hex(), opts.BlockNumber.Int64(), obj.client) == 2 {
+				return obj.manualAccountCall(opts, creditManager, borrower)
+			}
 		}
 		log.Fatal(err)
 	}

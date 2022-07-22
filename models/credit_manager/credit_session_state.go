@@ -29,7 +29,7 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDetails *SessionCloseDetails) {
 	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
-	session := mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{})
+	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	// set session fields
 	session.ClosedAt = blockNum
 	session.Status = closeDetails.Status
@@ -102,7 +102,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 }
 
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
-	session := mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{})
+	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
