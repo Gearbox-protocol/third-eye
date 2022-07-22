@@ -360,12 +360,32 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	return debt, nil
 }
 
+// these values are calculated for the borrower not the liquidation, so the calrepayamount takes isliquidated = false
+// only for block that the account is liquidated we use isLiquidated set to true so that we can calculate the true amountToPool
+//
+// amountToPool
+// v1 if liquidatecreditaccount is calcClosePayment first return value when isLIquidated= true
+// v2 if liquidatecreditaccount is calcClosePayment first return value when isLIquidated= true
+//
+// remainingfunds is used for profit calculation
+// - v1 close or liquidated -- remainingfunds is taken from event
+// - v1 repay + open -- remainingfunds is manually calculated with help of calCloseAmount in sdk-go
+// - v2 for closecreditaccount, remainingFunds is calculated from the account transfers
+// - v2 for liquidatecreditaccount, remainingFunds is taken from event
+// - v2 for openedaccounts, totalValue - amountToPool
+//
+// repayAmount
+// v1 - repayAmount = amountToPool, except the blockNum at which account is liquidated
+// v2 - close repayAmount is transferred from borrower to account as underlying token
+// v2 - liquidation and opened accounts
+//      the account might be having some underlying token balance so repayAMount = amountToPool - underlyingToken balance
+//
 func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
 	var amountToPool, calRemainingFunds *big.Int
 	sessionSnapshot := eng.lastCSS[session.ID]
+	//
+	accountIsLiquidable := session.Status == schemas.Liquidated && session.ClosedAt == debt.BlockNumber+1
 	// amount to pool
-	// if account is liquidable
-	accountIsLiquidable := debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 0
 	amountToPool, calRemainingFunds, _, _ = schemas.CalCloseAmount(eng.lastParameters[session.CreditManager], session.Version, debt.CalTotalValueBI.Convert(), accountIsLiquidable,
 		debt.CalBorrowedAmountPlusInterestBI.Convert(),
 		sessionSnapshot.BorrowedAmountBI.Convert())
@@ -383,21 +403,21 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 				price := utils.GetFloat64Decimal(tokenPrice, 8)
 				prices[token] = price
 				if balance.BI.Convert().Cmp(new(big.Int)) < 0 {
+					// assuming there is only one transfer from borrower to account
+					// this transfer will be in underlyingtoken. execute_parser.go:246 and
+					// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditManager.sol#L286-L291
 					repayAmount = new(big.Int).Mul(balance.BI.Convert(), big.NewInt(-1))
 				}
 			}
+			// remainingFunds calculation
 			// set price for underlying token
 			prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version), 8)
 			remainingFunds = session.Balances.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
+		} else if session.ClosedAt == debt.BlockNumber+1 && session.Status == schemas.Liquidated {
+			remainingFunds = session.RemainingFunds.Convert()
+			repayAmount = new(big.Int)
 		} else {
-			if calRemainingFunds.Cmp(new(big.Int)) != 0 { // v2  can be liquidated.
-				remainingFunds = calRemainingFunds
-			} else {
-				remainingFunds = new(big.Int).Sub(debt.CalTotalValueBI.Convert(), amountToPool)
-				// if remainingFunds.Cmp(new(big.Int)) < 0 {
-				// 	remainingFunds = new(big.Int)
-				// }
-			}
+			// repayamount
 			// for account not closed yet and account liquidated
 			// get underlying balance
 			underlying := (*session.Balances)[cumIndexAndUToken.Token]
@@ -405,12 +425,15 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 			if underlying != nil {
 				underlyingBalance = underlying.BI.Convert()
 			}
-			// repayAmount
-			if new(big.Int).Sub(underlyingBalance, new(big.Int).Add(amountToPool, remainingFunds)).Cmp(big.NewInt(1)) > 0 {
+			log.Info(amountToPool, calRemainingFunds)
+			if new(big.Int).Sub(underlyingBalance, new(big.Int).Add(amountToPool, calRemainingFunds)).Cmp(big.NewInt(1)) > 0 {
 				repayAmount = new(big.Int)
 			} else {
-				repayAmount = new(big.Int).Sub(new(big.Int).Add(amountToPool, remainingFunds), underlyingBalance)
+				repayAmount = new(big.Int).Sub(new(big.Int).Add(amountToPool, calRemainingFunds), underlyingBalance)
 			}
+
+			// remainingfunds
+			remainingFunds = new(big.Int).Sub(debt.CalTotalValueBI.Convert(), amountToPool)
 		}
 		debt.RepayAmountBI = (*core.BigInt)(repayAmount)
 	} else {
@@ -419,7 +442,12 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 		} else {
 			remainingFunds = calRemainingFunds
 		}
-		debt.RepayAmountBI = (*core.BigInt)(new(big.Int).Add(amountToPool, remainingFunds))
+		if session.Status == schemas.Liquidated && session.ClosedAt == debt.BlockNumber+1 {
+			debt.RepayAmountBI = (*core.BigInt)(new(big.Int))
+		} else {
+			// https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L487-L490
+			debt.RepayAmountBI = (*core.BigInt)(amountToPool)
+		}
 	}
 
 	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds, session.Version)

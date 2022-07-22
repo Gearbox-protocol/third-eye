@@ -231,6 +231,6 @@ func (mdl *CreditManager) getInitialAmount(blockNum int64, mainAction *schemas.A
 
 func (mdl *CreditManager) openCreditAccountInitialAmount(blockNum int64, mainAction *schemas.AccountOperation) {
 	initialAmount := mdl.getInitialAmount(blockNum, mainAction)
-	(*mainAction.Args)["initialAmount"] = initialAmount.String()
+	(*mainAction.Args)["amount"] = initialAmount.String()
 	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": initialAmount})
 }

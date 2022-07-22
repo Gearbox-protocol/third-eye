@@ -59,6 +59,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == schemas.Repaid {
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
+		session.RemainingFunds = (*core.BigInt)(closeDetails.RemainingFunds)
 		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmount
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
 	}

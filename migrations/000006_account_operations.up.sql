@@ -14,3 +14,6 @@ CREATE TABLE account_operations (
 );
 alter table account_operations add main_action integer ;
 alter table account_operations add constraint main_action_c FOREIGN KEY(main_action) references account_operations(id);
+
+CREATE INDEX operations_main_action ON account_operations(main_action);
+CREATE INDEX operations_session_id ON account_operations(session_id);

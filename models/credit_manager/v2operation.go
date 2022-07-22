@@ -164,6 +164,8 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 	return nil
 }
 
+// while closing funds can be transferred from the owner account too
+// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditManager.sol#L286-L291
 func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to string) error {
 	mdl.State.TotalClosedAccounts++
 	sessionId := mdl.GetCreditOwnerSession(owner)
@@ -190,6 +192,7 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	mdl.multiCallHandler(accountOperation)
 	// update remainingFunds
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
+	//
 	session.Balances = mdl.toJsonBalance(transfers)
 	var tokens []string
 	for token := range *session.Balances {
@@ -197,10 +200,9 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	}
 	tokens = append(tokens, mdl.GetUnderlyingToken())
 	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
-	// log.Info(prices)
-	// log.Info(utils.ToJson(session.Balances))
 	remainingFunds := (session.Balances.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
+	//
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		LogId:          txLog.Index,

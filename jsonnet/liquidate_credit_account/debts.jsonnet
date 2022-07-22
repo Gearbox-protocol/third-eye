@@ -1,7 +1,7 @@
 {
   currentDebts: [
     {
-      amountToPool: 5000 + 5750 * 0.95 * 0.02,  // borrowedamount+ totalvalue*feeLiquidation*liquidationCount, 5109.25
+      amountToPool: 5000 + 5750 * 0.95 * 0.02,  // borrowedamount + totalvalue*feeLiquidation*liquidationCount 109.25
       blockNum: 7,
       calBorrowedAmountPlusInterest: 5000,
       calHealthFactor: '9600',
@@ -12,7 +12,7 @@
       profitUSD: 5750 - (5109.25 + 6500),  // (total value  amountToPool , - collateral)
       profitUnderlying: 5750 - (5109.25 + 6500),
       sessionId: '#Account_1_3_3',
-      repayAmount: 5750,
+      repayAmount: 0,
     },
   ],
   debts: [{

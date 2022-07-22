@@ -10,7 +10,7 @@
       collateralUSD: 6500,
       collateralUnderlying: 6500,
       profitUSD: -2000,
-      repayAmount: 9500,
+      repayAmount: 5000,
       profitUnderlying: -2000,
       sessionId: '#Account_1_3_3',
     },

@@ -15,7 +15,7 @@
           creditAccount: '#Account_1',
           onBehalfOf: '#User_1',
           referralCode: 0,
-          initialAmount: '1000000000',
+          amount: '1000000000',
         },
         blockNum: 4,
         borrower: '#User_1',
