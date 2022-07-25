@@ -92,6 +92,7 @@ local borrowedAmount = 4000;
             // liquidationDiscount
             utils.bigIntTopic(9500, 0),
           ],
+          txHash: '!#Hash_3',
         },
       ],
       calls:

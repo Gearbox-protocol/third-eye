@@ -121,7 +121,7 @@
       BlockNumber: 3,
       Contract: '#CreditManager_1',
       LogID: 4,
-      TxHash: '0x0000000000000000000000000000000000000000000000000000000000000000',
+      TxHash: '#Hash_3',
       Type: 21,
     },
     {

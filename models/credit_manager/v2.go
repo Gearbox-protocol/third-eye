@@ -66,10 +66,11 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	case core.Topic("MultiCallStarted(address)"):
 		borrower := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		sessionId := mdl.GetCreditOwnerSession(borrower)
-		mdl.multicall.Start(borrower, txLog.TxHash.Hex(), &schemas.AccountOperation{
+		mdl.multicall.Start(txLog.TxHash.Hex(), &schemas.AccountOperation{
 			TxHash:      txLog.TxHash.Hex(),
 			BlockNumber: int64(txLog.BlockNumber),
 			SessionId:   sessionId,
+			Borrower:    borrower,
 			Dapp:        txLog.Address.Hex(),
 			Action:      "MultiCallStarted(address)",
 		})

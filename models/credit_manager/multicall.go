@@ -7,7 +7,7 @@ import (
 )
 
 type MultiCallProcessor struct {
-	borrower            string
+	// borrower            string
 	txHash              string
 	OpenEvent           *schemas.AccountOperation
 	events              []*schemas.AccountOperation
@@ -32,7 +32,7 @@ func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperati
 		if operation.TxHash != p.txHash {
 			log.Info("While multicall is running, event(%s) has different txhash %s", utils.ToJson(p.events), operation.TxHash)
 		}
-		operation.Borrower = p.borrower
+		// operation.Borrower = p.borrower
 		p.events = append(p.events, operation)
 	}
 }
@@ -49,7 +49,7 @@ func (p *MultiCallProcessor) AddOpenEvent(openEvent *schemas.AccountOperation) {
 	}
 	p.OpenEvent = openEvent
 }
-func (p *MultiCallProcessor) Start(borrower, txHash string, startEvent *schemas.AccountOperation) {
+func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOperation) {
 	if len(p.events) > 0 {
 		log.Infof("Previous multicall events not processed %s", utils.ToJson(p.events))
 	}
@@ -58,7 +58,7 @@ func (p *MultiCallProcessor) Start(borrower, txHash string, startEvent *schemas.
 			utils.ToJson(p.nonMultiCallEvents))
 	}
 	p.txHash = txHash
-	p.borrower = borrower
+	// p.borrower = borrower
 	p.MultiCallStartEvent = startEvent
 	p.running = true
 }
