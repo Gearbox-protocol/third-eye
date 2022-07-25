@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -178,11 +179,11 @@ func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) 
 	mainEvents := []*ds.FuncWithMultiCall{}
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
-			switch call.Input[:10] {
+			switch call.Input[2:10] {
 			case "caa5c23f", // multicall
 				"5f73fbec", // closeCreditAccount
 				"5d91a0e0", // liquidateCreditAccount
-				"47639fa8": // openCreditAccountMulticall
+				"7071b7c5": // openCreditAccountMulticall
 				event, err := getCreditFacadeMainEvent(call.Input)
 				if err != nil {
 					return nil, err
@@ -218,13 +219,9 @@ func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	multicalls, ok := data["calls"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("Not able to parse(%s) multicalls", data["calls"])
-	}
 	return &ds.FuncWithMultiCall{
 		Name:          method.Name,
-		MultiCallsLen: len(multicalls),
+		MultiCallsLen: reflect.ValueOf(data["calls"]).Len(),
 	}, nil
 }
 

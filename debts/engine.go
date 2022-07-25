@@ -425,7 +425,6 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 			if underlying != nil {
 				underlyingBalance = underlying.BI.Convert()
 			}
-			log.Info(amountToPool, calRemainingFunds)
 			if new(big.Int).Sub(underlyingBalance, new(big.Int).Add(amountToPool, calRemainingFunds)).Cmp(big.NewInt(1)) > 0 {
 				repayAmount = new(big.Int)
 			} else {

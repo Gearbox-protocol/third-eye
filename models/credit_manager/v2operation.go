@@ -26,12 +26,12 @@ func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
 func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation) {
 	account := strings.Split(mainAction.SessionId, "_")[0]
 	txHash := mainAction.TxHash
-	mainEvents := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
-	if len(mainEvents) != 1 {
-		log.Fatal(utils.ToJson(mainEvents))
+	actionWithMulticallLen := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
+	if len(actionWithMulticallLen) != 1 {
+		log.Fatal(utils.ToJson(actionWithMulticallLen), utils.ToJson(mainAction))
 	}
 	var tenderlyEventName string
-	switch mainEvents[0].Name {
+	switch actionWithMulticallLen[0].Name {
 	case "multicall":
 		mdl.setUpdateSession(mainAction.SessionId)
 		tenderlyEventName = "MultiCallStarted(address)"
@@ -44,13 +44,13 @@ func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation)
 		tenderlyEventName = "CloseCreditAccount(address,address)"
 	}
 	if tenderlyEventName != mainAction.Action {
-		log.Fatalf("Tenderly event %s is different from %s", mainEvents[0].Name, mainAction.Action)
+		log.Fatalf("Tenderly event %s is different from %s", actionWithMulticallLen[0].Name, mainAction.Action)
 	}
 	events := mdl.multicall.PopMulticallEventsV2()
 	//
-	if len(events) != mainEvents[0].MultiCallsLen {
+	if len(events) != actionWithMulticallLen[0].MultiCallsLen {
 		log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s",
-			mainEvents[0].Name, mainEvents[0].MultiCallsLen, len(events), utils.ToJson(events))
+			actionWithMulticallLen[0].Name, actionWithMulticallLen[0].MultiCallsLen, len(events), utils.ToJson(events))
 	}
 	//
 	executeEvents := []ds.ExecuteParams{}
