@@ -70,7 +70,6 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Profit:         repayEvent.Profit,
 			Loss:           repayEvent.Loss,
 		})
-
 		mdl.lastEventBlock = blockNum
 	case core.Topic("NewInterestRateModel(address)"):
 		interestModel, err := mdl.contractETH.ParseNewInterestRateModel(txLog)

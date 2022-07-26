@@ -60,6 +60,7 @@ type RepositoryI interface {
 	GetSessions() map[string]*schemas.CreditSession
 	GetValueInCurrency(blockNum int64, version int16, token, currency string, amount *big.Int) *big.Int
 	AddDieselToken(dieselToken, underlyingToken, pool string)
+	GetDieselTokens() map[string]*schemas.UTokenAndPool
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *schemas.CreditSessionSnapshot)
 	// dc

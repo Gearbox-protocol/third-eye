@@ -165,3 +165,7 @@ func (repo *TokensRepo) IsDieselToken(token string) bool {
 	defer repo.mu.Unlock()
 	return repo.dieselTokens[token] != nil
 }
+
+func (repo *TokensRepo) GetDieselTokens() map[string]*schemas.UTokenAndPool {
+	return repo.dieselTokens
+}
