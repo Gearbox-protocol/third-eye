@@ -7,7 +7,6 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	_ds "github.com/Gearbox-protocol/sdk-go/ds"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -35,7 +34,7 @@ type Repository struct {
 	db             *gorm.DB
 	client         core.ClientI
 	config         *config.Config
-	accountManager *_ds.DirectTransferManager
+	accountManager *ds.DirectTransferManager
 	relations      []*schemas.UniPriceAndChainlink
 }
 
@@ -54,7 +53,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 		db:               db,
 		client:           client,
 		config:           cfg,
-		accountManager:   _ds.NewDirectTransferManager(),
+		accountManager:   ds.NewDirectTransferManager(),
 	}
 	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
