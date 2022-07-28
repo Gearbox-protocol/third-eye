@@ -3,6 +3,7 @@ package credit_manager
 import (
 	"fmt"
 	"math/big"
+	"sort"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -26,12 +27,13 @@ func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
 func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation) {
 	account := strings.Split(mainAction.SessionId, "_")[0]
 	txHash := mainAction.TxHash
-	actionWithMulticallLen := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
-	if len(actionWithMulticallLen) != 1 {
-		log.Fatal(utils.ToJson(actionWithMulticallLen), utils.ToJson(mainAction))
+	internalTxWithMulticall := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
+	if len(internalTxWithMulticall) != 1 {
+		log.Fatal(utils.ToJson(internalTxWithMulticall), utils.ToJson(mainAction))
 	}
+	actionWithMulticall := internalTxWithMulticall[0]
 	var tenderlyEventName string
-	switch actionWithMulticallLen[0].Name {
+	switch actionWithMulticall.Name {
 	case "multicall":
 		mdl.setUpdateSession(mainAction.SessionId)
 		tenderlyEventName = "MultiCallStarted(address)"
@@ -44,13 +46,14 @@ func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation)
 		tenderlyEventName = "CloseCreditAccount(address,address)"
 	}
 	if tenderlyEventName != mainAction.Action {
-		log.Fatalf("Tenderly event %s is different from %s", actionWithMulticallLen[0].Name, mainAction.Action)
+		log.Fatalf("Tenderly event %s is different from %s", actionWithMulticall.Name, mainAction.Action)
 	}
 	events := mdl.multicall.PopMulticallEventsV2()
 	//
-	if len(events) != actionWithMulticallLen[0].MultiCallsLen {
+	borrowerEventLen := actionWithMulticall.LenForBorrower(mainAction.Borrower)
+	if len(events) != borrowerEventLen {
 		log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s",
-			actionWithMulticallLen[0].Name, actionWithMulticallLen[0].MultiCallsLen, len(events), utils.ToJson(events))
+			actionWithMulticall.Name, borrowerEventLen, len(events), utils.ToJson(events))
 	}
 	//
 	executeEvents := []ds.ExecuteParams{}
@@ -62,8 +65,15 @@ func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation)
 		}
 
 		switch event.Action {
-		case "AddCollateral(address,address,uint256)",
-			"IncreaseBorrowedAmount(address,uint256)",
+		case "AddCollateral(address,address,uint256)":
+			if event.Borrower == mainAction.Borrower {
+				multicalls = append(multicalls, event)
+				// add collateral can have different borrower then the mainaction user/borrower.
+				// related to issue #37.
+			} else {
+				mdl.Repo.AddAccountOperation(event)
+			}
+		case "IncreaseBorrowedAmount(address,uint256)",
 			"DecreaseBorrowedAmount(address,uint256)":
 			multicalls = append(multicalls, event)
 		case "ExecuteOrder":
@@ -80,6 +90,7 @@ func (mdl *CreditManager) multiCallHandler(mainAction *schemas.AccountOperation)
 		}
 	}
 	multicalls = append(multicalls, mdl.getProcessedExecuteEvents(txHash, executeEvents)...)
+	sort.Slice(multicalls, func(i, j int) bool { return multicalls[i].LogId < multicalls[j].LogId })
 	mainAction.MultiCall = multicalls
 	// calculate initialAmount on open new credit creditaccount
 	if mainAction.Action == "OpenCreditAccount(address,address,uint256,uint16)" {
