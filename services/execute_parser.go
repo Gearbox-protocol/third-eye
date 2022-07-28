@@ -219,9 +219,16 @@ func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	calls, ok := data["calls"].([]struct {
+		Target   common.Address `json:"target"`
+		CallData []uint8        `json:"callData"`
+	})
+	if !ok {
+		log.Fatal("calls type is different the creditFacade multicall: ", reflect.TypeOf(data["calls"]))
+	}
 	return &ds.FuncWithMultiCall{
-		Name:          method.Name,
-		MultiCallsLen: reflect.ValueOf(data["calls"]).Len(),
+		Name:       method.Name,
+		MultiCalls: calls,
 	}, nil
 }
 
