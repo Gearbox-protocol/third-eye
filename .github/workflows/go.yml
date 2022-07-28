@@ -26,4 +26,4 @@ jobs:
     - run: go get github.com/google/go-jsonnet/cmd/jsonnet && ./generate-test.sh
       if: steps.cache-packages.outputs.cache-hit != 'true'
     - name: Run Test
-      run: go test ./tests && go test ./services
+      run: go test ./tests && go test ./services && go test ./ds

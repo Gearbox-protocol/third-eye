@@ -65,7 +65,7 @@ func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
 	return nil
 }
 
-func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) []core.Transfers {
+func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents map[string]bool) []core.Transfers {
 	balances := make(core.Transfers)
 	var execEventBalances []core.Transfers
 	parsingTransfer := false
@@ -75,7 +75,7 @@ func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents []string) 
 		eventSig := eventLog.Topics[0]
 		eventLogAddress := common.HexToAddress(eventLog.Address).Hex()
 		// if any other creditmanager event is emitted add to the execute
-		if utils.Contains(cmEvents, eventSig) && parsingTransfer {
+		if cmEvents[eventSig] && parsingTransfer {
 			execEventBalances = append(execEventBalances, balances)
 			balances = make(core.Transfers)
 			parsingTransfer = false

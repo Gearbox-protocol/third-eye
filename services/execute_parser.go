@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
@@ -40,15 +41,29 @@ type ExecuteParams struct {
 
 type ExecuteParser struct {
 	Client              http.Client
-	IgnoreCMEventIds    []string
+	IgnoreCMEventIds    map[string]bool
 	ExecuteOrderFuncSig string
 	ChainId             uint
 }
 
+func getCMEventIds() map[string]bool {
+	ids := map[string]bool{}
+	if abiObj, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI)); err == nil {
+		for _, event := range abiObj.Events {
+			ids[event.ID.Hex()] = true
+		}
+	}
+	if abiObj, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
+		for _, event := range abiObj.Events {
+			ids[event.ID.Hex()] = true
+		}
+	}
+	return ids
+}
 func NewExecuteParser(config *config.Config) ds.ExecuteParserI {
 	return &ExecuteParser{
 		Client:              http.Client{},
-		IgnoreCMEventIds:    utils.GetCreditManagerEventIds(),
+		IgnoreCMEventIds:    getCMEventIds(),
 		ExecuteOrderFuncSig: "0x6ce4074a",
 		ChainId:             config.ChainId,
 	}
