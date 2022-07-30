@@ -4,42 +4,43 @@ local borrowedAmount = 4000;
 {
   mocks: {
     syncAdapters: 'mocks/syncAdapterV2.json',
+    tokens: '../inputs/mocks/tokens.json',
   },
   states: {
-    oracles: [
-      {  // for v1
+    oracles: {
+      '#Oracle_0': [{  // for v1
         oracle: '#Oracle_0',
         block: 1,
         feed: '#ChainlinkPriceFeed_0',
-      },  // for v2
-      {
+      }],  // for v2
+      '#Oracle_1': [{
         oracle: '#Oracle_1',
         block: 1,
         feed: '#ChainlinkPriceFeed_1',
-      },
-      {
+      }],
+      '#Oracle_2': [{
         oracle: '#Oracle_2',
         block: 1,
         feed: '#ChainlinkPriceFeed_2',
-      },
-      {
+      }],
+      '#Oracle_3': [{
         oracle: '#Oracle_3',
         block: 1,
         feed: '#ChainlinkPriceFeed_3',
-      },
-      {
+      }],
+      '#Oracle_4': [{
         oracle: '#Oracle_4',
         block: 1,
         feed: '#ChainlinkPriceFeed_4',
-      },
-    ],
+      }],
+    },
   },
   blocks: {
     '2': {
       calls: {
         others: {
-          '2f7a1881': ['#CreditFacade_1'],
-          f9aa028a: ['#CreditConfigurator_1'],
+          '2f7a1881': { '#CreditManager_1': '#CreditFacade_1' },
+          f9aa028a: { '#CreditManager_1': '#CreditConfigurator_1' },
         },
       },
     },

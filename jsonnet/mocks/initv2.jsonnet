@@ -2,35 +2,36 @@ local utils = import '../utils.libsonnet';
 {
   mocks: {
     syncAdapters: 'mocks/syncAdapterV2.json',
+    tokens: '../inputs/mocks/tokens.json',
   },
   states: {
-    oracles: [
-      {  // for v1
+    oracles: {
+      '#Oracle_0': [{  // for v1
         oracle: '#Oracle_0',
         block: 1,
         feed: '#ChainlinkPriceFeed_0',
-      },  // for v2
-      {
+      }],  // for v2
+      '#Oracle_1': [{
         oracle: '#Oracle_1',
         block: 1,
         feed: '#ChainlinkPriceFeed_1',
-      },
-      {
+      }],
+      '#Oracle_2': [{
         oracle: '#Oracle_2',
         block: 1,
         feed: '#ChainlinkPriceFeed_2',
-      },
-      {
+      }],
+      '#Oracle_3': [{
         oracle: '#Oracle_3',
         block: 1,
         feed: '#ChainlinkPriceFeed_3',
-      },
-      {
+      }],
+      '#Oracle_4': [{
         oracle: '#Oracle_4',
         block: 1,
         feed: '#ChainlinkPriceFeed_4',
-      },
-    ],
+      }],
+    },
   },
   blocks: {
     // block with open and borrow more underlying asset

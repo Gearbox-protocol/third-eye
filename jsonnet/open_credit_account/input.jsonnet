@@ -4,17 +4,21 @@ local borrowedAmount = 4000;
 {
   mocks: {
     syncAdapters: 'mocks/syncAdapter1.json',
+    tokens: '../inputs/mocks/tokens.json',
   },
   states: {
-    oracles: [{
-      oracle: '#Oracle_1',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_1',
-    }, {
-      oracle: '#Oracle_2',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_2',
-    }],
+    oracles: {
+      '#Oracle_1': [{
+        oracle: '#Oracle_1',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_1',
+      }],
+      '#Oracle_2': [{
+        oracle: '#Oracle_2',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_2',
+      }],
+    },
   },
   blocks: {
     '3': {

@@ -5,17 +5,21 @@ local utils = import '../utils.libsonnet';
 {
   mocks: {
     syncAdapters: 'mocks/syncAdapterInit.json',
+    tokens: '../inputs/mocks/tokens.json',
   },
   states: {
-    oracles: [{
-      oracle: '#Oracle_1',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_1',
-    }, {
-      oracle: '#Oracle_5',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_5',
-    }],
+    oracles: {
+      '#Oracle_1': [{
+        oracle: '#Oracle_1',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_1',
+      }],
+      '#Oracle_5': [{
+        oracle: '#Oracle_5',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_5',
+      }],
+    },
   },
   blocks: {
     // v1 blocks: 3 and 4
@@ -106,10 +110,10 @@ local utils = import '../utils.libsonnet';
       ],
       calls: {
         others: {
-          '2495a599': ['#Token_1'],
-          '36dda7d5': ['#DieselToken_1'],
-          f93f515b: ['#CreditFilter_1'],
-          '570a7af2': ['#Pool_1'],
+          '2495a599': { '#CreditManager_1': '#Token_1', '#Pool_1': '#Token_1' },
+          '36dda7d5': { '#Pool_1': '#DieselToken_1' },
+          f93f515b: { '#CreditManager_1': '#CreditFilter_1' },
+          '570a7af2': { '#CreditManager_1': '#Pool_1' },
         },
         pools: [{
           address: '#Pool_1',
@@ -152,7 +156,7 @@ local utils = import '../utils.libsonnet';
       ],
       calls: {
         others: {
-          '54fd4d50': ['2'],  // version 2 for price oracle
+          '54fd4d50': { '#PriceOracle_2': '2' },  // version 2 for price oracle
         },
       },
     },
@@ -224,13 +228,13 @@ local utils = import '../utils.libsonnet';
       ],
       calls: {
         others: {
-          '2495a599': ['#Token_1'],  // underlyingTOken used by pool
-          '6f307dc3': ['#Token_1'],  // underlying used by credit manager version 2
-          '36dda7d5': ['#DieselToken_1'],
-          '570a7af2': ['#Pool_2'],
-          '2f7a1881': ['#CreditFacade_2'],
-          f9aa028a: ['#CreditConfigurator_2'],  // getcrditconfigurator
-          '54fd4d50': ['2'],  // version
+          '2495a599': { '#Pool_2': '#Token_1' },  // underlyingTOken used by pool
+          '6f307dc3': { '#CreditManager_2': '#Token_1' },  // underlying used by credit manager version 2
+          '36dda7d5': { '#Pool_2': '#DieselToken_1' },  // get dieeltoken on pool
+          '570a7af2': { '#CreditManager_2': '#Pool_2' },  // poolservice
+          '2f7a1881': { '#CreditManager_2': '#CreditFacade_2' },  // creditfacade
+          f9aa028a: { '#CreditManager_2': '#CreditConfigurator_2' },  // getcreditconfigurator
+          '54fd4d50': { '#CreditManager_2': '2', '#CreditConfigurator_2': '2', '#Pool_2': '2' },  // version
         },
         pools: [{
           address: '#Pool_2',

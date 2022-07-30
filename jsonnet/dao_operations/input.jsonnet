@@ -4,21 +4,26 @@ local borrowedAmount = 4000;
 {
   mocks: {
     syncAdapters: 'mocks/syncAdapter1.json',
+    tokens: '../inputs/mocks/tokens.json',
   },
   states: {
-    oracles: [{
-      oracle: '#Oracle_1',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_1',
-    }, {
-      oracle: '#Oracle_2',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_2',
-    }, {
-      oracle: '#Oracle_4',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_4',
-    }],
+    oracles: {
+      '#Oracle_1': [{
+        oracle: '#Oracle_1',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_1',
+      }],
+      '#Oracle_2': [{
+        oracle: '#Oracle_2',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_2',
+      }],
+      '#Oracle_4': [{
+        oracle: '#Oracle_4',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_4',
+      }],
+    },
   },
   blocks: {
     '3': {
@@ -83,7 +88,8 @@ local borrowedAmount = 4000;
             '#Plugin_1',
           ],
           data: [
-            'bool:1',  // for true
+            // for true
+            'bool:1',
           ],
           txHash: '!#Hash_6',
         },
@@ -141,7 +147,8 @@ local borrowedAmount = 4000;
             'NewWithdrawFee(uint256)',
           ],
           data: [
-            utils.bigIntTopic(100, 0),  //1%
+            //1%
+            utils.bigIntTopic(100, 0),
           ],
           txHash: '!#Hash_12',
         },

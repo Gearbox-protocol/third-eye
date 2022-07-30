@@ -1,9 +1,10 @@
 package tests
 
 import (
+	"testing"
+
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
-	"testing"
 )
 
 func TestSyncAdapters(t *testing.T) {

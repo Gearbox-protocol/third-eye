@@ -2,6 +2,41 @@ local utils = import '../utils.libsonnet';
 local borrowedAmount = 4000;
 local extraBorrowedAmount = 1000;
 {
+  executeParser: {
+    '9': {
+      executeOnCM: {
+        '!#Hash_12': [{
+          name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+          args: {
+            _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
+            amountIn: utils.bigIntTopic(2, 18),
+            amountOutMin: utils.bigIntTopic(1, 18),
+            path: ['#Token_3', '#Token_1'],
+            '': '#Account_1',
+            deadline: 0,
+          },
+          depth: 0,
+          transfers: {
+            '#Token_3': utils.bigInt(-2, 18),
+            '#Token_1': utils.bigInt(4000, 6),
+          },
+        }],
+      },
+      executeTransfers: {
+        '!#Hash_12': {
+          '#Token_1': utils.bigInt(1000, 6),
+          '#Token_2': utils.bigInt(0.1, 18),
+          '#Token_3': utils.bigInt(1, 18),
+        },
+      },
+      mainEventLogs: {
+        '!#Hash_12': [{
+          name: 'closeCreditAccount',
+          len: 1,
+        }],
+      },
+    },
+  },
   blocks: {
     '8': {
       calls: {
@@ -120,37 +155,6 @@ local extraBorrowedAmount = 1000;
             availableLiquidity: utils.bigInt(10000, 6),
             borrowRate: '0',
           }],
-          mainEventLogs: {
-            '!#Hash_12': [{
-              name: 'closeCreditAccount',
-              len: 1,
-            }],
-          },
-          executeOnCM: {
-            '!#Hash_12': [{
-              name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
-              args: {
-                _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
-                amountIn: utils.bigIntTopic(2, 18),
-                amountOutMin: utils.bigIntTopic(1, 18),
-                path: ['#Token_3', '#Token_1'],
-                '': '#Account_1',
-                deadline: 0,
-              },
-              depth: 0,
-              transfers: {
-                '#Token_3': utils.bigInt(-2, 18),
-                '#Token_1': utils.bigInt(4000, 6),
-              },
-            }],
-          },
-          executeTransfers: {
-            '!#Hash_12': {
-              '#Token_1': utils.bigInt(1000, 6),
-              '#Token_2': utils.bigInt(0.1, 18),
-              '#Token_3': utils.bigInt(1, 18),
-            },
-          },
         },
     },
   },

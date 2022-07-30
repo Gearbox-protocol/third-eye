@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -44,13 +45,13 @@ func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 		client:             client,
 		v2DC:               make(map[int64]*v2DC),
 		testing: &DCTesting{
-			calls: map[int64]*DCCalls{},
+			calls: map[int64]*test.DCCalls{},
 		},
 	}
 }
 
 // testing
-func (dcw *DataCompressorWrapper) SetCalls(blockNum int64, calls *DCCalls) {
+func (dcw *DataCompressorWrapper) SetCalls(blockNum int64, calls *test.DCCalls) {
 	dcw.testing.calls[blockNum] = calls
 }
 

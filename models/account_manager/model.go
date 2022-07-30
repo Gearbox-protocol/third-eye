@@ -8,9 +8,10 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 
 	//
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"math/big"
 )
 
 type AccountManager struct {

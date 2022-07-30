@@ -6,17 +6,43 @@ local newCollateral = 1;
 {
   mocks: {
     syncAdapters: 'mocks/syncAdapter1.json',
+    tokens: '../inputs/mocks/tokens.json',
   },
   states: {
-    oracles: [{
-      oracle: '#Oracle_1',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_1',
-    }, {
-      oracle: '#Oracle_2',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_2',
-    }],
+    oracles: {
+      '#Oracle_1': [{
+        oracle: '#Oracle_1',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_1',
+      }],
+      '#Oracle_2': [{
+        oracle: '#Oracle_2',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_2',
+      }],
+    },
+  },
+  executeParser: {
+    '5': {
+      executeOnCM: {
+        '!#Hash_8': [{
+          name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+          args: {
+            _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
+            amountIn: utils.bigIntTopic(5000, 6),
+            amountOutMin: utils.bigIntTopic(2, 18),
+            path: ['#Token_1', '#Token_3'],
+            '': '#Account_1',
+            deadline: 0,
+          },
+          depth: 0,
+          transfers: {
+            '#Token_1': utils.bigInt(-5000, 6),
+            '#Token_3': utils.bigInt(2, 18),
+          },
+        }],
+      },
+    },
   },
   blocks: {
     // block with open and borrow more underlying asset
@@ -103,10 +129,12 @@ local newCollateral = 1;
           address: '#CreditManager_1',
           topics: [
             'IncreaseBorrowedAmount(address,uint256)',
-            '#User_1',  // borrower
+            // borrower
+            '#User_1',
           ],
           data: [
-            utils.bigIntTopic(extraBorrowedAmount, 6),  // amount
+            // amount
+            utils.bigIntTopic(extraBorrowedAmount, 6),
           ],
           txHash: '!#Hash_6',
         },
@@ -275,24 +303,6 @@ local newCollateral = 1;
           availableLiquidity: utils.bigInt(1000, 6),
           borrowRate: '0',
         }],
-        executeOnCM: {
-          '!#Hash_8': [{
-            name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
-            args: {
-              _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
-              amountIn: utils.bigIntTopic(5000, 6),
-              amountOutMin: utils.bigIntTopic(2, 18),
-              path: ['#Token_1', '#Token_3'],
-              '': '#Account_1',
-              deadline: 0,
-            },
-            depth: 0,
-            transfers: {
-              '#Token_1': utils.bigInt(-5000, 6),
-              '#Token_3': utils.bigInt(2, 18),
-            },
-          }],
-        },
       },
     },
     // direct token transfer

@@ -6,58 +6,51 @@ import (
 	"testing"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
 
-type TestMask struct {
-	Mask    *core.BigInt `json:"mask"`
-	Account string       `json:"account"`
-}
-
-type TestCall struct {
-	Pools         []dc_wrapper.TestPoolCallData      `json:"pools"`
-	CMs           []dc_wrapper.TestCMCallData        `json:"cms"`
-	Accounts      []dc_wrapper.TestAccountCallData   `json:"accounts"`
-	Masks         []TestMask                         `json:"masks"`
+type TestExecuteParser struct {
 	ExecuteOnCM   map[string][]*ds.KnownCall         `json:"executeOnCM"`
 	MainEventLogs map[string][]*ds.FuncWithMultiCall `json:"mainEventLogs"`
-	OtherCalls    map[string][]string                `json:"others"`
 	// txHash to transfers
 	ExecuteTransfers map[string]core.Transfers `json:"executeTransfers"`
 }
 
-func (c *TestCall) Process() {
-	return
+type TestInput3Eye struct {
+	*test.TestInput
+	ExecuteParser map[int64]*TestExecuteParser `json:"executeParser"`
 }
 
-type BlockInput struct {
-	Events []test.TestEvent `json:"events"`
-	Calls  TestCall         `json:"calls"`
-}
-type TestInput struct {
-	Blocks    map[int64]BlockInput `json:"blocks"`
-	MockFiles map[string]string    `json:"mocks"`
-	States    test.TestState       `json:"states"`
+func NewTestInput3Eye() *TestInput3Eye {
+	return &TestInput3Eye{
+		TestInput:     test.NewTestInput(),
+		ExecuteParser: make(map[int64]*TestExecuteParser),
+	}
 }
 
-func (testInput *TestInput) Get(file string, addressMap core.AddressMap, t *testing.T) *SyncAdapterMock {
-	filePath := fmt.Sprintf("../inputs/%s", file)
-	tmpObj := TestInput{}
-	utils.ReadJsonAndSetInterface(filePath, &tmpObj)
-	var syncAdapterObj *SyncAdapterMock
-
-	for key, fileName := range tmpObj.MockFiles {
+func (file *TestInput3Eye) Merge(other test.TestInputI) {
+	otherFile := other.(*TestInput3Eye)
+	file.TestInput.Merge(otherFile.TestInput)
+	for block, executeLogs := range otherFile.ExecuteParser {
+		if file.ExecuteParser[block] != nil {
+			log.Fatal("execute parser already present for block", block)
+		}
+		file.ExecuteParser[block] = executeLogs
+	}
+}
+func (testInput *TestInput3Eye) GetSyncAdapter(addressMap core.AddressMap, t *testing.T) *SyncAdapterMock {
+	for key, fileName := range testInput.MockFiles {
 		mockFilePath := fmt.Sprintf("../inputs/%s", fileName)
 		if key == "syncAdapters" {
-			syncAdapterObj = &SyncAdapterMock{}
+			syncAdapterObj := &SyncAdapterMock{}
 			addAddressSetJson(mockFilePath, syncAdapterObj, addressMap, t)
+			return syncAdapterObj
 		}
 	}
-	addAddressSetJson(filePath, testInput, addressMap, t)
-	return syncAdapterObj
+	return nil
 }
 
 func addAddressSetJson(filePath string, obj interface{}, addressMap core.AddressMap, t *testing.T) {

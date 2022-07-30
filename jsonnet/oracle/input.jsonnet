@@ -6,25 +6,30 @@ local extraBorrowedAmount = 1000;
 {
   mocks: {
     syncAdapters: 'mocks/syncAdapter1.json',
+    tokens: '../inputs/mocks/tokens.json',
   },
   states: {
-    oracles: [{
-      oracle: '#Oracle_1',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_1',
-    }, {
-      oracle: '#Oracle_2',
-      block: 1,
-      feed: '#ChainlinkPriceFeed_2',
-    }, {
-      oracle: '#Oracle_3',
-      block: 4,
-      feed: '#ChainlinkPriceFeed_3',
-    }, {
-      oracle: '#Oracle_2',
-      block: 4,
-      feed: '#ChainlinkPriceFeed_4',
-    }],
+    oracles: {
+      '#Oracle_1': [{
+        oracle: '#Oracle_1',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_1',
+      }],
+      '#Oracle_2': [{
+        oracle: '#Oracle_2',
+        block: 1,
+        feed: '#ChainlinkPriceFeed_2',
+      }, {
+        oracle: '#Oracle_2',
+        block: 4,
+        feed: '#ChainlinkPriceFeed_4',
+      }],
+      '#Oracle_3': [{
+        oracle: '#Oracle_3',
+        block: 4,
+        feed: '#ChainlinkPriceFeed_3',
+      }],
+    },
   },
   blocks: {
     '3': {

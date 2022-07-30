@@ -13,6 +13,57 @@ local extraBorrowedAmount = 1000;
 local newCollateral = 1;
 // price are in usd
 {
+  executeParser: {
+    '5': {
+      mainEventLogs: {
+        '!#Hash_7': [{
+          name: 'multicall',
+          len: 2,
+        }],
+      },
+    },
+    '6': {
+      executeOnCM: {
+        '!#Hash_8': [{
+          name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+          args: {
+            _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
+            amountIn: utils.bigIntTopic(2500, 6),
+            amountOutMin: utils.bigIntTopic(1, 18),
+            path: ['#Token_1', '#Token_3'],
+            '': '#Account_1',
+            deadline: 0,
+          },
+          depth: 0,
+          transfers: {
+            '#Token_1': utils.bigInt(-2500, 6),
+            '#Token_3': utils.bigInt(1, 18),
+          },
+        }, {
+          name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
+          args: {
+            _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
+            amountIn: utils.bigIntTopic(2500, 6),
+            amountOutMin: utils.bigIntTopic(1, 18),
+            path: ['#Token_1', '#Token_3'],
+            '': '#Account_1',
+            deadline: 0,
+          },
+          depth: 0,
+          transfers: {
+            '#Token_1': utils.bigInt(-2500, 6),
+            '#Token_3': utils.bigInt(1, 18),
+          },
+        }],
+      },
+      mainEventLogs: {
+        '!#Hash_8': [{
+          name: 'multicall',
+          len: 2,
+        }],
+      },
+    },
+  },
   blocks: {
     // block with open and borrow more underlying asset
     '4': {
@@ -240,12 +291,6 @@ local newCollateral = 1;
           availableLiquidity: utils.bigInt(5500, 6),
           borrowRate: '0',
         }],
-        mainEventLogs: {
-          '!#Hash_7': [{
-            name: 'multicall',
-            len: 2,
-          }],
-        },
       },
     },
     // swap on uniswap v2
@@ -321,45 +366,6 @@ local newCollateral = 1;
           availableLiquidity: utils.bigInt(1000, 6),
           borrowRate: '0',
         }],
-        executeOnCM: {
-          '!#Hash_8': [{
-            name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
-            args: {
-              _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
-              amountIn: utils.bigIntTopic(2500, 6),
-              amountOutMin: utils.bigIntTopic(1, 18),
-              path: ['#Token_1', '#Token_3'],
-              '': '#Account_1',
-              deadline: 0,
-            },
-            depth: 0,
-            transfers: {
-              '#Token_1': utils.bigInt(-2500, 6),
-              '#Token_3': utils.bigInt(1, 18),
-            },
-          }, {
-            name: 'swapExactTokensForTokens(uint256,uint256,address[],address,uint256)',
-            args: {
-              _order: ['amountIn', 'amountOutMin', 'path', '', 'deadline'],
-              amountIn: utils.bigIntTopic(2500, 6),
-              amountOutMin: utils.bigIntTopic(1, 18),
-              path: ['#Token_1', '#Token_3'],
-              '': '#Account_1',
-              deadline: 0,
-            },
-            depth: 0,
-            transfers: {
-              '#Token_1': utils.bigInt(-2500, 6),
-              '#Token_3': utils.bigInt(1, 18),
-            },
-          }],
-        },
-        mainEventLogs: {
-          '!#Hash_8': [{
-            name: 'multicall',
-            len: 2,
-          }],
-        },
       },
     },
     // direct token transfer for yfi and usdc

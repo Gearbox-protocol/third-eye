@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"strings"
 	"testing"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -13,26 +12,10 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/core/types"
 )
-
-func getTestAdapter(name string, lastSync int64, details core.Json) *ds.SyncAdapter {
-	return &ds.SyncAdapter{
-		SyncAdapterSchema: &schemas.SyncAdapterSchema{
-			LastSync: lastSync,
-			Contract: &schemas.Contract{
-				ContractName: name,
-				Address:      utils.RandomAddr(),
-				DiscoveredAt: lastSync,
-				FirstLogAt:   lastSync + 1,
-			},
-			Details: details,
-		},
-	}
-}
 
 type SyncAdapterMock struct {
 	Adapters  []*ds.SyncAdapter             `json:"adapters"`
@@ -44,14 +27,13 @@ type SyncAdapterMock struct {
 type MockRepo struct {
 	Repo         ds.RepositoryI
 	client       *test.TestClient
-	InputFile    *TestInput
+	InputFile    *TestInput3Eye
 	AddressMap   core.AddressMap
 	SyncAdapters []*ds.SyncAdapter
 	t            *testing.T
 	Eng          ds.EngineI
 	//oracle to token
 	feedToToken   map[string]string
-	addressToType map[string]string
 	executeParser *MockExecuteParser
 }
 
@@ -62,31 +44,33 @@ func NewMockRepo(repo ds.RepositoryI, client *test.TestClient,
 		client:        client,
 		t:             t,
 		Eng:           eng,
-		addressToType: make(map[string]string),
 		feedToToken:   make(map[string]string),
 		executeParser: ep,
 	}
 }
 
-func (m *MockRepo) Init(files []string) {
-	m.AddressMap = core.AddressMap{}
-	for _, file := range files {
-		m.fetchInputTestFile(file)
+func (m *MockRepo) Init(fileNames []string) {
+	filePaths := make([]string, len(fileNames))
+	for i, fileName := range fileNames {
+		filePaths[i] = fmt.Sprintf("../inputs/%s", fileName)
 	}
+	files := make([]test.TestInputI, len(fileNames))
+	for i := range fileNames {
+		files[i] = NewTestInput3Eye()
+	}
+	testInput3Eye, addressMap := test.LoadTestFiles(filePaths, files, m.t)
+	//
+	inputFile := testInput3Eye.(*TestInput3Eye)
+	inputFile.AddToClient(m.client, addressMap)
+	for _, token := range m.client.GetToken() {
+		m.Repo.AddTokenObj(token)
+	}
+	m.AddressMap = addressMap
+	m.processInputTestFile(inputFile)
 }
 
-func (m *MockRepo) fetchInputTestFile(inputFile string) *TestInput {
-	testInput := &TestInput{}
-	syncAdapterObj := testInput.Get(inputFile, m.AddressMap, m.t)
-	// map address to type
-	for key, value := range m.AddressMap {
-		splits := strings.Split(key, "_")
-		if len(splits) == 2 {
-			m.addressToType[value] = splits[0]
-		} else {
-			m.t.Fatalf("Not properly formatted key: %s", key)
-		}
-	}
+func (m *MockRepo) processInputTestFile(inputFile *TestInput3Eye) {
+	syncAdapterObj := inputFile.GetSyncAdapter(m.AddressMap, m.t)
 	// set feed to token
 	if syncAdapterObj != nil {
 		for _, adapter := range syncAdapterObj.Adapters {
@@ -95,13 +79,16 @@ func (m *MockRepo) fetchInputTestFile(inputFile string) *TestInput {
 			}
 		}
 	}
+	for _, executeLogs := range inputFile.ExecuteParser {
+		m.executeParser.setCalls(executeLogs.ExecuteOnCM)
+		m.executeParser.setMainEvents(executeLogs.MainEventLogs)
+		m.executeParser.setTransfers(executeLogs.ExecuteTransfers)
 
-	m.ProcessState(testInput)
-	m.ProcessCalls(testInput)
-	m.ProcessEvents(testInput)
+	}
+
+	m.processDCCalls(inputFile)
+	m.processPrices(inputFile)
 	m.setSyncAdapters(syncAdapterObj)
-	return testInput
-
 }
 
 func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
@@ -142,37 +129,22 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		}
 		kit.Add(actualAdapter)
 	}
-	for _, tokenObj := range obj.Tokens {
-		switch tokenObj.Symbol {
-		case "USDC":
-			m.client.SetUSDC(tokenObj.Address)
-		case "WETH":
-			m.client.SetWETH(tokenObj.Address)
-		}
-		m.Repo.AddTokenObj(tokenObj)
-		m.client.AddToken(tokenObj.Address, tokenObj.Decimals)
-	}
-	// m.SyncAdapters = obj.Adapters
 }
 
-func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
+func (m *MockRepo) processPrices(inputFile *TestInput3Eye) {
 	events := map[int64]map[string][]types.Log{}
 	prices := map[string]map[int64]*big.Int{}
 	for blockNum, block := range inputFile.Blocks {
 		if events[blockNum] == nil {
 			events[blockNum] = make(map[string][]types.Log)
 		}
-		for ind, event := range block.Events {
-			txLog := event.Process(m.addressToType[event.Address])
-			txLog.Index = uint(ind)
-			txLog.BlockNumber = uint64(blockNum)
-			events[blockNum][event.Address] = append(events[blockNum][event.Address], txLog)
+		for _, event := range block.Events {
 			if event.Topics[0] == core.Topic("AnswerUpdated(int256,uint256,uint256)").Hex() {
-				price, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
+				price, ok := new(big.Int).SetString(event.Topics[1][7:], 10)
 				if !ok {
 					log.Fatal("Failed in parsing price in answerupdated")
 				}
-				token := m.feedToToken[txLog.Address.Hex()]
+				token := m.feedToToken[event.Address]
 				if prices[token] == nil {
 					prices[token] = make(map[int64]*big.Int)
 				}
@@ -180,17 +152,13 @@ func (m *MockRepo) ProcessEvents(inputFile *TestInput) {
 			}
 		}
 	}
-	m.client.SetEvents(events)
-	// log.Info(utils.ToJson(prices))
 	m.client.SetPrices(prices)
 }
-func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
-	accountMask := make(map[int64]map[string]*big.Int)
+
+func (m *MockRepo) processDCCalls(inputFile *TestInput3Eye) {
 	wrapper := m.Repo.GetDCWrapper()
-	otherCalls := make(map[int64]map[string][]string)
 	for blockNum, block := range inputFile.Blocks {
-		otherCalls[blockNum] = block.Calls.OtherCalls
-		calls := dc_wrapper.NewDCCalls()
+		calls := test.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
 			calls.Pools[poolCall.Addr] = poolCall
 		}
@@ -201,25 +169,7 @@ func (m *MockRepo) ProcessCalls(inputFile *TestInput) {
 		for _, cmCall := range block.Calls.CMs {
 			calls.CMs[cmCall.Addr] = cmCall
 		}
-		m.executeParser.setCalls(block.Calls.ExecuteOnCM)
-		m.executeParser.setMainEvents(block.Calls.MainEventLogs)
-		m.executeParser.setTransfers(block.Calls.ExecuteTransfers)
-		for _, maskDetails := range block.Calls.Masks {
-			if accountMask[blockNum] == nil {
-				accountMask[blockNum] = make(map[string]*big.Int)
-			}
-			accountMask[blockNum][maskDetails.Account] = maskDetails.Mask.Convert()
-
-		}
 		wrapper.SetCalls(blockNum, calls)
-	}
-	m.client.SetOtherCalls(otherCalls)
-	m.client.SetMasks(accountMask)
-}
-
-func (m *MockRepo) ProcessState(inputFile *TestInput) {
-	for _, oracle := range inputFile.States.Oracles {
-		m.client.SetOracleState(oracle)
 	}
 }
 
