@@ -13,13 +13,13 @@ import (
 )
 
 type v2DC struct {
-	dcV2   *dataCompressorv2.DataCompressorV2
+	dcV2   *dataCompressorv2.DataCompressorv2
 	client core.ClientI
 	addr   string
 }
 
 func NewV2DC(addr common.Address, client core.ClientI) *v2DC {
-	dc, err := dataCompressorv2.NewDataCompressorV2(addr, client)
+	dc, err := dataCompressorv2.NewDataCompressorv2(addr, client)
 	log.CheckFatal(err)
 	return &v2DC{
 		dcV2:   dc,
