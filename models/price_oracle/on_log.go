@@ -77,7 +77,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 					return ds.ZeroPF, nil
 				} else {
 					log.Info(description, oracle)
-					return ds.UnknownPF, fmt.Errorf("Neither chainlink nor yearn nor curve price feed %s", err)
+					return ds.UnknownPF, fmt.Errorf("neither chainlink nor yearn nor curve price feed %v, got %s", err, description)
 				}
 			}
 			return ds.YearnPF, nil

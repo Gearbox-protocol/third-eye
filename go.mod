@@ -59,4 +59,4 @@ require (
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
-// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20220730193100-37487b754337 => ../sdk-go
+// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20220818200520-8d04e453be72 => ../sdk-go
