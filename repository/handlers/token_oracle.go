@@ -55,7 +55,7 @@ func (repo *TokenOracleRepo) LoadCurrentTokenOracle(db *gorm.DB) {
 
 func (repo *TokenOracleRepo) loadZeroPFs(db *gorm.DB) {
 	data := []schemas.TokenOracle{}
-	err := db.Where("feed_type = 'ZeroPF'").Find(&data).Error
+	err := db.Where("feed_type in ('ZeroPF', 'AlmostZeroPF')").Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle,
 // called from chainlink feed and price oracle
 func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discoveredAt int64, version int16) {
 	switch feedType {
-	case ds.CurvePF, ds.YearnPF, ds.ZeroPF:
+	case ds.CurvePF, ds.YearnPF, ds.ZeroPF, ds.AlmostZeroPF:
 		// add token oracle for db
 		// feed is also oracle address for yearn address
 		// we don't relie on underlying feed
@@ -134,14 +134,18 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			BlockNumber: discoveredAt,
 			Version:     version,
 			FeedType:    feedType}, feedType)
-		if feedType == ds.ZeroPF {
+		if feedType == ds.ZeroPF || feedType == ds.AlmostZeroPF {
+			priceBI := new(big.Int)
+			if ds.AlmostZeroPF == feedType {
+				priceBI = big.NewInt(100)
+			}
 			repo.blocks.AddPriceFeed(&schemas.PriceFeed{
 				BlockNumber: discoveredAt,
 				Token:       token,
 				Feed:        oracle,
 				RoundId:     0,
-				PriceBI:     (*core.BigInt)(new(big.Int)),
-				Price:       0,
+				PriceBI:     (*core.BigInt)(priceBI),
+				Price:       utils.GetFloat64Decimal(priceBI, 18),
 			})
 			repo.zeroPFs[oracle] = true // oracle and feed are same for non-chainlink price feed
 		} else {
@@ -164,6 +168,8 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			Version:     version,
 			FeedType:    feedType}, feedType)
 		repo.adapters.AddSyncAdapter(obj)
+	default:
+		log.Fatal(feedType, "not handled")
 	}
 }
 

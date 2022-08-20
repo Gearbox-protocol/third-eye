@@ -28,7 +28,7 @@ Adapters are of two types: `Event` and `Query` based.
 - `ContractRegister`: Getting addresses of CreditManager and pools.
 - `GearToken`: Getting token transfers for Gear Token.
 - `Pool`: Getting Pool operations like add/remove liquidity and borrow/repay etc.
-- `PriceOracle`: Getting token and their registered PriceFeed. These priceFeeds can be ChainlinkPF, YearnPF, CurvePF, ZeroPF. 
+- `PriceOracle`: Getting token and their registered PriceFeed. These priceFeeds can be ChainlinkPF, YearnPF, CurvePF, ZeroPF, AlmostZeroPF. 
 - `Treasury`: Getting all token transfers on Treasury.
 - `CreditManager`: This adapter is reponsible for bulk of operations. 
     * With help of `AccountManager` checks if there is any token transfers to credit account which doesn't emit Gearbox CreditManager/CreditFacade event. 

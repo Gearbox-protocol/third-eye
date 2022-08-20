@@ -45,7 +45,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			log.Fatal(err)
 		}
 		switch priceFeedType {
-		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF:
+		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF:
 			mdl.Repo.AddTokenFeed(priceFeedType, token, oracle, blockNum, version)
 		default:
 			log.Fatal("Unknown PriceFeed type", priceFeedType)
@@ -75,6 +75,8 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 					return ds.CurvePF, nil
 				} else if strings.Contains(description, "Zero pricefeed") {
 					return ds.ZeroPF, nil
+				} else if strings.Contains(description, "ZERO (one) priceFeed") {
+					return ds.AlmostZeroPF, nil
 				} else {
 					log.Info(description, oracle)
 					return ds.UnknownPF, fmt.Errorf("neither chainlink nor yearn nor curve price feed %v, got %s", err, description)
