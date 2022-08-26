@@ -1,7 +1,6 @@
 package framework
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/big"
 	"testing"
@@ -173,29 +172,13 @@ func (m *MockRepo) processDCCalls(inputFile *TestInput3Eye) {
 	}
 }
 
-// for matching state with the expected output
-func (m *MockRepo) replaceWithVariable(obj interface{}) core.Json {
-	bytes, err := json.Marshal(obj)
-	log.CheckFatal(err)
-	addrToVariable := core.AddressMap{}
-	// TODO: FIX FOR HASH
-	for variable, addr := range m.AddressMap {
-		addrToVariable[addr] = "#" + variable
-	}
-	outputJson := core.Json{}
-	err = json.Unmarshal(bytes, &outputJson)
-	log.CheckFatal(err)
-	outputJson.ReplaceWithVariable(addrToVariable)
-	return outputJson
-}
-
 func (m *MockRepo) Check(value interface{}, fileName string) {
-	outputJson := m.replaceWithVariable(value)
+	outputJson := test.ReplaceWithVariable(value, m.AddressMap)
 	fileName = fmt.Sprintf("../inputs/%s", fileName)
 	require.JSONEq(m.t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
 }
 
 func (m *MockRepo) Print(value interface{}) {
-	outputJson := m.replaceWithVariable(value)
+	outputJson := test.ReplaceWithVariable(value, m.AddressMap)
 	m.t.Fatal(utils.ToJson(outputJson))
 }
