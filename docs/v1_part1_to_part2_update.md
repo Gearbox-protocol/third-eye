@@ -10,3 +10,6 @@ Changes btw gearbox v2 part 1(which was created before April) and part2(which wa
 - Another case, where event is not emitted in some cases. 
 https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditConfigurator.sol#L114-L116 while credit facade is updated we haven’t emitted creditfacadeupgraded.
 - addcollateral in executeorder can have onbehalOf different than the mainAction user/borrower. handled with issue #37.
+
+## Changelog 
+Based on goerli first deployment for address provider: 0x8765D47a50352311945c4e7fefbA44bF576e04D5. Missing logic for fee liquidation and liq threshold events has been added.

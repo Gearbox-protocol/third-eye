@@ -62,7 +62,7 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 	chainId, err := dcw.client.ChainID(context.TODO())
 	log.CheckFatal(err)
 	var key string
-	if chainId.Int64() == 1 {
+	if chainId.Int64() == 1 || chainId.Int64() == 5 { // or for goerli
 		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = MAINNET
