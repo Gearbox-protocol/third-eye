@@ -12,6 +12,10 @@ import (
 )
 
 func newHealthcheckEndpoint(lc fx.Lifecycle, config *config.Config) {
+	if config.Port == "0" {
+		return
+	}
+
 	mux := http.NewServeMux()
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%s", config.Port),
