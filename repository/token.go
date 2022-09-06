@@ -32,10 +32,10 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version int16, token,
 			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
 		}
 		return usdcAmount
-	case 2:
+	case 2: // invalid only used for kovan v2 deployment where we had NFT price functionality for credit account
 		poContract, err := priceOraclev2.NewPriceOraclev2(common.HexToAddress(oracle), repo.client)
 		log.CheckFatal(err)
-		usdcAmount, err := poContract.Convert(opts, common.Address{}, amount, common.HexToAddress(token), currencyAddr)
+		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
 			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
 		}

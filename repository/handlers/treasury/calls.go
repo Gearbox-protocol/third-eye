@@ -75,9 +75,8 @@ func v1PriceAnswers(entries []multicall.Multicall2Result) (prices []*big.Int) {
 
 func v2PriceCalls(oracle common.Address, tokenAddrs []string) (calls []multicall.Multicall2Call) {
 	oracleABI := core.GetAbi("PriceOraclev2")
-	zeroAddr := common.Address{}
 	for _, token := range tokenAddrs {
-		data, err := oracleABI.Pack("getPrice", zeroAddr, common.HexToAddress(token))
+		data, err := oracleABI.Pack("getPrice", common.HexToAddress(token))
 		log.CheckFatal(err)
 		calls = append(calls, multicall.Multicall2Call{
 			Target:   oracle,
