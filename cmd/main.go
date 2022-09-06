@@ -17,6 +17,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
+	"github.com/Gearbox-protocol/third-eye/healthcheck"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
 	_ "github.com/heroku/x/hmetrics/onload"
@@ -58,6 +59,7 @@ func main() {
 		engine.Module,
 		fx.NopLogger,
 		debts.Module,
+		healthcheck.Module,
 		fx.Invoke(StartServer),
 	)
 	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
