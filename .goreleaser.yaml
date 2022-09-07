@@ -32,11 +32,12 @@ changelog:
       - "^build:"
       - "^chore:"
       - "^test:"
+      - "^[Mm]erge"
 dockers:
   - goos: linux
     goarch: amd64
 
     image_templates:
       - "ghcr.io/{{ tolower .Env.REPO_NAME }}:latest"
-      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Tag }}"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Version }}"
       - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Major }}"
