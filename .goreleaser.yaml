@@ -1,3 +1,9 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+# before:
+# hooks:
+# You may remove this if you don't use go modules.
+# - go mod tidy
 builds:
   - main: ./cmd
     binary: 3eye
@@ -8,6 +14,8 @@ builds:
     goarch:
       - amd64
       - arm64
+    ldflags:
+      - -s -w -X github.com/{{ .Env.REPO_NAME }}/version.Version={{ .Version }}
 changelog:
   groups:
     - title: Features
@@ -29,6 +37,6 @@ dockers:
     goarch: amd64
 
     image_templates:
-      - "ghcr.io/{{ .Env.REPO_NAME }}:latest"
-      - "ghcr.io/{{ .Env.REPO_NAME }}:{{ .Tag }}"
-      - "ghcr.io/{{ .Env.REPO_NAME }}:{{ .Major }}"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:latest"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Tag }}"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Major }}"
