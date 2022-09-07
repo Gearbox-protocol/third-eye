@@ -32,6 +32,7 @@ changelog:
       - "^build:"
       - "^chore:"
       - "^test:"
+      - "^[Mm]erge"
 dockers:
   - goos: linux
     goarch: amd64
