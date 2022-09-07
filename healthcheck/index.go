@@ -2,14 +2,20 @@ package healthcheck
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/version"
 	"go.uber.org/fx"
 )
+
+type healthResp struct {
+	Status  string `json:"status"`
+	Version string `json:"version"`
+}
 
 func newHealthcheckEndpoint(lc fx.Lifecycle, config *config.Config) {
 	if config.Port == "0" {
@@ -22,8 +28,9 @@ func newHealthcheckEndpoint(lc fx.Lifecycle, config *config.Config) {
 		Handler: mux,
 	}
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		io.WriteString(w, "OK")
+		json.NewEncoder(w).Encode(healthResp{"OK", version.Version})
 	})
 
 	lc.Append(fx.Hook{

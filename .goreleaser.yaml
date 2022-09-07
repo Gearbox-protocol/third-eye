@@ -1,0 +1,42 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+# before:
+# hooks:
+# You may remove this if you don't use go modules.
+# - go mod tidy
+builds:
+  - main: ./cmd
+    binary: 3eye
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X github.com/{{ .Env.REPO_NAME }}/version.Version={{ .Version }}
+changelog:
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "Bug fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^build:"
+      - "^chore:"
+      - "^test:"
+dockers:
+  - goos: linux
+    goarch: amd64
+
+    image_templates:
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:latest"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Tag }}"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Major }}"
