@@ -1,0 +1,34 @@
+builds:
+  - main: ./cmd
+    binary: 3eye
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+changelog:
+  groups:
+    - title: Features
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 0
+    - title: "Bug fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 1
+    - title: Others
+      order: 999
+  filters:
+    exclude:
+      - "^docs:"
+      - "^build:"
+      - "^chore:"
+      - "^test:"
+dockers:
+  - goos: linux
+    goarch: amd64
+
+    image_templates:
+      - "ghcr.io/{{ .Env.REPO_NAME }}:latest"
+      - "ghcr.io/{{ .Env.REPO_NAME }}:{{ .Tag }}"
+      - "ghcr.io/{{ .Env.REPO_NAME }}:{{ .Major }}"

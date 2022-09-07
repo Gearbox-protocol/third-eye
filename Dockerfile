@@ -1,9 +1,4 @@
-FROM golang:1.17.13-bullseye
+FROM gcr.io/distroless/base-debian11
 
-WORKDIR /opt/app
-
-COPY . .
-
-RUN go mod download \
- && go build ./cmd/main.go
- 
+ENTRYPOINT ["/3eye"]
+COPY 3eye /
