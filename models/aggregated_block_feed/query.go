@@ -130,14 +130,10 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 				value, err := v3ABI.Unpack("slot0", entry.ReturnData)
 				log.CheckFatal(err)
 				//https://docs.uniswap.org/sdk/guides/fetching-prices#understanding-sqrtprice
-				price := utils.GetInt64(squareIt(value[0].(*big.Int)), -tokenDetails.Decimals)
-				normalizeFactor := new(big.Int).Exp(big.NewInt(2), big.NewInt(96*2), nil)
-				price = new(big.Int).Quo(price, normalizeFactor)
+				// [(slot0**2 *Token0decimals)/2**192], divide by token for getting the float price in WETH
+				//
+				price := utils.Univ3SlotToPriceInBase(value[0].(*big.Int), areSorted(token, weth), tokenDetails.Decimals)
 				prices.PriceV3 = utils.GetFloat64Decimal(price, 18)
-				// if not sorted use resiprocal
-				if !areSorted(token, weth) {
-					prices.PriceV3 = 1 / prices.PriceV3
-				}
 				prices.PriceV3Success = true
 			case 2:
 				value, err := v3ABI.Unpack("observe", entry.ReturnData)
@@ -178,11 +174,11 @@ func (mdl *AggregatedBlockFeed) updatePrice(pricesByToken map[string]*schemas.Un
 func areSorted(token, weth string) bool {
 	return strings.Compare(strings.ToLower(token), strings.ToLower(weth)) == -1
 }
+
+// r1*x/(r0+x)
 func priceInWETH(token, weth string, tokenDecimals int8, r0, r1 *big.Int) *big.Int {
 	if !areSorted(token, weth) {
-		tmp := r1
-		r1 = r0
-		r0 = tmp
+		r1, r0 = r0, r1
 	}
 	amountIn := utils.GetExpInt(tokenDecimals)
 	nom := new(big.Int).Mul(r1, amountIn)
@@ -190,9 +186,6 @@ func priceInWETH(token, weth string, tokenDecimals int8, r0, r1 *big.Int) *big.I
 	return new(big.Int).Quo(nom, denom)
 }
 
-func squareIt(a *big.Int) *big.Int {
-	return new(big.Int).Mul(a, a)
-}
 func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery string) (calls []multicall.Multicall2Call, tokens []string) {
 	v2ABI := core.GetAbi("Uniswapv2Pool")
 	v3ABI := core.GetAbi("Uniswapv3Pool")
