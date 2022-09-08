@@ -28,8 +28,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v3
         with:
-          go-version: "1.17"
+          go-version-file: "go.mod"
           cache: true
+
+      # Later will be copied into docker image together with migrations
+      - name: Install go-migrate
+        run: |
+          curl -L "https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-arm64.tar.gz" | tar xvz
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
