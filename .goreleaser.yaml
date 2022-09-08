@@ -41,3 +41,9 @@ dockers:
       - "ghcr.io/{{ tolower .Env.REPO_NAME }}:latest"
       - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Version }}"
       - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Major }}"
+
+    extra_files:
+      # migrations folder from github
+      - "migrations"
+      # migrate binary which is copied by ci
+      - "migrate"
