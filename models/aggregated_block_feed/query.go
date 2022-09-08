@@ -132,7 +132,7 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 				//https://docs.uniswap.org/sdk/guides/fetching-prices#understanding-sqrtprice
 				// [(slot0**2 *Token0decimals)/2**192], divide by token for getting the float price in WETH
 				//
-				price := utils.Univ3SlotToPriceInBase(value[0].(*big.Int), areSorted(token, weth), tokenDetails.Decimals)
+				price := univ3SlotToPriceInBase(value[0].(*big.Int), areSorted(token, weth), tokenDetails.Decimals)
 				prices.PriceV3 = utils.GetFloat64Decimal(price, 18)
 				prices.PriceV3Success = true
 			case 2:
@@ -288,4 +288,30 @@ func (mdl *AggregatedBlockFeed) Clear() {
 // so mu is not required as write operation is not performed at that levelAggre
 func (mdl *AggregatedBlockFeed) GetUniPricesByToken(token string) []*schemas.UniPoolPrices {
 	return mdl.UniPricesByTokens[token]
+}
+
+///
+
+func squareIt(a *big.Int) *big.Int {
+	return new(big.Int).Mul(a, a)
+}
+
+// uni v3 slot to price in base
+// returns price in usdc or weth, base is usdc/weth
+// if base is token1: [(slot0**2 *Token0decimals)/2**192]
+// if base is token0: [(2**192 *Token1decimals)/slot0**2]
+func univ3SlotToPriceInBase(slot0 *big.Int, baseIsToken1 bool, decimals int8) (price *big.Int) {
+	normalizeFactor := new(big.Int).Exp(big.NewInt(2), big.NewInt(96*2), nil)
+	//
+	sqSlot0 := squareIt(slot0)
+	if baseIsToken1 {
+		price = utils.GetInt64(sqSlot0, -1*decimals)
+		price = new(big.Int).Quo(price, normalizeFactor)
+	} else {
+		log.Info(normalizeFactor, sqSlot0, decimals, baseIsToken1)
+		price = utils.GetInt64(normalizeFactor, -1*decimals)
+		price = new(big.Int).Quo(price, sqSlot0)
+		log.Info("price", price)
+	}
+	return price
 }
