@@ -1,0 +1,5 @@
+FROM debian:11-slim
+
+COPY 3eye /
+
+ENTRYPOINT ["/3eye"]
