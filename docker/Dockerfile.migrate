@@ -1,0 +1,7 @@
+FROM debian:11-slim
+
+COPY migrations /
+COPY temp/migrate /
+COPY docker/3eye-migrate.sh /
+
+ENTRYPOINT ["/3eye-migrate.sh"]

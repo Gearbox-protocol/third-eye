@@ -1,0 +1,5 @@
+FROM gcr.io/distroless/base-debian11
+
+COPY 3eye /
+
+ENTRYPOINT ["/3eye"]
