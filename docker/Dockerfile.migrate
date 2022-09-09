@@ -8,7 +8,7 @@ RUN apt-get update \
 
 RUN curl -L "https://github.com/golang-migrate/migrate/releases/download/v${MIGRATE_VERSION}/migrate.${MIGRATE_PLATFORM}.tar.gz" | tar -xvz --directory / migrate
 
-COPY migrations /
+COPY migrations /migrations
 COPY docker/3eye-migrate.sh /
 
 ENTRYPOINT ["/3eye-migrate.sh"]
