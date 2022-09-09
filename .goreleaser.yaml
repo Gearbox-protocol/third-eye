@@ -63,7 +63,5 @@ dockers:
     extra_files:
       # migrations folder from github
       - "migrations"
-      # migrate binary which is copied by CI
-      - "temp/migrate"
       # Custom migrate script
       - "docker/3eye-migrate.sh"

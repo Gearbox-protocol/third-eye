@@ -1,7 +1,14 @@
 FROM debian:11-slim
 
+ARG MIGRATE_VERSION=4.15.2
+ARG MIGRATE_PLATFORM=linux-amd64
+
+RUN apt-get update \
+    && apt-get install -y curl
+
+RUN curl -L "https://github.com/golang-migrate/migrate/releases/download/v${MIGRATE_VERSION}/migrate.${MIGRATE_PLATFORM}.tar.gz" | tar -xvz --directory / migrate
+
 COPY migrations /
-COPY temp/migrate /
 COPY docker/3eye-migrate.sh /
 
 ENTRYPOINT ["/3eye-migrate.sh"]
