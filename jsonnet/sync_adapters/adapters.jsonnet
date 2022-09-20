@@ -8,8 +8,8 @@
           '5': '#DC_2',
         },
         priceOracles: {
-          '1': '#PriceOracle_1',
-          '2': '#PriceOracle_2',
+          '3': '#PriceOracle_1',
+          '5': '#PriceOracle_2',
         },
       },
       disabled: false,

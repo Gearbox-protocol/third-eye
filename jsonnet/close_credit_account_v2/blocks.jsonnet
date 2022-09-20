@@ -42,10 +42,10 @@
         adapterCall: false,
         args: {
           _order: [
-            'owner',
+            'borrower',
             'to',
           ],
-          owner: '#User_1',
+          borrower: '#User_1',
           to: '#User_2',
         },
         blockNum: 9,
