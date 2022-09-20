@@ -74,7 +74,7 @@ func (repo *TokenOracleRepo) addTokenCurrentOracle(oracle *schemas.TokenOracle) 
 func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle, feedType string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	log.Info(newTokenOracle.String())
+	log.Verbosef(newTokenOracle.String())
 	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
 		repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token] != nil {
 		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
@@ -82,20 +82,20 @@ func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle,
 		// log
 		if feedType == ds.ChainlinkPriceFeed {
 			if oldTokenOracle.Oracle != newTokenOracle.Oracle {
-				log.Updatef("Chainlink proxy changed in gearbox protocol from (%s) to %s for token(%s) at %d",
+				log.Verbosef("Chainlink aggregator changed in gearbox protocol from (%s) to %s for token(%s) at %d",
 					oldTokenOracle.Oracle, newTokenOracle.Oracle, newTokenOracle.Token, newTokenOracle.BlockNumber)
 			} else if oldFeed != newTokenOracle.Feed {
-				log.Updatef("Chainlink feed changed internally from (%s) to %s for token(%s) at %d",
+				log.Verbosef("Chainlink feed changed internally from (%s) to %s for token(%s) at %d",
 					oldFeed, newTokenOracle.Feed, newTokenOracle.Token, newTokenOracle.BlockNumber)
 			}
 		} else {
-			log.Updatef("%s changed from %s to %s for token(%s) at %d",
+			log.Verbosef("%s changed from %s to %s for token(%s) at %d",
 				feedType, oldFeed, newTokenOracle.Feed, newTokenOracle.Token, newTokenOracle.BlockNumber)
 		}
 		//
 		adapter := repo.adapters.GetAdapter(oldFeed)
 		if oldFeed == newTokenOracle.Feed {
-			log.Warnf("Same feed(%s) added for token(%s)", newTokenOracle.Feed, newTokenOracle.Token)
+			log.Verbosef("Same feed(%s) added for token(%s)", newTokenOracle.Feed, newTokenOracle.Token)
 			return
 		}
 		// disable the corresponding adapter
@@ -139,13 +139,18 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			if ds.AlmostZeroPF == feedType {
 				priceBI = big.NewInt(100)
 			}
+			var decimals int8 = 18 // for eth
+			if version == 2 {
+				decimals = 8 // for usd
+			}
 			repo.blocks.AddPriceFeed(&schemas.PriceFeed{
-				BlockNumber: discoveredAt,
-				Token:       token,
-				Feed:        oracle,
-				RoundId:     0,
-				PriceBI:     (*core.BigInt)(priceBI),
-				Price:       utils.GetFloat64Decimal(priceBI, 18),
+				BlockNumber:  discoveredAt,
+				Token:        token,
+				Feed:         oracle,
+				RoundId:      0,
+				PriceBI:      (*core.BigInt)(priceBI),
+				Price:        utils.GetFloat64Decimal(priceBI, decimals),
+				IsPriceInUSD: version == 2,
 			})
 			repo.zeroPFs[oracle] = true // oracle and feed are same for non-chainlink price feed
 		} else {
@@ -156,7 +161,7 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {
 			oldTokenOracle := repo.tokensCurrentOracle[version][token]
 			if oldTokenOracle.Oracle == oracle && oldTokenOracle.Feed == obj.Address {
-				log.Warnf("Same chainlinkfeed(%s) added for token(%s)", oldTokenOracle.Feed, token)
+				log.Verbosef("Same chainlinkfeed(%s) added for token(%s)", oldTokenOracle.Feed, token)
 				return
 			}
 		}
@@ -167,7 +172,13 @@ func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discov
 			BlockNumber: discoveredAt,
 			Version:     version,
 			FeedType:    feedType}, feedType)
-		repo.adapters.AddSyncAdapter(obj)
+		// on goerli, there are two v2 priceoracles added and  on first priceoracle cvx token is 0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0
+		// and on second priceoracle it is 0x6D75eb70402CF06a0cB5B8fdc1836dAe29702B17
+		// so ignore the first cvx token as it is used anywhere
+		if token == "0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0" {
+		} else {
+			repo.adapters.AddSyncAdapter(obj)
+		}
 	default:
 		log.Fatal(feedType, "not handled")
 	}

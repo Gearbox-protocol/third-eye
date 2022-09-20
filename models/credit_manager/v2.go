@@ -51,7 +51,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		}
 
 		mdl.onCloseCreditAccountV2(&txLog,
-			closeCreditAccountEvent.Owner.Hex(),
+			closeCreditAccountEvent.Borrower.Hex(),
 			closeCreditAccountEvent.To.Hex())
 	case core.Topic("LiquidateCreditAccount(address,address,address,uint256)"):
 		liquidateCreditAccountEvent, err := mdl.facadeContractV2.ParseLiquidateCreditAccount(txLog)
@@ -60,7 +60,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		}
 
 		mdl.onLiquidateCreditAccountV2(&txLog,
-			liquidateCreditAccountEvent.Owner.Hex(),
+			liquidateCreditAccountEvent.Borrower.Hex(),
 			liquidateCreditAccountEvent.Liquidator.Hex(),
 			liquidateCreditAccountEvent.RemainingFunds)
 	case core.Topic("MultiCallStarted(address)"):

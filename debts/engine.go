@@ -1,6 +1,7 @@
 package debts
 
 import (
+	"fmt"
 	"math/big"
 	"sort"
 
@@ -491,7 +492,7 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ..
 	if len(dontFail) > 0 && dontFail[0] {
 		return nil
 	}
-	log.Fatalf("Price not found for %s version: %d", addr, version)
+	log.Fatal(fmt.Sprintf("Price not found for %s version: %d", addr, version))
 	return nil
 }
 
