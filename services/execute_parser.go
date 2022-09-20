@@ -10,15 +10,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/universalAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnv2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -157,6 +163,10 @@ var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdap
 	uniswapv2Adapter.Uniswapv2AdapterABI, uniswapv3Adapter.Uniswapv3AdapterABI,
 	iSwapRouter.ISwapRouterABI, testAdapter.TestAdapterABI,
 	// creditfacade for credit manager onlogs
+	// v2
+	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI,
+	convexAdapter.ConvexAdapterABI, universalAdapter.UniversalAdapterABI,
+	yearnv2Adapter.Yearnv2AdapterABI, curveAdapter.CurveAdapterABI,
 }
 
 var abiParsers []abi.ABI
