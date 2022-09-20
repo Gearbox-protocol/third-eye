@@ -14,6 +14,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Adapter"
@@ -181,7 +182,7 @@ func init() {
 // parser functions for v2
 //////////////////////////
 // GetMainEventLogs
-func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FuncWithMultiCall {
+func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.MainactionWithMulticall {
 	trace := ep.GetTxTrace(txHash)
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
 	if err != nil {
@@ -190,8 +191,8 @@ func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.Fun
 	return data
 }
 
-func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*ds.FuncWithMultiCall, error) {
-	mainEvents := []*ds.FuncWithMultiCall{}
+func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*ds.MainactionWithMulticall, error) {
+	mainEvents := []*ds.MainactionWithMulticall{}
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
 			switch call.Input[2:10] {
@@ -219,7 +220,7 @@ func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) 
 	return mainEvents, nil
 }
 
-func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
+func getCreditFacadeMainEvent(input string) (*ds.MainactionWithMulticall, error) {
 	hexData, err := hex.DecodeString(input[2:])
 	if err != nil {
 		return nil, err
@@ -241,9 +242,19 @@ func getCreditFacadeMainEvent(input string) (*ds.FuncWithMultiCall, error) {
 	if !ok {
 		log.Fatal("calls type is different the creditFacade multicall: ", reflect.TypeOf(data["calls"]))
 	}
-	return &ds.FuncWithMultiCall{
+	multicalls := []multicall.Multicall2Call{}
+	for _, call := range calls {
+		if hex.EncodeToString(call.CallData[:4]) == "81314b59" { // ignore revertifreceivedlessthan
+			continue
+		}
+		multicalls = append(multicalls, multicall.Multicall2Call{
+			Target:   call.Target,
+			CallData: call.CallData,
+		})
+	}
+	return &ds.MainactionWithMulticall{
 		Name:       method.Name,
-		MultiCalls: calls,
+		MultiCalls: multicalls,
 	}, nil
 }
 

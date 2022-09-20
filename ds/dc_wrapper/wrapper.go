@@ -66,7 +66,7 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = MAINNET
-		case 1:
+		case 1, 2: // 2 is for goerli added datacompressor v2, as datacompressor added second time
 			key = DCV2
 		}
 	} else if chainId.Int64() == 42 {
@@ -90,6 +90,10 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 	} else {
 		key = TESTING
 	}
+	// log.Info("###")
+	// log.Info("###")
+	// log.Info("###")
+	// log.Info(key, addr, blockNum, dcw.DCBlockNum)
 	dcw.BlockNumToName[blockNum] = key
 	dcw.discoveredAtToAddr[blockNum] = addr
 	dcw.DCBlockNum = append(dcw.DCBlockNum, blockNum)

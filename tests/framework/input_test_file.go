@@ -13,8 +13,8 @@ import (
 )
 
 type TestExecuteParser struct {
-	ExecuteOnCM   map[string][]*ds.KnownCall         `json:"executeOnCM"`
-	MainEventLogs map[string][]*ds.FuncWithMultiCall `json:"mainEventLogs"`
+	ExecuteOnCM   map[string][]*ds.KnownCall               `json:"executeOnCM"`
+	MainEventLogs map[string][]*ds.MainactionWithMulticall `json:"mainEventLogs"`
 	// txHash to transfers
 	ExecuteTransfers map[string]core.Transfers `json:"executeTransfers"`
 }

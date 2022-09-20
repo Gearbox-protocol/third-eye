@@ -3,6 +3,7 @@ package ds
 import (
 	"encoding/hex"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -19,13 +20,13 @@ type GBv2Multicall []struct {
 	Target   common.Address `json:"target"`
 	CallData []uint8        `json:"callData"`
 }
-type FuncWithMultiCall struct {
-	Name       string        `json:"name"`
-	MultiCalls GBv2Multicall `json:"-"`
-	TestLen    int           `json:"len"`
+type MainactionWithMulticall struct {
+	Name       string                     `json:"name"`
+	MultiCalls []multicall.Multicall2Call `json:"-"`
+	TestLen    int                        `json:"len"`
 }
 
-func (f *FuncWithMultiCall) LenForBorrower(bwr string) (len int) {
+func (f *MainactionWithMulticall) LenForBorrower(bwr string) (len int) {
 	// for testing
 	if f.TestLen != 0 {
 		return f.TestLen
@@ -45,7 +46,8 @@ func (f *FuncWithMultiCall) LenForBorrower(bwr string) (len int) {
 
 type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
-	GetMainEventLogs(txHash, creditFacade string) []*FuncWithMultiCall
+	// ignores revertIfLessThan
+	GetMainEventLogs(txHash, creditFacade string) []*MainactionWithMulticall
 	GetTransfers(txHash string, borrower, account, underlyingToken string, owner []string) core.Transfers
 }
 
