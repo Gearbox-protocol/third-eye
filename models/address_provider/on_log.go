@@ -34,20 +34,8 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			mdl.Repo.AddSyncAdapter(cr)
 		case "PRICE_ORACLE":
 			//
-			if mdl.Details == nil {
-				mdl.Details = make(map[string]interface{})
-			}
-			// price oracles
-			priceOracles, ok := mdl.Details["priceOracles"].(map[string]interface{})
-			if !ok {
-				if priceOracles == nil {
-					priceOracles = map[string]interface{}{}
-				}
-			}
-			//
+			mdl.addPriceOracle(blockNum, address)
 			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
-			priceOracles[fmt.Sprintf("%d", po.GetVersion())] = address
-			mdl.Details["priceOracles"] = priceOracles
 			mdl.Repo.AddSyncAdapter(po)
 		case "ACCOUNT_FACTORY":
 			af := account_factory.NewAccountFactory(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)

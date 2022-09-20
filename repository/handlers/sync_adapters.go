@@ -232,18 +232,12 @@ func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (la
 	return
 }
 
-func (repo *SyncAdaptersRepo) GetPriceOracleByVersion(version int16) (string, error) {
+func (repo *SyncAdaptersRepo) GetPriceOracleByDiscoveredAt(blockNum int64) (string, error) {
 	addrProviderAddr := repo.kit.GetAdapterAddressByName(ds.AddressProvider)
 	addrProvider := repo.GetAdapter(addrProviderAddr[0])
-	details := addrProvider.GetDetails()
-	if details != nil {
-		priceOracles, ok := details["priceOracles"].(map[string]interface{})
-		if ok {
-			value, ok := priceOracles[fmt.Sprintf("%d", version)].(string)
-			if ok {
-				return value, nil
-			}
-		}
+	priceOracle := addrProvider.GetDetailsByKey(fmt.Sprintf("%d", blockNum))
+	if priceOracle == "" {
+		return "", fmt.Errorf("Not Found")
 	}
-	return "", fmt.Errorf("Not Found")
+	return priceOracle, nil
 }

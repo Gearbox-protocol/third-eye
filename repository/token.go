@@ -12,7 +12,7 @@ import (
 
 // This function is used for getting the collateral value in usd and underlying
 func (repo *Repository) GetValueInCurrency(blockNum int64, version int16, token, currency string, amount *big.Int) *big.Int {
-	oracle, err := repo.GetPriceOracleByVersion(version)
+	oracle, err := repo.GetPriceOracleByDiscoveredAt(blockNum)
 	if err != nil {
 		log.Fatalf("err %s version: %d", err, version)
 	}
