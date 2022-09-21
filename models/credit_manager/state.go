@@ -22,10 +22,14 @@ func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	case *schemas.PnlOnRepay:
 		mdl.pnlOnCM.Set(underlyingObj)
 	case *schemas.Parameters:
-		mdl.params = underlyingObj
+		mdl.setParams(underlyingObj)
 	default:
 		log.Fatal("Type assertion for credit manager state failed")
 	}
+}
+
+func (mdl *CreditManager) setParams(params *schemas.Parameters) {
+	mdl.params = params
 }
 
 func (mdl *CreditManager) GetUnderlyingState() interface{} {
@@ -54,7 +58,7 @@ func (mdl *CreditManager) GetUnderlyingToken() string {
 	return mdl.State.UnderlyingToken
 }
 
-func (mdl *CreditManager) setCMDataFromDC(blockNum int64) {
+func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
@@ -66,18 +70,6 @@ func (mdl *CreditManager) setCMDataFromDC(blockNum int64) {
 	if err != nil {
 		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
 	}
-	mdl.DCData = &state
-	mdl.params = &schemas.Parameters{
-		FeeInterest:                state.FeeInterest,
-		FeeLiquidation:             state.FeeLiquidation,
-		LiquidationDiscount:        state.LiquidationDiscount,
-		FeeLiquidationExpired:      state.FeeLiquidationExpired,
-		LiquidationDiscountExpired: state.LiquidationDiscountExpired,
-	}
-}
-
-func (mdl *CreditManager) calculateCMStat(blockNum int64) {
-	state := mdl.DCData
 	mdl.State.IsWETH = state.IsWETH
 	// pnl on repay
 	pnl := mdl.pnlOnCM.Get(blockNum)

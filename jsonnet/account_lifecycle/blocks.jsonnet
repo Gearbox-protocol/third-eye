@@ -115,17 +115,17 @@
     daoOperations: [
       {
         Args: {
-          LiquidationDiscount: [
-            '0',
-            '9500',
+          liquidationDiscount: [
+            0,
+            9500,
           ],
           feeInterest: [
-            '0',
-            '1000',
+            0,
+            1000,
           ],
           feeLiquidation: [
-            '0',
-            '200',
+            0,
+            200,
           ],
           maxAmount: [
             '0',
@@ -165,9 +165,11 @@
       {
         BlockNum: 3,
         CreditManager: '#CreditManager_1',
-        FeeInterest: '1000',
-        FeeLiquidation: '200',
-        LiquidationDiscount: '9500',
+        FeeInterest: 1000,
+        FeeLiquidation: 200,
+        LiquidationDiscount: 9500,
+        FeeLiquidationExpired: 0,
+        LiquidationDiscountExpired: 0,
         MaxAmount: '5000000000',
         MaxLeverage: '400000000',
         MinAmount: '1000000000',

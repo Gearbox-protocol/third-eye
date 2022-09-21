@@ -91,26 +91,3 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	}
 	mdl.OnLogv2(txLog)
 }
-
-func (mdl *CreditFilter) addFees(logId uint, blockNum int64, txHash string, feeInterest, feeLiquidation, liquidationPremium uint16) {
-	creditManager, ok := mdl.Details["creditManager"].(string)
-	if !ok {
-		log.Fatal("Failed in asserting credit manager(%v) for credit filter %s", mdl.Details["creditManager"], mdl.GetAddress())
-	}
-	// van0k added event for liquidation threshold to be added for underlying token on update fee
-	// if mdl.underlyingToken != nil {
-	// 	mdl.Repo.AddAllowedTokenV2(logId+100000, txHash, mdl.Address, &schemas.AllowedToken{
-	// 		BlockNumber:        blockNum,
-	// 		CreditManager:      creditManager,
-	// 		Token:              mdl.underlyingToken.Hex(),
-	// 		LiquidityThreshold: (*core.BigInt)(big.NewInt(int64(liquidationPremium - feeLiquidation))),
-	// 	})
-	// }
-	mdl.Repo.UpdateFees(logId, txHash, mdl.GetAddress(), &schemas.Parameters{
-		BlockNum:            blockNum,
-		CreditManager:       creditManager,
-		FeeInterest:         feeInterest,
-		FeeLiquidation:      feeLiquidation,
-		LiquidationDiscount: liquidationPremium,
-	})
-}

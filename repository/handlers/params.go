@@ -82,7 +82,10 @@ func (repo *ParamsRepo) AddParameters(logID uint, txHash string, params *schemas
 	if oldCMParams == nil {
 		oldCMParams = schemas.NewParameters()
 	}
-	args := oldCMParams.Diff(params)
+	args := oldCMParams.Diffv1(params)
+	delete(*args, "feeLiquidationExpired")
+	delete(*args, "liquidationDiscountExpired")
+	//
 	(*args)["token"] = token
 	repo.cmParams[params.CreditManager] = params
 	repo.blocks.AddDAOOperation(&schemas.DAOOperation{
@@ -101,7 +104,7 @@ func (repo *ParamsRepo) paramsDAOV2(logID uint, txHash, creditConfigurator strin
 	if oldCMParams == nil {
 		oldCMParams = schemas.NewParameters()
 	}
-	args := oldCMParams.Diff(params)
+	args := oldCMParams.Diffv2(params)
 	for _, field := range fieldToRemove {
 		delete(*args, field)
 	}
@@ -125,7 +128,9 @@ func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator stri
 		oldCMParams = schemas.NewParameters()
 	}
 	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
-		[]string{"feeLiquidation", "LiquidationDiscount", "feeInterest", "maxLeverage"}, schemas.LimitsUpdated)
+		[]string{"maxLeverage", "feeInterest",
+			"liquidationDiscount", "feeLiquidation",
+			"liquidationDiscountExpired", "feeLiquidationExpired"}, schemas.LimitsUpdated)
 	newParams := &schemas.Parameters{
 		MinAmount:           params.MinAmount,
 		MaxAmount:           params.MaxAmount,

@@ -78,7 +78,7 @@ local utils = import '../utils.libsonnet';
           address: '#CreditConfigurator_1',
           txHash: '!#Hash_2',
           topics: [
-            'FeesUpdated(uint16,uint16,uint16)',
+            'FeesUpdated(uint16,uint16,uint16,uint16,uint16)',
           ],
           data: [
             // feeInterest
@@ -87,6 +87,10 @@ local utils = import '../utils.libsonnet';
             'uint16:200',
             // liquidationDiscount
             'uint16:9500',
+            // feeLiquidationexpired
+            'uint16:300',
+            // liquidationDiscountexpired
+            'uint16:9400',
           ],
         },
         {

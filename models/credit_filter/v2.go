@@ -44,11 +44,18 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			MinAmount:     (*core.BigInt)(limitEvent.MinBorrowedAmount),
 			MaxAmount:     (*core.BigInt)(limitEvent.MaxBorrowedAmount),
 		})
-	case core.Topic("FeesUpdated(uint16,uint16,uint16)"):
+	case core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"):
 		feesEvent, err := mdl.cfgContract.ParseFeesUpdated(txLog)
 		log.CheckFatal(err)
-		mdl.addFees(txLog.Index, blockNum, txLog.TxHash.Hex(),
-			feesEvent.FeeInterest, feesEvent.FeeLiquidation, feesEvent.LiquidationPremium)
+		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &schemas.Parameters{
+			BlockNum:                   blockNum,
+			CreditManager:              creditManager,
+			FeeInterest:                feesEvent.FeeInterest,
+			FeeLiquidation:             feesEvent.FeeLiquidation,
+			LiquidationDiscount:        feesEvent.LiquidationPremium,
+			FeeLiquidationExpired:      feesEvent.FeeLiquidationExpired,
+			LiquidationDiscountExpired: feesEvent.LiquidationPremiumExpired,
+		})
 	//
 	// Previous fastcheck has some security issues, we change it for better security
 	// case core.Topic("FastCheckParametersUpdated(uint256,uint256)"):

@@ -55,6 +55,7 @@ local extraBorrowedAmount = 1000;
           repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
           borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
+          borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
             balance: utils.bigInt(1500, 6),

@@ -170,7 +170,7 @@ local borrowedAmount = 4000;
           // credit manager on usdc
           address: '#CreditConfigurator_1',
           topics: [
-            'FeesUpdated(uint16,uint16,uint16)',
+            'FeesUpdated(uint16,uint16,uint16,uint16,uint16)',
           ],
           data: [
             // feeInterest
@@ -179,6 +179,10 @@ local borrowedAmount = 4000;
             'uint16:200',
             // liquidationDiscount
             'uint16:9500',
+            // feeLiquidationexpired
+            'uint16:300',
+            // liquidationDiscountexpired
+            'uint16:9400',
           ],
           txHash: '!#Hash_12',
         },

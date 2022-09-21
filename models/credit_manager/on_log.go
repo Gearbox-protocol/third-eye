@@ -97,9 +97,6 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 // works for newBlockNum > mdl.lastEventBlock
 func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	// on each new block
-	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
-		mdl.setCMDataFromDC(mdl.lastEventBlock)
-	}
 	mdl.ProcessAccountEvents(newBlockNum)
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
@@ -108,8 +105,11 @@ func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 		mdl.calculateCMStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
 		// set dc data for credit manager to nil
-		mdl.DCData = nil
 	}
+}
+
+func bytesToUInt16(data []byte) uint16 {
+	return uint16(new(big.Int).SetBytes(data).Int64())
 }
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
@@ -121,6 +121,16 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		case core.Topic("CreditFacadeUpgraded(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
 			mdl.SetCreditFacadeContract(common.HexToAddress(facade))
+		case core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"):
+			mdl.setParams(&schemas.Parameters{
+				BlockNum:                   int64(txLog.BlockNumber),
+				CreditManager:              mdl.Address,
+				FeeInterest:                bytesToUInt16(txLog.Data[:32]),
+				FeeLiquidation:             bytesToUInt16(txLog.Data[32:64]),
+				LiquidationDiscount:        bytesToUInt16(txLog.Data[64:96]),
+				FeeLiquidationExpired:      bytesToUInt16(txLog.Data[96:128]),
+				LiquidationDiscountExpired: bytesToUInt16(txLog.Data[128:160]),
+			})
 		}
 		return
 	}

@@ -147,17 +147,17 @@
   },
   {
     Args: {
-      LiquidationDiscount: [
-        '0',
-        '9500',
+      liquidationDiscount: [
+        0,
+        9500,
       ],
       feeInterest: [
-        '0',
-        '1000',
+        0,
+        1000,
       ],
       feeLiquidation: [
-        '0',
-        '200',
+        0,
+        200,
       ],
       maxAmount: [
         '0',

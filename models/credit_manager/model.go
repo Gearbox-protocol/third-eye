@@ -6,7 +6,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -44,7 +43,6 @@ type CreditManager struct {
 	// borrower to events, these events have same txHash
 	multicall MultiCallProcessor
 	//
-	DCData *dataCompressorv2.CreditManagerData
 	params *schemas.Parameters
 }
 

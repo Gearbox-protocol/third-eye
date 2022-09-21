@@ -20,13 +20,13 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 		if updates != 0 {
 			log.Fatalf("Session: %s updated %d before close %+v in same block %d\n", sessionId, updates, closeDetails, blockNum)
 		}
-		mdl.closeSession(sessionId, blockNum, closeDetails, mdl.params)
+		mdl.closeSession(sessionId, blockNum, closeDetails)
 	}
 	mdl.UpdatedSessions = make(map[string]int)
 	mdl.ClosedSessions = make(map[string]*SessionCloseDetails)
 }
 
-func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDetails *SessionCloseDetails, params *schemas.Parameters) {
+func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDetails *SessionCloseDetails) {
 	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
@@ -40,7 +40,10 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	}
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
-	amountToPool, _, _, _ := schemas.CalCloseAmount(params,
+	log.Info(session.Version,
+		"totalvalue", data.TotalValue, closeDetails.Status,
+		"borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
+	amountToPool, _, _, _ := schemas.CalCloseAmount(mdl.params,
 		session.Version, data.TotalValue,
 		closeDetails.Status,
 		data.BorrowedAmountPlusInterest,

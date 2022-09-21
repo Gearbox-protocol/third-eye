@@ -147,7 +147,7 @@ func (mdl *CreditManager) checkLogV1(txLog types.Log) {
 			LiquidationDiscount: uint16(paramsEvent.LiquidationDiscount.Int64()),
 		}
 		mdl.Repo.AddParameters(txLog.Index, txLog.TxHash.Hex(), params, mdl.State.UnderlyingToken)
-		mdl.params = params
+		mdl.setParams(params)
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.contractETHV1.ParseTransferAccount(txLog)

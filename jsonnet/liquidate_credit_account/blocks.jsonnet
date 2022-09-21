@@ -98,15 +98,15 @@
         TotalOpenedAccounts: 1,
         TotalProfit: 0,
         TotalProfitBI: '0',
-        TotalRepaid: 5000,
+        TotalRepaid: 5109.25,  // has feeliquidation
         TotalRepaidAccounts: 0,
-        TotalRepaidBI: '5000000000',
+        TotalRepaidBI: '5109250000',
         UniqueUsers: 0,
       },
     ],
     poolLedgers: [
       {
-        amount: 5000,
+        amount: 5109.25,
         blockNum: 8,
         event: 'Repay',
         logId: 0,
