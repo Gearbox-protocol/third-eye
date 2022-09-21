@@ -97,6 +97,9 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 // works for newBlockNum > mdl.lastEventBlock
 func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	// on each new block
+	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
+		mdl.setCMDataFromDC(mdl.lastEventBlock)
+	}
 	mdl.ProcessAccountEvents(newBlockNum)
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
@@ -104,22 +107,20 @@ func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
 		mdl.calculateCMStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
+		// set dc data for credit manager to nil
+		mdl.DCData = nil
 	}
 }
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
 	// creditConfigurator events for test
-	// we only require CreditFacadeUpgraded so that we can update the details for credit manager and
+	// CreditFacadeUpgraded is emitted when creditconfigurator is initialized, so we will receive it on init
+	// although we have already set creditfacadeUpgra
 	if mdl.GetDetailsByKey("configurator") == txLog.Address.Hex() {
 		switch txLog.Topics[0] {
 		case core.Topic("CreditFacadeUpgraded(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
 			mdl.SetCreditFacadeContract(common.HexToAddress(facade))
-		case core.Topic("LimitsUpdated(uint256,uint256)"): // SET min/max BorrowAmount
-			minAmount := new(big.Int).SetBytes(txLog.Data[:32])
-			maxAmount := new(big.Int).SetBytes(txLog.Data[32:])
-			mdl.State.MinAmount = (*core.BigInt)(minAmount)
-			mdl.State.MaxAmount = (*core.BigInt)(maxAmount)
 		}
 		return
 	}

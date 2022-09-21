@@ -62,7 +62,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		mdl.onLiquidateCreditAccountV2(&txLog,
 			liquidateCreditAccountEvent.Borrower.Hex(),
 			liquidateCreditAccountEvent.Liquidator.Hex(),
-			liquidateCreditAccountEvent.RemainingFunds)
+			liquidateCreditAccountEvent.RemainingFunds, schemas.Liquidated)
 	case core.Topic("MultiCallStarted(address)"):
 		borrower := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		sessionId := mdl.GetCreditOwnerSession(borrower)
@@ -199,6 +199,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 	}
 }
 
+// TO CHECK
 func (mdl *CreditManager) getInitialAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
 	balances := map[string]*big.Int{}
 	for _, event := range mainAction.MultiCall {

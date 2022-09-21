@@ -246,7 +246,7 @@ func (mdl *CreditManager) getRemainingFundsOnClose(blockNum int64, txHash, borro
 	// }
 	return nil
 }
-func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, liquidator string, remainingFunds *big.Int) error {
+func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, liquidator string, remainingFunds *big.Int, status int) error {
 	mdl.State.TotalLiquidatedAccounts++
 	sessionId := mdl.GetCreditOwnerSession(owner)
 
@@ -272,7 +272,7 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
-		Status:         schemas.Liquidated,
+		Status:         status,
 		TxHash:         txLog.TxHash.Hex(),
 		Borrower:       owner,
 	}

@@ -14,16 +14,15 @@ import (
 
 func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStatePresent = true
-	switch obj.(type) {
+	switch underlyingObj := obj.(type) {
 	case (*schemas.CreditManagerState):
-		state := obj.(*schemas.CreditManagerState)
-		mdl.State = state
+		mdl.State = underlyingObj
 	case (map[string]string):
-		sessions := obj.(map[string]string)
-		mdl.State.Sessions = sessions
+		mdl.State.Sessions = underlyingObj
 	case *schemas.PnlOnRepay:
-		pnl := obj.(*schemas.PnlOnRepay)
-		mdl.pnlOnCM.Set(pnl)
+		mdl.pnlOnCM.Set(underlyingObj)
+	case *schemas.Parameters:
+		mdl.params = underlyingObj
 	default:
 		log.Fatal("Type assertion for credit manager state failed")
 	}
@@ -55,8 +54,7 @@ func (mdl *CreditManager) GetUnderlyingToken() string {
 	return mdl.State.UnderlyingToken
 }
 
-func (mdl *CreditManager) calculateCMStat(blockNum int64) {
-
+func (mdl *CreditManager) setCMDataFromDC(blockNum int64) {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
@@ -68,6 +66,18 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	if err != nil {
 		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
 	}
+	mdl.DCData = &state
+	mdl.params = &schemas.Parameters{
+		FeeInterest:                state.FeeInterest,
+		FeeLiquidation:             state.FeeLiquidation,
+		LiquidationDiscount:        state.LiquidationDiscount,
+		FeeLiquidationExpired:      state.FeeLiquidationExpired,
+		LiquidationDiscountExpired: state.LiquidationDiscountExpired,
+	}
+}
+
+func (mdl *CreditManager) calculateCMStat(blockNum int64) {
+	state := mdl.DCData
 	mdl.State.IsWETH = state.IsWETH
 	// pnl on repay
 	pnl := mdl.pnlOnCM.Get(blockNum)
@@ -79,8 +89,8 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 		mdl.State.TotalProfitBI = core.AddCoreAndInt(mdl.State.TotalProfitBI, pnl.Profit)
 		mdl.State.TotalProfit = utils.GetFloat64Decimal(mdl.State.TotalProfitBI.Convert(), mdl.GetUnderlyingDecimal())
 	}
-	// mdl.State.MinAmount = (*core.BigInt)(state.MinAmount)
-	// mdl.State.MaxAmount = (*core.BigInt)(state.MaxAmount)
+	mdl.State.MinAmount = (*core.BigInt)(state.MinAmount)
+	mdl.State.MaxAmount = (*core.BigInt)(state.MaxAmount)
 
 	mdl.State.BorrowRateBI = (*core.BigInt)(state.BorrowRate)
 	mdl.State.BorrowRate = utils.GetFloat64Decimal(state.BorrowRate, 25)

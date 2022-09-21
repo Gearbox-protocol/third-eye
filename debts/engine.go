@@ -153,7 +153,7 @@ func (eng *DebtEngine) CalculateDebt() {
 
 func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt int64, status int) {
 	sessionSnapshot := eng.lastCSS[sessionId]
-	if status == schemas.Liquidated {
+	if schemas.IsStatusLiquidated(status) {
 		account := eng.liquidableBlockTracker[sessionId]
 		var liquidableSinceBlockNum int64
 		if account != nil {
@@ -385,9 +385,12 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 	var amountToPool, calRemainingFunds *big.Int
 	sessionSnapshot := eng.lastCSS[session.ID]
 	//
-	accountIsLiquidable := session.Status == schemas.Liquidated && session.ClosedAt == debt.BlockNumber+1
+	status := schemas.Active
+	if schemas.IsStatusLiquidated(session.Status) && session.ClosedAt == debt.BlockNumber+1 { // calc based on status if the block has liquidation
+		status = session.Status
+	}
 	// amount to pool
-	amountToPool, calRemainingFunds, _, _ = schemas.CalCloseAmount(eng.lastParameters[session.CreditManager], session.Version, debt.CalTotalValueBI.Convert(), accountIsLiquidable,
+	amountToPool, calRemainingFunds, _, _ = schemas.CalCloseAmount(eng.lastParameters[session.CreditManager], session.Version, debt.CalTotalValueBI.Convert(), status,
 		debt.CalBorrowedAmountPlusInterestBI.Convert(),
 		sessionSnapshot.BorrowedAmountBI.Convert())
 
@@ -414,7 +417,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 			// set price for underlying token
 			prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version), 8)
 			remainingFunds = session.Balances.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
-		} else if session.ClosedAt == debt.BlockNumber+1 && session.Status == schemas.Liquidated {
+		} else if session.ClosedAt == debt.BlockNumber+1 && schemas.IsStatusLiquidated(session.Status) {
 			remainingFunds = session.RemainingFunds.Convert()
 			repayAmount = new(big.Int)
 		} else {

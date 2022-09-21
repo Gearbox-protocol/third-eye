@@ -31,10 +31,22 @@ create TABLE parameters (
     min_amount varchar(42),
     max_amount varchar(42),
     max_leverage varchar(42),
-    fee_interest varchar(42),
-    fee_liquidation varchar(42),
-    liq_discount varchar(42),
+    fee_interest integer,
+    fee_liquidation integer,
+    liq_discount integer,
+    liq_discount_expired  integer,
+    fee_liquidation_expired  integer,
     PRIMARY KEY (block_num, credit_manager));
 
 ALTER TABLE ONLY parameters
     ADD CONSTRAINT parameters_block_num_fkey FOREIGN KEY (block_num) REFERENCES blocks(id) ON DELETE CASCADE;
+
+-- alter table parameters add liq_discount_expired integer, add fee_liquidation_expired integer;
+-- alter table parameters  add fee_interest_x integer,add fee_liquidation_x integer,add liq_discount_x integer;
+-- update parameters set fee_interest_x=cast(fee_interest as int),fee_liquidation_x=cast(fee_liquidation as int),liq_discount_x=cast(liq_discount as int);
+
+-- alter table parameters drop column fee_interest, drop column fee_liquidation,drop column liq_discount;
+-- alter table parameters add fee_interest integer, add fee_liquidation integer,add liq_discount integer;
+-- update parameters set fee_interest=fee_interest_x,fee_liquidation=fee_liquidation_x,liq_discount=liq_discount_x;
+
+-- alter table parameters drop column fee_interest_x, drop column fee_liquidation_x,drop column liq_discount_x;

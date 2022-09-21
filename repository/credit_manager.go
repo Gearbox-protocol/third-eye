@@ -23,6 +23,22 @@ func (repo *Repository) loadCreditManagers() {
 		}
 	}
 	repo.loadSessionIdToBorrower()
+	repo.loadParametersToCM()
+}
+
+func (repo *Repository) loadParametersToCM() {
+	defer utils.Elapsed("loadCreditManagers")()
+	data := []*schemas.Parameters{}
+	err := repo.db.Raw("SELECT distinct on(credit_manager) * FROM parameters ORDER BY credit_manager, block_num DESC").Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, entry := range data {
+		adapter := repo.GetAdapter(entry.CreditManager)
+		if adapter != nil && adapter.GetName() == "CreditManager" {
+			adapter.SetUnderlyingState(entry)
+		}
+	}
 }
 
 func (repo *Repository) loadSessionIdToBorrower() {

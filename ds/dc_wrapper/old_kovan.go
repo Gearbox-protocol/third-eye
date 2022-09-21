@@ -2,6 +2,7 @@ package dc_wrapper
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor"
+	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -76,13 +77,14 @@ func (obj *oldKovanDC) GetCreditAccountDataExtended(opts *bind.CallOpts, creditM
 	return latestFormat, err
 }
 
-func (obj *oldKovanDC) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditManagerData, error) {
+func (obj *oldKovanDC) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address, borrower common.Address) (dcv2.CreditManagerData, error) {
 	data, err := obj.dcOldKovan.GetCreditManagerData(opts, _creditManager, borrower)
-	log.CheckFatal(err)
-	latestFormat := mainnet.DataTypesCreditManagerData{
+	if err != nil {
+		return dcv2.CreditManagerData{}, err
+	}
+	latestFormat := dcv2.CreditManagerData{
 		Addr:               data.Addr,
-		HasAccount:         data.HasAccount,
-		UnderlyingToken:    data.UnderlyingToken,
+		Underlying:         data.UnderlyingToken,
 		IsWETH:             data.IsWETH,
 		CanBorrow:          data.CanBorrow,
 		BorrowRate:         data.BorrowRate,
@@ -90,13 +92,13 @@ func (obj *oldKovanDC) GetCreditManagerData(opts *bind.CallOpts, _creditManager 
 		MaxAmount:          data.MaxAmount,
 		MaxLeverageFactor:  data.MaxLeverageFactor,
 		AvailableLiquidity: data.AvailableLiquidity,
-		AllowedTokens:      data.AllowedTokens,
+		CollateralTokens:   data.AllowedTokens,
 	}
 	for _, adapter := range data.Adapters {
-		latestFormat.Adapters = append(latestFormat.Adapters, mainnet.DataTypesContractAdapter{
+		latestFormat.Adapters = append(latestFormat.Adapters, dcv2.ContractAdapter{
 			Adapter:         adapter.Adapter,
 			AllowedContract: adapter.AllowedContract,
 		})
 	}
-	return latestFormat, err
+	return latestFormat, nil
 }
