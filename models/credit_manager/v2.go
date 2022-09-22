@@ -9,18 +9,9 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
-
-func (cm *CreditManager) addCreditConfigurator(creditConfigurator string) {
-	// this is need for mask only
-	// cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator)
-	cf := credit_filter.NewCreditFilter(creditConfigurator, ds.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
-	cm.Repo.AddSyncAdapter(cf)
-	cm.Details["configurator"] = creditConfigurator
-}
 
 func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	//-- for credit manager stats
@@ -137,7 +128,8 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		})
 		if oldConfigurator != newConfigurator {
 			mdl.Repo.GetKit().GetAdapter(oldConfigurator).SetBlockToDisableOn(int64(txLog.BlockNumber))
-			mdl.addCreditConfigurator(newConfigurator)
+			mdl.addCreditConfiguratorAdapter(newConfigurator)
+			mdl.setConfiguratorSyncer(newConfigurator, int64(txLog.BlockNumber))
 		}
 	}
 }

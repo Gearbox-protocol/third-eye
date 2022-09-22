@@ -9,7 +9,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -113,6 +112,13 @@ func bytesToUInt16(data []byte) uint16 {
 }
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
+	extraLogs := mdl.getv2ExtraLogs(txLog)
+	for _, extraLog := range extraLogs {
+		mdl.logHandler(extraLog)
+	}
+	mdl.logHandler(txLog)
+}
+func (mdl *CreditManager) logHandler(txLog types.Log) {
 	// creditConfigurator events for test
 	// CreditFacadeUpgraded is emitted when creditconfigurator is initialized, so we will receive it on init
 	// although we have already set creditfacadeUpgra
@@ -120,7 +126,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 		switch txLog.Topics[0] {
 		case core.Topic("CreditFacadeUpgraded(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
-			mdl.SetCreditFacadeContract(common.HexToAddress(facade))
+			mdl.setCreditFacadeSyncer(facade, int64(txLog.BlockNumber))
 		case core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"):
 			mdl.setParams(&schemas.Parameters{
 				BlockNum:                   int64(txLog.BlockNumber),

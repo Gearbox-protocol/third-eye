@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// sets underlying state on init
+// pool, and underlying token address
 func (mdl *CreditManager) CommonInit(version int16) {
 	// do state changes
 	// create underlying token
@@ -50,7 +52,7 @@ func (mdl *CreditManager) CommonInit(version int16) {
 	})
 }
 
-func (cm *CreditManager) addCreditFilter(blockNum int64) {
+func (cm *CreditManager) addCreditFilterAdapter(blockNum int64) {
 	creditFilter, err := cm.contractETHV1.CreditFilter(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
 	if err != nil {
 		log.Fatal(err)
