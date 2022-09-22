@@ -40,9 +40,9 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	}
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
-	log.Info(session.Version,
-		"totalvalue", data.TotalValue, closeDetails.Status,
-		"borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
+	// log.Info(mdl.params, session.Version,
+	// "totalvalue", data.TotalValue, closeDetails.Status,
+	// "borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
 	amountToPool, _, _, _ := schemas.CalCloseAmount(mdl.params,
 		session.Version, data.TotalValue,
 		closeDetails.Status,

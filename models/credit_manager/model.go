@@ -13,6 +13,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type Collateral struct {
@@ -60,6 +61,9 @@ func NewCreditManager(addr string, client core.ClientI, repo ds.RepositoryI, dis
 		mdl.addCreditFilterAdapter(discoveredAt)
 	case 2:
 		mdl.addCreditConfiguratorAdapter(mdl.GetDetailsByKey("configurator"))
+		// if params was updated before credit manager was added to addressprovider
+		// sync credit configurator to get params
+		// mdl.configuratorSyncer.FetchLogs(0, mdl.LastSync)
 	}
 	return mdl
 }
@@ -115,6 +119,10 @@ func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 }
 
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
+	// process remaining v2 events
+	for _, txLog := range mdl.getv2ExtraLogs(types.Log{BlockNumber: uint64(syncTill), Index: 10_000_000}) {
+		mdl.logHandler(txLog)
+	}
 	// ON NEW TXHASH
 	mdl.onTxHash("") // handles for v1(for multicalls) and v1 (for executeorder)
 	// ON NEW BLOCKNUM

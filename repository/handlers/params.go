@@ -132,13 +132,15 @@ func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator stri
 			"liquidationDiscount", "feeLiquidation",
 			"liquidationDiscountExpired", "feeLiquidationExpired"}, schemas.LimitsUpdated)
 	newParams := &schemas.Parameters{
-		MinAmount:           params.MinAmount,
-		MaxAmount:           params.MaxAmount,
-		FeeInterest:         oldCMParams.FeeInterest,
-		FeeLiquidation:      oldCMParams.FeeInterest,
-		LiquidationDiscount: oldCMParams.LiquidationDiscount,
-		BlockNum:            params.BlockNum,
-		CreditManager:       params.CreditManager,
+		MinAmount:                  params.MinAmount,
+		MaxAmount:                  params.MaxAmount,
+		FeeInterest:                oldCMParams.FeeInterest,
+		FeeLiquidation:             oldCMParams.FeeInterest,
+		LiquidationDiscount:        oldCMParams.LiquidationDiscount,
+		LiquidationDiscountExpired: oldCMParams.LiquidationDiscountExpired,
+		FeeLiquidationExpired:      oldCMParams.FeeLiquidationExpired,
+		BlockNum:                   params.BlockNum,
+		CreditManager:              params.CreditManager,
 	}
 	repo.cmParams[params.CreditManager] = newParams
 	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)
@@ -155,13 +157,15 @@ func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string
 	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{"maxAmount", "maxLeverage", "minAmount"}, schemas.FeesUpdated)
 	newParams := &schemas.Parameters{
-		MinAmount:           oldCMParams.MinAmount,
-		MaxAmount:           oldCMParams.MaxAmount,
-		FeeInterest:         params.FeeInterest,
-		FeeLiquidation:      params.FeeInterest,
-		LiquidationDiscount: params.LiquidationDiscount,
-		BlockNum:            params.BlockNum,
-		CreditManager:       params.CreditManager,
+		MinAmount:                  oldCMParams.MinAmount,
+		MaxAmount:                  oldCMParams.MaxAmount,
+		FeeInterest:                params.FeeInterest,
+		FeeLiquidation:             params.FeeInterest,
+		LiquidationDiscount:        params.LiquidationDiscount,
+		LiquidationDiscountExpired: params.LiquidationDiscountExpired,
+		FeeLiquidationExpired:      params.FeeLiquidationExpired,
+		BlockNum:                   params.BlockNum,
+		CreditManager:              params.CreditManager,
 	}
 	repo.cmParams[params.CreditManager] = newParams
 	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)

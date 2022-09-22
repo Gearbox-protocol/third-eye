@@ -45,7 +45,8 @@ func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) 
 		tenderlyCallName = "CloseCreditAccount(address,address)"
 	}
 	if tenderlyCallName != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
-		log.Fatalf("Tenderly event %s is different from %s", mainCall.Name, mainEvent.Action)
+		msg := fmt.Sprintf("Tenderly event %s is different from %s", mainCall.Name, mainEvent.Action)
+		log.Fatal(msg)
 	}
 	events := mdl.multicall.PopMulticallEventsV2()
 	//

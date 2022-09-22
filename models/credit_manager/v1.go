@@ -137,7 +137,6 @@ func (mdl *CreditManager) checkLogV1(txLog types.Log) {
 		mdl.State.MinAmount = (*core.BigInt)(paramsEvent.MinAmount)
 		mdl.State.MaxAmount = (*core.BigInt)(paramsEvent.MaxAmount)
 		mdl.State.MaxLeverageFactor = paramsEvent.MaxLeverage.Int64()
-		mdl.State.FeeInterest = paramsEvent.FeeInterest.Int64()
 		params := &schemas.Parameters{
 			BlockNum:            int64(txLog.BlockNumber),
 			CreditManager:       mdl.GetAddress(),

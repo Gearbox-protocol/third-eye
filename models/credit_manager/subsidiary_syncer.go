@@ -14,6 +14,7 @@ type SubsidiarySyncer struct {
 	Address common.Address
 	topics  [][]common.Hash
 	logs    []types.Log
+	to      int64
 }
 
 func NewSubsidiarySyncer(client core.ClientI, address string, topics [][]common.Hash) *SubsidiarySyncer {
@@ -25,10 +26,16 @@ func NewSubsidiarySyncer(client core.ClientI, address string, topics [][]common.
 }
 
 func (mdl *SubsidiarySyncer) FetchLogs(from, to int64) {
+	if mdl.to != 0 {
+		if mdl.to+1 != from {
+			log.Fatal("Not implementated")
+		}
+	}
 	mdl.logs = nil
 	logs, err := core.Node{Client: mdl.client}.GetLogs(from, to, []common.Address{mdl.Address}, mdl.topics)
 	log.CheckFatal(err)
-	mdl.logs = logs
+	mdl.logs = append(mdl.logs, logs...)
+	mdl.to = to
 }
 
 func (mdl *SubsidiarySyncer) GetLogsBefore(marker types.Log) []types.Log {

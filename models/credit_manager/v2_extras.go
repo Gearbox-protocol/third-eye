@@ -76,10 +76,10 @@ func (mdl *CreditManager) setConfiguratorSyncer(configuratorAddr string, syncFro
 
 func (mdl *CreditManager) WillBeSyncedTo(blockNum int64) {
 	if mdl.configuratorSyncer != nil {
-		mdl.configuratorSyncer.FetchLogs(mdl.LastSync, blockNum)
+		mdl.configuratorSyncer.FetchLogs(mdl.LastSync+1, blockNum)
 	}
 	if mdl.facadeSyncer != nil {
-		mdl.facadeSyncer.FetchLogs(mdl.LastSync, blockNum)
+		mdl.facadeSyncer.FetchLogs(mdl.LastSync+1, blockNum)
 	}
 	mdl.SyncAdapter.WillBeSyncedTo(blockNum)
 }
