@@ -208,6 +208,7 @@ func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) 
 			switch call.Input[2:10] {
 			case "caa5c23f", // multicall
 				"5f73fbec", // closeCreditAccount
+				"82871ace", // liquidateExpiredCreditAccount
 				"5d91a0e0", // liquidateCreditAccount
 				"7071b7c5": // openCreditAccountMulticall
 				event, err := getCreditFacadeMainEvent(call.Input)

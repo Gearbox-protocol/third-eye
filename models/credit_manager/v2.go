@@ -9,18 +9,9 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
-
-func (cm *CreditManager) addCreditConfigurator(creditConfigurator string) {
-	// this is need for mask only
-	// cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator)
-	cf := credit_filter.NewCreditFilter(creditConfigurator, ds.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
-	cm.Repo.AddSyncAdapter(cf)
-	cm.Details["configurator"] = creditConfigurator
-}
 
 func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	//-- for credit manager stats
@@ -53,6 +44,11 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		mdl.onCloseCreditAccountV2(&txLog,
 			closeCreditAccountEvent.Borrower.Hex(),
 			closeCreditAccountEvent.To.Hex())
+		// for getting correct liquidation status
+	case core.Topic("Paused(address)"):
+		mdl.State.Paused = true
+	case core.Topic("Unpaused(address)"):
+		mdl.State.Paused = false
 	case core.Topic("LiquidateCreditAccount(address,address,address,uint256)"):
 		liquidateCreditAccountEvent, err := mdl.facadeContractV2.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
@@ -132,7 +128,8 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		})
 		if oldConfigurator != newConfigurator {
 			mdl.Repo.GetKit().GetAdapter(oldConfigurator).SetBlockToDisableOn(int64(txLog.BlockNumber))
-			mdl.addCreditConfigurator(newConfigurator)
+			mdl.addCreditConfiguratorAdapter(newConfigurator)
+			mdl.setConfiguratorSyncer(newConfigurator, int64(txLog.BlockNumber))
 		}
 	}
 }
@@ -148,29 +145,41 @@ func (mdl *CreditManager) onNewTxHashV2() {
 // executeorder
 // are added to multicall manager
 //
+// #######
+// FLOWS ->
+// openwithoutmulticall => add collateral
+// openwithmulticall => other calls
+// multicallstarted => other calls
+// other calls => closed/liquidated
 func (mdl *CreditManager) processRemainingMultiCalls() {
-	// opencreditaccount
+	// non multicall [for opencreditaccount]
 	mainAction := mdl.multicall.OpenEvent
-	// if not present use multicall
-	if mainAction == nil { // other multicall operations
-		mainAction = mdl.multicall.MultiCallStartEvent
-		// open credit account without multicall
-	} else if mdl.multicall.lenOfMultiCalls() == 0 {
+	// opencreditaccount without mulitcall
+	if mainAction != nil && mdl.multicall.lenOfMultiCalls() == 0 {
 		mdl.setUpdateSession(mainAction.SessionId)
 		mdl.Repo.AddAccountOperation(mainAction)
 		mdl.openCreditAccountInitialAmount(mainAction.BlockNumber, mainAction)
 	}
-	//
-	if mdl.multicall.lenOfMultiCalls() > 0 {
+	// for multicalls
+	mainAction = mdl.multicall.OpenEvent
+	if mainAction == nil { // other multicall operations
+		mainAction = mdl.multicall.MultiCallStartEvent
+	}
+	// won't be call for liquidate/close as the len of multicall will be zero, they are already prcoessed by multicCallHandler call in OnLIquidate and OnClose CreditAccount v2
+	// so it is safe to use setUpdateSession
+	if mainAction != nil && mdl.multicall.lenOfMultiCalls() > 0 {
+		mdl.setUpdateSession(mainAction.SessionId)
 		mdl.multiCallHandler(mainAction)
 	}
 	mdl.multicall.OpenEvent = nil
 	mdl.multicall.MultiCallStartEvent = nil
 }
+
 func (mdl *CreditManager) setUpdateSession(sessionId string) {
 	// log.Info(log.DetectFunc(),sessionId, "increased")
 	mdl.UpdatedSessions[sessionId]++
 }
+
 func (mdl *CreditManager) processNonMultiCalls() {
 	events := mdl.multicall.popNonMulticallEventsV2()
 	executeEvents := []ds.ExecuteParams{}
@@ -179,7 +188,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 		case "AddCollateral(address,address,uint256)",
 			"IncreaseBorrowedAmount(address,uint256)",
 			"DecreaseBorrowedAmount(address,uint256)":
-			mdl.setUpdateSession(event.SessionId)
+			// mdl.setUpdateSession(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":
 			account := strings.Split(event.SessionId, "_")[0]
@@ -199,6 +208,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 	}
 }
 
+// TO CHECK
 func (mdl *CreditManager) getInitialAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
 	balances := map[string]*big.Int{}
 	for _, event := range mainAction.MultiCall {

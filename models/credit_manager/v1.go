@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// sets underlying state on init
+// pool, and underlying token address
 func (mdl *CreditManager) CommonInit(version int16) {
 	// do state changes
 	// create underlying token
@@ -50,7 +52,7 @@ func (mdl *CreditManager) CommonInit(version int16) {
 	})
 }
 
-func (cm *CreditManager) addCreditFilter(blockNum int64) {
+func (cm *CreditManager) addCreditFilterAdapter(blockNum int64) {
 	creditFilter, err := cm.contractETHV1.CreditFilter(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
 	if err != nil {
 		log.Fatal(err)
@@ -128,24 +130,26 @@ func (mdl *CreditManager) checkLogV1(txLog types.Log) {
 		}
 		mdl.AddExecuteParams(&txLog, execute.Borrower, execute.Target)
 	case core.Topic("NewParameters(uint256,uint256,uint256,uint256,uint256,uint256)"):
-		params, err := mdl.contractETHV1.ParseNewParameters(txLog)
+		paramsEvent, err := mdl.contractETHV1.ParseNewParameters(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack NewParameters event", err)
 		}
-		mdl.State.MinAmount = (*core.BigInt)(params.MinAmount)
-		mdl.State.MaxAmount = (*core.BigInt)(params.MaxAmount)
-		mdl.State.MaxLeverageFactor = params.MaxLeverage.Int64()
-		mdl.State.FeeInterest = params.FeeInterest.Int64()
-		mdl.Repo.AddParameters(txLog.Index, txLog.TxHash.Hex(), &schemas.Parameters{
+		mdl.State.MinAmount = (*core.BigInt)(paramsEvent.MinAmount)
+		mdl.State.MaxAmount = (*core.BigInt)(paramsEvent.MaxAmount)
+		mdl.State.MaxLeverageFactor = paramsEvent.MaxLeverage.Int64()
+		mdl.State.FeeInterest = paramsEvent.FeeInterest.Int64()
+		params := &schemas.Parameters{
 			BlockNum:            int64(txLog.BlockNumber),
 			CreditManager:       mdl.GetAddress(),
-			MinAmount:           (*core.BigInt)(params.MinAmount),
-			MaxAmount:           (*core.BigInt)(params.MaxAmount),
-			MaxLeverage:         (*core.BigInt)(params.MaxLeverage),
-			FeeInterest:         (*core.BigInt)(params.FeeInterest),
-			FeeLiquidation:      (*core.BigInt)(params.FeeLiquidation),
-			LiquidationDiscount: (*core.BigInt)(params.LiquidationDiscount),
-		}, mdl.State.UnderlyingToken)
+			MinAmount:           (*core.BigInt)(paramsEvent.MinAmount),
+			MaxAmount:           (*core.BigInt)(paramsEvent.MaxAmount),
+			MaxLeverage:         (*core.BigInt)(paramsEvent.MaxLeverage),
+			FeeInterest:         uint16(paramsEvent.FeeInterest.Int64()),
+			FeeLiquidation:      uint16(paramsEvent.FeeLiquidation.Int64()),
+			LiquidationDiscount: uint16(paramsEvent.LiquidationDiscount.Int64()),
+		}
+		mdl.Repo.AddParameters(txLog.Index, txLog.TxHash.Hex(), params, mdl.State.UnderlyingToken)
+		mdl.setParams(params)
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.contractETHV1.ParseTransferAccount(txLog)

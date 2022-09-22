@@ -59,6 +59,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, acco
 		Version:        1,
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
+	mdl.setUpdateSession(sessionId)
 	mdl.AddCollateralToSession(blockNum, sessionId, mdl.State.UnderlyingToken, amount)
 	return nil
 }

@@ -18,7 +18,7 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 	for sessionId, closeDetails := range mdl.ClosedSessions {
 		updates := mdl.UpdatedSessions[sessionId]
 		if updates != 0 {
-			log.Fatalf("Session: %s updated %d before close %+v in block %d\n", sessionId, updates, closeDetails, blockNum)
+			log.Fatalf("Session: %s updated %d before close %+v in same block %d\n", sessionId, updates, closeDetails, blockNum)
 		}
 		mdl.closeSession(sessionId, blockNum, closeDetails)
 	}
@@ -40,14 +40,22 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	}
 	data := mdl.GetCreditSessionData(blockNum-1, session.Borrower)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
-	var amountToPool *big.Int
-	switch closeDetails.Status {
-	case schemas.Closed,
-		schemas.Repaid:
-		amountToPool = data.RepayAmount
-	case schemas.Liquidated:
-		amountToPool = data.LiquidationAmount
-	}
+	log.Info(session.Version,
+		"totalvalue", data.TotalValue, closeDetails.Status,
+		"borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
+	amountToPool, _, _, _ := schemas.CalCloseAmount(mdl.params,
+		session.Version, data.TotalValue,
+		closeDetails.Status,
+		data.BorrowedAmountPlusInterest,
+		data.BorrowedAmount,
+	)
+	// switch closeDetails.Status {
+	// case schemas.Closed,
+	// 	schemas.Repaid:
+	// 	amountToPool = data.RepayAmount
+	// case schemas.Liquidated:
+	// 	amountToPool = data.LiquidationAmount
+	// }
 	// pool repay
 	// check for avoiding db errors
 	mdl.PoolRepay(blockNum,

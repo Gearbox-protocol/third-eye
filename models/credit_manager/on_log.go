@@ -9,7 +9,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -104,22 +103,40 @@ func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
 		mdl.calculateCMStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
+		// set dc data for credit manager to nil
 	}
 }
 
+func bytesToUInt16(data []byte) uint16 {
+	return uint16(new(big.Int).SetBytes(data).Int64())
+}
+
 func (mdl *CreditManager) OnLog(txLog types.Log) {
+	extraLogs := mdl.getv2ExtraLogs(txLog)
+	for _, extraLog := range extraLogs {
+		mdl.logHandler(extraLog)
+	}
+	mdl.logHandler(txLog)
+}
+func (mdl *CreditManager) logHandler(txLog types.Log) {
 	// creditConfigurator events for test
-	// we only require CreditFacadeUpgraded so that we can update the details for credit manager and
+	// CreditFacadeUpgraded is emitted when creditconfigurator is initialized, so we will receive it on init
+	// although we have already set creditfacadeUpgra
 	if mdl.GetDetailsByKey("configurator") == txLog.Address.Hex() {
 		switch txLog.Topics[0] {
 		case core.Topic("CreditFacadeUpgraded(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
-			mdl.SetCreditFacadeContract(common.HexToAddress(facade))
-		case core.Topic("LimitsUpdated(uint256,uint256)"): // SET min/max BorrowAmount
-			minAmount := new(big.Int).SetBytes(txLog.Data[:32])
-			maxAmount := new(big.Int).SetBytes(txLog.Data[32:])
-			mdl.State.MinAmount = (*core.BigInt)(minAmount)
-			mdl.State.MaxAmount = (*core.BigInt)(maxAmount)
+			mdl.setCreditFacadeSyncer(facade, int64(txLog.BlockNumber))
+		case core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"):
+			mdl.setParams(&schemas.Parameters{
+				BlockNum:                   int64(txLog.BlockNumber),
+				CreditManager:              mdl.Address,
+				FeeInterest:                bytesToUInt16(txLog.Data[:32]),
+				FeeLiquidation:             bytesToUInt16(txLog.Data[32:64]),
+				LiquidationDiscount:        bytesToUInt16(txLog.Data[64:96]),
+				FeeLiquidationExpired:      bytesToUInt16(txLog.Data[96:128]),
+				LiquidationDiscountExpired: bytesToUInt16(txLog.Data[128:160]),
+			})
 		}
 		return
 	}

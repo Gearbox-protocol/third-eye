@@ -132,24 +132,6 @@
         TxHash: '#Hash_7',
         Type: 3,
       },
-      // {
-      //   Args: {
-      //     chiThreshold: [
-      //       '0',
-      //       '7500',
-      //     ],
-      //     creditManager: '#CreditManager_1',
-      //     fastDelay: [
-      //       '0',
-      //       '7500',
-      //     ],
-      //   },
-      //   BlockNumber: 5,
-      //   Contract: '#CreditConfigurator_1',
-      //   LogID: 4,
-      //   TxHash: '#Hash_8',
-      //   Type: 4,
-      // },
       {
         Args: {
           creditManager: '#CreditManager_1',
@@ -163,6 +145,7 @@
       },
       {
         Args: {
+          creditManager: '#CreditManager_1',
           maxAmount: [
             '0',
             '5000000000',
@@ -171,7 +154,6 @@
             '0',
             '1000000000',
           ],
-          creditManager: '#CreditManager_1',
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
@@ -181,19 +163,27 @@
       },
       {
         Args: {
-          LiquidationDiscount: [
-            '0',
-            '9500',
-          ],
+          creditManager: '#CreditManager_1',
           feeInterest: [
-            '0',
-            '1000',
+            0,
+            1000,
           ],
           feeLiquidation: [
-            '0',
-            '200',
+            0,
+            200,
           ],
-          creditManager: '#CreditManager_1',
+          feeLiquidationExpired: [
+            0,
+            300,
+          ],
+          liquidationDiscount: [
+            0,
+            9500,
+          ],
+          liquidationDiscountExpired: [
+            0,
+            9400,
+          ],
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
@@ -203,14 +193,117 @@
       },
       {
         Args: {
-          facade: '#CreditFacade_1',
           creditManager: '#CreditManager_1',
+          facade: '#CreditFacade_1',
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
         LogID: 8,
         TxHash: '#Hash_14',
         Type: 25,
+      },
+    ],
+  },
+  '6': {
+    daoOperations: [
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          priceOracle: '#PriceOracle_1',
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 0,
+        TxHash: '#Hash_15',
+        Type: 6,
+      },
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          increaseDebtForbiddenMode: 1,
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 1,
+        TxHash: '#Hash_16',
+        Type: 28,
+      },
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          date: 123456789,
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 2,
+        TxHash: '#Hash_16',
+        Type: 29,
+      },
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          maxEnabledTokens: 10,
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 3,
+        TxHash: '#Hash_16',
+        Type: 30,
+      },
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          limitPerBlock: 10,
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 4,
+        TxHash: '#Hash_16',
+        Type: 31,
+      },
+      {
+        Args: {
+          contract: '#Admin_1',
+          creditManager: '#CreditManager_1',
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 5,
+        TxHash: '#Hash_17',
+        Type: 32,
+      },
+      {
+        Args: {
+          contract: '#Admin_1',
+          creditManager: '#CreditManager_1',
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 6,
+        TxHash: '#Hash_17',
+        Type: 33,
+      },
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          emergencyLiquidator: '#Emergencyiquidator_1',
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 7,
+        TxHash: '#Hash_18',
+        Type: 34,
+      },
+      {
+        Args: {
+          creditManager: '#CreditManager_1',
+          emergencyLiquidator: '#Emergencyiquidator_1',
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 8,
+        TxHash: '#Hash_18',
+        Type: 35,
       },
     ],
   },

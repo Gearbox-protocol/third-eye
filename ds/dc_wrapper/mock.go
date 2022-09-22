@@ -3,6 +3,7 @@ package dc_wrapper
 import (
 	"math/big"
 
+	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/ethereum/go-ethereum/common"
@@ -31,12 +32,11 @@ func (t *DCTesting) getPoolData(blockNum int64, key string) (mainnet.DataTypesPo
 		CumulativeIndexRAY:     (*big.Int)(obj.CumulativeIndexRAY),
 	}, nil
 }
-func (t *DCTesting) getCMData(blockNum int64, key string) (mainnet.DataTypesCreditManagerData, error) {
+func (t *DCTesting) getCMData(blockNum int64, key string) (dcv2.CreditManagerData, error) {
 	obj := t.calls[blockNum].CMs[key]
-	return mainnet.DataTypesCreditManagerData{
+	return dcv2.CreditManagerData{
 		Addr:               common.HexToAddress(obj.Addr),
-		HasAccount:         obj.HasAccount,
-		UnderlyingToken:    common.HexToAddress(obj.UnderlyingToken),
+		Underlying:         common.HexToAddress(obj.UnderlyingToken),
 		IsWETH:             obj.IsWETH,
 		CanBorrow:          obj.CanBorrow,
 		BorrowRate:         (*big.Int)(obj.BorrowRate),

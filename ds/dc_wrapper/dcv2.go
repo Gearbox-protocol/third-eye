@@ -96,31 +96,8 @@ func (obj *v2DC) GetCreditAccountData(opts *bind.CallOpts, creditManager common.
 	return latestFormat, err
 }
 
-func (obj *v2DC) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address) (mainnet.DataTypesCreditManagerData, error) {
-	data, err := obj.dcV2.GetCreditManagerData(opts, _creditManager)
-	log.CheckFatal(err)
-	latestFormat := mainnet.DataTypesCreditManagerData{
-		Addr: data.Addr,
-		//
-		HasAccount: true,
-		//
-		UnderlyingToken:    data.Underlying,
-		IsWETH:             data.IsWETH,
-		CanBorrow:          data.CanBorrow,
-		BorrowRate:         data.BorrowRate,
-		MinAmount:          data.MinAmount,
-		MaxAmount:          data.MaxAmount,
-		MaxLeverageFactor:  data.MaxLeverageFactor,
-		AvailableLiquidity: data.AvailableLiquidity,
-		AllowedTokens:      data.CollateralTokens,
-	}
-	for _, adapter := range data.Adapters {
-		latestFormat.Adapters = append(latestFormat.Adapters, mainnet.DataTypesContractAdapter{
-			Adapter:         adapter.Adapter,
-			AllowedContract: adapter.AllowedContract,
-		})
-	}
-	return latestFormat, err
+func (obj *v2DC) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address) (dataCompressorv2.CreditManagerData, error) {
+	return obj.dcV2.GetCreditManagerData(opts, _creditManager)
 }
 
 // there was a smartcontractbug in 8 th dcv2 contract for july 2022 kovan deployment.

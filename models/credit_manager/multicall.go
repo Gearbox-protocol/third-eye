@@ -9,13 +9,16 @@ import (
 type MultiCallProcessor struct {
 	// borrower            string
 	txHash              string
-	OpenEvent           *schemas.AccountOperation
-	events              []*schemas.AccountOperation
-	nonMultiCallEvents  []*schemas.AccountOperation
+	running             bool // is the multicall running
 	MultiCallStartEvent *schemas.AccountOperation
-	running             bool
+	events              []*schemas.AccountOperation
+	//
+	nonMultiCallEvents []*schemas.AccountOperation
+	//
+	OpenEvent *schemas.AccountOperation
 }
 
+// edge case it was adds non multicall addCollateral for open credit account
 func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperation) {
 	if !p.running { // non multicall
 		// open credit account without multicall (done to calculate initialamount)
@@ -38,7 +41,7 @@ func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperati
 }
 func (p *MultiCallProcessor) AddOpenEvent(openEvent *schemas.AccountOperation) {
 	if len(p.events) > 0 {
-		log.Info("Previous multicall events not processed", utils.ToJson(p.events))
+		log.Fatal("Previous multicall events not processed", utils.ToJson(p.events))
 	}
 	if len(p.nonMultiCallEvents) > 0 {
 		log.Fatal("There can't be non multicall events while multicall is running",
@@ -51,7 +54,7 @@ func (p *MultiCallProcessor) AddOpenEvent(openEvent *schemas.AccountOperation) {
 }
 func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOperation) {
 	if len(p.events) > 0 {
-		log.Infof("Previous multicall events not processed %s", utils.ToJson(p.events))
+		log.Fatalf("Previous multicall events not processed %s", utils.ToJson(p.events))
 	}
 	if len(p.nonMultiCallEvents) > 0 {
 		log.Fatal("There can't be non multicall events while multicall is running",

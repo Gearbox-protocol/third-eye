@@ -20,6 +20,7 @@ type SyncAdapter struct {
 	Repo                   RepositoryI `gorm:"-" json:"-"`
 	OnlyQuery              bool        `gorm:"-" json:"-"`
 	HasOnLogs              bool        `gorm:"-" json:"-"`
+	WillSyncTill           int64       `gorm:"-" json:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -52,6 +53,7 @@ type SyncAdapterI interface {
 	GetAdapterState() *SyncAdapter
 	OnlyQueryAllowed() bool
 	Query(queryTill int64)
+	WillBeSyncedTo(blockNum int64)
 	disableOnBlock(currentBlock int64)
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
@@ -62,6 +64,9 @@ type SyncAdapterI interface {
 }
 
 func (s *SyncAdapter) SetDetails(obj interface{}) {
+}
+func (s *SyncAdapter) WillBeSyncedTo(blockNum int64) {
+	s.WillSyncTill = blockNum
 }
 
 func (s *SyncAdapter) GetDetailsByKey(key string) string {

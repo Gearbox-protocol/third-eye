@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditAccount"
+	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -197,7 +198,7 @@ func (dcw *DataCompressorWrapper) GetCreditAccountDataExtendedForHack(opts *bind
 	panic(fmt.Sprintf("data compressor number %s not found for credit account data", key))
 }
 
-func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditManagerData, error) {
+func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address, borrower common.Address) (dcv2.CreditManagerData, error) {
 	if opts == nil || opts.BlockNumber == nil {
 		panic("opts or blockNumber is nil")
 	}
@@ -211,7 +212,27 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _cre
 		return dcw.v2DC[discoveredAt].GetCreditManagerData(opts, _creditManager)
 	case MAINNET:
 		dcw.setMainnet(discoveredAt)
-		return dcw.dcMainnet.GetCreditManagerData(opts, _creditManager, borrower)
+		data, err := dcw.dcMainnet.GetCreditManagerData(opts, _creditManager, borrower)
+		log.CheckFatal(err)
+		latestFormat := dcv2.CreditManagerData{
+			Addr:               data.Addr,
+			Underlying:         data.UnderlyingToken,
+			IsWETH:             data.IsWETH,
+			CanBorrow:          data.CanBorrow,
+			BorrowRate:         data.BorrowRate,
+			MinAmount:          data.MinAmount,
+			MaxAmount:          data.MaxAmount,
+			MaxLeverageFactor:  data.MaxLeverageFactor,
+			AvailableLiquidity: data.AvailableLiquidity,
+			CollateralTokens:   data.AllowedTokens,
+		}
+		// for _, adapter := range data.Adapters {
+		// 	latestFormat.Adapters = append(latestFormat.Adapters, dcv2.ContractAdapter{
+		// 		Adapter:         adapter.Adapter,
+		// 		AllowedContract: adapter.AllowedContract,
+		// 	})
+		// }
+		return latestFormat, nil
 	case TESTING:
 		return dcw.testing.getCMData(opts.BlockNumber.Int64(), _creditManager.Hex())
 	}

@@ -1,8 +1,9 @@
 package tests
 
 import (
-	"github.com/Gearbox-protocol/third-eye/tests/framework"
 	"testing"
+
+	"github.com/Gearbox-protocol/third-eye/tests/framework"
 )
 
 func TestDAOV2Operations(t *testing.T) {
@@ -22,8 +23,11 @@ func TestDAOV2Operations(t *testing.T) {
 			"daoOperations": r.Repo.GetBlocks()[5].DAOOperations,
 			"allowedTokens": r.Repo.GetBlocks()[5].AllowedTokens,
 		},
+		"6": map[string]interface{}{
+			"daoOperations": r.Repo.GetBlocks()[6].DAOOperations,
+			"allowedTokens": r.Repo.GetBlocks()[6].AllowedTokens,
+		},
 	}
 	r.Check(data, "dao_operations_v2/blocks.json")
-	// r.Print(data)
 	r.Check(map[string]interface{}{"data": r.Repo.GetDisabledTokens()}, "dao_operations_v2/disabled_tokens.json")
 }
