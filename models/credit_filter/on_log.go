@@ -20,18 +20,6 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	creditManager := mdl.GetCM()
 	switch txLog.Topics[0] {
 	// common
-	case core.Topic("PriceOracleUpdated(address)"):
-		po, err := mdl.filterContract.ParsePriceOracleUpdated(txLog)
-		log.CheckFatal(err)
-		args := &core.Json{"newPriceOracle": po.NewPriceOracle.Hex(), "creditManager": creditManager}
-		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
-			LogID:       txLog.Index,
-			TxHash:      txLog.TxHash.Hex(),
-			BlockNumber: blockNum,
-			Contract:    mdl.Address,
-			Type:        schemas.PriceOracleUpdated,
-			Args:        args,
-		})
 	case core.Topic("ContractAllowed(address,address)"):
 		contractAllowedEvent, err := mdl.filterContract.ParseContractAllowed(txLog)
 		if err != nil {
@@ -76,6 +64,18 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			LiquidityThreshold: (*core.BigInt)(tokenEvent.LiquidityThreshold),
 		})
 		mdl.Repo.GetToken(tokenEvent.Token.Hex())
+	case core.Topic("PriceOracleUpdated(address)"):
+		po, err := mdl.filterContract.ParsePriceOracleUpdated(txLog)
+		log.CheckFatal(err)
+		args := &core.Json{"newPriceOracle": po.NewPriceOracle.Hex(), "creditManager": creditManager}
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			BlockNumber: blockNum,
+			Contract:    mdl.Address,
+			Type:        schemas.PriceOracleUpdated,
+			Args:        args,
+		})
 	case core.Topic("TransferPluginAllowed(address,bool)"):
 		transferPlugin, err := mdl.filterContract.ParseTransferPluginAllowed(txLog)
 		log.CheckFatal(err)

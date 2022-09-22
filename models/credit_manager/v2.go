@@ -155,10 +155,10 @@ func (mdl *CreditManager) onNewTxHashV2() {
 //
 // #######
 // FLOWS ->
-// openwithoutmulticall add collateral
-// openwithmulticall other calls
-// multicallstarted other calls
-// other calls closed/liquidated
+// openwithoutmulticall => add collateral
+// openwithmulticall => other calls
+// multicallstarted => other calls
+// other calls => closed/liquidated
 func (mdl *CreditManager) processRemainingMultiCalls() {
 	// non multicall [for opencreditaccount]
 	mainAction := mdl.multicall.OpenEvent
@@ -182,10 +182,12 @@ func (mdl *CreditManager) processRemainingMultiCalls() {
 	mdl.multicall.OpenEvent = nil
 	mdl.multicall.MultiCallStartEvent = nil
 }
+
 func (mdl *CreditManager) setUpdateSession(sessionId string) {
 	// log.Info(log.DetectFunc(),sessionId, "increased")
 	mdl.UpdatedSessions[sessionId]++
 }
+
 func (mdl *CreditManager) processNonMultiCalls() {
 	events := mdl.multicall.popNonMulticallEventsV2()
 	executeEvents := []ds.ExecuteParams{}

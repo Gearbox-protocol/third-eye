@@ -216,5 +216,100 @@ local borrowedAmount = 4000;
         }],
       },
     },
+    '6': {  // new v2 events
+      events: [
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'PriceOracleUpgraded(address)',
+            '#PriceOracle_1',
+          ],
+          txHash: '!#Hash_15',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'IncreaseDebtForbiddenModeChanged(bool)',
+          ],
+          data: [
+            // bool
+            'bool:1',
+          ],
+          txHash: '!#Hash_16',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'ExpirationDateUpdated(uint40)',
+          ],
+          data: [
+            'bigint:123456789',
+          ],
+          txHash: '!#Hash_16',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'MaxEnabledTokensUpdated(uint8)',
+          ],
+          data: [
+            'uint8:10',
+          ],
+          txHash: '!#Hash_16',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'LimitPerBlockUpdated(uint128)',
+          ],
+          data: [
+            'bigint:10',
+          ],
+          txHash: '!#Hash_16',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'AddedToUpgradeable(address)',
+            '#Admin_1',
+          ],
+          txHash: '!#Hash_17',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'RemovedFromUpgradeable(address)',
+            '#Admin_1',
+          ],
+          txHash: '!#Hash_17',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'EmergencyLiquidatorAdded(address)',
+            '#Emergencyiquidator_1',
+          ],
+          txHash: '!#Hash_18',
+        },
+        {
+          address: '#CreditConfigurator_2',
+          topics: [
+            'EmergencyLiquidatorRemoved(address)',
+            '#Emergencyiquidator_1',
+          ],
+          txHash: '!#Hash_18',
+        },
+      ],
+      calls: {
+        cms: [{
+          address: '#CreditManager_1',
+          isWETH: false,
+          minAmount: utils.bigInt(1000, 6),
+          maxAmount: utils.bigInt(5000, 6),
+          availableLiquidity: utils.bigInt(1000, 6),
+          borrowRate: '0',
+        }],
+      },
+    },
   },
 }

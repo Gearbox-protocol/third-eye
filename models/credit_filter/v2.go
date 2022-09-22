@@ -91,8 +91,8 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
-			Args:        &core.Json{"facade": priceOracle, "creditManager": creditManager},
-			Type:        schemas.PriceOracleUpgraded,
+			Args:        &core.Json{"priceOracle": priceOracle, "creditManager": creditManager},
+			Type:        schemas.PriceOracleUpdated,
 		})
 	case core.Topic("IncreaseDebtForbiddenModeChanged(bool)"):
 		increaseDebtForbiddenMode := new(big.Int).SetBytes(txLog.Data).Int64()
@@ -106,6 +106,26 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 				"increaseDebtForbiddenMode": increaseDebtForbiddenMode,
 			},
 			Type: schemas.IncreaseDebtForbiddenModeChanged,
+		})
+	case core.Topic("ExpirationDateUpdated(uint40)"):
+		date := new(big.Int).SetBytes(txLog.Data).Int64()
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Args:        &core.Json{"creditManager": creditManager, "date": date},
+			Type:        schemas.ExpirationDateUpdated,
+		})
+	case core.Topic("MaxEnabledTokensUpdated(uint8)"):
+		maxEnabledTokens := new(big.Int).SetBytes(txLog.Data).Int64()
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Args:        &core.Json{"creditManager": creditManager, "maxEnabledTokens": maxEnabledTokens},
+			Type:        schemas.MaxEnabledTokensUpdated,
 		})
 	case core.Topic("LimitPerBlockUpdated(uint128)"):
 		limit := new(big.Int).SetBytes(txLog.Data).Int64()
@@ -136,26 +156,6 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			Contract:    txLog.Address.Hex(),
 			Args:        &core.Json{"creditManager": creditManager, "contract": contractAddr},
 			Type:        schemas.RemovedFromUpgradeable,
-		})
-	case core.Topic("ExpirationDateUpdated(uint40)"):
-		date := new(big.Int).SetBytes(txLog.Data).Int64()
-		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
-			BlockNumber: int64(txLog.BlockNumber),
-			LogID:       txLog.Index,
-			TxHash:      txLog.TxHash.Hex(),
-			Contract:    txLog.Address.Hex(),
-			Args:        &core.Json{"creditManager": creditManager, "date": date},
-			Type:        schemas.ExpirationDateUpdated,
-		})
-	case core.Topic("MaxEnabledTokensUpdated(uint8)"):
-		maxEnabledTokens := new(big.Int).SetBytes(txLog.Data).Int64()
-		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
-			BlockNumber: int64(txLog.BlockNumber),
-			LogID:       txLog.Index,
-			TxHash:      txLog.TxHash.Hex(),
-			Contract:    txLog.Address.Hex(),
-			Args:        &core.Json{"creditManager": creditManager, "maxEnabledTokens": maxEnabledTokens},
-			Type:        schemas.MaxEnabledTokensUpdated,
 		})
 	case core.Topic("EmergencyLiquidatorAdded(address)"):
 		emergencyLiquidator := common.BytesToAddress(txLog.Topics[1][:]).Hex()
