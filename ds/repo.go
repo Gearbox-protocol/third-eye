@@ -35,7 +35,7 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	AddTokenOracle(tokenOracle *schemas.TokenOracle, feedType string)
+	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
 	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol)
@@ -94,7 +94,9 @@ type RepositoryI interface {
 	// oracle and uni
 	AddUniswapPrices(prices *schemas.UniPoolPrices)
 	GetYearnFeedAddrs() []string
-	AddTokenFeed(feedType string, token, oracle string, discoveredAt int64, version int16)
+	// has mutex lock
+	AddNewPriceOracleEvent(*schemas.TokenOracle)
+	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64
 	Clear()

@@ -101,7 +101,14 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 	newPriceFeed, newPhaseId := mdl.GetPriceFeedAddr(syncedTill)
 	if newPriceFeed != mdl.Address && newPriceFeed != "" {
 		discoveredAt := mdl.GetFeedUpdateBlock(newPhaseId, mdl.LastSync+1, syncedTill)
-		mdl.Repo.AddTokenFeed(ds.ChainlinkPriceFeed, mdl.Token, mdl.Oracle, discoveredAt, mdl.GetVersion())
+		mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
+			Token:       mdl.Token,
+			Oracle:      mdl.Oracle,
+			Feed:        mdl.Oracle, // feed is same as oracle
+			BlockNumber: discoveredAt,
+			Version:     mdl.GetVersion(),
+			FeedType:    ds.ChainlinkPriceFeed,
+		})
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }

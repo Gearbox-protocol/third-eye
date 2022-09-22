@@ -71,33 +71,27 @@ func (repo *TokenOracleRepo) addTokenCurrentOracle(oracle *schemas.TokenOracle) 
 	repo.tokensCurrentOracle[oracle.Version][oracle.Token] = oracle
 }
 
-func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle, feedType string) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	log.Verbosef(newTokenOracle.String())
+func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.TokenOracle) bool {
+	feedType := newTokenOracle.FeedType
+	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
+		repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
+
+		if oldTokenOracle.Feed == newTokenOracle.Feed {
+			log.Verbosef("Same %s(%s) added for token(%s)", feedType, newTokenOracle.Feed, newTokenOracle.Token)
+			return true
+		}
+	}
+	return false
+}
+
+func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOracle *schemas.TokenOracle) {
 	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
 		repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token] != nil {
 		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
 		oldFeed := oldTokenOracle.Feed
-		// log
-		if feedType == ds.ChainlinkPriceFeed {
-			if oldTokenOracle.Oracle != newTokenOracle.Oracle {
-				log.Verbosef("Chainlink aggregator changed in gearbox protocol from (%s) to %s for token(%s) at %d",
-					oldTokenOracle.Oracle, newTokenOracle.Oracle, newTokenOracle.Token, newTokenOracle.BlockNumber)
-			} else if oldFeed != newTokenOracle.Feed {
-				log.Verbosef("Chainlink feed changed internally from (%s) to %s for token(%s) at %d",
-					oldFeed, newTokenOracle.Feed, newTokenOracle.Token, newTokenOracle.BlockNumber)
-			}
-		} else {
-			log.Verbosef("%s changed from %s to %s for token(%s) at %d",
-				feedType, oldFeed, newTokenOracle.Feed, newTokenOracle.Token, newTokenOracle.BlockNumber)
-		}
-		//
+
 		adapter := repo.adapters.GetAdapter(oldFeed)
-		if oldFeed == newTokenOracle.Feed {
-			log.Verbosef("Same feed(%s) added for token(%s)", newTokenOracle.Feed, newTokenOracle.Token)
-			return
-		}
 		// disable the corresponding adapter
 		if adapter == nil && repo.zeroPFs[oldFeed] {
 			// no adapter is used for zeroPF as the price is always zero.
@@ -120,67 +114,73 @@ func (repo *TokenOracleRepo) AddTokenOracle(newTokenOracle *schemas.TokenOracle,
 	)
 }
 
+func (repo *TokenOracleRepo) DirectlyAddTokenOracle(newTokenOracle *schemas.TokenOracle) {
+	repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
+}
+
 // called from chainlink feed and price oracle
-func (repo *TokenOracleRepo) AddTokenFeed(feedType, token, oracle string, discoveredAt int64, version int16) {
-	switch feedType {
+func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.TokenOracle) {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
+	switch newTokenOracle.FeedType {
 	case ds.CurvePF, ds.YearnPF, ds.ZeroPF, ds.AlmostZeroPF:
-		// add token oracle for db
-		// feed is also oracle address for yearn address
-		// we don't relie on underlying feed
-		repo.AddTokenOracle(&schemas.TokenOracle{
-			Token:       token,
-			Oracle:      oracle,
-			Feed:        oracle, // feed is same as oracle
-			BlockNumber: discoveredAt,
-			Version:     version,
-			FeedType:    feedType}, feedType)
-		if feedType == ds.ZeroPF || feedType == ds.AlmostZeroPF {
+		if repo.alreadyActiveFeedForToken(newTokenOracle) {
+			return
+		}
+		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
+		//
+		if newTokenOracle.FeedType == ds.ZeroPF || newTokenOracle.FeedType == ds.AlmostZeroPF {
 			priceBI := new(big.Int)
-			if ds.AlmostZeroPF == feedType {
+			if ds.AlmostZeroPF == newTokenOracle.FeedType {
 				priceBI = big.NewInt(100)
 			}
 			var decimals int8 = 18 // for eth
-			if version == 2 {
+			if newTokenOracle.Version == 2 {
 				decimals = 8 // for usd
 			}
+			//
 			repo.blocks.AddPriceFeed(&schemas.PriceFeed{
-				BlockNumber:  discoveredAt,
-				Token:        token,
-				Feed:         oracle,
+				BlockNumber:  newTokenOracle.BlockNumber,
+				Token:        newTokenOracle.Token,
+				Feed:         newTokenOracle.Oracle,
 				RoundId:      0,
 				PriceBI:      (*core.BigInt)(priceBI),
 				Price:        utils.GetFloat64Decimal(priceBI, decimals),
-				IsPriceInUSD: version == 2,
+				IsPriceInUSD: newTokenOracle.Version == 2,
 			})
-			repo.zeroPFs[oracle] = true // oracle and feed are same for non-chainlink price feed
+			repo.zeroPFs[newTokenOracle.Oracle] = true // oracle and feed are same for non-chainlink price feed
 		} else {
-			repo.adapters.AggregatedFeed.AddFeedOrToken(token, oracle, feedType, discoveredAt, version)
+			repo.adapters.AggregatedFeed.AddFeedOrToken(
+				newTokenOracle.Token,
+				newTokenOracle.Oracle,
+				newTokenOracle.FeedType,
+				newTokenOracle.BlockNumber,
+				newTokenOracle.Version,
+			)
 		}
 	case ds.ChainlinkPriceFeed:
-		obj := chainlink_price_feed.NewChainlinkPriceFeed(token, oracle, discoveredAt, repo.client, repo.repo, version)
-		if repo.tokensCurrentOracle[version] != nil && repo.tokensCurrentOracle[version][token] != nil {
-			oldTokenOracle := repo.tokensCurrentOracle[version][token]
-			if oldTokenOracle.Oracle == oracle && oldTokenOracle.Feed == obj.Address {
-				log.Verbosef("Same chainlinkfeed(%s) added for token(%s)", oldTokenOracle.Feed, token)
-				return
-			}
+		obj := chainlink_price_feed.NewChainlinkPriceFeed(
+			newTokenOracle.Token,
+			newTokenOracle.Oracle,
+			newTokenOracle.BlockNumber,
+			repo.client, repo.repo,
+			newTokenOracle.Version,
+		)
+		newTokenOracle.Feed = obj.Address
+		//
+		if repo.alreadyActiveFeedForToken(newTokenOracle) {
+			return
 		}
-		repo.AddTokenOracle(&schemas.TokenOracle{
-			Token:       token,
-			Oracle:      oracle,
-			Feed:        obj.Address,
-			BlockNumber: discoveredAt,
-			Version:     version,
-			FeedType:    feedType}, feedType)
+		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
+		//
 		// on goerli, there are two v2 priceoracles added and  on first priceoracle cvx token is 0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0
 		// and on second priceoracle it is 0x6D75eb70402CF06a0cB5B8fdc1836dAe29702B17
 		// so ignore the first cvx token as it is used anywhere
-		if token == "0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0" {
-		} else {
+		if newTokenOracle.Token != "0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0" {
 			repo.adapters.AddSyncAdapter(obj)
 		}
 	default:
-		log.Fatal(feedType, "not handled")
+		log.Fatal(newTokenOracle.FeedType, "not handled")
 	}
 }
 

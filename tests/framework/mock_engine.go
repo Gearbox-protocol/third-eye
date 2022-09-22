@@ -105,13 +105,14 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		case ds.ChainlinkPriceFeed:
 			oracle := actualAdapter.GetDetailsByKey("oracle")
 			token := actualAdapter.GetDetailsByKey("token")
-			m.Repo.AddTokenOracle(&schemas.TokenOracle{
+			m.Repo.DirectlyAddTokenOracle(&schemas.TokenOracle{
 				Token:       token,
 				Oracle:      oracle,
 				Feed:        actualAdapter.GetAddress(),
 				FeedType:    ds.ChainlinkPriceFeed,
 				BlockNumber: actualAdapter.GetDiscoveredAt(),
-				Version:     actualAdapter.GetVersion()}, ds.ChainlinkPriceFeed)
+				Version:     actualAdapter.GetVersion(),
+			})
 		case ds.CreditManager:
 			for _, state := range obj.CMState {
 				if state.Address == actualAdapter.GetAddress() {

@@ -49,7 +49,14 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			if oracle == "0xEB24b7c2fB6497f28c937942439B4EAAE9535525" {
 				log.Info(token, oracle, blockNum, txLog.Index)
 			}
-			mdl.Repo.AddTokenFeed(priceFeedType, token, oracle, blockNum, version)
+			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
+				Token:       token,
+				Oracle:      oracle,
+				Feed:        oracle, // feed is same as oracle
+				BlockNumber: blockNum,
+				Version:     version,
+				FeedType:    priceFeedType,
+			})
 		default:
 			log.Fatal("Unknown PriceFeed type", priceFeedType)
 		}
