@@ -28,7 +28,8 @@ CREATE TABLE credit_managers (
     total_repaid_accounts integer,
     total_liquidated_accounts integer,
     unique_users integer,
-    fee_interest integer
+    fee_interest integer,
+    paused boolean
 );
 
 CREATE TABLE credit_manager_stats (

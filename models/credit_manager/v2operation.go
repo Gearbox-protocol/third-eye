@@ -32,20 +32,19 @@ func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) 
 		log.Fatal(utils.ToJson(mainactionWithMulticall), utils.ToJson(mainEvent))
 	}
 	mainCall := mainactionWithMulticall[0] // assuming only one action per tx
-	var tenderlyEventName string
+	var tenderlyCallName string
 	switch mainCall.Name {
 	case "multicall":
-		mdl.setUpdateSession(mainEvent.SessionId)
-		tenderlyEventName = "MultiCallStarted(address)"
+		tenderlyCallName = "MultiCallStarted(address)"
 	case "openCreditAccountMulticall":
-		mdl.setUpdateSession(mainEvent.SessionId)
-		tenderlyEventName = "OpenCreditAccount(address,address,uint256,uint16)"
-	case "liquidateCreditAccount":
-		tenderlyEventName = "LiquidateCreditAccount(address,address,address,uint256)"
+		tenderlyCallName = "OpenCreditAccount(address,address,uint256,uint16)"
+	case "liquidateCreditAccount", "liquidateExpiredCreditAccount":
+		tenderlyCallName = "LiquidateCreditAccount(address,address,address,uint256)"
+		mdl.setLiquidateStatus(mainEvent.SessionId, tenderlyCallName == "liquidateExpiredCreditAccount")
 	case "closeCreditAccount":
-		tenderlyEventName = "CloseCreditAccount(address,address)"
+		tenderlyCallName = "CloseCreditAccount(address,address)"
 	}
-	if tenderlyEventName != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
+	if tenderlyCallName != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
 		log.Fatalf("Tenderly event %s is different from %s", mainCall.Name, mainEvent.Action)
 	}
 	events := mdl.multicall.PopMulticallEventsV2()
@@ -246,7 +245,7 @@ func (mdl *CreditManager) getRemainingFundsOnClose(blockNum int64, txHash, borro
 	// }
 	return nil
 }
-func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, liquidator string, remainingFunds *big.Int, status int) error {
+func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, liquidator string, remainingFunds *big.Int) error {
 	mdl.State.TotalLiquidatedAccounts++
 	sessionId := mdl.GetCreditOwnerSession(owner)
 
@@ -272,7 +271,7 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
-		Status:         status,
+		Status:         schemas.Liquidated,
 		TxHash:         txLog.TxHash.Hex(),
 		Borrower:       owner,
 	}
@@ -283,6 +282,16 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 	mdl.RemoveCreditOwnerSession(owner)
 	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
+}
+
+func (mdl *CreditManager) setLiquidateStatus(sessionId string, isExpired bool) {
+	status := schemas.Liquidated
+	if mdl.State.Paused {
+		status = schemas.LiquidatePaused
+	} else if isExpired {
+		status = schemas.LiquidateExpired
+	}
+	mdl.ClosedSessions[sessionId].Status = status
 }
 
 ///////////////////////
@@ -347,13 +356,14 @@ func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower 
 	}
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
+	mdl.setUpdateSession(session.ID)
 	return nil
 }
 
 func (mdl *CreditManager) AddExecuteParamsV2(txLog *types.Log,
 	borrower,
 	targetContract common.Address) error {
-	sessionId := mdl.GetCreditOwnerSession(borrower.Hex(), true)
+	sessionId := mdl.GetCreditOwnerSession(borrower.Hex(), true) // for borrower = creditfacade, session id is ""
 	mdl.multicall.AddMulticallEvent(&schemas.AccountOperation{
 		BlockNumber: int64(txLog.BlockNumber),
 		TxHash:      txLog.TxHash.Hex(),

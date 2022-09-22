@@ -53,6 +53,11 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		mdl.onCloseCreditAccountV2(&txLog,
 			closeCreditAccountEvent.Borrower.Hex(),
 			closeCreditAccountEvent.To.Hex())
+		// for getting correct liquidation status
+	case core.Topic("Paused(address)"):
+		mdl.State.Paused = true
+	case core.Topic("Unpaused(address)"):
+		mdl.State.Paused = false
 	case core.Topic("LiquidateCreditAccount(address,address,address,uint256)"):
 		liquidateCreditAccountEvent, err := mdl.facadeContractV2.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
@@ -62,7 +67,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		mdl.onLiquidateCreditAccountV2(&txLog,
 			liquidateCreditAccountEvent.Borrower.Hex(),
 			liquidateCreditAccountEvent.Liquidator.Hex(),
-			liquidateCreditAccountEvent.RemainingFunds, schemas.Liquidated)
+			liquidateCreditAccountEvent.RemainingFunds)
 	case core.Topic("MultiCallStarted(address)"):
 		borrower := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		sessionId := mdl.GetCreditOwnerSession(borrower)
@@ -148,20 +153,30 @@ func (mdl *CreditManager) onNewTxHashV2() {
 // executeorder
 // are added to multicall manager
 //
+// #######
+// FLOWS ->
+// openwithoutmulticall add collateral
+// openwithmulticall other calls
+// multicallstarted other calls
+// other calls closed/liquidated
 func (mdl *CreditManager) processRemainingMultiCalls() {
-	// opencreditaccount
+	// non multicall [for opencreditaccount]
 	mainAction := mdl.multicall.OpenEvent
-	// if not present use multicall
-	if mainAction == nil { // other multicall operations
-		mainAction = mdl.multicall.MultiCallStartEvent
-		// open credit account without multicall
-	} else if mdl.multicall.lenOfMultiCalls() == 0 {
+	// opencreditaccount without mulitcall
+	if mainAction != nil && mdl.multicall.lenOfMultiCalls() == 0 {
 		mdl.setUpdateSession(mainAction.SessionId)
 		mdl.Repo.AddAccountOperation(mainAction)
 		mdl.openCreditAccountInitialAmount(mainAction.BlockNumber, mainAction)
 	}
-	//
-	if mdl.multicall.lenOfMultiCalls() > 0 {
+	// for multicalls
+	mainAction = mdl.multicall.OpenEvent
+	if mainAction == nil { // other multicall operations
+		mainAction = mdl.multicall.MultiCallStartEvent
+	}
+	// won't be call for liquidate/close as the len of multicall will be zero, they are already prcoessed by multicCallHandler call in OnLIquidate and OnClose CreditAccount v2
+	// so it is safe to use setUpdateSession
+	if mainAction != nil && mdl.multicall.lenOfMultiCalls() > 0 {
+		mdl.setUpdateSession(mainAction.SessionId)
 		mdl.multiCallHandler(mainAction)
 	}
 	mdl.multicall.OpenEvent = nil
@@ -179,7 +194,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 		case "AddCollateral(address,address,uint256)",
 			"IncreaseBorrowedAmount(address,uint256)",
 			"DecreaseBorrowedAmount(address,uint256)":
-			mdl.setUpdateSession(event.SessionId)
+			// mdl.setUpdateSession(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":
 			account := strings.Split(event.SessionId, "_")[0]
