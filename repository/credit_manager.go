@@ -93,5 +93,9 @@ func (repo *Repository) AddAccountTokenTransfer(tt *schemas.TokenTransfer) {
 
 func (repo *Repository) AddRepayOnCM(cmAddr string, pnlOnRepay schemas.PnlOnRepay) {
 	adapter := repo.GetAdapter(cmAddr)
-	adapter.SetUnderlyingState(&pnlOnRepay)
+	if adapter != nil {
+		adapter.SetUnderlyingState(&pnlOnRepay)
+	} else {
+		log.Fatal("adapter cm not found for ", cmAddr)
+	}
 }

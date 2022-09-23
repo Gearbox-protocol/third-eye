@@ -71,6 +71,11 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
 	}
 	mdl.State.IsWETH = state.IsWETH
+	//
+	bororwAmountForBlock := mdl.getBorrowAmountForBlockAndClear()
+	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, bororwAmountForBlock)
+	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
+	//
 	// pnl on repay
 	pnl := mdl.pnlOnCM.Get(blockNum)
 	if pnl != nil {

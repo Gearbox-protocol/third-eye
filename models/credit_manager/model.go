@@ -35,15 +35,18 @@ type CreditManager struct {
 	//
 	contractETHV1 *creditManager.CreditManager
 	//
+	State *schemas.CreditManagerState
+	//
 	LastTxHash      string
-	executeParams   []ds.ExecuteParams
-	State           *schemas.CreditManagerState
-	pnlOnCM         *PnlCM
 	lastEventBlock  int64
+	executeParams   []ds.ExecuteParams
+	pnlOnCM         *PnlCM
 	UpdatedSessions map[string]int
 	ClosedSessions  map[string]*SessionCloseDetails
 	//
-	params *schemas.Parameters
+	// tmp storage
+	borrowedAmountForBlock *big.Int
+	params                 *schemas.Parameters
 }
 
 func (CreditManager) TableName() string {

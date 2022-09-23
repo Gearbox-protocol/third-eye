@@ -19,8 +19,21 @@ func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
 	// manager state
 	mdl.State.TotalOpenedAccounts++
 	mdl.State.OpenedAccountsCount++
-	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, borrowAmount)
-	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
+	mdl.addBorrowAmountForBlock(borrowAmount)
+}
+func (mdl *CreditManager) addBorrowAmountForBlock(borrowAmount *big.Int) {
+	if mdl.borrowedAmountForBlock == nil {
+		mdl.borrowedAmountForBlock = new(big.Int)
+	}
+	mdl.borrowedAmountForBlock = new(big.Int).Add(mdl.borrowedAmountForBlock, borrowAmount)
+}
+func (mdl *CreditManager) getBorrowAmountForBlockAndClear() *big.Int {
+	if mdl.borrowedAmountForBlock == nil {
+		return new(big.Int)
+	}
+	lastValue := mdl.borrowedAmountForBlock
+	mdl.borrowedAmountForBlock = new(big.Int)
+	return lastValue
 }
 
 // multicall
@@ -324,8 +337,7 @@ func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token 
 // amount can be negative, if decrease borrowamount, add pool repay event
 func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int, eventName string) error {
 	// manager state
-	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, amount)
-	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
+	mdl.addBorrowAmountForBlock(amount)
 	// other operations
 	sessionId := mdl.GetCreditOwnerSession(borrower)
 	blockNum := int64(txLog.BlockNumber)

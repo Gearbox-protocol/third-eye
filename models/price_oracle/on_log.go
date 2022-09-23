@@ -46,9 +46,6 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		}
 		switch priceFeedType {
 		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF:
-			if oracle == "0xEB24b7c2fB6497f28c937942439B4EAAE9535525" {
-				log.Info(token, oracle, blockNum, txLog.Index)
-			}
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 				Token:       token,
 				Oracle:      oracle,
