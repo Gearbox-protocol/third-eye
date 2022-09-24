@@ -308,10 +308,8 @@ func univ3SlotToPriceInBase(slot0 *big.Int, baseIsToken1 bool, decimals int8) (p
 		price = utils.GetInt64(sqSlot0, -1*decimals)
 		price = new(big.Int).Quo(price, normalizeFactor)
 	} else {
-		log.Info(normalizeFactor, sqSlot0, decimals, baseIsToken1)
 		price = utils.GetInt64(normalizeFactor, -1*decimals)
 		price = new(big.Int).Quo(price, sqSlot0)
-		log.Info("price", price)
 	}
 	return price
 }
