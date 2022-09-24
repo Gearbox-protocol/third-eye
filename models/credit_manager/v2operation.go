@@ -45,29 +45,28 @@ func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) 
 		log.Fatal(utils.ToJson(mainactionWithMulticall), utils.ToJson(mainEvent))
 	}
 	mainCall := mainactionWithMulticall[0] // assuming only one action per tx
-	var tenderlyCallName string
+	var mainEventFromCall string
 	switch mainCall.Name {
 	case "multicall":
-		tenderlyCallName = "MultiCallStarted(address)"
+		mainEventFromCall = "MultiCallStarted(address)"
 	case "openCreditAccountMulticall":
-		tenderlyCallName = "OpenCreditAccount(address,address,uint256,uint16)"
+		mainEventFromCall = "OpenCreditAccount(address,address,uint256,uint16)"
 	case "liquidateCreditAccount", "liquidateExpiredCreditAccount":
-		tenderlyCallName = "LiquidateCreditAccount(address,address,address,uint256)"
-		mdl.setLiquidateStatus(mainEvent.SessionId, tenderlyCallName == "liquidateExpiredCreditAccount")
+		mdl.setLiquidateStatus(mainEvent.SessionId, mainCall.Name == "liquidateExpiredCreditAccount")
+		mainEventFromCall = "LiquidateCreditAccount(address,address,address,uint256)"
 	case "closeCreditAccount":
-		tenderlyCallName = "CloseCreditAccount(address,address)"
+		mainEventFromCall = "CloseCreditAccount(address,address)"
 	}
-	if tenderlyCallName != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
+	if mainEventFromCall != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
 		msg := fmt.Sprintf("Tenderly event %s is different from %s", mainCall.Name, mainEvent.Action)
 		log.Fatal(msg)
 	}
 	events := mdl.multicall.PopMulticallEventsV2()
 	//
-	borrowerEventLen := mainCall.LenForBorrower(mainEvent.Borrower)
-	if len(events) != borrowerEventLen {
-		log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s, calls: %s. txhash: %s",
-			mainCall.Name, borrowerEventLen, len(events),
-			utils.ToJson(events), utils.ToJson(mainCall.MultiCalls), mainEvent.TxHash)
+	if !mainCall.SameLenAsEvents(events) {
+		log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
+			mainCall.Name, mainCall.Len(), len(events),
+			utils.ToJson(events), mainCall.String(), mainEvent.TxHash)
 	}
 	//
 	executeEvents := []ds.ExecuteParams{}
@@ -87,7 +86,9 @@ func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) 
 			} else {
 				mdl.Repo.AddAccountOperation(event)
 			}
-		case "IncreaseBorrowedAmount(address,uint256)",
+		case "TokenEnabled(address,address)",
+			"DisableToken(address,address)",
+			"IncreaseBorrowedAmount(address,uint256)",
 			"DecreaseBorrowedAmount(address,uint256)":
 			multicalls = append(multicalls, event)
 		case "ExecuteOrder":
@@ -103,8 +104,10 @@ func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) 
 			log.Fatal(utils.ToJson(event))
 		}
 	}
+	//
 	multicalls = append(multicalls, mdl.getProcessedExecuteEvents(txHash, executeEvents)...)
 	sort.Slice(multicalls, func(i, j int) bool { return multicalls[i].LogId < multicalls[j].LogId })
+	//
 	mainEvent.MultiCall = multicalls
 	// calculate initialAmount on open new credit creditaccount
 	if mainEvent.Action == "OpenCreditAccount(address,address,uint256,uint16)" {
@@ -393,4 +396,24 @@ func (mdl *CreditManager) AddExecuteParamsV2(txLog *types.Log,
 // copied from v1
 func (mdl *CreditManager) onTransferAccountV2(txLog *types.Log, owner, newOwner string) error {
 	return mdl.onTransferAccount(txLog, owner, newOwner)
+}
+
+func (mdl *CreditManager) enableOrDisableToken(txLog types.Log, action string) {
+	borrower := common.BytesToAddress(txLog.Topics[1][:]).Hex()
+	token := common.BytesToAddress(txLog.Topics[2][:]).Hex()
+	//
+	sessionId := mdl.GetCreditOwnerSession(borrower)
+	//
+	accountOperation := &schemas.AccountOperation{
+		TxHash:      txLog.TxHash.Hex(),
+		BlockNumber: int64(txLog.BlockNumber),
+		LogId:       txLog.Index,
+		Borrower:    borrower,
+		SessionId:   sessionId,
+		AdapterCall: false,
+		Action:      action,
+		Args:        &core.Json{"token": token},
+		Dapp:        txLog.Address.Hex(),
+	}
+	mdl.multicall.AddMulticallEvent(accountOperation)
 }

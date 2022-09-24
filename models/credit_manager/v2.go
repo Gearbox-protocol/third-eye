@@ -44,7 +44,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		mdl.onCloseCreditAccountV2(&txLog,
 			closeCreditAccountEvent.Borrower.Hex(),
 			closeCreditAccountEvent.To.Hex())
-		// for getting correct liquidation status
+	// for getting correct liquidation status
 	case core.Topic("Paused(address)"):
 		mdl.State.Paused = true
 	case core.Topic("Unpaused(address)"):
@@ -59,6 +59,10 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			liquidateCreditAccountEvent.Borrower.Hex(),
 			liquidateCreditAccountEvent.Liquidator.Hex(),
 			liquidateCreditAccountEvent.RemainingFunds)
+	case core.Topic("TokenEnabled(address,address)"):
+		mdl.enableOrDisableToken(txLog, "TokenEnabled(address,address)")
+	case core.Topic("DisableToken(address,address)"):
+		mdl.enableOrDisableToken(txLog, "DisableToken(address,address)")
 	case core.Topic("MultiCallStarted(address)"):
 		borrower := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		sessionId := mdl.GetCreditOwnerSession(borrower)
@@ -187,6 +191,8 @@ func (mdl *CreditManager) processNonMultiCalls() {
 		switch event.Action {
 		case "AddCollateral(address,address,uint256)",
 			"IncreaseBorrowedAmount(address,uint256)",
+			"TokenEnabled(address,address)",
+			"DisableToken(address,address)",
 			"DecreaseBorrowedAmount(address,uint256)":
 			// mdl.setUpdateSession(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)

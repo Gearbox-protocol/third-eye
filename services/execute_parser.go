@@ -255,9 +255,6 @@ func getCreditFacadeMainEvent(input string) (*ds.MainactionWithMulticall, error)
 	}
 	multicalls := []multicall.Multicall2Call{}
 	for _, call := range calls {
-		if hex.EncodeToString(call.CallData[:4]) == "81314b59" { // ignore revertifreceivedlessthan
-			continue
-		}
 		multicalls = append(multicalls, multicall.Multicall2Call{
 			Target:   call.Target,
 			CallData: call.CallData,
