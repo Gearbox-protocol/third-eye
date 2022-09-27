@@ -1,6 +1,7 @@
 package credit_manager
 
 import (
+	"fmt"
 	"math/big"
 	"sort"
 
@@ -52,7 +53,14 @@ func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 		}
 	}
 }
-
+func (mdl CreditManager) DirecTokenTransferString(tx *schemas.TokenTransfer) string {
+	msg := fmt.Sprintf("DirectTokenTransfer %f %s at %d from %s to %s",
+		utils.GetFloat64Decimal(tx.Amount.Convert(), mdl.Repo.GetToken(tx.Token).Decimals),
+		mdl.Repo.GetToken(tx.Token).Symbol,
+		tx.BlockNum, tx.From, tx.To,
+	)
+	return msg
+}
 func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
 	for sessionID, txs := range sessionIDToTxs {
 		session := mdl.Repo.GetCreditSession(sessionID)
@@ -64,11 +72,11 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 			case tx.From:
 				amount = new(big.Int).Neg(tx.Amount.Convert())
 				mdl.Repo.RecentEventMsg(tx.BlockNum, "Withdrawn(%s): %s", sessionID, tx)
-				log.Fatalf("Token withdrawn directly from account %v", tx)
+				log.Fatalf("Token withdrawn directly from account %v", mdl.DirecTokenTransferString(tx))
 			case tx.To:
 				amount = tx.Amount.Convert()
 				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, amount)
-				mdl.Repo.RecentEventMsg(tx.BlockNum, "Deposit: %s", tx)
+				mdl.Repo.RecentEventMsg(tx.BlockNum, "Deposit: %s", mdl.DirecTokenTransferString(tx))
 			}
 			if blockNum == mdl.lastEventBlock {
 				mdl.setUpdateSession(sessionID)
