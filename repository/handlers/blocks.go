@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"math/big"
+	"runtime/debug"
 	"sync"
 	"time"
 
@@ -157,7 +158,8 @@ func (repo *BlocksRepo) addPrevPriceFeed(pf *schemas.PriceFeed) {
 		repo.prevPriceFeeds[pf.IsPriceInUSD] = map[string]*schemas.PriceFeed{}
 	}
 	oldPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
-	if oldPF != nil && oldPF.BlockNumber >= pf.BlockNumber {
+	price := pf.PriceBI.Convert().Int64()
+	if oldPF != nil && oldPF.BlockNumber >= pf.BlockNumber && !(price == 0 || price == 100) {
 		log.Fatalf("oldPF %s.\n NewPF %s.", oldPF, pf)
 	}
 	repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] = pf
@@ -166,9 +168,14 @@ func (repo *BlocksRepo) addPrevPriceFeed(pf *schemas.PriceFeed) {
 func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.prevPriceFeeds[pf.IsPriceInUSD] != nil && repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] != nil {
+	newPrice := pf.PriceBI.Convert().Int64()
+	if repo.prevPriceFeeds[pf.IsPriceInUSD] != nil && repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] != nil && // is prev pf is present for that token
+		// if the price is zero or 100 uints(AlmostZeroPF), it feed is of ZeroPF/AlmostZeroPF type as a result order of PriceFeed events can't be ascending.
+		// and check prevPF.BlockNumber >=  pf.BlockNumber won't work
+		!(newPrice == 0 || newPrice == 100) {
 		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
 		if prevPF.BlockNumber >= pf.BlockNumber {
+			debug.PrintStack()
 			log.Fatalf("oldPF %s.\n NewPF %s.", prevPF, pf)
 		}
 		if prevPF.PriceBI.Cmp(pf.PriceBI) == 0 {

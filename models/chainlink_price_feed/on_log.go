@@ -16,21 +16,22 @@ import (
 func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
 }
 func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
-	uniPrices := mdl.Repo.GetUniPricesByToken(mdl.Token)
-	uniPricesInd := 0
-	// filter uniswapool prices that were before the lastsync of contract
-	startFrom := mdl.GetLastSync()
-	if mdl.prevPriceFeed != nil {
-		startFrom = utils.Min(startFrom, mdl.prevPriceFeed.BlockNumber)
-	}
-	for uniPricesInd < len(uniPrices) && startFrom >= uniPrices[uniPricesInd].BlockNum {
-		uniPricesInd++
-	}
+	var priceFeeds []*schemas.PriceFeed
+	var prevBlock int64
 	for _, txLog := range txLogs {
 		var priceFeed *schemas.PriceFeed
 		blockNum := int64(txLog.BlockNumber)
 		switch txLog.Topics[0] {
 		case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
+			// there might be 2 AnswerUpdated events for same block
+			// example
+			// https://goerli.etherscan.io/tx/0x03308a0b6f024e6c35a92e7708ab5a72322f733d22427d51624862d82ca1983a
+			// https://goerli.etherscan.io/tx/0x38e5551ae639d22554072ba1a53e026a0858c2cfedcedb83e5cc63bb1c8b8ea8
+			if prevBlock == blockNum {
+				continue
+			}
+			prevBlock = blockNum
+			//
 			roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
 			if err != nil {
 				log.Fatal("TxHash", txLog.TxHash.Hex(), "roundid failed", txLog.Topics[2].Hex())
@@ -55,29 +56,46 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				Price:        utils.GetFloat64Decimal(answerBI, decimals),
 				IsPriceInUSD: isPriceInUSD,
 			}
-			for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
-				mdl.compareDiff(mdl.prevPriceFeed, uniPrices[uniPricesInd])
-				uniPricesInd++
-			}
-			if len(uniPrices) > 0 {
-				lastValidUniBlock := uniPricesInd
-				// if len overflow set value-1
-				if lastValidUniBlock == len(uniPrices) ||
-					// if the next blockNum for uni is not equal to txLog blockNum
-					!(lastValidUniBlock < len(uniPrices) && blockNum == uniPrices[lastValidUniBlock].BlockNum) {
-					lastValidUniBlock = lastValidUniBlock - 1
-				}
-				if lastValidUniBlock >= 0 {
-					uniPoolPrice := uniPrices[lastValidUniBlock]
-					priceFeed.Uniswapv2Price = uniPoolPrice.PriceV2
-					priceFeed.Uniswapv3Price = uniPoolPrice.PriceV3
-					priceFeed.Uniswapv3Twap = uniPoolPrice.TwapV3
-					priceFeed.UniPriceFetchBlock = uniPoolPrice.BlockNum
-				}
-			}
 			mdl.Repo.AddPriceFeed(priceFeed)
-			mdl.prevPriceFeed = priceFeed
+			priceFeeds = append(priceFeeds, priceFeed)
 		}
+	}
+
+	uniPrices := mdl.Repo.GetUniPricesByToken(mdl.Token)
+	uniPricesInd := 0
+	// filter uniswapool prices that were before the lastsync of contract
+	startFrom := mdl.GetLastSync()
+	if mdl.prevPriceFeed != nil {
+		startFrom = utils.Min(startFrom, mdl.prevPriceFeed.BlockNumber)
+	}
+	// finish events btw (lastsync or the prev chainlink price stored) and first log on chainlink
+	for uniPricesInd < len(uniPrices) && startFrom >= uniPrices[uniPricesInd].BlockNum {
+		uniPricesInd++
+	}
+	for _, priceFeed := range priceFeeds {
+		blockNum := priceFeed.BlockNumber
+		//
+		for uniPricesInd < len(uniPrices) && blockNum > uniPrices[uniPricesInd].BlockNum {
+			mdl.compareDiff(mdl.prevPriceFeed, uniPrices[uniPricesInd])
+			uniPricesInd++
+		}
+		if len(uniPrices) > 0 {
+			lastValidUniInd := uniPricesInd
+			// if len overflow set value-1
+			if lastValidUniInd == len(uniPrices) ||
+				// if the next blockNum for uni is not equal to txLog blockNum
+				!(lastValidUniInd < len(uniPrices) && blockNum == uniPrices[lastValidUniInd].BlockNum) {
+				lastValidUniInd = lastValidUniInd - 1
+			}
+			if lastValidUniInd >= 0 {
+				uniPoolPrice := uniPrices[lastValidUniInd]
+				priceFeed.Uniswapv2Price = uniPoolPrice.PriceV2
+				priceFeed.Uniswapv3Price = uniPoolPrice.PriceV3
+				priceFeed.Uniswapv3Twap = uniPoolPrice.TwapV3
+				priceFeed.UniPriceFetchBlock = uniPoolPrice.BlockNum
+			}
+		}
+		mdl.prevPriceFeed = priceFeed
 	}
 	// remaining prices are filled
 	for uniPricesInd < len(uniPrices) && uniPrices[uniPricesInd].BlockNum < mdl.GetBlockToDisableOn() {
