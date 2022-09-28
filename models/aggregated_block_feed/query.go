@@ -2,6 +2,7 @@ package aggregated_block_feed
 
 import (
 	"math/big"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -14,13 +15,11 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
-
 	// "fmt"
-	"sort"
 )
 
 func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
-	if len(mdl.UniPoolByToken) == 0 && len(mdl.YearnFeeds) == 0 {
+	if len(mdl.UniPoolByToken) == 0 && len(mdl.QueryFeeds) == 0 {
 		return
 	}
 	concurrentThreads := 6
@@ -48,16 +47,30 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	}
 	wg.Wait()
 	// set last_sync on querypricefeed
-	for _, adapter := range mdl.YearnFeeds {
+	for _, adapter := range mdl.QueryFeeds {
 		// yearn price feed can't be disabled from v2
 		if queryTill <= adapter.GetLastSync() || adapter.IsDisabled() {
 			continue
 		}
 		adapter.AfterSyncHook(queryTill)
 	}
+	mdl.sortPrices()
+}
+
+func (mdl *AggregatedBlockFeed) sortPrices() {
+	// uni prices
 	for _, prices := range mdl.UniPricesByTokens {
 		sort.Sort(prices)
 	}
+
+	// query feed prices
+	sort.SliceStable(mdl.queryFeedPrices, func(i, j int) bool {
+		return mdl.queryFeedPrices[i].BlockNumber < mdl.queryFeedPrices[j].BlockNumber
+	})
+	for _, queryPrice := range mdl.queryFeedPrices {
+		mdl.Repo.AddPriceFeed(queryPrice)
+	}
+	mdl.queryFeedPrices = nil
 }
 
 func powFloat(a *big.Int) *big.Float {
@@ -78,13 +91,25 @@ func powFloat(a *big.Int) *big.Float {
 
 func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGroup) {
 	weth := mdl.Repo.GetWETHAddr()
-	pfs, pricesByToken := mdl.QueryData(blockNum, weth, "all")
-	for _, pf := range pfs {
-		mdl.Repo.AddPriceFeed(pf)
-	}
-	mdl.updatePrice(pricesByToken)
+	pfs, uniPrices := mdl.QueryData(blockNum, weth, "all")
+	mdl.updateQueryPrices(pfs)
+	mdl.updateUniPrices(uniPrices)
 	<-ch
 	wg.Done()
+}
+
+func (mdl *AggregatedBlockFeed) updateUniPrices(pricesByToken map[string]*schemas.UniPoolPrices) {
+	mdl.mu.Lock()
+	defer mdl.mu.Unlock()
+	for token, prices := range pricesByToken {
+		mdl.Repo.AddUniswapPrices(prices)
+		mdl.UniPricesByTokens[token] = append(mdl.UniPricesByTokens[token], prices)
+	}
+}
+func (mdl *AggregatedBlockFeed) updateQueryPrices(pfs []*schemas.PriceFeed) {
+	mdl.mu.Lock()
+	defer mdl.mu.Unlock()
+	mdl.queryFeedPrices = append(mdl.queryFeedPrices, pfs...)
 }
 
 func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery string) ([]*schemas.PriceFeed, map[string]*schemas.UniPoolPrices) {
@@ -97,26 +122,28 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 	yearnFeedLen := len(queryAbleAdapters)
 	v2ABI := core.GetAbi("Uniswapv2Pool")
 	v3ABI := core.GetAbi("Uniswapv3Pool")
-	var pfs []*schemas.PriceFeed
-	pricesByToken := map[string]*schemas.UniPoolPrices{}
+	//
+	var queryFeedPrices []*schemas.PriceFeed
+	uniPricesByToken := map[string]*schemas.UniPoolPrices{}
+	//
 	for i, entry := range result {
 		if i < yearnFeedLen {
 			pf := mdl.processPriceData(blockNum, queryAbleAdapters[i], entry)
-			pfs = append(pfs, pf...)
+			queryFeedPrices = append(queryFeedPrices, pf...)
 		} else {
 			tokenInd := (i - yearnFeedLen) / 3
 			callInd := i - yearnFeedLen - tokenInd*3
 			token := uniTokens[tokenInd]
 			tokenDetails := mdl.tokenInfos[token]
-			prices := &schemas.UniPoolPrices{BlockNum: blockNum}
-			if pricesByToken[token] != nil {
-				prices = pricesByToken[token]
+			prices := &schemas.UniPoolPrices{BlockNum: blockNum, Token: token}
+			if uniPricesByToken[token] != nil {
+				prices = uniPricesByToken[token]
 			}
 			// ignore if failed
 			if !entry.Success {
 				continue
 			}
-			pricesByToken[token] = prices
+			uniPricesByToken[token] = prices
 			switch callInd {
 			case 0:
 				value, err := v2ABI.Unpack("getReserves", entry.ReturnData)
@@ -158,17 +185,7 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 			}
 		}
 	}
-	return pfs, pricesByToken
-}
-
-func (mdl *AggregatedBlockFeed) updatePrice(pricesByToken map[string]*schemas.UniPoolPrices) {
-	mdl.mu.Lock()
-	defer mdl.mu.Unlock()
-	for token, prices := range pricesByToken {
-		prices.Token = token
-		mdl.Repo.AddUniswapPrices(prices)
-		mdl.UniPricesByTokens[token] = append(mdl.UniPricesByTokens[token], prices)
-	}
+	return queryFeedPrices, uniPricesByToken
 }
 
 func areSorted(token, weth string) bool {
@@ -223,7 +240,7 @@ func (mdl *AggregatedBlockFeed) getUniswapPoolCalls(blockNum int64, whatToQuery 
 func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*QueryPriceFeed) {
 	priceFeedABI := core.GetAbi("PriceFeed")
 	//
-	for _, adapter := range mdl.YearnFeeds {
+	for _, adapter := range mdl.QueryFeeds {
 		if blockNum <= adapter.GetLastSync() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
 			continue
 		}

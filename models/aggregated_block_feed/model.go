@@ -14,14 +14,20 @@ import (
 
 type AggregatedBlockFeed struct {
 	*ds.SyncAdapter
-	YearnFeeds        map[string]*QueryPriceFeed
+	mu *sync.Mutex
+	// yearn feed
+	QueryFeeds map[string]*QueryPriceFeed
+	// yearn feed prices to be ordered
+	queryFeedPrices []*schemas.PriceFeed
+	// uniswap price related data structures
 	UniswapPools      []string
 	UniPoolByToken    map[string]*schemas.UniswapPools
-	TokenLastSync     map[string]int64
 	UniPricesByTokens map[string]schemas.SortedUniPoolPrices
-	Interval          int64
-	mu                *sync.Mutex
 	tokenInfos        map[string]*schemas.Token
+	//
+	TokenLastSync map[string]int64
+	// intervel from config
+	Interval int64
 }
 
 func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval int64) *AggregatedBlockFeed {
@@ -47,7 +53,7 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 		Interval:          interval,
 		mu:                &sync.Mutex{},
 		tokenInfos:        map[string]*schemas.Token{},
-		YearnFeeds:        map[string]*QueryPriceFeed{},
+		QueryFeeds:        map[string]*QueryPriceFeed{},
 	}
 }
 
@@ -59,7 +65,7 @@ func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter ds.SyncAdapterI) {
 	}
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
 	// log.Info(adapter.GetAddress(), "added to aggregatedpricefeed has last_sync", adapter.GetLastSync())
-	mdl.YearnFeeds[adapter.GetAddress()] = yearnFeed
+	mdl.QueryFeeds[adapter.GetAddress()] = yearnFeed
 }
 
 func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
@@ -67,7 +73,7 @@ func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
 
 func (mdl *AggregatedBlockFeed) GetQueryFeeds() []*QueryPriceFeed {
 	feeds := []*QueryPriceFeed{}
-	for _, feed := range mdl.YearnFeeds {
+	for _, feed := range mdl.QueryFeeds {
 		feeds = append(feeds, feed)
 	}
 	return feeds
@@ -101,13 +107,13 @@ func (mdl *AggregatedBlockFeed) GetUniswapPools() (updatedPools []*schemas.Unisw
 }
 
 func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, version int16) {
-	if mdl.YearnFeeds[oracle] != nil {
-		mdl.YearnFeeds[oracle].AddToken(token, discoveredAt)
+	if mdl.QueryFeeds[oracle] != nil {
+		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt)
 	} else {
-		mdl.YearnFeeds[oracle] = NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, version)
+		mdl.QueryFeeds[oracle] = NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, version)
 	}
 }
 
 func (mdl *AggregatedBlockFeed) DisableYearnFeed(token, oracle string, disabledAt int64) {
-	mdl.YearnFeeds[oracle].DisableToken(token, disabledAt)
+	mdl.QueryFeeds[oracle].DisableToken(token, disabledAt)
 }
