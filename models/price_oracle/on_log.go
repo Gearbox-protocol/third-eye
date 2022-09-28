@@ -42,7 +42,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		version := mdl.GetVersion()
 		priceFeedType, err := mdl.checkPriceFeedContract(blockNum, oracle)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Oracle %s, err: %s", oracle, err)
 		}
 		switch priceFeedType {
 		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF:
@@ -80,6 +80,8 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 				description, err := yearnContract.Description(opts)
 				if strings.Contains(description, "CurveLP pricefeed") {
 					return ds.CurvePF, nil
+				} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
+					return ds.YearnPF, nil
 				} else if strings.Contains(description, "Zero pricefeed") {
 					return ds.ZeroPF, nil
 				} else if strings.Contains(description, "ZERO (one) priceFeed") {
