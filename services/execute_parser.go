@@ -23,6 +23,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/universalAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/wstETHv1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnv2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -164,9 +165,9 @@ var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdap
 	iSwapRouter.ISwapRouterABI, testAdapter.TestAdapterABI,
 	// creditfacade for credit manager onlogs
 	// v2
-	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI,
-	convexAdapter.ConvexAdapterABI, universalAdapter.UniversalAdapterABI,
-	yearnv2Adapter.Yearnv2AdapterABI, curveAdapter.CurveAdapterABI,
+	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI, wstETHv1Adapter.WstETHv1AdapterABI,
+	convexAdapter.ConvexAdapterABI, curveAdapter.CurveAdapterABI,
+	yearnv2Adapter.Yearnv2AdapterABI, universalAdapter.UniversalAdapterABI,
 }
 
 var abiParsers []abi.ABI
