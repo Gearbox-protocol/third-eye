@@ -238,9 +238,12 @@ func (mdl *CreditManager) getInitialAmount(blockNum int64, mainAction *schemas.A
 
 	// sigma(tokenAmount(i)*price(i)/exp(tokendecimals- underlyingToken))/price(underlying)
 	for token, amount := range balances {
-		value := new(big.Float).Mul(new(big.Float).SetInt(amount), big.NewFloat(prices[token]))
-		decimals := utils.GetExpFloat(mdl.Repo.GetToken(token).Decimals - underlyingDecimals)
-		totalValue = new(big.Float).Add(totalValue, new(big.Float).Quo(value, decimals))
+		calcValue := utils.GetFloat64(amount, -1*underlyingDecimals)
+		nomunerator := new(big.Float).Mul(calcValue, big.NewFloat(prices[token]))
+		//
+		tokenDecimals := utils.GetExpFloat(mdl.Repo.GetToken(token).Decimals)
+		//
+		totalValue = new(big.Float).Add(totalValue, new(big.Float).Quo(nomunerator, tokenDecimals))
 	}
 	initialAmount, _ := new(big.Float).Quo(totalValue, big.NewFloat(prices[underlyingToken])).Int(nil)
 	return initialAmount
