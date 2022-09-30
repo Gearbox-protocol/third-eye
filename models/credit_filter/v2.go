@@ -52,9 +52,9 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			CreditManager:              creditManager,
 			FeeInterest:                feesEvent.FeeInterest,
 			FeeLiquidation:             feesEvent.FeeLiquidation,
-			LiquidationDiscount:        feesEvent.LiquidationPremium,
+			LiquidationDiscount:        10000 - feesEvent.LiquidationPremium,
 			FeeLiquidationExpired:      feesEvent.FeeLiquidationExpired,
-			LiquidationDiscountExpired: feesEvent.LiquidationPremiumExpired,
+			LiquidationDiscountExpired: 10000 - feesEvent.LiquidationPremiumExpired,
 		}
 		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), params)
 	//

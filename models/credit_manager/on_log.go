@@ -141,9 +141,9 @@ func (mdl *CreditManager) logHandler(txLog types.Log) {
 				CreditManager:              mdl.Address,
 				FeeInterest:                bytesToUInt16(txLog.Data[:32]),
 				FeeLiquidation:             bytesToUInt16(txLog.Data[32:64]),
-				LiquidationDiscount:        bytesToUInt16(txLog.Data[64:96]),
+				LiquidationDiscount:        10000 - bytesToUInt16(txLog.Data[64:96]), // 10000- liqPremium
 				FeeLiquidationExpired:      bytesToUInt16(txLog.Data[96:128]),
-				LiquidationDiscountExpired: bytesToUInt16(txLog.Data[128:160]),
+				LiquidationDiscountExpired: 10000 - bytesToUInt16(txLog.Data[128:160]), // 10000- liqPremiumExpired
 			})
 		}
 		return

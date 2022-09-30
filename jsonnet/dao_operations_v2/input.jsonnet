@@ -177,12 +177,12 @@ local borrowedAmount = 4000;
             'uint16:1000',
             // feeLiquidation
             'uint16:200',
-            // liquidationDiscount
-            'uint16:9500',
+            // liquidationPremium
+            'uint16:500',
             // feeLiquidationexpired
             'uint16:300',
-            // liquidationDiscountexpired
-            'uint16:9400',
+            // liquidationPremiumexpired
+            'uint16:600',
           ],
           txHash: '!#Hash_12',
         },
