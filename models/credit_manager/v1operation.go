@@ -14,7 +14,7 @@ import (
 )
 
 func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, account string,
-	amount,
+	amount, // collateral/user added funds
 	borrowAmount,
 	referralCode *big.Int) error {
 	// manager state

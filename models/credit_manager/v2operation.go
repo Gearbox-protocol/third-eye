@@ -111,7 +111,7 @@ func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) 
 	mainEvent.MultiCall = multicalls
 	// calculate initialAmount on open new credit creditaccount
 	if mainEvent.Action == "OpenCreditAccount(address,address,uint256,uint16)" {
-		mdl.openCreditAccountInitialAmount(mainEvent.BlockNumber, mainEvent)
+		mdl.addCollteralForOpenCreditAccount(mainEvent.BlockNumber, mainEvent)
 	}
 	mdl.Repo.AddAccountOperation(mainEvent)
 }

@@ -162,7 +162,7 @@ func (mdl *CreditManager) processRemainingMultiCalls() {
 	if mainAction != nil && mdl.multicall.lenOfMultiCalls() == 0 {
 		mdl.setUpdateSession(mainAction.SessionId)
 		mdl.Repo.AddAccountOperation(mainAction)
-		mdl.openCreditAccountInitialAmount(mainAction.BlockNumber, mainAction)
+		mdl.addCollteralForOpenCreditAccount(mainAction.BlockNumber, mainAction)
 	}
 	// for multicalls
 	mainAction = mdl.multicall.OpenEvent
@@ -215,7 +215,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 }
 
 // TO CHECK
-func (mdl *CreditManager) getInitialAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
+func (mdl *CreditManager) getCollateralAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
 	balances := map[string]*big.Int{}
 	for _, event := range mainAction.MultiCall {
 		if event.Action == "AddCollateral(address,address,uint256)" {
@@ -249,8 +249,8 @@ func (mdl *CreditManager) getInitialAmount(blockNum int64, mainAction *schemas.A
 	return initialAmount
 }
 
-func (mdl *CreditManager) openCreditAccountInitialAmount(blockNum int64, mainAction *schemas.AccountOperation) {
-	initialAmount := mdl.getInitialAmount(blockNum, mainAction)
-	(*mainAction.Args)["amount"] = initialAmount.String()
-	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": initialAmount})
+func (mdl *CreditManager) addCollteralForOpenCreditAccount(blockNum int64, mainAction *schemas.AccountOperation) {
+	collateral := mdl.getCollateralAmount(blockNum, mainAction)
+	(*mainAction.Args)["amount"] = collateral.String()
+	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": collateral})
 }
