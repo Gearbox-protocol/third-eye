@@ -34,10 +34,34 @@ changelog:
       - "^test:"
       - "^[Mm]erge"
 dockers:
-  - goos: linux
+  # Production image without shell
+  - id: production
+    goos: linux
     goarch: amd64
-
+    dockerfile: docker/Dockerfile.production
     image_templates:
       - "ghcr.io/{{ tolower .Env.REPO_NAME }}:latest"
       - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Version }}"
-      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Major }}"
+
+  # Debug image which we can ssh into
+  - id: debug
+    goos: linux
+    goarch: amd64
+    dockerfile: docker/Dockerfile.debug
+    image_templates:
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:debug"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Version }}-debug"
+
+  # Image to run migrations from
+  - id: migrate
+    goos: linux
+    goarch: amd64
+    dockerfile: docker/Dockerfile.migrate
+    image_templates:
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:migrate"
+      - "ghcr.io/{{ tolower .Env.REPO_NAME }}:{{ .Version }}-migrate"
+    extra_files:
+      # migrations folder from github
+      - "migrations"
+      # Custom migrate script
+      - "docker/3eye-migrate.sh"
