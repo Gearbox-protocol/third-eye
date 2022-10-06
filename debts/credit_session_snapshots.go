@@ -1,7 +1,6 @@
 package debts
 
 import (
-	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -24,14 +23,4 @@ func (eng *DebtEngine) loadLastCSS(lastDebtSync int64) {
 
 func (eng *DebtEngine) AddLastCSS(css *schemas.CreditSessionSnapshot) {
 	eng.lastCSS[css.SessionId] = css
-}
-
-func (eng *DebtEngine) GetLastCSS(sessionId string) *schemas.CreditSessionSnapshot {
-	css := eng.lastCSS[sessionId]
-	if css == nil {
-		log.Infof("Last Credit session snapshot not found: %s", sessionId)
-		eng.lastCSS[sessionId] = &schemas.CreditSessionSnapshot{SessionId: sessionId, Balances: &core.JsonBalance{}}
-		css = eng.lastCSS[sessionId]
-	}
-	return css
 }

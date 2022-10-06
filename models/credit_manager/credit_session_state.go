@@ -3,6 +3,8 @@ package credit_manager
 import (
 	"math/big"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
+	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -43,7 +45,7 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	// log.Info(mdl.params, session.Version,
 	// "totalvalue", data.TotalValue, closeDetails.Status,
 	// "borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
-	amountToPool, _, _, _ := schemas.CalCloseAmount(mdl.params,
+	amountToPool, _, _, _ := calc.CalCloseAmount(mdl.params,
 		session.Version, data.TotalValue,
 		closeDetails.Status,
 		data.BorrowedAmountPlusInterest,
@@ -87,22 +89,19 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum-1, mdl.GetAddress(), session.Account, session.Version)
 	// set balances
-	var err error
-	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
-	if err != nil {
-		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
-	}
+	css.Balances = mdl.addFloatValue(data.Balances)
 	// for close credit account operation on gearbox v2
 	// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditFacade.sol#L235
 	// there is a skipTokenMask which can be used to skip certain tokens from getting transferred to borrower
 	// this can decrease the gas used by credit manager and saving money for borrower
 	// as a result, balances fetched from datacompressor on closeBlock-1 will not be valid for remainingFunds
 	// calculation.
-	if closeDetails.Status != schemas.Closed || session.Version != 2 { // neg( closed on v2)
+	if !(closeDetails.Status == schemas.Closed && session.Version == 2) { // neg( closed on v2)
 		session.Balances = css.Balances
 	}
+	log.Info(utils.ToJson(session.Balances))
+	log.Info(utils.ToJson(css.Balances))
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
@@ -125,17 +124,29 @@ func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
 	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	mask := mdl.Repo.GetMask(blockNum, mdl.GetAddress(), session.Account, session.Version)
 	// set balances of css and credit session
-	var err error
-	css.Balances, err = mdl.Repo.ConvertToBalanceWithMask(data.Balances, mask)
-	if err != nil {
-		log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, mdl.Repo.GetDCWrapper().ToJson())
-	}
+	css.Balances = mdl.addFloatValue(data.Balances)
 	session.Balances = css.Balances
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
 	mdl.Repo.AddCreditSessionSnapshot(&css)
+}
+
+func (mdl *CreditManager) addFloatValue(dcv2Balances []dataCompressorv2.TokenBalance) *core.DBBalanceFormat {
+	dbFormat := core.DBBalanceFormat{}
+	for ind, balance := range dcv2Balances {
+		token := balance.Token.Hex()
+		if balance.IsAllowed && balance.Balance.Cmp(new(big.Int)) > 0 {
+			dbFormat[token] = core.CoreIntBalance{
+				IsAllowed: balance.IsAllowed,
+				IsEnabled: balance.IsEnabled,
+				BI:        (*core.BigInt)(balance.Balance),
+				F:         utils.GetFloat64Decimal(balance.Balance, mdl.Repo.GetToken(token).Decimals),
+				Ind:       ind,
+			}
+		}
+	}
+	return &dbFormat
 }

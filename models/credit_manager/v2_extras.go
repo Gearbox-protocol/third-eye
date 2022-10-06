@@ -107,7 +107,6 @@ func (mdl *CreditManager) GetCreditFacadeAddr() string {
 
 func (cm *CreditManager) addCreditConfiguratorAdapter(creditConfigurator string) {
 	// this is need for mask only
-	// cm.Repo.AddCreditManagerToFilter(cm.Address, creditConfigurator)
 	cf := credit_filter.NewCreditFilter(creditConfigurator, ds.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 }

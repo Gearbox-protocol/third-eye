@@ -184,6 +184,7 @@ local newCollateral = 1;
               balance: utils.bigInt(6000, 6),
               isAllowed: true,
             }],
+            version: 1,
           }],
           cms: [{
             address: '#CreditManager_1',
@@ -248,6 +249,7 @@ local newCollateral = 1;
             balance: utils.bigInt(1, 18),
             isAllowed: true,
           }],
+          version: 1,
         }],
         cms: [{
           address: '#CreditManager_1',
@@ -297,6 +299,7 @@ local newCollateral = 1;
             balance: utils.bigInt(3, 18),
             isAllowed: true,
           }],
+          version: 1,
         }],
         cms: [{
           address: '#CreditManager_1',
@@ -393,6 +396,7 @@ local newCollateral = 1;
             balance: utils.bigInt(0.1, 18),
             isAllowed: true,
           }],
+          version: 1,
         }],
         cms: [{
           address: '#CreditManager_1',

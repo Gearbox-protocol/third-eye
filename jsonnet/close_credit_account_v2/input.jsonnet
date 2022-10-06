@@ -40,10 +40,6 @@ local extraBorrowedAmount = 1000;
   blocks: {
     '8': {
       calls: {
-        masks: [{
-          account: '#Account_1',
-          mask: '3',
-        }],
         accounts: [{
           address: '#Account_1',
           creditManager: '#CreditManager_1',
@@ -60,16 +56,20 @@ local extraBorrowedAmount = 1000;
             token: '#Token_1',
             balance: utils.bigInt(1500, 6),
             isAllowed: true,
+            isEnabled: true,
           }, {
             token: '#Token_3',
             balance: utils.bigInt(3, 18),
             isAllowed: true,
+            isEnabled: true,
           }, {
             // token 2 yfi is allowed.but  its not linked to account
             token: '#Token_2',
             balance: utils.bigInt(0.1, 18),
             isAllowed: true,
+            isEnabled: false,
           }],
+          version: 2,
         }],
       },
     },

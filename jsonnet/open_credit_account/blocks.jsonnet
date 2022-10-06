@@ -73,7 +73,9 @@
         '#Token_1': {
           BI: '5000000000',
           F: 5000,
-          linked: true,
+          isEnabled: true,
+          isAllowed: true,
+          ind: 0,
         },
       },
       blockNum: 3,

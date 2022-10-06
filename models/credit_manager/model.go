@@ -6,7 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -140,11 +140,11 @@ func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }
 
-func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *mainnet.DataTypesCreditAccountDataExtended {
+func (cm *CreditManager) GetCreditSessionData(blockNum int64, borrower string) *dataCompressorv2.CreditAccountData {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	data, err := cm.Repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
+	data, err := cm.Repo.GetDCWrapper().GetCreditAccountData(opts,
 		common.HexToAddress(cm.GetAddress()),
 		common.HexToAddress(borrower),
 	)

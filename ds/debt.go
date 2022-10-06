@@ -3,7 +3,7 @@ package ds
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -26,10 +26,10 @@ type TokenDetails struct {
 	Version           int16        `json:"version"`
 }
 type DebtProfile struct {
-	DCData                         mainnet.DataTypesCreditAccountDataExtended
+	DCData                         *dcv2.CreditAccountData
 	*schemas.Debt                  `json:"debt"`
 	*schemas.CreditSessionSnapshot `json:"css"`
-	RPCBalances                    *core.JsonBalance       `json:"rpcBalances"`
+	RPCBalances                    []dcv2.TokenBalance     `json:"rpcBalances"`
 	Tokens                         map[string]TokenDetails `json:"tokens"`
 	UnderlyingDecimals             int8                    `json:"underlyingDecimals"`
 	*CumIndexAndUToken             `json:"poolDetails"`

@@ -138,10 +138,6 @@ local newCollateral = 1;
       ],
       calls:
         {
-          masks: [{
-            account: '#Account_1',
-            mask: '1',
-          }],
           pools: [{
             address: '#Pool_1',
             totalBorrowed: utils.bigInt(borrowedAmount, 6),
@@ -167,7 +163,9 @@ local newCollateral = 1;
               token: '#Token_1',
               balance: utils.bigInt(6000, 6),
               isAllowed: true,
+              isEnabled: true,
             }],
+            version: 2,
           }],
           cms: [{
             address: '#CreditManager_1',
@@ -261,10 +259,6 @@ local newCollateral = 1;
         },
       ],
       calls: {
-        masks: [{
-          account: '#Account_1',
-          mask: '3',
-        }],
         accounts: [{
           address: '#Account_1',
           creditManager: '#CreditManager_1',
@@ -279,11 +273,14 @@ local newCollateral = 1;
             token: '#Token_1',
             balance: utils.bigInt(5500, 6),
             isAllowed: true,
+            isEnabled: true,
           }, {
             token: '#Token_3',
             balance: utils.bigInt(1, 18),
             isAllowed: true,
+            isEnabled: true,
           }],
+          version: 2,
         }],
         cms: [{
           address: '#CreditManager_1',
@@ -337,10 +334,6 @@ local newCollateral = 1;
         },
       ],
       calls: {
-        masks: [{
-          account: '#Account_1',
-          mask: '3',
-        }],
         accounts: [{
           address: '#Account_1',
           creditManager: '#CreditManager_1',
@@ -355,11 +348,14 @@ local newCollateral = 1;
             token: '#Token_1',
             balance: utils.bigInt(500, 6),
             isAllowed: true,
+            isEnabled: true,
           }, {
             token: '#Token_3',
             balance: utils.bigInt(3, 18),
             isAllowed: true,
+            isEnabled: true,
           }],
+          version: 2,
         }],
         cms: [{
           address: '#CreditManager_1',
@@ -437,10 +433,6 @@ local newCollateral = 1;
         },
       ],
       calls: {
-        masks: [{
-          account: '#Account_1',
-          mask: '3',
-        }],
         accounts: [{
           address: '#Account_1',
           creditManager: '#CreditManager_1',
@@ -456,16 +448,21 @@ local newCollateral = 1;
             token: '#Token_1',
             balance: utils.bigInt(1500, 6),
             isAllowed: true,
+            isEnabled: true,
           }, {
             token: '#Token_3',
             balance: utils.bigInt(3, 18),
             isAllowed: true,
+            isEnabled: true,
+
           }, {
             // token 2 yfi is allowed.but  its not linked to account
             token: '#Token_2',
             balance: utils.bigInt(0.1, 18),
             isAllowed: true,
+            isEnabled: false,
           }],
+          version: 2,
         }],
         cms: [{
           address: '#CreditManager_1',

@@ -244,15 +244,17 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
 }
-func (mdl *CreditManager) toJsonBalance(z core.Transfers) *core.JsonBalance {
-	bal := core.JsonBalance{}
+func (mdl *CreditManager) toJsonBalance(z core.Transfers) *core.DBBalanceFormat {
+	dbFormat := core.DBBalanceFormat{}
 	for token, amt := range z {
-		bal[token] = &core.BalanceType{
-			BI: (*core.BigInt)(amt),
-			F:  utils.GetFloat64Decimal(amt, mdl.Repo.GetToken(token).Decimals),
+		dbFormat[token] = core.CoreIntBalance{
+			BI:        (*core.BigInt)(amt),
+			F:         utils.GetFloat64Decimal(amt, mdl.Repo.GetToken(token).Decimals),
+			IsAllowed: true,
+			IsEnabled: true,
 		}
 	}
-	return &bal
+	return &dbFormat
 }
 
 func (mdl *CreditManager) getRemainingFundsOnClose(blockNum int64, txHash, borrower string) *core.Transfers {

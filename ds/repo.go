@@ -3,7 +3,6 @@ package ds
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
@@ -51,7 +50,6 @@ type RepositoryI interface {
 	//
 	GetToken(addr string) *schemas.Token
 	GetTokens() []string
-	ConvertToBalanceWithMask(balances []mainnet.DataTypesTokenBalance, mask *big.Int) (*core.JsonBalance, error)
 	// credit session funcs
 	AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string, logID uint)
 	GetCreditSession(sessionId string) *schemas.CreditSession
@@ -74,8 +72,6 @@ type RepositoryI interface {
 	GetGearTokenAddr() string
 	// credit manager
 	AddAccountTokenTransfer(tt *schemas.TokenTransfer)
-	AddCreditManagerToFilter(cmAddr, cfAddr string)
-	GetMask(blockNum int64, cmAddr, accountAddr string, version int16) *big.Int
 	AddCreditManagerStats(cms *schemas.CreditManagerStat)
 	GetCMState(cmAddr string) *schemas.CreditManagerState
 	GetUnderlyingDecimal(cmAddr string) int8

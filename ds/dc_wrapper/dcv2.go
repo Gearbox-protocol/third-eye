@@ -3,8 +3,7 @@ package dc_wrapper
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -12,98 +11,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type v2DC struct {
-	dcV2   *dataCompressorv2.DataCompressorv2
+type AccountCallv2 struct {
 	client core.ClientI
-	addr   string
-}
-
-func NewV2DC(addr common.Address, client core.ClientI) *v2DC {
-	dc, err := dataCompressorv2.NewDataCompressorv2(addr, client)
-	log.CheckFatal(err)
-	return &v2DC{
-		dcV2:   dc,
-		client: client,
-		addr:   addr.Hex(),
-	}
-}
-
-func (obj *v2DC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (mainnet.DataTypesPoolData, error) {
-	data, err := obj.dcV2.GetPoolData(opts, _pool)
-	if err != nil {
-		var blockNum int64
-		if opts != nil {
-			blockNum = opts.BlockNumber.Int64()
-		}
-		log.Fatal(err, blockNum, obj.addr)
-	}
-	latestFormat := mainnet.DataTypesPoolData{
-		Addr:                   data.Addr,
-		IsWETH:                 data.IsWETH,
-		UnderlyingToken:        data.Underlying,
-		DieselToken:            data.DieselToken,
-		LinearCumulativeIndex:  data.LinearCumulativeIndex,
-		AvailableLiquidity:     data.AvailableLiquidity,
-		ExpectedLiquidity:      data.ExpectedLiquidity,
-		ExpectedLiquidityLimit: data.ExpectedLiquidityLimit,
-		TotalBorrowed:          data.TotalBorrowed,
-		DepositAPYRAY:          data.DepositAPYRAY,
-		BorrowAPYRAY:           data.BorrowAPYRAY,
-		DieselRateRAY:          data.DieselRateRAY,
-		WithdrawFee:            data.WithdrawFee,
-		CumulativeIndexRAY:     data.CumulativeIndexRAY,
-		TimestampLU:            data.TimestampLU,
-	}
-	return latestFormat, err
-}
-
-func (obj *v2DC) GetCreditAccountData(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
-	data, err := obj.dcV2.GetCreditAccountData(opts, creditManager, borrower)
-	if err != nil {
-		// CHECK FOR: edge case
-		if obj.addr == "0x47DE3e0d505B6ed8f8FA3bbB9Ab9b303E2ebCe39" { // only valid for kovan network v2 gearbox part 2
-			if core.FetchVersion(creditManager.Hex(), opts.BlockNumber.Int64(), obj.client) == 2 {
-				return obj.manualAccountCall(opts, creditManager, borrower)
-			}
-		}
-		log.Fatal(err)
-	}
-	latestFormat := mainnet.DataTypesCreditAccountDataExtended{
-		Addr:                       data.Addr,
-		Borrower:                   data.Borrower,
-		InUse:                      data.InUse,
-		CreditManager:              data.CreditManager,
-		UnderlyingToken:            data.Underlying,
-		BorrowedAmountPlusInterest: data.BorrowedAmountPlusInterest,
-		TotalValue:                 data.TotalValue,
-		HealthFactor:               data.HealthFactor,
-		BorrowRate:                 data.BorrowRate,
-
-		RepayAmount:           data.RepayAmount,
-		LiquidationAmount:     data.LiquidationAmount,
-		CanBeClosed:           data.CanBeClosed,
-		BorrowedAmount:        data.BorrowedAmount,
-		CumulativeIndexAtOpen: data.CumulativeIndexAtOpen,
-		Since:                 data.Since,
-	}
-	for _, balance := range data.Balances {
-		latestFormat.Balances = append(latestFormat.Balances, mainnet.DataTypesTokenBalance{
-			Token:     balance.Token,
-			Balance:   balance.Balance,
-			IsAllowed: balance.IsAllowed,
-		})
-	}
-	return latestFormat, err
-}
-
-func (obj *v2DC) GetCreditManagerData(opts *bind.CallOpts, _creditManager common.Address) (dataCompressorv2.CreditManagerData, error) {
-	return obj.dcV2.GetCreditManagerData(opts, _creditManager)
 }
 
 // there was a smartcontractbug in 8 th dcv2 contract for july 2022 kovan deployment.
 // dc address "0x47DE3e0d505B6ed8f8FA3bbB9Ab9b303E2ebCe39"
 // in that address for ceditaccount opened with creditmanager v2, will fail till the next dc which is added to addressprovider at 32832988
-func (obj *v2DC) manualAccountCall(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (mainnet.DataTypesCreditAccountDataExtended, error) {
+func (obj AccountCallv2) manualAccountCall(opts *bind.CallOpts, creditManager common.Address, borrower common.Address) (dcv2.CreditAccountData, error) {
 	calls := []multicall.Multicall2Call{}
 	blockNum := opts.BlockNumber.Int64()
 	cmABI := core.GetAbi("CreditManagerv2")
@@ -188,7 +103,7 @@ func (obj *v2DC) manualAccountCall(opts *bind.CallOpts, creditManager common.Add
 	///////////////////////////////////////
 	//
 	balances := obj.getBalances(blockNum, tokens, account, creditFacade)
-	return mainnet.DataTypesCreditAccountDataExtended{
+	return dcv2.CreditAccountData{
 		Addr:                       account,
 		Borrower:                   borrower,
 		InUse:                      false,
@@ -209,7 +124,8 @@ func (obj *v2DC) manualAccountCall(opts *bind.CallOpts, creditManager common.Add
 	}, nil
 }
 
-func (obj *v2DC) getBalances(blockNum int64, tokens []common.Address, account, creditFacade common.Address) (balances []mainnet.DataTypesTokenBalance) {
+// is enabled not set in the balance
+func (obj AccountCallv2) getBalances(blockNum int64, tokens []common.Address, account, creditFacade common.Address) (balances []dcv2.TokenBalance) {
 	tokenABI := core.GetAbi("Token")
 	facadeABI := core.GetAbi("CreditFacade")
 	balanceData, err := tokenABI.Pack("balanceOf", account)
@@ -238,7 +154,7 @@ func (obj *v2DC) getBalances(blockNum int64, tokens []common.Address, account, c
 				values, err := facadeABI.Unpack("isTokenAllowed", entry.ReturnData)
 				log.CheckFatal(err)
 				isAllowed := values[0].(bool)
-				balances = append(balances, mainnet.DataTypesTokenBalance{
+				balances = append(balances, dcv2.TokenBalance{
 					Token:     tokens[i/2],
 					Balance:   balance,
 					IsAllowed: isAllowed,

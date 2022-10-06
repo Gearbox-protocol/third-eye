@@ -57,7 +57,7 @@ func (cm *CreditManager) addCreditFilterAdapter(blockNum int64) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	cm.Repo.AddCreditManagerToFilter(cm.Address, creditFilter.Hex())
+	cm.Repo.GetDCWrapper().AddCreditManagerToFilter(cm.Address, creditFilter.Hex())
 	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), ds.CreditFilter, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 }

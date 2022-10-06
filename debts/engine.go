@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
+	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -118,9 +119,11 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 			// #C3
 			sessionSnapshot := eng.lastCSS[session.ID]
-			for tokenAddr := range *sessionSnapshot.Balances {
-				if tokensUpdated[tokenAddr] {
-					sessionsUpdated[session.ID] = true
+			for token, tokenBalance := range *sessionSnapshot.Balances {
+				if tokenBalance.IsEnabled && tokenBalance.HasBalanceMoreThanOne() {
+					if tokensUpdated[token] {
+						sessionsUpdated[session.ID] = true
+					}
 				}
 			}
 			// #C3
@@ -254,8 +257,6 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 		debt, profile = eng.CalculateSessionDebt(blockNum, session, cumIndexAndUToken)
 		if profile != nil {
 			log.Fatalf("Debt fields different from data compressor fields: %s", profile)
-			eng.SaveProfile(profile.String())
-
 		}
 	}
 	// check if data compressor and calculated values match
@@ -271,81 +272,55 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	sessionId := session.ID
 	sessionSnapshot := eng.lastCSS[sessionId]
 	cmAddr := session.CreditManager
-	accountAddr := session.Account
-	calThresholdValue := big.NewInt(0)
-	calTotalValue := big.NewInt(0)
-	// profiling
-	tokenDetails := map[string]ds.TokenDetails{}
-	for tokenAddr, balance := range *sessionSnapshot.Balances {
-		decimal := eng.repo.GetToken(tokenAddr).Decimals
-		price := eng.GetTokenLastPrice(tokenAddr, session.Version)
-		tokenLiquidityThreshold := eng.allowedTokensThreshold[cmAddr][tokenAddr]
-		// profiling
-		tokenDetails[tokenAddr] = ds.TokenDetails{
-			Price:             price,
-			Decimals:          decimal,
-			TokenLiqThreshold: tokenLiquidityThreshold,
-			Symbol:            eng.repo.GetToken(tokenAddr).Symbol,
-			Version:           session.Version,
-		}
-		// token not linked continue
-		if !balance.Linked {
-			continue
-		}
-		tokenValue := new(big.Int).Mul(price, balance.BI.Convert())
-		tokenValueInDecimal := utils.GetInt64(tokenValue, decimal-cumIndexAndUToken.Decimals)
-		tokenThresholdValue := new(big.Int).Mul(tokenValueInDecimal, tokenLiquidityThreshold.Convert())
-		calThresholdValue = new(big.Int).Add(calThresholdValue, tokenThresholdValue)
-		calTotalValue = new(big.Int).Add(calTotalValue, tokenValueInDecimal)
-
-	}
+	//
+	// calculating account fields
+	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
+	calHF, calBorrowWithInterest, calTotalValue, calThresholdValue := calculator.CalcAccountFields(
+		session.Version,
+		blockNum,
+		sessionDetailsForCalc{CreditSessionSnapshot: sessionSnapshot, CM: session.CreditManager},
+		cumIndexAndUToken.CumulativeIndex,
+		cumIndexAndUToken.Token,
+		eng.lastParameters[session.CreditManager].FeeInterest,
+	)
+	//
 	// the value of credit account is in terms of underlying asset
-	underlyingPrice := eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version)
-	calThresholdValue = new(big.Int).Quo(calThresholdValue, underlyingPrice)
-	calTotalValue = new(big.Int).Quo(calTotalValue, underlyingPrice)
-	// borrowed + interest and normalized threshold value
-	calBorrowWithInterest := big.NewInt(0).Quo(
-		big.NewInt(0).Mul(cumIndexAndUToken.CumulativeIndex, sessionSnapshot.BorrowedAmountBI.Convert()),
-		sessionSnapshot.СumulativeIndexAtOpen.Convert())
-	calReducedThresholdValue := big.NewInt(0).Quo(calThresholdValue, big.NewInt(10000))
 	// set debt fields
 	debt := &schemas.Debt{
 		CommonDebtFields: schemas.CommonDebtFields{
 			BlockNumber:                     blockNum,
-			CalHealthFactor:                 (*core.BigInt)(big.NewInt(0).Quo(calThresholdValue, calBorrowWithInterest)),
+			CalHealthFactor:                 (*core.BigInt)(calHF),
 			CalTotalValueBI:                 (*core.BigInt)(calTotalValue),
 			CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
-			CalThresholdValueBI:             (*core.BigInt)(calReducedThresholdValue),
+			CalThresholdValueBI:             (*core.BigInt)(calThresholdValue),
 			CollateralInUnderlying:          sessionSnapshot.CollateralInUnderlying,
 		},
 		SessionId: sessionId,
 	}
 	var notMatched bool
-	profile := ds.DebtProfile{}
+	profile := ds.DebtProfile{CreditSessionSnapshot: sessionSnapshot}
+
 	// use data compressor if debt check is enabled
 	if eng.config.DebtDCMatching {
 		data := eng.SessionDataFromDC(blockNum, cmAddr, sessionSnapshot.Borrower)
 		utils.ToJson(data)
 		// set debt data fetched from dc
+		// if healthfactor on diff
 		if !CompareBalance(debt.CalTotalValueBI, (*core.BigInt)(data.TotalValue), cumIndexAndUToken) ||
 			!CompareBalance(debt.CalBorrowedAmountPlusInterestBI, (*core.BigInt)(data.BorrowedAmountPlusInterest), cumIndexAndUToken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, (*core.BigInt)(data.HealthFactor)) {
-			mask := eng.repo.GetMask(blockNum, cmAddr, accountAddr, session.Version)
-			var err error
-			profile.RPCBalances, err = eng.repo.ConvertToBalanceWithMask(data.Balances, mask)
-			if err != nil {
-				log.Fatalf("DC wrong token values block:%d dc:%s", blockNum, eng.repo.GetDCWrapper().ToJson())
-			}
+			profile.DCData = &data
 			notMatched = true
 		}
-		// even if data compressor matching is disabled check the values  with values at which last credit snapshot was taken
+		// even if data compressor matching is disabled check the calc values  with session data at block where last credit snapshot was taken
 	} else if sessionSnapshot.BlockNum == blockNum {
 		if !CompareBalance(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, cumIndexAndUToken) ||
 			// hf value calculated are on different side of 1
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor) ||
 			// if healhFactor diff by 4 %
 			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)) {
-			profile.RPCBalances = sessionSnapshot.Balances.Copy()
+			log.Info(debt.CalHealthFactor, sessionSnapshot.HealthFactor, blockNum)
+			log.Info(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, blockNum)
 			notMatched = true
 		}
 	}
@@ -355,7 +330,6 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		profile.Debt = debt
 		profile.CreditSessionSnapshot = sessionSnapshot
 		profile.UnderlyingDecimals = cumIndexAndUToken.Decimals
-		profile.Tokens = tokenDetails
 		return debt, &profile
 	}
 	return debt, nil
@@ -390,7 +364,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 		status = session.Status
 	}
 	// amount to pool
-	amountToPool, calRemainingFunds, _, _ = schemas.CalCloseAmount(eng.lastParameters[session.CreditManager], session.Version, debt.CalTotalValueBI.Convert(), status,
+	amountToPool, calRemainingFunds, _, _ = calc.CalCloseAmount(eng.lastParameters[session.CreditManager], session.Version, debt.CalTotalValueBI.Convert(), status,
 		debt.CalBorrowedAmountPlusInterestBI.Convert(),
 		sessionSnapshot.BorrowedAmountBI.Convert())
 
@@ -426,7 +400,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 			// get underlying balance
 			underlying := (*session.Balances)[cumIndexAndUToken.Token]
 			underlyingBalance := new(big.Int)
-			if underlying != nil {
+			if underlying.BI != nil {
 				underlyingBalance = underlying.BI.Convert()
 			}
 			if new(big.Int).Sub(underlyingBalance, new(big.Int).Add(amountToPool, calRemainingFunds)).Cmp(big.NewInt(1)) > 0 {
@@ -463,6 +437,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 		eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert(), session.Version), 8)
 }
 
+// helper methods
 func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version int16) *big.Int {
 	usdcAddr := eng.repo.GetUSDCAddr()
 	tokenPrice := eng.GetTokenLastPrice(tokenAddr, version)
@@ -499,11 +474,11 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ..
 	return nil
 }
 
-func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) mainnet.DataTypesCreditAccountDataExtended {
+func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) dataCompressorv2.CreditAccountData {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-	data, err := eng.repo.GetDCWrapper().GetCreditAccountDataExtended(opts,
+	data, err := eng.repo.GetDCWrapper().GetCreditAccountData(opts,
 		common.HexToAddress(cmAddr),
 		common.HexToAddress(borrower),
 	)

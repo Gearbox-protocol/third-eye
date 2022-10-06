@@ -151,7 +151,7 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.CreditFilter:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)
-			repo.extras.AddCreditManagerToFilter(cmAddr, adapter.GetAddress())
+			repo.extras.GetDCWrapper().AddCreditManagerToFilter(cmAddr, adapter.GetAddress())
 		} else {
 			log.Fatal("Credit filter doesn't have credit manager", adapter.GetAddress())
 		}
