@@ -42,6 +42,7 @@ func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 		discoveredAtToAddr: make(map[int64]common.Address),
 		client:             client,
 		v1DC:               NewMainnetDC(client),
+		v2DC:               map[int64]*dataCompressorv2.DataCompressorv2{},
 		testing: &DCTesting{
 			calls:  map[int64]*test.DCCalls{},
 			client: client,
