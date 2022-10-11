@@ -169,9 +169,11 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 			// 	break
 			// }
 			e.repo.SetBlock(blockNum)
-			if !e.isEventPausedOrUnParsed(txLog) {
-				mdl.OnLog(txLog)
-			}
+			// parse and unpause events
+			e.isEventPausedOrUnParsed(txLog)
+			// pass the event to the onlog handler
+			mdl.OnLog(txLog)
+
 		}
 	}
 	// after sync

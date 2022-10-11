@@ -46,9 +46,13 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			closeCreditAccountEvent.To.Hex())
 	// for getting correct liquidation status
 	case core.Topic("Paused(address)"):
-		mdl.State.Paused = true
+		if txLog.Address.Hex() == mdl.Address { // set pause on cm, if Paused event is emitted only on cm address
+			mdl.State.Paused = true
+		}
 	case core.Topic("Unpaused(address)"):
-		mdl.State.Paused = false
+		if txLog.Address.Hex() == mdl.Address { // unset pause on cm, if Unpaused event is emitted only on cm address
+			mdl.State.Paused = false
+		}
 	case core.Topic("LiquidateCreditAccount(address,address,address,uint256)"):
 		liquidateCreditAccountEvent, err := mdl.facadeContractV2.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
