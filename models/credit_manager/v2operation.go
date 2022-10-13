@@ -48,8 +48,10 @@ func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) 
 	var mainEventFromCall string
 	switch mainCall.Name {
 	case "multicall":
+		mdl.setUpdateSession(mainEvent.SessionId)
 		mainEventFromCall = "MultiCallStarted(address)"
 	case "openCreditAccountMulticall":
+		mdl.setUpdateSession(mainEvent.SessionId)
 		mainEventFromCall = "OpenCreditAccount(address,address,uint256,uint16)"
 	case "liquidateCreditAccount", "liquidateExpiredCreditAccount":
 		mdl.setLiquidateStatus(mainEvent.SessionId, mainCall.Name == "liquidateExpiredCreditAccount")
@@ -216,8 +218,8 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 		Transfers:   &transfers,
 		Dapp:        cmAddr,
 	}
-	// process multicalls
-	mdl.multiCallHandler(accountOperation)
+	// add event to multicall processor
+	mdl.multicall.AddCloseOrLiquidateEvent(accountOperation)
 	// update remainingFunds
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	//
@@ -285,8 +287,8 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 		},
 		Dapp: txLog.Address.Hex(),
 	}
-	// process multicalls
-	mdl.multiCallHandler(accountOperation)
+	// add event to multicall processor
+	mdl.multicall.AddCloseOrLiquidateEvent(accountOperation)
 	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
@@ -374,7 +376,6 @@ func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower 
 	}
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
-	mdl.setUpdateSession(session.ID)
 	return nil
 }
 

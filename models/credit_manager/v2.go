@@ -160,27 +160,29 @@ func (mdl *CreditManager) onNewTxHashV2() {
 // multicallstarted => other calls
 // other calls => closed/liquidated
 func (mdl *CreditManager) processRemainingMultiCalls() {
-	// non multicall [for opencreditaccount]
-	mainAction := mdl.multicall.OpenEvent
+	defer func() {
+		mdl.multicall.OpenEvent = nil
+		mdl.multicall.MultiCallStartEvent = nil
+	}()
+
 	// opencreditaccount without mulitcall
-	if mainAction != nil && mdl.multicall.lenOfMultiCalls() == 0 {
-		mdl.setUpdateSession(mainAction.SessionId)
-		mdl.Repo.AddAccountOperation(mainAction)
-		mdl.addCollteralForOpenCreditAccount(mainAction.BlockNumber, mainAction)
+	openWithoutMC := mdl.multicall.OpenEvent
+	if openWithoutMC != nil && mdl.multicall.lenOfMultiCalls() == 0 {
+		mdl.setUpdateSession(openWithoutMC.SessionId)
+		mdl.Repo.AddAccountOperation(openWithoutMC)
+		mdl.addCollteralForOpenCreditAccount(openWithoutMC.BlockNumber, openWithoutMC)
+		return
 	}
+	//
 	// for multicalls
-	mainAction = mdl.multicall.OpenEvent
+	mainAction := mdl.multicall.OpenEvent
 	if mainAction == nil { // other multicall operations
 		mainAction = mdl.multicall.MultiCallStartEvent
 	}
-	// won't be call for liquidate/close as the len of multicall will be zero, they are already prcoessed by multicCallHandler call in OnLIquidate and OnClose CreditAccount v2
-	// so it is safe to use setUpdateSession
-	if mainAction != nil && mdl.multicall.lenOfMultiCalls() > 0 {
-		mdl.setUpdateSession(mainAction.SessionId)
+	// called for  open_with_multicall, multicall , liquidate, close
+	if mainAction != nil {
 		mdl.multiCallHandler(mainAction)
 	}
-	mdl.multicall.OpenEvent = nil
-	mdl.multicall.MultiCallStartEvent = nil
 }
 
 func (mdl *CreditManager) setUpdateSession(sessionId string) {
@@ -198,7 +200,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 			"TokenEnabled(address,address)",
 			"DisableToken(address,address)",
 			"DecreaseBorrowedAmount(address,uint256)":
-			// mdl.setUpdateSession(event.SessionId)
+			mdl.setUpdateSession(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":
 			account := strings.Split(event.SessionId, "_")[0]
@@ -211,6 +213,8 @@ func (mdl *CreditManager) processNonMultiCalls() {
 				Index:         event.LogId,
 				BlockNumber:   event.BlockNumber,
 			})
+		default:
+			log.Fatal(event.Action)
 		}
 	}
 	if len(executeEvents) > 0 {

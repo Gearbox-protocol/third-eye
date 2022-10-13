@@ -65,6 +65,10 @@ func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOpe
 	p.MultiCallStartEvent = startEvent
 	p.running = true
 }
+
+func (p *MultiCallProcessor) AddCloseOrLiquidateEvent(event *schemas.AccountOperation) {
+	p.MultiCallStartEvent = event
+}
 func (p *MultiCallProcessor) lenOfMultiCalls() int {
 	return len(p.events)
 }
