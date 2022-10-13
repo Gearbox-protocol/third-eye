@@ -202,6 +202,7 @@ func (mgr *DirectTransferManager) CloseAccountDetails(account string, since, clo
 	mgr.accountToData[account].SetClose(since, closedAt, closeTxHash, logID)
 }
 
+// range is [from, to)
 func (mgr *DirectTransferManager) CheckTokenTransfer(cm string, from, to int64) map[int64]map[string][]*schemas.TokenTransfer {
 	mgr.mu.Lock()
 	defer mgr.mu.Unlock()

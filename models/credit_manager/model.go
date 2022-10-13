@@ -128,11 +128,16 @@ func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
 	}
 	// ON NEW TXHASH
 	mdl.onTxHash("") // handles for v1(for multicalls) and v1 (for executeorder)
-	// ON NEW BLOCKNUM
+
 	// no logs where detected for current sync
-	if mdl.lastEventBlock == 0 {
-		mdl.ProcessDirectTokenTransfer(mdl.GetLastSync()+1, syncTill+1)
-	}
+	// no need to explicitly call ProcessDirectToken, it will be called by onBlockChange
+	// if mdl.lastEventBlock == 0 {
+	// 	mdl.ProcessDirectTokenTransfer(mdl.GetLastSync()+1, syncTill+1)
+	// }
+	//
+	//
+	// ON NEW BLOCKNUM
+	//
 	// try with blocknum greater than syncTill
 	// so that if there is direct transfer and some credit manager event
 	// at synctill == mdl.LasteventBlock it is processed

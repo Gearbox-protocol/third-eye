@@ -20,6 +20,7 @@ func (mdl *CreditManager) processExecuteEvents() {
 	}
 }
 
+// range is [from, to)
 func (mdl *CreditManager) ProcessDirectTokenTransfer(oldBlockNum, newBlockNum int64) {
 	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), oldBlockNum, newBlockNum)
 	blockNums := []int64{}
@@ -32,6 +33,7 @@ func (mdl *CreditManager) ProcessDirectTokenTransfer(oldBlockNum, newBlockNum in
 	}
 }
 
+// range is [from, to)  or just before newBlockNum
 func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), mdl.lastEventBlock, newBlockNum)
 	blockNums := []int64{}
@@ -96,12 +98,14 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 		}
 		// for blocks without credit manager events, update session
 		if blockNum != mdl.lastEventBlock {
+			//  works similar to FetchFromDCForChangedSessions, only for single session
 			mdl.updateSession(sessionID, blockNum)
 		}
 	}
 }
 
 // works for newBlockNum > mdl.lastEventBlock
+//
 func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	// on each new block
 	mdl.ProcessAccountEvents(newBlockNum)

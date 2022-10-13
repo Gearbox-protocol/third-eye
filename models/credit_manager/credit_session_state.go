@@ -100,8 +100,8 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	if !(closeDetails.Status == schemas.Closed && session.Version == 2) { // neg( closed on v2)
 		session.Balances = css.Balances
 	}
-	log.Info(utils.ToJson(session.Balances))
-	log.Info(utils.ToJson(css.Balances))
+	// log.Info(utils.ToJson(session.Balances))
+	// log.Info(utils.ToJson(css.Balances))
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
