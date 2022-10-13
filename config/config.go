@@ -1,6 +1,7 @@
 package config
 
 type Config struct {
+	AppName string `env:"APP_NAME" default:"Third-eye"`
 	// Authentication
 	AddressProviderAddress string `env:"REACT_APP_ADDRESS_PROVIDER" validate:"required"`
 
