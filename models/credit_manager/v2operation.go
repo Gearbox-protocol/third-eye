@@ -206,7 +206,10 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 
 	//////////
 	// get token transfer when account was closed
-	transfers := mdl.Repo.GetExecuteParser().GetTransfers(txLog.TxHash.Hex(), owner, account, mdl.GetUnderlyingToken(), []string{owner, to})
+	transfers := mdl.Repo.GetExecuteParser().GetTransfers(txLog.TxHash.Hex(), account, mdl.GetUnderlyingToken(), ds.BorrowerAndTo{
+		Borrower: common.HexToAddress(owner),
+		To:       common.HexToAddress(to),
+	})
 	balances := mdl.toJsonBalance(transfers)
 
 	//////////
@@ -219,7 +222,6 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
 	remainingFunds := (balances.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
-
 	//////////
 	// use remainingFunds
 	action, args := mdl.ParseEvent("CloseCreditAccount", txLog)

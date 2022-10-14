@@ -114,11 +114,15 @@ func (f *MainactionWithMulticall) SameLenAsEvents(events []*schemas.AccountOpera
 	return callInd == callLen && eventInd == eventLen
 }
 
+type BorrowerAndTo struct {
+	Borrower common.Address
+	To       common.Address
+}
 type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
 	// ignores revertIfLessThan
 	GetMainEventLogs(txHash, creditFacade string) []*MainactionWithMulticall
-	GetTransfers(txHash string, borrower, account, underlyingToken string, owner []string) core.Transfers
+	GetTransfers(txHash string, account, underlyingToken string, users BorrowerAndTo) core.Transfers
 }
 
 type KnownCall struct {

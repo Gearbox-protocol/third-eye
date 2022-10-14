@@ -51,6 +51,6 @@ func (m *MockExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, pa
 func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.MainactionWithMulticall {
 	return m.mainEventLogs[txHash]
 }
-func (m *MockExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, owner []string) core.Transfers {
+func (m *MockExecuteParser) GetTransfers(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	return m.executeTransfers[txHash]
 }

@@ -267,29 +267,64 @@ func getCreditFacadeMainEvent(input string) (*ds.MainactionWithMulticall, error)
 	}, nil
 }
 
-/// GetTransfers
-func (ep *ExecuteParser) GetTransfers(txHash, borrower, account, underlyingToken string, accounts []string) core.Transfers {
+// GetTransfers
+// currently only valid for closeCreditAccount v2
+func (ep *ExecuteParser) GetTransfers(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	trace := ep.GetTxTrace(txHash)
-	return ep.getTransfersToUser(trace, borrower, account, underlyingToken, accounts)
+	// log.Info(utils.ToJson(trace), account, underlyingToken, utils.ToJson(users))
+	return getCloseAccountv2Transfers(trace, account, underlyingToken, users)
 }
 
-func (ep *ExecuteParser) getTransfersToUser(trace *TxTrace, borrower, account, underlyingToken string, accounts []string) core.Transfers {
+// currently only valid for closeCreditAccount v2
+func getCloseAccountv2Transfers(trace *TxTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+	transfers := getTransfersToUser(trace, account, underlyingToken, users)
+	// convertWETH is set, only valid for closecreditaccountv2
+	convertWETHInd := 2 + 8 + 64 + 64 + 64
+	if trace.CallTrace.Input[:10] == "0x5f73fbec" && trace.CallTrace.Input[convertWETHInd-1] == '1' {
+		ethAmount := ethTransferDueToConvertWETH(trace.CallTrace, users)
+		if ethAmount == nil {
+			// log.Msgf("Can't get unwrapped WETH amount at closeCreditAccount(%s) sent to user. Tx: %s.", account, users.Borrower, trace.TxHash)
+			ethAmount = new(big.Int)
+		}
+		if transfers[underlyingToken] == nil {
+			transfers[underlyingToken] = new(big.Int)
+		}
+		transfers[underlyingToken] = new(big.Int).Add(transfers[underlyingToken], ethAmount)
+	}
+	return transfers
+}
+
+// eth transfer due to convertWETH
+func ethTransferDueToConvertWETH(call *Call, users ds.BorrowerAndTo) (ethAmount *big.Int) {
+	if len(call.Input) == 10+64*2 && call.Input[:10] == "0x5869dba8" && common.HexToAddress(call.Input[10:74]) == users.To {
+		ethAmount, _ := new(big.Int).SetString(call.Input[74:], 16)
+		return ethAmount
+	}
+	for _, innerCall := range call.Calls {
+		if ethAmount := ethTransferDueToConvertWETH(innerCall, users); ethAmount != nil {
+			return ethAmount
+		}
+	}
+	return nil
+}
+
+// is valid for closeCreditAccount v2
+// tenderly has logs for events(we mainly use for Transfer on token) and calls( for unwrapETH on wethgateway)
+// wrapWETH is also present in closecreditaccount, but it sends the wrapped eth back to user and then the user has approval on weth for creditmanager so in second step the weth is transferred
+// handling native eth refund is only needed when convertETH is true
+func getTransfersToUser(trace *TxTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	transfers := core.Transfers{}
 	for _, raw := range trace.Logs {
 		eventLog := raw.Raw
 		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" { // transfer event
 			to := common.HexToAddress(eventLog.Topics[2])
-			from := common.HexToAddress(eventLog.Topics[1]).Hex()
+			from := common.HexToAddress(eventLog.Topics[1])
 			token := common.HexToAddress(eventLog.Address).Hex()
 			var sign *big.Int
-			if from == borrower && to.Hex() == account && token == underlyingToken {
+			if from == users.Borrower && to.Hex() == account && token == underlyingToken {
 				sign = big.NewInt(-1)
 			} else {
-				var isTransferToUser bool
-				for _, account := range accounts {
-					isTransferToUser = isTransferToUser || common.HexToAddress(account) == to
-				}
-				if !isTransferToUser {
+				if !(to == users.Borrower || to == users.To) {
 					continue
 				}
 				sign = big.NewInt(1)
