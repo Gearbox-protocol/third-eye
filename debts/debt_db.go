@@ -43,12 +43,12 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 				HF: %s
 				CreditManager: %s/address/%s
 				Borrower: %s RepayAmount:%f %s
-				web: %s/accounts/%s/%s`,
+				web: %s/accounts/history/%s`,
 			debt.SessionId, debt.CalHealthFactor,
 			urls.ExplorerUrl, cmAddr,
 			borrower,
 			utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
-			urls.ChartUrl, cmAddr, borrower,
+			urls.ChartUrl, debt.SessionId,
 		)
 	}
 }

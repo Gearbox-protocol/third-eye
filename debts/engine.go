@@ -171,12 +171,12 @@ func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt in
 		Borrower: %s
 		LiquidatedAt: %d 
 		Liquidable since: %d
-		web: %s/accounts/%s/%s`,
+		web: %s/accounts/history/%s`,
 			urls.ExplorerUrl, cmAddr,
 			urls.ExplorerUrl, eng.GetLiquidationTx(sessionId),
 			sessionSnapshot.Borrower,
 			closedAt, liquidableSinceBlockNum,
-			urls.ChartUrl, cmAddr, sessionSnapshot.Borrower)
+			urls.ChartUrl, sessionSnapshot.SessionId)
 	} else if status != schemas.Active {
 		// comment deletion form map
 		// this way if the account is liquidable and liquidated in the same debt calculation cycle

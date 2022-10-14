@@ -14,7 +14,7 @@ import (
 )
 
 func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, account string,
-	amount, // collateral/user added funds
+	collateral, // collateral/user added funds
 	borrowAmount,
 	referralCode *big.Int) error {
 	// manager state
@@ -35,7 +35,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, acco
 		Action:      action,
 		Args:        args,
 		Transfers: &core.Transfers{
-			mdl.GetUnderlyingToken(): new(big.Int).Add(borrowAmount, amount),
+			mdl.GetUnderlyingToken(): new(big.Int).Add(borrowAmount, collateral), // total amount
 		},
 		Dapp: cmAddr,
 	}
@@ -53,14 +53,14 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, acco
 		CreditManager:  mdl.Address,
 		Account:        account,
 		Since:          blockNum,
-		InitialAmount:  (*core.BigInt)(amount),
+		InitialAmount:  (*core.BigInt)(collateral),
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		IsDirty:        true,
 		Version:        1,
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
 	mdl.setUpdateSession(sessionId)
-	mdl.AddCollateralToSession(blockNum, sessionId, mdl.State.UnderlyingToken, amount)
+	mdl.AddCollateralToSession(blockNum, sessionId, mdl.State.UnderlyingToken, collateral)
 	return nil
 }
 

@@ -235,15 +235,19 @@ func (mdl *CreditManager) getCollateralAmount(blockNum int64, mainAction *schema
 			}
 		}
 	}
-	tokens := make([]string, 0, len(balances))
+	tokens := make([]string, 0, len(balances)+1)
 	for token := range balances {
 		tokens = append(tokens, token)
 	}
+	underlyingToken := mdl.GetUnderlyingToken()
+	if balances[underlyingToken] == nil {
+		tokens = append(tokens, underlyingToken)
+	}
+	//
 	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
 	underlyingDecimals := mdl.GetUnderlyingDecimal()
-	underlyingToken := mdl.GetUnderlyingToken()
+	//
 	totalValue := new(big.Float)
-
 	// sigma(tokenAmount(i)*price(i)/exp(tokendecimals- underlyingToken))/price(underlying)
 	for token, amount := range balances {
 		calcValue := utils.GetFloat64(amount, -1*underlyingDecimals)
