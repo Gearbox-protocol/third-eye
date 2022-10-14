@@ -197,16 +197,34 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 // while closing funds can be transferred from the owner account too
 // https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditManager.sol#L286-L291
 func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to string) error {
-	mdl.State.TotalClosedAccounts++
+	mdl.State.TotalClosedAccounts++ // update totalclosedStats
+
 	sessionId := mdl.GetCreditOwnerSession(owner)
 	account := strings.Split(sessionId, "_")[0]
-	//
 	cmAddr := txLog.Address.Hex()
 	blockNum := int64(txLog.BlockNumber)
-	action, args := mdl.ParseEvent("CloseCreditAccount", txLog)
-	// add account operation
+
+	//////////
+	// get token transfer when account was closed
 	transfers := mdl.Repo.GetExecuteParser().GetTransfers(txLog.TxHash.Hex(), owner, account, mdl.GetUnderlyingToken(), []string{owner, to})
-	accountOperation := &schemas.AccountOperation{
+	balances := mdl.toJsonBalance(transfers)
+
+	//////////
+	// calculate remainingFunds
+	var tokens []string
+	for token := range *balances {
+		tokens = append(tokens, token)
+	}
+	tokens = append(tokens, mdl.GetUnderlyingToken())
+	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
+	remainingFunds := (balances.ValueInUnderlying(
+		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
+
+	//////////
+	// use remainingFunds
+	action, args := mdl.ParseEvent("CloseCreditAccount", txLog)
+	(*args)["remainingFunds"] = (*core.BigInt)(remainingFunds)
+	accountOperation := &schemas.AccountOperation{ // add account operation
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
 		LogId:       txLog.Index,
@@ -218,34 +236,30 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 		Transfers:   &transfers,
 		Dapp:        cmAddr,
 	}
-	// add event to multicall processor
-	mdl.multicall.AddCloseOrLiquidateEvent(accountOperation)
-	// update remainingFunds
-	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
-	//
-	session.Balances = mdl.toJsonBalance(transfers)
-	var tokens []string
-	for token := range *session.Balances {
-		tokens = append(tokens, token)
-	}
-	tokens = append(tokens, mdl.GetUnderlyingToken())
-	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
-	remainingFunds := (session.Balances.ValueInUnderlying(
-		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
-	//
+
+	////////////////////
+	//// update from there
+	////////////////////
+
+	session := mdl.Repo.UpdateCreditSession(sessionId, nil) // update session
+	session.Balances = balances
+
+	mdl.multicall.AddCloseOrLiquidateEvent(accountOperation) // add event to multicall processor
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
-	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+
+	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{ // update closeSession map with session details
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         schemas.Closed,
 		TxHash:         txLog.TxHash.Hex(),
 		Borrower:       owner,
 	}
-	// remove session to manager object
-	mdl.RemoveCreditOwnerSession(owner)
+
+	mdl.RemoveCreditOwnerSession(owner) // remove session to manager object
 	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
 }
+
 func (mdl *CreditManager) toJsonBalance(z core.Transfers) *core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
 	for token, amt := range z {

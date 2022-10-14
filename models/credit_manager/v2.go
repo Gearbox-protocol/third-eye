@@ -258,6 +258,9 @@ func (mdl *CreditManager) getCollateralAmount(blockNum int64, mainAction *schema
 		totalValue = new(big.Float).Add(totalValue, new(big.Float).Quo(nomunerator, tokenDecimals))
 	}
 	initialAmount, _ := new(big.Float).Quo(totalValue, big.NewFloat(prices[underlyingToken])).Int(nil)
+	if initialAmount == nil || initialAmount.Cmp(new(big.Int)) == 0 {
+		log.Fatal("Collateral for opencreditaccount v2 is zero or nil")
+	}
 	return initialAmount
 }
 

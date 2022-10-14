@@ -53,6 +53,7 @@
           ],
           borrower: '#User_1',
           to: '#User_2',
+          remainingFunds: '5500000000',
         },
         blockNum: 9,
         borrower: '#User_1',
