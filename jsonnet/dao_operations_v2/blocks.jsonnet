@@ -209,7 +209,7 @@
       {
         Args: {
           creditManager: '#CreditManager_1',
-          priceOracle: '#PriceOracle_1',
+          newPriceOracle: '#PriceOracle_1',
         },
         BlockNumber: 6,
         Contract: '#CreditConfigurator_2',

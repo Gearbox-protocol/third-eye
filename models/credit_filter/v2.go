@@ -92,7 +92,7 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			LogID:       txLog.Index,
 			TxHash:      txLog.TxHash.Hex(),
 			Contract:    txLog.Address.Hex(),
-			Args:        &core.Json{"priceOracle": priceOracle, "creditManager": creditManager},
+			Args:        &core.Json{"newPriceOracle": priceOracle, "creditManager": creditManager},
 			Type:        schemas.PriceOracleUpdated,
 		})
 	case core.Topic("IncreaseDebtForbiddenModeChanged(bool)"):
