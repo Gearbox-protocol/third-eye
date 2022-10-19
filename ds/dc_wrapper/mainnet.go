@@ -53,7 +53,7 @@ func getMask(client core.ClientI, blockNum int64, cfAddr, accountAddr common.Add
 	// }
 	// return new(big.Int).SetBytes(results[0].ReturnData)
 	data := make([]byte, 4+32)
-	sig, err := hex.DecodeString("b451cecc")
+	sig, err := hex.DecodeString("b451cecc") // enabledTokens
 	log.CheckFatal(err)
 	copy(data, sig)
 	for i, b := range accountAddr.Bytes() {
@@ -172,7 +172,7 @@ func convertTodcv2Balance(balances []mainnet.DataTypesTokenBalance, mask *big.In
 		dcv2Balances = append(dcv2Balances, dcv2.TokenBalance{
 			Token:     balance.Token,
 			Balance:   balance.Balance,
-			IsAllowed: balance.IsAllowed,
+			IsAllowed: isEnabled, //balance.IsAllowed, // for v1, isEnabled takes preferance
 			IsEnabled: isEnabled,
 		})
 	}
