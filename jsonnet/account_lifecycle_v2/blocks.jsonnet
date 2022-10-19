@@ -309,6 +309,7 @@
         Args: {
           creditManager: '#CreditManager_1',
           token: '#Token_3',
+          prevLiquidationThreshold: '0',
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
@@ -593,6 +594,7 @@
         Args: {
           creditManager: '#CreditManager_1',
           token: '#Token_2',
+          prevLiquidationThreshold: '0',
         },
         BlockNumber: 7,
         Contract: '#CreditConfigurator_1',

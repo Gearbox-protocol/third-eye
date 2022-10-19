@@ -165,11 +165,15 @@ func convertTodcv2Balance(balances []mainnet.DataTypesTokenBalance, mask *big.In
 	maskInBits := fmt.Sprintf("%b", mask)
 	maskLen := len(maskInBits)
 	for i, balance := range balances {
+		var isEnabled bool
+		if maskLen > i {
+			isEnabled = maskInBits[maskLen-i-1] == '1'
+		}
 		dcv2Balances = append(dcv2Balances, dcv2.TokenBalance{
 			Token:     balance.Token,
 			Balance:   balance.Balance,
 			IsAllowed: balance.IsAllowed,
-			IsEnabled: maskInBits[maskLen-i-1] == '1',
+			IsEnabled: isEnabled,
 		})
 	}
 	return

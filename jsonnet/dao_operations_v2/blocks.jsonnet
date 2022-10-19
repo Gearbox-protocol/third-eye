@@ -14,6 +14,7 @@
         Args: {
           creditManager: '#CreditManager_1',
           token: '#Token_1',
+          prevLiquidationThreshold: '0',
         },
         BlockNumber: 3,
         Contract: '#CreditConfigurator_1',

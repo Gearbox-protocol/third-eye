@@ -142,8 +142,9 @@ func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter
 			Contract:    creditFilter,
 			Type:        schemas.TokenAllowedV2,
 			Args: &core.Json{
-				"token":         atoken.Token,
-				"creditManager": atoken.CreditManager,
+				"token":                    atoken.Token,
+				"creditManager":            atoken.CreditManager,
+				"prevLiquidationThreshold": "0",
 			},
 		})
 		return
