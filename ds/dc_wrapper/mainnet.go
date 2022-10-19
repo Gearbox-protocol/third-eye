@@ -172,7 +172,7 @@ func convertTodcv2Balance(balances []mainnet.DataTypesTokenBalance, mask *big.In
 		dcv2Balances = append(dcv2Balances, dcv2.TokenBalance{
 			Token:     balance.Token,
 			Balance:   balance.Balance,
-			IsAllowed: isEnabled, //balance.IsAllowed, // for v1, isEnabled takes preferance
+			IsAllowed: balance.IsAllowed,
 			IsEnabled: isEnabled,
 		})
 	}

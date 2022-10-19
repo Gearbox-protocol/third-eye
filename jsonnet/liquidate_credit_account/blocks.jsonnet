@@ -11,13 +11,13 @@
             isAllowed: true,
             ind: 0,
           },
-          '#Token_2': {
-            BI: '100000000000000000',
-            F: 0.1,
-            isEnabled: false,
-            isAllowed: true,
-            ind: 2,
-          },
+          // '#Token_2': {
+          //   BI: '100000000000000000',
+          //   F: 0.1,
+          //   isEnabled: false,
+          //   isAllowed: true,
+          //   ind: 2,
+          // },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,

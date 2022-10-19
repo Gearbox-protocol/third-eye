@@ -389,12 +389,12 @@ local newCollateral = 1;
           }, {
             token: '#Token_3',
             balance: utils.bigInt(3, 18),
-            isAllowed: true,
+            isAllowed: false,  // if isEnabled is true, token will be used for balance calculation
           }, {
             // token 2 yfi is allowed.but  its not linked to account
             token: '#Token_2',
             balance: utils.bigInt(0.1, 18),
-            isAllowed: true,
+            isAllowed: true,  // if isEnabled is false, token doesn't matter even if isAllowed is tru
           }],
           version: 1,
         }],

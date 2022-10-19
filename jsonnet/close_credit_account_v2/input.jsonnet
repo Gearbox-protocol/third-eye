@@ -52,23 +52,27 @@ local extraBorrowedAmount = 1000;
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
           borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
-          balances: [{
-            token: '#Token_1',
-            balance: utils.bigInt(1500, 6),
-            isAllowed: true,
-            isEnabled: true,
-          }, {
-            token: '#Token_3',
-            balance: utils.bigInt(3, 18),
-            isAllowed: true,
-            isEnabled: true,
-          }, {
-            // token 2 yfi is allowed.but  its not linked to account
-            token: '#Token_2',
-            balance: utils.bigInt(0.1, 18),
-            isAllowed: true,
-            isEnabled: false,
-          }],
+          balances: [
+            {
+              token: '#Token_1',
+              balance: utils.bigInt(1500, 6),
+              isAllowed: true,
+              isEnabled: true,
+            },
+            {
+              token: '#Token_3',
+              balance: utils.bigInt(3, 18),
+              isAllowed: true,
+              isEnabled: true,
+            },
+            // {
+            //   // token 2 yfi is allowed.but  its not linked to account
+            //   token: '#Token_2',
+            //   balance: utils.bigInt(0.1, 18),
+            //   isAllowed: true,
+            //   isEnabled: false,
+            // }
+          ],
           version: 2,
         }],
       },

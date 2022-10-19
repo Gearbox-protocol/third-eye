@@ -138,7 +138,7 @@ func (mdl *CreditManager) addFloatValue(dcv2Balances []dataCompressorv2.TokenBal
 	dbFormat := core.DBBalanceFormat{}
 	for ind, balance := range dcv2Balances {
 		token := balance.Token.Hex()
-		if balance.IsAllowed && balance.Balance.Cmp(new(big.Int)) > 0 {
+		if balance.IsEnabled && balance.Balance.Cmp(new(big.Int)) > 0 {
 			dbFormat[token] = core.CoreIntBalance{
 				IsAllowed: balance.IsAllowed,
 				IsEnabled: balance.IsEnabled,

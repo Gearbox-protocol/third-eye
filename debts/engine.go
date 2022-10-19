@@ -319,8 +319,8 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor) ||
 			// if healhFactor diff by 4 %
 			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)) {
-			log.Info(debt.CalHealthFactor, sessionSnapshot.HealthFactor, blockNum)
-			log.Info(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, blockNum)
+			// log.Info(debt.CalHealthFactor, sessionSnapshot.HealthFactor, blockNum)
+			// log.Info(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, blockNum)
 			notMatched = true
 		}
 	}
