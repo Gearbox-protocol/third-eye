@@ -45,6 +45,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			log.Fatalf("Oracle %s, err: %s", oracle, err)
 		}
 		switch priceFeedType {
+		// almost zero price feed is for blocker token on credit account
 		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF:
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 				Token:       token,

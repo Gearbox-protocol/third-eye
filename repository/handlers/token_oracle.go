@@ -123,6 +123,14 @@ func (repo *TokenOracleRepo) DirectlyAddTokenOracle(newTokenOracle *schemas.Toke
 func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.TokenOracle) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	// SPECIAL CASE
+	// for token 0xf568F6C71aE0439B8d3FFD60Ceba9B1DcB5819bF on mainnet, while adding blocker token for v1
+	// two feeds where added for same block(15371802)
+	// ignore 0xBc1c306920309F795fB5A740083eCBf5057349e9 at log 202
+	// use 0xAaaF70b91877966900F0EfC0f2E7296e4F86B119 at log 212
+	if newTokenOracle.Feed == "0xBc1c306920309F795fB5A740083eCBf5057349e9" && newTokenOracle.BlockNumber == 15371802 {
+		return
+	}
 	switch newTokenOracle.FeedType {
 	case ds.CurvePF, ds.YearnPF, ds.ZeroPF, ds.AlmostZeroPF:
 		if repo.alreadyActiveFeedForToken(newTokenOracle) {
@@ -173,10 +181,13 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 			return
 		}
 		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
-		//
-		// on goerli, there are two v2 priceoracles added and  on first priceoracle cvx token is 0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0
+		// SPECIAL CASE
+		// on goerli, there are two v2 priceoracles added
+		// on first priceoracle cvx token is 0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0
 		// and on second priceoracle it is 0x6D75eb70402CF06a0cB5B8fdc1836dAe29702B17
-		// so ignore the first cvx token as it is used anywhere
+		// and both uses the same chainlink price feed
+		// REASON: we only support 1 chainlink per token, two different tokens can't share chainlink feed
+		// so ignore the first cvx token as it is not used anywhere
 		if newTokenOracle.Token != "0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0" {
 			repo.adapters.AddSyncAdapter(obj)
 		}
