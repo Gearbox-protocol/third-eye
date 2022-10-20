@@ -29,13 +29,13 @@ func NewMainnetDC(client core.ClientI) *MainnetDC {
 	}
 }
 
-func (m *MainnetDC) setAddr(addr common.Address) {
+func (m *MainnetDC) SetAddr(addr common.Address) {
 	dc, err := mainnet.NewDataCompressor(addr, m.client)
 	log.CheckFatal(err)
 	m.dc = dc
 }
 
-func (repo *MainnetDC) addCreditManagerToFilter(cmAddr, cfAddr string) {
+func (repo *MainnetDC) AddCreditManagerToFilter(cmAddr, cfAddr string) {
 	repo.creditManagerToFilter[common.HexToAddress(cmAddr)] = common.HexToAddress(cfAddr)
 }
 

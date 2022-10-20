@@ -58,7 +58,7 @@ func (DummyRepo) GetExecuteParser() ExecuteParserI {
 // price feed/oracle funcs
 func (DummyRepo) DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle) {
 }
-func (DummyRepo) AddPriceFeed(pf *schemas.PriceFeed) {
+func (*DummyRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 }
 
 // token funcs

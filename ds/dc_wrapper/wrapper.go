@@ -200,13 +200,13 @@ func (dcw *DataCompressorWrapper) setv1DC(discoveredAt int64) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
 	addr := dcw.discoveredAtToAddr[discoveredAt]
-	dcw.v1DC.setAddr(addr)
+	dcw.v1DC.SetAddr(addr)
 }
 
 func (dcw *DataCompressorWrapper) AddCreditManagerToFilter(cmAddr, cfAddr string) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
-	dcw.v1DC.addCreditManagerToFilter(cmAddr, cfAddr)
+	dcw.v1DC.AddCreditManagerToFilter(cmAddr, cfAddr)
 }
 
 func (dcw *DataCompressorWrapper) setv2DC(discoveredAt int64) {

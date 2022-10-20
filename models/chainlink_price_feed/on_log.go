@@ -17,20 +17,21 @@ func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
 }
 func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 	var priceFeeds []*schemas.PriceFeed
-	var prevBlock int64
-	for _, txLog := range txLogs {
+	for txLogInd, txLog := range txLogs {
 		var priceFeed *schemas.PriceFeed
 		blockNum := int64(txLog.BlockNumber)
 		switch txLog.Topics[0] {
 		case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
-			// there might be 2 AnswerUpdated events for same block
+			// there might be 2 AnswerUpdated events for same block, use the last one
 			// example
 			// https://goerli.etherscan.io/tx/0x03308a0b6f024e6c35a92e7708ab5a72322f733d22427d51624862d82ca1983a
 			// https://goerli.etherscan.io/tx/0x38e5551ae639d22554072ba1a53e026a0858c2cfedcedb83e5cc63bb1c8b8ea8
-			if prevBlock == blockNum {
+			// on mainnet
+			// https://etherscan.io/tx/0xb3aaa84cac23a30ab20cbd254b2297840f23057faf1f05e7655304be6cffc19e#eventlog
+			// https://etherscan.io/tx/0x3112f0a42f288ca56a2c8f8003355ad20e87e1f23c3ffa991633f6bb25eb8c58#eventlog
+			if txLogInd+1 < len(txLogs) && int64(txLogs[txLogInd+1].BlockNumber) == blockNum {
 				continue
 			}
-			prevBlock = blockNum
 			//
 			roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
 			if err != nil {
