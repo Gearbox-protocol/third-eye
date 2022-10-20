@@ -170,7 +170,8 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	defer repo.mu.Unlock()
 	newPrice := pf.PriceBI.Convert().Int64()
 	if repo.prevPriceFeeds[pf.IsPriceInUSD] != nil && repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] != nil && // is prev pf is present for that token
-		// if the price is zero or 100 uints(AlmostZeroPF), it feed is of ZeroPF/AlmostZeroPF type as a result order of PriceFeed events can't be ascending.
+		// if the price is zero or 100(AlmostZeroPF), feed is of ZeroPF/AlmostZeroPF type as a result order of PriceFeed events can't be ascending.
+		// because there can be multiple priceoracle with multiple feed for the token.
 		// and check prevPF.BlockNumber >=  pf.BlockNumber won't work
 		!(newPrice == 0 || newPrice == 100) {
 		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
@@ -183,7 +184,13 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 			return
 		}
 	}
-	repo.addPrevPriceFeed(pf)
+	// price for zeroPriceFeed is added when event on PriceOrale is emitted, eg: block 10
+	// the prev feed will still be active at block 5
+	// so if we add zeroPriceFeed at 10, and price feed from prev feed can be generated at 5.
+	// which will fail ascending order consider
+	if !(newPrice == 0 || newPrice == 100) {
+		repo.addPrevPriceFeed(pf)
+	}
 	repo._setAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 }
 

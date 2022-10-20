@@ -71,6 +71,7 @@ func (repo *TokenOracleRepo) addTokenCurrentOracle(oracle *schemas.TokenOracle) 
 	repo.tokensCurrentOracle[oracle.Version][oracle.Token] = oracle
 }
 
+// if same feed is active for current token and version
 func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.TokenOracle) bool {
 	feedType := newTokenOracle.FeedType
 	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
