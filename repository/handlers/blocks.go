@@ -23,7 +23,7 @@ type BlocksRepo struct {
 	blockDatePairs map[int64]*schemas.BlockDate
 	// for prevently duplicate query price feed already with same price for a token
 	// token to feed
-	prevPriceFeeds map[bool]map[string]*schemas.PriceFeed
+	prevPriceFeeds map[bool]map[string]map[string]*schemas.PriceFeed
 	mu             *sync.Mutex
 	client         core.ClientI
 	chainId        uint
@@ -34,7 +34,7 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config) *Blocks
 	return &BlocksRepo{
 		blocks:         make(map[int64]*schemas.Block),
 		blockDatePairs: map[int64]*schemas.BlockDate{},
-		prevPriceFeeds: map[bool]map[string]*schemas.PriceFeed{},
+		prevPriceFeeds: map[bool]map[string]map[string]*schemas.PriceFeed{},
 		//
 		mu:      &sync.Mutex{},
 		client:  client,
@@ -153,28 +153,30 @@ func (repo *BlocksRepo) loadPrevPriceFeed() {
 		repo.addPrevPriceFeed(pf)
 	}
 }
+
+// isUSD -> token -> feed -> price feed object
 func (repo *BlocksRepo) addPrevPriceFeed(pf *schemas.PriceFeed) {
 	if repo.prevPriceFeeds[pf.IsPriceInUSD] == nil {
-		repo.prevPriceFeeds[pf.IsPriceInUSD] = map[string]*schemas.PriceFeed{}
+		repo.prevPriceFeeds[pf.IsPriceInUSD] = map[string]map[string]*schemas.PriceFeed{}
 	}
-	oldPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
+	if repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] == nil {
+		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] = map[string]*schemas.PriceFeed{}
+	}
+	oldPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed]
 	price := pf.PriceBI.Convert().Int64()
 	if oldPF != nil && oldPF.BlockNumber >= pf.BlockNumber && !(price == 0 || price == 100) {
 		log.Fatalf("oldPF %s.\n NewPF %s.", oldPF, pf)
 	}
-	repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] = pf
+	repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed] = pf
 }
 
 func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	newPrice := pf.PriceBI.Convert().Int64()
-	if repo.prevPriceFeeds[pf.IsPriceInUSD] != nil && repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] != nil && // is prev pf is present for that token
-		// if the price is zero or 100(AlmostZeroPF), feed is of ZeroPF/AlmostZeroPF type as a result order of PriceFeed events can't be ascending.
-		// because there can be multiple priceoracle with multiple feed for the token.
-		// and check prevPF.BlockNumber >=  pf.BlockNumber won't work
-		!(newPrice == 0 || newPrice == 100) {
-		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
+	if repo.prevPriceFeeds[pf.IsPriceInUSD] != nil &&
+		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] != nil &&
+		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed] != nil {
+		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed]
 		if prevPF.BlockNumber >= pf.BlockNumber {
 			debug.PrintStack()
 			log.Fatalf("oldPF %s.\n NewPF %s.", prevPF, pf)
@@ -184,13 +186,7 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 			return
 		}
 	}
-	// price for zeroPriceFeed is added when event on PriceOrale is emitted, eg: block 10
-	// the prev feed will still be active at block 5
-	// so if we add zeroPriceFeed at 10, and price feed from prev feed can be generated at 5.
-	// which will fail ascending order consider
-	if !(newPrice == 0 || newPrice == 100) {
-		repo.addPrevPriceFeed(pf)
-	}
+	repo.addPrevPriceFeed(pf)
 	repo._setAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 }
 
