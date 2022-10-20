@@ -89,6 +89,7 @@ func NewDBhandler(db *gorm.DB, client core.ClientI) *DBhandler {
 	return obj
 }
 
+// only valid for mainnet
 var WETHAddr string = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
 
 func (handler *DBhandler) getChainlinkPrices() {

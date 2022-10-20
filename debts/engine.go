@@ -80,9 +80,6 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 
 	// C3.b: updated price
 	for _, pf := range block.GetPriceFeeds() {
-		// if pf.Token == "0x6B175474E89094C44Da98b954EedeAC495271d0F" {
-		// 	log.Info(blockNum, utils.ToJson(pf))
-		// }
 		// L5
 		eng.AddTokenLastPrice(pf)
 		tokensUpdated[pf.Token] = true
