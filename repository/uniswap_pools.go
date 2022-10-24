@@ -18,7 +18,9 @@ import (
 func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.config.ChainId != 1 || repo.AggregatedFeed.UniPoolByToken[token] != nil {
+	if repo.GetWETHAddr() == token || // if the token is weth don't run for weth/weth pool
+		repo.config.ChainId != 1 || // if not mainnet
+		repo.AggregatedFeed.UniPoolByToken[token] != nil { // if the uni v2/v3 pool details already present don't add again
 		return
 	}
 	v2FactoryAddr := repo.GetFactoryv2Address(blockNum)
