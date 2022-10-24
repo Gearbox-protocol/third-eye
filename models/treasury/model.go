@@ -90,26 +90,35 @@ func (mdl *Treasury) getAddrs() (tokens []common.Address, pools map[common.Addre
 func (mdl *Treasury) Query(queryTill int64) {
 	queryFrom := mdl.GetLastSync() + 1
 	tokenAddrs, pools := mdl.getAddrs()
-	// from topics
-	fromTopics := []common.Hash{
+
+	// restricted transfers , with specific operational conditions.
+	//
+	// // from topics
+	// fromTopics := []common.Hash{
+	// 	common.HexToHash(mdl.Address),
+	// 	{}, // zero addr for mint on repay profit
+	// }
+	// for pool := range pools {
+	// 	fromTopics = append(fromTopics, common.BytesToHash(pool[:]))
+	// }
+	// // to topics
+	// toTopics := []common.Hash{
+	// 	{}, //  zero addr for burn on repay loss or when the treasury withdraw the underlying asset from pool
+	// 	common.HexToHash(mdl.Address),
+	// }
+	// logs, err := mdl.node.GetLogs(queryFrom, queryTill, tokenAddrs, [][]common.Hash{
+	// 	{core.Topic("Transfer(address,address,uint256)")},
+	// 	fromTopics,
+	// 	toTopics,
+	// })
+
+	//
+	// all transfers to and from dao address
+	txLogs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, tokenAddrs, []common.Hash{
 		common.HexToHash(mdl.Address),
-		{}, // zero addr for mint on repay profit
-	}
-	for pool := range pools {
-		fromTopics = append(fromTopics, common.BytesToHash(pool[:]))
-	}
-	// to topics
-	toTopics := []common.Hash{
-		{}, //  zero addr for burn on repay loss or when the treasury withdraw the underlying asset from pool
-		common.HexToHash(mdl.Address),
-	}
-	logs, err := mdl.node.GetLogs(queryFrom, queryTill, tokenAddrs, [][]common.Hash{
-		{core.Topic("Transfer(address,address,uint256)")},
-		fromTopics,
-		toTopics,
 	})
 	log.CheckFatal(err)
-	for _, log := range logs {
+	for _, log := range txLogs {
 		mdl.onLog(log, pools)
 	}
 }
