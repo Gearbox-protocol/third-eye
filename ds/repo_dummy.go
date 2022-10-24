@@ -173,7 +173,7 @@ func (DummyRepo) AddDAOOperation(operation *schemas.DAOOperation) {
 }
 func (DummyRepo) CalCurrentTreasuryValue(syncTill int64) {
 }
-func (DummyRepo) AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int) {
+func (DummyRepo) AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int, operationTransfer bool) {
 }
 func (DummyRepo) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
 }

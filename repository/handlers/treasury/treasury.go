@@ -44,6 +44,9 @@ func (repo *TreasuryRepo) LoadTreasurySnapshot(db *gorm.DB) {
 	if ss.Balances == nil {
 		ss.Balances = &core.JsonFloatMap{}
 	}
+	if ss.OperationalBalances == nil {
+		ss.OperationalBalances = &core.JsonFloatMap{}
+	}
 	repo.treasurySnapshot = &ss
 }
 
@@ -65,21 +68,23 @@ func (repo *TreasuryRepo) Save(tx *gorm.DB) {
 	if repo.treasurySnapshot.Date != "" {
 		err := tx.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "block_num"}},
-			DoUpdates: clause.AssignmentColumns([]string{"date_str", "prices_in_usd", "balances", "value_in_usd"}),
+			DoUpdates: clause.AssignmentColumns([]string{"date_str", "prices_in_usd", "balances", "value_in_usd", "operational_value_in_usd", "operational_balances"}),
 		}).Create(repo.treasurySnapshot).Error
 		log.CheckFatal(err)
 	}
 }
 
 // external funcs
-func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int) {
+func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint,
+	token string, amount *big.Int, operationTransfer bool) {
 	block := repo.blocks.SetAndGetBlock(blockNum)
 	// treasury transfer
 	block.AddTreasuryTransfer(&schemas.TreasuryTransfer{
-		BlockNum: blockNum,
-		LogID:    logID,
-		Token:    token,
-		Amount:   (*core.BigInt)(amount),
+		BlockNum:            blockNum,
+		LogID:               logID,
+		Token:               token,
+		Amount:              (*core.BigInt)(amount),
+		OperationalTransfer: operationTransfer,
 	})
 	// treasury snapshots
 	currentTime := time.Unix(int64(block.Timestamp), 0).UTC()
@@ -101,24 +106,26 @@ func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint, token 
 	}
 	// set the current treasury snapshot fields
 	repo.treasurySnapshot.Date = utils.TimeToDate(currentTime)
-	balance := (*repo.treasurySnapshot.Balances)[token]
 	tokenObj := repo.tokens.GetToken(token)
 	amt := utils.GetFloat64Decimal(amount, tokenObj.Decimals)
+	balance := (*repo.treasurySnapshot.Balances)[token]
 	(*repo.treasurySnapshot.Balances)[token] = balance + amt
+	if operationTransfer {
+		operationalBalance := (*repo.treasurySnapshot.OperationalBalances)[token]
+		(*repo.treasurySnapshot.OperationalBalances)[token] = operationalBalance + amt
+	}
 }
 
 // saves snapshot for previous/last day
 func (repo *TreasuryRepo) saveTreasurySnapshot() {
 	ts := repo.lastTreasureTime.Unix()
 	blockDate := repo.blocks.GetBlockDatePairs(ts)
-	balances := core.JsonFloatMap{}
-	for token, amt := range *repo.treasurySnapshot.Balances {
-		balances[token] = amt
-	}
+
 	tss := &schemas.TreasurySnapshot{
-		Date:     utils.TimeToDate(repo.lastTreasureTime),
-		BlockNum: blockDate.BlockNum,
-		Balances: &balances,
+		Date:                utils.TimeToDate(repo.lastTreasureTime),
+		BlockNum:            blockDate.BlockNum,
+		Balances:            repo.treasurySnapshot.Balances.Copy(),
+		OperationalBalances: repo.treasurySnapshot.OperationalBalances.Copy(),
 	}
 	repo.calFieldsOfTreasurySnapshot(blockDate.BlockNum, tss)
 	log.Info(utils.ToJson(tss))
@@ -126,7 +133,6 @@ func (repo *TreasuryRepo) saveTreasurySnapshot() {
 }
 
 func (repo *TreasuryRepo) calFieldsOfTreasurySnapshot(blockNum int64, tss *schemas.TreasurySnapshot) {
-	var totalValueInUSD float64
 	var tokenAddrs []string
 	for token := range *tss.Balances {
 		if token == repo.tokens.GetGearTokenAddr() {
@@ -135,11 +141,9 @@ func (repo *TreasuryRepo) calFieldsOfTreasurySnapshot(blockNum int64, tss *schem
 		tokenAddrs = append(tokenAddrs, token)
 	}
 	prices := repo.GetPricesInUSD(blockNum, tokenAddrs)
-	for token, amt := range *tss.Balances {
-		totalValueInUSD += amt * prices[token]
-	}
 	tss.PricesInUSD = &prices
-	tss.ValueInUSD = totalValueInUSD
+	tss.ValueInUSD = tss.Balances.ValueInUSD(prices)
+	tss.OperationalValueInUSD = tss.OperationalBalances.ValueInUSD(prices)
 }
 
 func (repo *TreasuryRepo) CalCurrentTreasuryValue(blockNum int64) {

@@ -23,6 +23,8 @@ create table treasury_snapshots (
     block_num integer PRIMARY KEY,
     prices_in_usd jsonb,
     balances jsonb,
+    operational_balances jsonb,
+    operational_value_in_usd DOUBLE PRECISION,
     value_in_usd DOUBLE PRECISION);
 
 create table treasury_transfers (
@@ -30,6 +32,7 @@ create table treasury_transfers (
     token varchar(42),
     log_id integer,
     block_num integer,
+    operational_transfer boolean,
     PRIMARY KEY (block_num, log_id));
 
 create table no_session_transfers (

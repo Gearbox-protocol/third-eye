@@ -57,11 +57,10 @@ func (mdl *Treasury) onLog(txLog types.Log, pools map[common.Address]bool) {
 	case core.Topic("Transfer(address,address,uint256)"):
 		from := common.BytesToAddress(txLog.Topics[1][32-20:])
 		to := common.BytesToAddress(txLog.Topics[2][32-20:])
-		if !((from == zeroAddr && to == mdl.HexAddr) || // repay profit mint
+		operationTransfer := ((from == zeroAddr && to == mdl.HexAddr) || // repay profit mint
 			(from == mdl.HexAddr && to == zeroAddr) || //repay loss  burn
-			(pools[from] && to == mdl.HexAddr)) { // remove liquidity
-			return
-		}
+			(pools[from] && to == mdl.HexAddr)) // remove liquidity
+
 		value, ok := new(big.Int).SetString(common.BytesToHash(txLog.Data).Hex()[2:], 16)
 		if !ok {
 			log.Fatal("Failed parsing value")
@@ -69,10 +68,10 @@ func (mdl *Treasury) onLog(txLog types.Log, pools map[common.Address]bool) {
 		switch mdl.HexAddr {
 		case from:
 			mdl.Repo.AddTreasuryTransfer(int64(txLog.BlockNumber), txLog.Index,
-				txLog.Address.Hex(), new(big.Int).Neg(value))
+				txLog.Address.Hex(), new(big.Int).Neg(value), operationTransfer)
 		case to:
 			mdl.Repo.AddTreasuryTransfer(int64(txLog.BlockNumber), txLog.Index,
-				txLog.Address.Hex(), value)
+				txLog.Address.Hex(), value, operationTransfer)
 		}
 	}
 }

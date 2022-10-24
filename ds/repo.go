@@ -84,7 +84,7 @@ type RepositoryI interface {
 	// dao
 	AddDAOOperation(operation *schemas.DAOOperation)
 	CalCurrentTreasuryValue(syncTill int64)
-	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int)
+	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int, operationTransfer bool)
 	RecentEventMsg(blockNum int64, msg string, args ...interface{})
 	//
 	// oracle and uni
