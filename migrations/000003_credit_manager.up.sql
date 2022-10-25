@@ -29,6 +29,7 @@ CREATE TABLE credit_managers (
     total_liquidated_accounts integer,
     unique_users integer,
     fee_interest integer,
+    _version integer,
     paused boolean
 );
 
