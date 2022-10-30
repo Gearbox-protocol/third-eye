@@ -27,3 +27,9 @@ If dmg package:
 >>> there is no unique or exclusion constraint matching the ON CONFLICT
 Reason:
 If the primaryKey constraint is missing from table schema and the gorm data structure tags have the primarykey then the expected constraint are not found in db.
+
+## Tracking last update on table
+
+```
+track_commit = on # update postgresql.conf
+```

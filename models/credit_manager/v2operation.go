@@ -198,7 +198,6 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 // https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditManager.sol#L286-L291
 func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to string) error {
 	mdl.State.TotalClosedAccounts++ // update totalclosedStats
-
 	sessionId := mdl.GetCreditOwnerSession(owner)
 	account := strings.Split(sessionId, "_")[0]
 	cmAddr := txLog.Address.Hex()

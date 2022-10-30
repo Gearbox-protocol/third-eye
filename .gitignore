@@ -6,3 +6,4 @@ app
 /.env.local
 temp
 dist
+test.go

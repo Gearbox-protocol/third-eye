@@ -17,6 +17,9 @@ type Pool struct {
 	contractETH    *poolService.PoolService
 	lastEventBlock int64
 	State          *schemas.PoolState
+	// for calculating the remove liq amount in underlying instead of diesel token amount which is present in the emitted removeLiquidity event
+	RemoveLiqEvents []*schemas.PoolLedger
+	dieselRate      *big.Int
 }
 
 func (Pool) TableName() string {

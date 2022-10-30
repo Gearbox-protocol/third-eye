@@ -16,6 +16,18 @@ func (mdl *Pool) createPoolStat() {
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
 		mdl.calculatePoolStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
+		// for remove liquidity
+		for _, removeLiqEvent := range mdl.RemoveLiqEvents {
+			// calculate removed liquidity amount in underlying token
+			numerator := new(big.Int).Mul(removeLiqEvent.AmountBI.Convert(), mdl.dieselRate)
+			underlyingRemovedAmount := new(big.Int).Quo(numerator, utils.GetExpInt(27))
+			// set removed  amount fields in poolLedger
+			removeLiqEvent.AmountBI = (*core.BigInt)(underlyingRemovedAmount)
+			removeLiqEvent.Amount = utils.GetFloat64Decimal(underlyingRemovedAmount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals)
+			// add poolLedger to repository
+			mdl.Repo.AddPoolLedger(removeLiqEvent)
+		}
+		mdl.RemoveLiqEvents = nil
 	}
 }
 
@@ -46,7 +58,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		mdl.Repo.AddPoolLedger(&schemas.PoolLedger{
+		mdl.RemoveLiqEvents = append(mdl.RemoveLiqEvents, &schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
@@ -54,7 +66,6 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Event:       "RemoveLiquidity",
 			User:        removeLiquidityEvent.Sender.Hex(),
 			AmountBI:    (*core.BigInt)(removeLiquidityEvent.Amount),
-			Amount:      utils.GetFloat64Decimal(removeLiquidityEvent.Amount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals),
 		})
 		mdl.lastEventBlock = blockNum
 	case core.Topic("Borrow(address,address,uint256)"):
