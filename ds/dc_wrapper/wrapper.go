@@ -158,7 +158,7 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(opts *bind.CallOpts, _cre
 	case TESTING:
 		return dcw.testing.getCMData(opts.BlockNumber.Int64(), _creditManager.Hex())
 	}
-	panic(fmt.Sprintf("data compressor number %s not found for credit manager data", key))
+	return dcv2.CreditManagerData{}, nil
 }
 
 func (dcw *DataCompressorWrapper) GetPoolData(opts *bind.CallOpts, _pool common.Address) (dcv2.PoolData, error) {

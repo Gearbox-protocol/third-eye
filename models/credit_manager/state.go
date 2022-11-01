@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -59,17 +60,9 @@ func (mdl *CreditManager) GetUnderlyingToken() string {
 }
 
 func (mdl *CreditManager) calculateCMStat(blockNum int64) {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-	state, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(
-		opts,
-		common.HexToAddress(mdl.GetAddress()),
-		common.HexToAddress(mdl.GetAddress()),
-	)
-	if err != nil {
-		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
-	}
+	// for checking if the rewardClaimed by user on convex, is from allowed protocols
+	state := mdl.addAdaptersAndReturnDCData(blockNum)
+	//
 	mdl.State.IsWETH = state.IsWETH
 	//
 	bororwAmountForBlock := mdl.getBorrowAmountForBlockAndClear()
@@ -121,4 +114,25 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 		},
 	}
 	mdl.Repo.AddCreditManagerStats(stats)
+}
+
+func (mdl *CreditManager) addAdaptersAndReturnDCData(blockNum int64) (state dataCompressorv2.CreditManagerData) {
+	opts := &bind.CallOpts{
+		BlockNumber: big.NewInt(blockNum),
+	}
+
+	state, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(
+		opts,
+		common.HexToAddress(mdl.GetAddress()),
+		common.HexToAddress(mdl.GetAddress()),
+	)
+	if err != nil {
+		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
+	}
+	newProtocols := map[string]bool{}
+	for _, entry := range state.Adapters {
+		newProtocols[entry.AllowedContract.Hex()] = true
+	}
+	mdl.allowedProtocols = newProtocols
+	return state
 }

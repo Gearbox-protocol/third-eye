@@ -110,6 +110,9 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 }
 
 func (mdl *CreditManager) updateSession(sessionId string, blockNum int64) {
+	if mdl.dontGetSessionFromDC {
+		return
+	}
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	data := mdl.GetCreditSessionData(blockNum, session.Borrower)
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)

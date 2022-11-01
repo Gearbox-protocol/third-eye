@@ -47,6 +47,10 @@ type CreditManager struct {
 	// tmp storage
 	borrowedAmountForBlock *big.Int
 	params                 *schemas.Parameters
+	//
+	allowedProtocols map[string]bool
+	// only used for testing, in reward_claimed_test.go
+	dontGetSessionFromDC bool
 }
 
 func (CreditManager) TableName() string {
@@ -87,6 +91,7 @@ func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 		pnlOnCM:         NewPnlCM(),
 	}
+	obj.addAdaptersAndReturnDCData(obj.LastSync)
 	obj.GetAbi()
 	switch obj.GetVersion() {
 	case 1:
