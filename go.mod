@@ -3,7 +3,7 @@ module github.com/Gearbox-protocol/third-eye
 go 1.17
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20221025193516-7fd185d8950d
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20221031133222-78a991f7092a
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/heroku/x v0.0.42
@@ -27,6 +27,7 @@ require (
 	github.com/google/go-jsonnet v0.18.0 // indirect
 	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
+	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
@@ -52,6 +53,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
+	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -59,4 +61,6 @@ require (
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
-// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20221025193516-7fd185d8950d => ../sdk-go
+replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
+
+// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20221031133222-78a991f7092a => ../sdk-go

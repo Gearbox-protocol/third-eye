@@ -1,6 +1,7 @@
 package chainlink_price_feed
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
@@ -138,7 +139,9 @@ func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) (string, uint16)
 	var newPriceFeed common.Address
 	newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, false)
 	if err != nil {
-		if mdl.Repo.GetChainId() == 42 || mdl.Repo.GetChainId() == 5 { // for goerli and kovan test the phaseaggregator method is without 's'
+		chainId, err2 := mdl.Client.ChainID(context.TODO())
+		log.CheckFatal(err2)
+		if chainId.Int64() == 42 || chainId.Int64() == 5 { // for goerli and kovan test the phaseaggregator method is without 's'
 			newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, true)
 			// try with method name phaseAggregator instead of phaseAggregators
 			// true is sets typo=true so that phaseAggregator method is used.

@@ -35,6 +35,9 @@ func (t *DCTesting) getPoolData(blockNum int64, key string) (dcv2.PoolData, erro
 	}, nil
 }
 func (t *DCTesting) getCMData(blockNum int64, key string) (dcv2.CreditManagerData, error) {
+	if t.calls == nil || t.calls[blockNum] == nil {
+		return dcv2.CreditManagerData{}, nil
+	}
 	obj := t.calls[blockNum].CMs[key]
 	return dcv2.CreditManagerData{
 		Addr:               common.HexToAddress(obj.Addr),

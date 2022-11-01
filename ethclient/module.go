@@ -17,7 +17,7 @@ func NewEthClient(config *config.Config) core.ClientI {
 	}
 	chainId, err := client.ChainID(context.TODO())
 	log.CheckFatal(err)
-	config.ChainId = uint(chainId.Int64())
+	config.ChainId = chainId.Int64()
 	return client
 }
 

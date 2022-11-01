@@ -1,13 +1,10 @@
 package credit_manager
 
 import (
-	"fmt"
 	"math/big"
-	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -17,90 +14,6 @@ func (mdl *CreditManager) processExecuteEvents() {
 	if len(mdl.executeParams) > 0 {
 		mdl.handleExecuteEvents(mdl.executeParams)
 		mdl.executeParams = []ds.ExecuteParams{}
-	}
-}
-
-// range is [from, to)
-func (mdl *CreditManager) ProcessDirectTokenTransfer(oldBlockNum, newBlockNum int64) {
-	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), oldBlockNum, newBlockNum)
-	blockNums := []int64{}
-	for blockNum, _ := range data {
-		blockNums = append(blockNums, blockNum)
-	}
-	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
-	for _, blockNum := range blockNums {
-		mdl.ProcessDirectTransfersOnBlock(blockNum, data[blockNum])
-	}
-}
-
-// range is [from, to)  or just before newBlockNum
-func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
-	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), mdl.lastEventBlock, newBlockNum)
-	blockNums := []int64{}
-	for blockNum, _ := range data {
-		blockNums = append(blockNums, blockNum)
-	}
-	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
-	// no direct token transfer or the first token transfer is after the mdl.lastEventBlock
-	// or start block of range for check token tranafer
-	if len(blockNums) == 0 || blockNums[0] > mdl.lastEventBlock {
-		mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
-	}
-	for _, blockNum := range blockNums {
-		mdl.ProcessDirectTransfersOnBlock(blockNum, data[blockNum])
-		// if there are direct token tranfer on the start block of range then
-		// use changed sessions
-		if blockNum == mdl.lastEventBlock {
-			mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
-		}
-	}
-}
-func (mdl CreditManager) DirecTokenTransferString(tx *schemas.TokenTransfer) string {
-	msg := fmt.Sprintf("DirectTokenTransfer %f %s at %d from %s to %s",
-		utils.GetFloat64Decimal(tx.Amount.Convert(), mdl.Repo.GetToken(tx.Token).Decimals),
-		mdl.Repo.GetToken(tx.Token).Symbol,
-		tx.BlockNum, tx.From, tx.To,
-	)
-	return msg
-}
-func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
-	for sessionID, txs := range sessionIDToTxs {
-		session := mdl.Repo.GetCreditSession(sessionID)
-		txsList := schemas.TokenTransferList(txs)
-		sort.Sort(txsList)
-		for _, tx := range txsList {
-			var amount *big.Int
-			switch session.Account {
-			case tx.From:
-				amount = new(big.Int).Neg(tx.Amount.Convert())
-				mdl.Repo.RecentEventMsg(tx.BlockNum, "Withdrawn(%s): %s", sessionID, tx)
-				log.Fatalf("Token withdrawn directly from account %v", mdl.DirecTokenTransferString(tx))
-			case tx.To:
-				amount = tx.Amount.Convert()
-				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, amount)
-				mdl.Repo.RecentEventMsg(tx.BlockNum, "Deposit: %s", mdl.DirecTokenTransferString(tx))
-			}
-			if blockNum == mdl.lastEventBlock {
-				mdl.setUpdateSession(sessionID)
-			}
-			mdl.Repo.AddAccountOperation(&schemas.AccountOperation{
-				TxHash:      tx.TxHash,
-				BlockNumber: tx.BlockNum,
-				LogId:       tx.LogID,
-				Borrower:    session.Borrower,
-				SessionId:   sessionID,
-				Dapp:        tx.Token,
-				Action:      "DirectTokenTransfer",
-				Args:        &core.Json{"amount": amount, "to": tx.To, "from": tx.From},
-				AdapterCall: false,
-				Transfers:   &core.Transfers{tx.Token: amount},
-			})
-		}
-		// for blocks without credit manager events, update session
-		if blockNum != mdl.lastEventBlock {
-			//  works similar to FetchFromDCForChangedSessions, only for single session
-			mdl.updateSession(sessionID, blockNum)
-		}
 	}
 }
 
