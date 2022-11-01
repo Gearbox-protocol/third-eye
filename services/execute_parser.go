@@ -51,7 +51,7 @@ type ExecuteParser struct {
 	Client              http.Client
 	IgnoreCMEventIds    map[string]bool
 	ExecuteOrderFuncSig string
-	ChainId             uint
+	ChainId             int64
 }
 
 func getCMEventIds() map[string]bool {

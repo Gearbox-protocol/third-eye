@@ -26,7 +26,6 @@ type BlocksRepo struct {
 	prevPriceFeeds map[bool]map[string]map[string]*schemas.PriceFeed
 	mu             *sync.Mutex
 	client         core.ClientI
-	chainId        uint
 	db             *gorm.DB
 }
 
@@ -36,10 +35,9 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config) *Blocks
 		blockDatePairs: map[int64]*schemas.BlockDate{},
 		prevPriceFeeds: map[bool]map[string]map[string]*schemas.PriceFeed{},
 		//
-		mu:      &sync.Mutex{},
-		client:  client,
-		chainId: cfg.ChainId,
-		db:      db,
+		mu:     &sync.Mutex{},
+		client: client,
+		db:     db,
 	}
 }
 
@@ -219,8 +217,4 @@ func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 
 func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
-}
-
-func (repo *BlocksRepo) GetChainId() uint {
-	return repo.chainId
 }

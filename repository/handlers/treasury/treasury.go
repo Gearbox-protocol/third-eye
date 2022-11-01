@@ -1,6 +1,7 @@
 package treasury
 
 import (
+	"context"
 	"math/big"
 	"time"
 
@@ -100,7 +101,9 @@ func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint,
 		// the events and then chainlink/yearn feeds were missing for 29 june,
 		// so we don't have the blockNum for that date, as a result the snapshot is missing for that date
 		// ignore only this transfer of 30 june which tries to save snapshot of 29 june.
-		if !(blockNum == 32476006 && repo.blocks.GetChainId() == 42) {
+		chainId, err := repo.client.ChainID(context.TODO())
+		log.CheckFatal(err)
+		if !(blockNum == 32476006 && chainId.Int64() == 42) {
 			repo.saveTreasurySnapshot()
 		}
 	}

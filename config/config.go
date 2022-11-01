@@ -15,7 +15,7 @@ type Config struct {
 	// Ethereum
 	EthProvider string `env:"ETH_PROVIDER" validate:"required"`
 
-	ChainId uint
+	ChainId int64
 
 	Port                   string `env:"PORT" default:"8080" validate:"required"`
 	AMPQUrl                string `env:"CLOUDAMQP_URL" validate:"required"`
