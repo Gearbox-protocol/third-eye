@@ -96,6 +96,9 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 			var amount *big.Int
 			if tx.To == session.Account {
 				amount = tx.Amount.Convert()
+				// add transfer as collateral for rewardClaimed too
+				// reward token is enabled to account, and will be counted as user fund
+				// https://github.com/Gearbox-protocol/integrations-v2/blob/main/contracts/adapters/convex/ConvexV1_BaseRewardPool.sol#L292-L298
 				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, amount)
 			}
 			// rewardPaid doesn't emitted executeOrder or any other gearbox event
