@@ -20,7 +20,7 @@ func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 	defer repo.mu.Unlock()
 	if repo.GetWETHAddr() == token || // if the token is weth don't run for weth/weth pool
 		repo.config.ChainId != 1 || // if not mainnet
-		repo.AggregatedFeed.UniPoolByToken[token] != nil { // if the uni v2/v3 pool details already present don't add again
+		repo.AggregatedFeed.UNIFetcher().UniPoolByToken[token] != nil { // if the uni v2/v3 pool details already present don't add again
 		return
 	}
 	v2FactoryAddr := repo.GetFactoryv2Address(blockNum)
@@ -39,18 +39,12 @@ func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 		log.Fatalf("pool not fetched for v2/v3: %s/%s", token, repo.GetWETHAddr())
 	}
 	tokenInfo := repo.GetToken(token)
-	repo.AggregatedFeed.AddUniPools(tokenInfo, &schemas.UniswapPools{
+	repo.AggregatedFeed.UNIFetcher().AddUniPools(tokenInfo, &schemas.UniswapPools{
 		V2:      poolv2Addr.Hex(),
 		V3:      poolv3Addr.Hex(),
 		Updated: true,
 		Token:   token,
 	})
-}
-
-func (repo *Repository) AddLastSyncForToken(token string, lastSync int64) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	repo.AggregatedFeed.AddLastSyncForToken(token, lastSync)
 }
 
 func (repo *Repository) GetFactoryv2Address(blockNum int64) common.Address {
@@ -84,7 +78,7 @@ func (repo *Repository) loadUniswapPools() {
 	log.CheckFatal(err)
 	for _, entry := range data {
 		tokenInfo := repo.GetToken(entry.Token)
-		repo.AggregatedFeed.AddUniPools(tokenInfo, entry)
+		repo.AggregatedFeed.UNIFetcher().AddUniPools(tokenInfo, entry)
 	}
 }
 
@@ -100,8 +94,8 @@ func (repo *Repository) loadChainlinkPrevState() {
 	}
 }
 
-func (repo *Repository) GetUniPricesByToken(token string) []*schemas.UniPoolPrices {
-	return repo.AggregatedFeed.GetUniPricesByToken(token)
+func (repo *Repository) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
+	repo.AggregatedFeed.GetDepFetcher().ChainlinkPriceUpdatedAt(token, blockNums)
 }
 func (repo *Repository) AddUniPriceAndChainlinkRelation(relation *schemas.UniPriceAndChainlink) {
 	repo.mu.Lock()

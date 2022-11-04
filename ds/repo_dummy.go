@@ -142,6 +142,9 @@ func (DummyRepo) GetUSDCAddr() string {
 func (DummyRepo) GetGearTokenAddr() string {
 	return ""
 }
+func (DummyRepo) GetAddressBySymbol(sym string) string {
+	return ""
+}
 
 // credit manager
 func (DummyRepo) AddAccountTokenTransfer(tt *schemas.TokenTransfer) {
@@ -189,6 +192,9 @@ func (DummyRepo) GetYearnFeedAddrs() []string {
 // has mutex lock
 func (DummyRepo) AddNewPriceOracleEvent(*schemas.TokenOracle) {
 }
+func (DummyRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
+	return nil
+}
 
 //
 func (DummyRepo) LoadLastDebtSync() int64 {
@@ -201,14 +207,11 @@ func (DummyRepo) Clear() {
 }
 
 // multicall
-func (DummyRepo) GetUniPricesByToken(token string) []*schemas.UniPoolPrices {
-	return nil
+func (DummyRepo) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
 }
 func (DummyRepo) AddUniPoolsForToken(blockNum int64, token string) {
 }
 func (DummyRepo) AddUniPriceAndChainlinkRelation(relation *schemas.UniPriceAndChainlink) {
-}
-func (DummyRepo) AddLastSyncForToken(token string, lastSync int64) {
 }
 
 // for testing

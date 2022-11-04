@@ -10,10 +10,11 @@ type AdapterKit struct {
 func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})
-	kit.AddLevel([]string{Pool, AccountManager})
+	kit.AddLevel([]string{Pool, AccountManager, ChainlinkPriceFeed})
 	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed})
-	kit.AddLevel([]string{CreditFilter, CreditConfigurator, Treasury, ChainlinkPriceFeed})
-	// - AggregatedBlockFeed => ChainlinkPriceFeed; so that deviation btw uniswap pool and chainlink can be calculated.
+	kit.AddLevel([]string{CreditFilter, CreditConfigurator, Treasury})
+	// - we are dropping the uni check, so the dependency is reversed.
+	//		(AggregatedBlockFeed => ChainlinkPriceFeed; so that deviation btw uniswap pool and chainlink can be calculated)
 	//   Another reason being to get all the yearnPriceFeed in single go.
 	// - CreditManager => CreditFilter/CreditConfigurator for creation only.
 	// - AccountFactory => AccountManager => CreditManager; factory gets the accounts address to accountmanager for getting

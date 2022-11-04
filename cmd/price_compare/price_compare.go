@@ -53,7 +53,7 @@ func (h *DBhandler) AddUniPricesToDB(prices *schemas.UniPoolPrices) {
 	h.blocks[blockNum].AddUniswapPrices(prices)
 }
 
-func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.AggregatedBlockFeed) {
+func (handler *DBhandler) populateBlockFeed(aggregatedFeed *aggregated_block_feed.AggregatedBlockFeed) {
 	tokens := []*schemas.Token{}
 	err := handler.db.Raw(`SELECT * FROM tokens`).Find(&tokens).Error
 	tokenMap := map[string]*schemas.Token{}
@@ -66,7 +66,7 @@ func (handler *DBhandler) populateBlockFeed(obj *aggregated_block_feed.Aggregate
 	err = handler.db.Raw(`SELECT * FROM uniswap_pools`).Find(&uniswapPools).Error
 	log.CheckFatal(err)
 	for _, entry := range uniswapPools {
-		obj.AddUniPools(tokenMap[entry.Token], entry)
+		aggregatedFeed.UNIFetcher().AddUniPools(tokenMap[entry.Token], entry)
 	}
 }
 

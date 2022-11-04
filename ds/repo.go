@@ -25,7 +25,6 @@ type RepositoryI interface {
 	SetBlock(blockNum int64)
 	SetAndGetBlock(blockNum int64) *schemas.Block
 	GetBlocks() map[int64]*schemas.Block
-	GetTokenOracles() map[int16]map[string]*schemas.TokenOracle
 	GetDisabledTokens() []*schemas.AllowedToken
 	LoadBlocks(from, to int64)
 	// credit account operations
@@ -33,7 +32,11 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
+	GetTokenOracles() map[int16]map[string]*schemas.TokenOracle
+	GetOracleForV2Token(token string) *schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
+	AddNewPriceOracleEvent(*schemas.TokenOracle)
+	//
 	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol)
@@ -69,6 +72,7 @@ type RepositoryI interface {
 	GetWETHAddr() string
 	GetUSDCAddr() string
 	GetGearTokenAddr() string
+	GetAddressBySymbol(string) string
 	// credit manager
 	AddAccountTokenTransfer(tt *schemas.TokenTransfer)
 	AddCreditManagerStats(cms *schemas.CreditManagerStat)
@@ -89,17 +93,14 @@ type RepositoryI interface {
 	// oracle and uni
 	AddUniswapPrices(prices *schemas.UniPoolPrices)
 	GetYearnFeedAddrs() []string
-	// has mutex lock
-	AddNewPriceOracleEvent(*schemas.TokenOracle)
 	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64
 	Clear()
 	// multicall
-	GetUniPricesByToken(token string) []*schemas.UniPoolPrices
+	ChainlinkPriceUpdatedAt(token string, blockNums []int64)
 	AddUniPoolsForToken(blockNum int64, token string)
 	AddUniPriceAndChainlinkRelation(relation *schemas.UniPriceAndChainlink)
-	AddLastSyncForToken(token string, lastSync int64)
 	// for testing
 	AddTokenObj(token *schemas.Token)
 	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI

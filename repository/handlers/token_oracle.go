@@ -199,3 +199,11 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 func (repo *TokenOracleRepo) GetTokenOracles() map[int16]map[string]*schemas.TokenOracle {
 	return repo.tokensCurrentOracle
 }
+
+func (repo *TokenOracleRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
+	obj := repo.tokensCurrentOracle[2][token]
+	if obj == nil {
+		log.Fatalf("No oracle found for token(%s)", token)
+	}
+	return obj
+}

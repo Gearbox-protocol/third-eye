@@ -50,7 +50,7 @@ func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core
 	// 	Feed:        adapter.Address,
 	// 	BlockNumber: discoveredAt,
 	// 	Version:     version})
-	repo.AddUniPoolsForToken(adapter.DiscoveredAt, token)
+	// repo.AddUniPoolsForToken(adapter.DiscoveredAt, token)
 	return adapter
 }
 
@@ -93,8 +93,6 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		}
 	}
 	obj.HasOnLogs = true
-	// for getting the uniswap prices for this chainlink from last_sync
-	obj.Repo.AddLastSyncForToken(token, obj.GetLastSync())
 	return obj
 }
 
