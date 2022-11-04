@@ -48,6 +48,7 @@ func (q *QueryPFDependencies) ChainlinkPriceUpdatedAt(token string, blockNums []
 func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[string]bool {
 	//  blockNum to QueryPFToken
 	updates := map[int64]map[string]bool{}
+	var updatedChainlinkSym []string
 	for chainlinkSym, blockNums := range q.ChainlinkSymToUpdatedBlocks {
 		//
 		for _, dependentSym := range q.ChainlinkSymToQueryPFSyms[chainlinkSym] {
@@ -59,6 +60,9 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[stri
 				updates[blockNum][depAddr] = true
 			}
 		}
+	}
+	if updatedChainlinkSym != nil {
+		log.Info("Updated chainlinks are:", updatedChainlinkSym)
 	}
 	q.ChainlinkSymToUpdatedBlocks = map[string][]int64{}
 	return updates
@@ -83,11 +87,11 @@ func getDepGraph() map[string][]string {
 		"wstETH": {"stETH"},
 
 		// diesel tokens
-		"dUSDC":   {"USDC"},
-		"dDAI":    {"DAI"},
-		"dWETH":   {"ETH"},
-		"dwstETH": {"stETH"},
-		"dWBTC":   {"WBTC"},
+		// "dUSDC":   {"USDC"},
+		// "dDAI":    {"DAI"},
+		// "dWETH":   {"ETH"},
+		// "dwstETH": {"stETH"},
+		// "dWBTC":   {"WBTC"},
 		// 3 crv
 		"3Crv":       {"USDC", "USDT", "DAI"},
 		"stkcvx3Crv": {"USDC", "USDT", "DAI"},
@@ -146,9 +150,10 @@ func (q *QueryPFDependencies) extraPriceForQueryFeed() []*schemas.PriceFeed {
 		ch <- 1
 		go q.fetchRoundData(blockNum, tokens, ch, wg)
 	}
-	wg.Done()
+	wg.Wait()
 	pfs := q.depBasedExtraPrices
 	q.depBasedExtraPrices = nil
+	log.Info(len(pfs), " extra price feed fetched due to chainlink updates")
 	return pfs
 }
 
@@ -189,6 +194,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 		// add token and feed details
 		newPrice.Token = details.Token
 		newPrice.Feed = details.Feed
+		newPrice.BlockNumber = blockNum
 		newPrices = append(newPrices, newPrice)
 	}
 	q.updateQueryPrices(newPrices)

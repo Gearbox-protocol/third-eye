@@ -61,7 +61,7 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			blockNums = append(blockNums, blockNum)
 		}
 	}
-	if mdl.GetVersion() != 2 {
+	if mdl.GetVersion() != 1 && blockNums != nil {
 		mdl.Repo.ChainlinkPriceUpdatedAt(mdl.Token, blockNums)
 	}
 

@@ -223,9 +223,11 @@ func (mdl *AggregatedBlockFeed) processRoundData(blockNum int64, adapter *QueryP
 	priceFeeds := []*schemas.PriceFeed{}
 	for _, token := range adapter.TokensValidAtBlock(blockNum) {
 		priceDataCopy := priceData.Clone()
+		//
 		priceDataCopy.BlockNumber = blockNum
 		priceDataCopy.Token = token
 		priceDataCopy.Feed = adapter.GetAddress()
+		//
 		priceFeeds = append(priceFeeds, priceDataCopy)
 	}
 	return priceFeeds
