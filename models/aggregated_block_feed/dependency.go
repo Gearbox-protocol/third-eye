@@ -1,6 +1,7 @@
 package aggregated_block_feed
 
 import (
+	"context"
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
@@ -27,7 +28,9 @@ type QueryPFDependencies struct {
 }
 
 func NewQueryPFDepenencies(repo ds.RepositoryI, client core.ClientI) *QueryPFDependencies {
-	depGraph := getDepGraph()
+	chainId, err := client.ChainID(context.TODO())
+	log.CheckFatal(err)
+	depGraph := getDepGraph(chainId.Int64())
 	return &QueryPFDependencies{
 		depGraph:                    depGraph,
 		ChainlinkSymToQueryPFSyms:   getInvertDependencyGraph(depGraph),
@@ -68,7 +71,7 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[stri
 	return updates
 }
 
-func getDepGraph() map[string][]string {
+func getDepGraph(chainId int64) map[string][]string {
 	depGraph := map[string][]string{
 		// frax and curve
 		"yvCurve-FRAX":     {"FRAX", "USDC", "USDT", "DAI"},
@@ -112,6 +115,13 @@ func getDepGraph() map[string][]string {
 		"steCRV":        {"stETH", "ETH"},
 		"yvCurve-stETH": {"stETH", "ETH"},
 		"cvxsteCRV":     {"stETH", "ETH"},
+	}
+	if chainId == 5 {
+		for _, token := range []string{"yvWBTC", "yvCurve-FRAX", "yvDAI", "yvCurve-stETH", "yvUSDC"} {
+			depGraph["Yearn "+token] = depGraph[token]
+			delete(depGraph, token)
+		}
+		delete(depGraph, "yvWETH")
 	}
 	return depGraph
 }

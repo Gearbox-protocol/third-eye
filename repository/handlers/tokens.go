@@ -116,7 +116,7 @@ func (repo *TokensRepo) GetToken(addr string) *schemas.Token {
 func (repo TokensRepo) GetAddressBySymbol(symbol string) string {
 	tokenAddress := repo.symToToken[symbol]
 	if tokenAddress == "" {
-		log.Fatal("Sym(%s) to token not found", symbol)
+		log.Fatalf("Sym(%s) to token not found", symbol)
 	}
 	return tokenAddress
 }
