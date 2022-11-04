@@ -104,7 +104,7 @@ func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
 	}).CreateInBatches(adapters, 50).Error
 	log.CheckFatal(err)
 
-	if uniPools := repo.AggregatedFeed.GetUniswapPools(); len(uniPools) > 0 {
+	if uniPools := repo.AggregatedFeed.UNIFetcher().GetUniswapPools(); len(uniPools) > 0 {
 		err := tx.Clauses(clause.OnConflict{
 			UpdateAll: true,
 		}).CreateInBatches(uniPools, 50).Error

@@ -17,15 +17,13 @@ type AggregatedBlockFeed struct {
 	mu *sync.Mutex
 	// yearn feed
 	QueryFeeds map[string]*QueryPriceFeed
-	// yearn feed prices to be ordered
-	queryFeedPrices []*schemas.PriceFeed
-	// uniswap price related data structures
-	UniswapPools      []string
-	UniPoolByToken    map[string]*schemas.UniswapPools
-	UniPricesByTokens map[string]schemas.SortedUniPoolPrices
-	tokenInfos        map[string]*schemas.Token
+
+	// for getting uni price on v2, v3 and uni oracle
+	priceOnUNIFetcher *PriceOnUNIFetcher
+	// for dependency based fetching price
+	queryPFdeps *QueryPFDependencies
 	//
-	TokenLastSync map[string]int64
+	queryFeedPrices []*schemas.PriceFeed
 	// intervel from config
 	Interval int64
 }
@@ -46,14 +44,12 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 		OnlyQuery: true,
 	}
 	return &AggregatedBlockFeed{
-		UniPoolByToken:    map[string]*schemas.UniswapPools{},
-		UniPricesByTokens: map[string]schemas.SortedUniPoolPrices{},
 		SyncAdapter:       syncAdapter,
-		TokenLastSync:     map[string]int64{},
 		Interval:          interval,
 		mu:                &sync.Mutex{},
-		tokenInfos:        map[string]*schemas.Token{},
 		QueryFeeds:        map[string]*QueryPriceFeed{},
+		priceOnUNIFetcher: NewPriceOnUNIFetcher(),
+		queryPFdeps:       NewQueryPFDepenencies(repo, client),
 	}
 }
 
@@ -68,9 +64,6 @@ func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter ds.SyncAdapterI) {
 	mdl.QueryFeeds[adapter.GetAddress()] = yearnFeed
 }
 
-func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
-}
-
 func (mdl *AggregatedBlockFeed) GetQueryFeeds() []*QueryPriceFeed {
 	feeds := []*QueryPriceFeed{}
 	for _, feed := range mdl.QueryFeeds {
@@ -79,34 +72,8 @@ func (mdl *AggregatedBlockFeed) GetQueryFeeds() []*QueryPriceFeed {
 	return feeds
 }
 
-func (mdl *AggregatedBlockFeed) AddUniPools(token *schemas.Token, uniswapPools *schemas.UniswapPools) {
-	if mdl.UniPoolByToken[uniswapPools.Token] == nil {
-		mdl.UniPoolByToken[uniswapPools.Token] = uniswapPools
-	}
-	mdl.tokenInfos[token.Address] = token
-}
-
-// for getting the uniswap prices for chainlink token/usdc uniswap pairs.
-func (mdl *AggregatedBlockFeed) AddLastSyncForToken(token string, lastSync int64) {
-	mdl.LastSync = utils.Min(lastSync, mdl.LastSync)
-	// there is new oracle/feed added for a token
-	if mdl.TokenLastSync[token] == 0 {
-		mdl.TokenLastSync[token] = lastSync
-	}
-	mdl.TokenLastSync[token] = utils.Min(mdl.TokenLastSync[token], lastSync)
-}
-
-func (mdl *AggregatedBlockFeed) GetUniswapPools() (updatedPools []*schemas.UniswapPools) {
-	for _, entry := range mdl.UniPoolByToken {
-		if entry.Updated {
-			updatedPools = append(updatedPools, entry)
-		}
-		entry.Updated = false
-	}
-	return
-}
-
 func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, version int16) {
+	mdl.queryPFdeps.checkInDepGraph(token, oracle, discoveredAt)
 	if mdl.QueryFeeds[oracle] != nil {
 		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt)
 	} else {
@@ -116,4 +83,18 @@ func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType stri
 
 func (mdl *AggregatedBlockFeed) DisableYearnFeed(token, oracle string, disabledAt int64) {
 	mdl.QueryFeeds[oracle].DisableToken(token, disabledAt)
+}
+
+func (mdl AggregatedBlockFeed) UNIFetcher() *PriceOnUNIFetcher {
+	return mdl.priceOnUNIFetcher
+}
+func (mdl AggregatedBlockFeed) GetDepFetcher() *QueryPFDependencies {
+	return mdl.queryPFdeps
+}
+
+func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
+}
+
+func (mdl AggregatedBlockFeed) Clear() {
+	mdl.priceOnUNIFetcher.Clear()
 }
