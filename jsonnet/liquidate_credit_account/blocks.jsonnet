@@ -90,8 +90,6 @@
         AvailableLiquidity: 6000,
         AvailableLiquidityBI: '6000000000',
         BlockNum: 8,
-        BorrowRate: 0,
-        BorrowRateBI: '0',
         CumulativeBorrowed: 0,
         ID: 0,
         OpenedAccountsCount: 0,
