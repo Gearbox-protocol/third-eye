@@ -82,9 +82,6 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	mdl.State.MinAmount = (*core.BigInt)(state.MinAmount)
 	mdl.State.MaxAmount = (*core.BigInt)(state.MaxAmount)
 
-	mdl.State.BorrowRateBI = (*core.BigInt)(state.BorrowRate)
-	mdl.State.BorrowRate = utils.GetFloat64Decimal(state.BorrowRate, 25)
-
 	mdl.State.AvailableLiquidityBI = (*core.BigInt)(state.AvailableLiquidity)
 	mdl.State.AvailableLiquidity = utils.GetFloat64Decimal(state.AvailableLiquidity, mdl.GetUnderlyingDecimal())
 
@@ -98,8 +95,6 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 			TotalClosedAccounts:     mdl.State.TotalClosedAccounts,
 			TotalRepaidAccounts:     mdl.State.TotalRepaidAccounts,
 			TotalLiquidatedAccounts: mdl.State.TotalLiquidatedAccounts,
-			BorrowRateBI:            core.NewBigInt(mdl.State.BorrowRateBI),
-			BorrowRate:              mdl.State.BorrowRate,
 			AvailableLiquidityBI:    core.NewBigInt(mdl.State.AvailableLiquidityBI),
 			AvailableLiquidity:      mdl.State.AvailableLiquidity,
 			// calculated in this application

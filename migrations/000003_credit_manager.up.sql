@@ -8,14 +8,12 @@ CREATE TABLE credit_managers (
     is_weth boolean,
     min_amount character varying(80),
     max_amount character varying(80),
-    borrow_rate_bi character varying(80),
     available_liquidity_bi character varying(80),
     total_borrowed_bi character varying(80),
     cumulative_borrowed_bi character varying(80),
     total_repaid_bi character varying(80),
     total_profit_bi character varying(80),
     total_losses_bi character varying(80),
-    borrow_rate double precision,
     available_liquidity double precision,
     total_borrowed double precision,
     cumulative_borrowed double precision,
@@ -53,9 +51,7 @@ CREATE TABLE credit_manager_stats (
     total_losses double precision,
     unique_users integer,
     available_liquidity_bi varchar(80),
-    available_liquidity double precision,
-    borrow_rate double precision,
-    borrow_rate_bi varchar(80)
+    available_liquidity double precision
 );
 ALTER TABLE ONLY credit_manager_stats
     ADD CONSTRAINT credit_manager_stats_block_num_fkey FOREIGN KEY (block_num) REFERENCES blocks(id) ON DELETE CASCADE;

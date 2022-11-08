@@ -53,6 +53,7 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[stri
 	updates := map[int64]map[string]bool{}
 	var updatedChainlinkSym []string
 	for chainlinkSym, blockNums := range q.ChainlinkSymToUpdatedBlocks {
+		updatedChainlinkSym = append(updatedChainlinkSym, chainlinkSym)
 		//
 		for _, dependentSym := range q.ChainlinkSymToQueryPFSyms[chainlinkSym] {
 			depAddr := q.repo.GetAddressBySymbol(dependentSym)
@@ -163,7 +164,7 @@ func (q *QueryPFDependencies) extraPriceForQueryFeed() []*schemas.PriceFeed {
 	wg.Wait()
 	pfs := q.depBasedExtraPrices
 	q.depBasedExtraPrices = nil
-	log.Info(len(pfs), " extra price feed fetched due to chainlink updates")
+	log.Info(len(pfs), "extra price feed fetched due to chainlink updates")
 	return pfs
 }
 
