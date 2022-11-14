@@ -42,3 +42,10 @@ CREATE TABLE uniswap_pools (
     token character varying(42) PRIMARY KEY,
     pool_v2 character varying(42),
     pool_v3 character varying(42));
+
+
+CREATE TABLE token_current_price (
+    token varchar(42) PRIMARY KEY,
+    price DOUBLE PRECISION,
+    price_bi varchar(80),
+    block_num integer);

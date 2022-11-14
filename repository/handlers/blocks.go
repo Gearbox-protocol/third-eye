@@ -24,6 +24,7 @@ type BlocksRepo struct {
 	// for prevently duplicate query price feed already with same price for a token
 	// token to feed
 	prevPriceFeeds map[bool]map[string]map[string]*schemas.PriceFeed
+	currentPrices  map[string]*schemas.TokenCurrentPrice
 	mu             *sync.Mutex
 	client         core.ClientI
 	db             *gorm.DB
@@ -34,6 +35,7 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config) *Blocks
 		blocks:         make(map[int64]*schemas.Block),
 		blockDatePairs: map[int64]*schemas.BlockDate{},
 		prevPriceFeeds: map[bool]map[string]map[string]*schemas.PriceFeed{},
+		currentPrices:  map[string]*schemas.TokenCurrentPrice{},
 		//
 		mu:     &sync.Mutex{},
 		client: client,
@@ -65,6 +67,17 @@ func (repo *BlocksRepo) Save(tx *gorm.DB) {
 	err := tx.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(blocksToSync, 100).Error
+	log.CheckFatal(err)
+
+	// current prices to updated
+	var currentPricesToSync []*schemas.TokenCurrentPrice
+	for _, tokenPrice := range repo.currentPrices {
+		tokenPrice.Updated = false
+		currentPricesToSync = append(currentPricesToSync, tokenPrice)
+	}
+	err = tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).CreateInBatches(currentPricesToSync, 100).Error
 	log.CheckFatal(err)
 }
 
@@ -182,7 +195,26 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 		}
 	}
 	repo.addPrevPriceFeed(pf)
+	repo.setTokenCurrentPrice(pf)
 	repo._setAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
+}
+
+func (repo *BlocksRepo) setTokenCurrentPrice(pf *schemas.PriceFeed) {
+	if pf.IsPriceInUSD {
+		var lastBlockNum int64
+		if repo.currentPrices[pf.Token] != nil {
+			lastBlockNum = repo.currentPrices[pf.Token].BlockNum
+		}
+		if lastBlockNum < pf.BlockNumber {
+			repo.currentPrices[pf.Token] = &schemas.TokenCurrentPrice{
+				PriceBI:  pf.PriceBI,
+				Price:    pf.Price,
+				BlockNum: lastBlockNum,
+				Token:    pf.Token,
+				Updated:  true,
+			}
+		}
+	}
 }
 
 func (repo *BlocksRepo) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
