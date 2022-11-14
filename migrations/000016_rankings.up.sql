@@ -4,19 +4,21 @@ drop procedure IF EXISTS rankings;
 drop FUNCTION  IF EXISTS ranking_by_period;
 create OR REPLACE FUNCTION ranking_by_period(BIGINT)
 returns table (
-		old_collateral DOUBLE PRECISION,
-		old_profit DOUBLE PRECISION,
 		old_total DOUBLE PRECISION,
 		old_collateral_underlying DOUBLE PRECISION,
 		old_profit_underlying DOUBLE PRECISION,
         sid varchar(100),
-		new_collateral DOUBLE PRECISION,
-		new_profit DOUBLE PRECISION,
 		new_total DOUBLE PRECISION,
 		new_collateral_underlying DOUBLE PRECISION,
 		new_profit_underlying DOUBLE PRECISION,
         session_id varchar(100),
         current_block integer,
+
+		old_collateral DOUBLE PRECISION,
+		old_profit DOUBLE PRECISION,
+		new_collateral DOUBLE PRECISION,
+		new_profit DOUBLE PRECISION,
+
 		profit_usd DOUBLE PRECISION,
         collateral_usd DOUBLE PRECISION,
 		profit_underlying DOUBLE PRECISION,
@@ -27,20 +29,32 @@ language plpgsql
 as $$
 DECLARE
 BEGIN
-    RETURN QUERY SELECT *, (t2.new_profit-t1.old_profit) profit_usd, t1.old_collateral collateral_usd,
-		(t2.new_profit_underlying-t1.old_profit_underlying) profit_underlying, t1.old_collateral_underlying collateral_underlying,
-			(t2.new_profit-t1.old_profit)/(t1.old_collateral) roi  FROM
-        (SELECT distinct on (d.session_id) d.collateral_usd old_collateral, d.profit_usd as old_profit, d.total_value_usd old_total,
+    RETURN QUERY 
+	WITH cm_prices AS (SELECT cm.address credit_manager, price FROM 
+		token_current_price tcp JOIN credit_managers cm ON cm.underlying_token = tcp.token)
+	SELECT t1.*, t2.*, 
+
+		price * t1.old_collateral_underlying old_collateral, price * t1.old_profit_underlying old_profit,
+		price * t2.new_collateral_underlying new_collateral, price * t2.new_profit_underlying new_profit,
+
+		(t2.new_profit_underlying-t1.old_profit_underlying) * price profit_usd, t1.old_collateral_underlying*price collateral_usd,
+		(t2.new_profit_underlying-t1.old_profit_underlying) profit_underlying, t1.old_collateral_underlying collateral_underlying, 
+
+		(t2.new_profit_underlying-t1.old_profit_underlying)/(t1.old_collateral_underlying) roi  FROM
+
+        (SELECT distinct on (d.session_id) d.total_value_usd old_total,
 			d.collateral_underlying old_collateral_underlying, d.profit_underlying as old_profit_underlying,
             d.session_id sid
 			FROM debts d WHERE block_num >= (SELECT min(id) FROM blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
             order by d.session_id, block_num) t1
-        JOIN (SELECT distinct on (d.session_id) d.collateral_usd new_collateral, d.profit_usd as new_profit, d.total_value_usd new_total,
+        JOIN (SELECT distinct on (d.session_id) d.total_value_usd new_total,
 			d.collateral_underlying new_collateral_underlying, d.profit_underlying as new_profit_underlying,
 			d.session_id, block_num current_block
 			FROM debts d WHERE block_num >= (SELECT min(id) FROM blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
             order by d.session_id, block_num DESC) t2
-            ON t1.sid = t2.session_id;
+            ON t1.sid = t2.session_id
+		JOIN credit_sessions cs ON cs.id = t2.session_id
+		LEFT JOIN cm_prices ON cm_prices.credit_manager = cs.credit_manager;
 END $$;
 
 CREATE  MATERIALIZED VIEW ranking_7d AS

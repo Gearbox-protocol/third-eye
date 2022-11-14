@@ -49,3 +49,5 @@ CREATE TABLE token_current_price (
     price DOUBLE PRECISION,
     price_bi varchar(80),
     block_num integer);
+
+-- insert into token_current_price(token, price, block_num) select distinct on (token)  token, price, block_num from price_feeds order by token, block_num DESC;
