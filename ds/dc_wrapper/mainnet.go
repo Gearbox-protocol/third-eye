@@ -105,7 +105,10 @@ func (dc *MainnetDC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (dcv
 func (mainnetDC *MainnetDC) GetCreditManagerData(opts *bind.CallOpts,
 	_creditManager common.Address, borrower common.Address) (dcv2.CreditManagerData, error) {
 	data, err := mainnetDC.dc.GetCreditManagerData(opts, _creditManager, borrower)
-	log.CheckFatal(err)
+	if err != nil {
+		log.Fatal(err, " for cm, borrower: ", _creditManager, borrower)
+	}
+
 	latestFormat := dcv2.CreditManagerData{
 		Addr:               data.Addr,
 		Underlying:         data.UnderlyingToken,

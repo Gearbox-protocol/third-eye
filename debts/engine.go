@@ -295,7 +295,16 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		SessionId: sessionId,
 	}
 	var notMatched bool
-	profile := ds.DebtProfile{CreditSessionSnapshot: sessionSnapshot}
+	profile := ds.DebtProfile{CreditSessionSnapshot: sessionSnapshot, Tokens: map[string]ds.TokenDetails{}}
+	for tokenAddr, details := range *sessionSnapshot.Balances {
+		if details.IsAllowed {
+			profile.Tokens[tokenAddr] = ds.TokenDetails{
+				Price:             eng.GetTokenLastPrice(tokenAddr, session.Version),
+				Decimals:          eng.repo.GetToken(tokenAddr).Decimals,
+				TokenLiqThreshold: eng.allowedTokensThreshold[session.CreditManager][tokenAddr],
+			}
+		}
+	}
 
 	// use data compressor if debt check is enabled
 	if eng.config.DebtDCMatching {
