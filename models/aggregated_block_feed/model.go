@@ -38,7 +38,8 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 				ContractName: ds.AggregatedBlockFeed,
 				Client:       client,
 			},
-			LastSync: math.MaxInt64,
+			// if no yearn feed is added , then lastSync = math.MaxInt64 can overflow.
+			LastSync: math.MaxInt64 - 1,
 		},
 		Repo:      repo,
 		OnlyQuery: true,

@@ -33,6 +33,7 @@ drop table treasury_transfers;
 drop table uniswap_chainlink_relations;
 drop table uniswap_pool_prices;
 drop table uniswap_pools;
+drop table token_current_price;
 
 drop materialized view ranking_30d;
 drop materialized view ranking_7d;

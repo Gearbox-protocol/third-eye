@@ -150,7 +150,7 @@
       discoveredAt: 0,
       'error': '',
       firstLogAt: 0,
-      lastSync: 10,
+      lastSync: 9223372036854776000,
       type: 'AggregatedBlockFeed',
       version: 0,
     },

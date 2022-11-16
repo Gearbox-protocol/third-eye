@@ -14,9 +14,12 @@ import (
 
 // ignoring dependencies for v1
 type QueryPFDependencies struct {
-	ChainlinkSymToQueryPFSyms   map[string][]string
+	// chainlink symbol to dependent query pf
+	ChainlinkSymToQueryPFSyms map[string][]string
+	// chainlink symbol updated at these blocks, we need to fetch price for dependent query pf at these block numbers
 	ChainlinkSymToUpdatedBlocks map[string][]int64
-	depGraph                    map[string][]string
+	// yearn/curve symbol to chainlink dependency symbol
+	depGraph map[string][]string
 	// blocks to remove
 	aggregatedFetchedBlocks []int64
 	// yearn feed prices to be ordered
@@ -138,8 +141,9 @@ func getInvertDependencyGraph(depGraph map[string][]string) map[string][]string 
 }
 
 func (q *QueryPFDependencies) checkInDepGraph(token, oracle string, blockNum int64) {
-	if q.depGraph[token] == nil {
-		log.Fatal("Dep for query based price feed(%s) not found for token(%s) at %d", oracle, token, blockNum)
+	depQueryPFSym := q.repo.GetToken(token).Symbol
+	if q.depGraph[depQueryPFSym] == nil {
+		log.Fatalf("Dep for query based price feed(%s) not found for token(%s) at %d", oracle, depQueryPFSym, blockNum)
 	}
 }
 
