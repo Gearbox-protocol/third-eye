@@ -91,7 +91,12 @@ func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 		pnlOnCM:         NewPnlCM(),
 	}
-	obj.addAdaptersAndReturnDCData(obj.LastSync)
+	// cm is registered with dataCompressor after discoveredAt, so we can get adapters for blockNum more than discoveredAt
+	blockToFetchCMData := obj.DiscoveredAt
+	if blockToFetchCMData < obj.LastSync {
+		blockToFetchCMData = obj.LastSync
+	}
+	obj.addAdaptersAndReturnDCData(blockToFetchCMData)
 	obj.GetAbi()
 	switch obj.GetVersion() {
 	case 1:

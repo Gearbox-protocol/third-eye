@@ -1,6 +1,6 @@
 module github.com/Gearbox-protocol/third-eye
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Gearbox-protocol/sdk-go v0.0.0-20221114103509-58a88605901e
@@ -10,6 +10,7 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/fx v1.13.1
+	golang.org/x/exp v0.0.0-20221114191408-850992195362
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/gorm v1.22.2
 )
@@ -52,7 +53,7 @@ require (
 	go.uber.org/multierr v1.5.0 // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220330033206-e17cdc41300f // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect

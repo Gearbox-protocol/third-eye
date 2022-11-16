@@ -106,7 +106,7 @@ func (mainnetDC *MainnetDC) GetCreditManagerData(opts *bind.CallOpts,
 	_creditManager common.Address, borrower common.Address) (dcv2.CreditManagerData, error) {
 	data, err := mainnetDC.dc.GetCreditManagerData(opts, _creditManager, borrower)
 	if err != nil {
-		log.Fatal(err, " for cm, borrower: ", _creditManager, borrower)
+		log.Fatalf("(%s) for cm(%s), borrower(%s) for block %d ", err, _creditManager, borrower, opts.BlockNumber)
 	}
 
 	latestFormat := dcv2.CreditManagerData{
