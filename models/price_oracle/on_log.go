@@ -83,6 +83,8 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 					return ds.CurvePF, nil
 				} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
 					return ds.YearnPF, nil
+				} else if strings.Contains(description, "Bounded") {
+					return ds.YearnPF, nil
 				} else if strings.Contains(description, "Zero pricefeed") {
 					return ds.ZeroPF, nil
 				} else if strings.Contains(description, "ZERO (one) priceFeed") {
