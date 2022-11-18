@@ -190,7 +190,7 @@ func (DummyRepo) GetYearnFeedAddrs() []string {
 }
 
 // has mutex lock
-func (DummyRepo) AddNewPriceOracleEvent(*schemas.TokenOracle) {
+func (DummyRepo) AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool) {
 }
 func (DummyRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
 	return nil

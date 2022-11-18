@@ -35,7 +35,7 @@ type RepositoryI interface {
 	GetTokenOracles() map[int16]map[string]*schemas.TokenOracle
 	GetOracleForV2Token(token string) *schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
-	AddNewPriceOracleEvent(*schemas.TokenOracle)
+	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool)
 	//
 	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs

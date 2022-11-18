@@ -39,6 +39,18 @@ func (repo *MainnetDC) AddCreditManagerToFilter(cmAddr, cfAddr string) {
 	repo.creditManagerToFilter[common.HexToAddress(cmAddr)] = common.HexToAddress(cfAddr)
 }
 
+func CallFuncWithExtraBytes(client core.ClientI, sigStr string, to common.Address, blockNum int64, extra []byte) ([]byte, error) {
+	data, err := hex.DecodeString(sigStr) // enabledTokens
+	log.CheckFatal(err)
+	data = append(data, extra...)
+	//
+	msg := ethereum.CallMsg{
+		To:   &to,
+		Data: data,
+	}
+	return client.CallContract(context.TODO(), msg, big.NewInt(blockNum))
+}
+
 func getMask(client core.ClientI, blockNum int64, cfAddr, accountAddr common.Address) *big.Int {
 	// abi := core.GetAbi("CreditFilter")
 	// data, err := abi.Pack("enabledTokens", accountAddr)
@@ -52,20 +64,9 @@ func getMask(client core.ClientI, blockNum int64, cfAddr, accountAddr common.Add
 	// 	log.Fatalf("Getting mask for addr(%s) on cm(%s) failed", accountAddr, cfAddr)
 	// }
 	// return new(big.Int).SetBytes(results[0].ReturnData)
-	data := make([]byte, 4+32)
-	sig, err := hex.DecodeString("b451cecc") // enabledTokens
-	log.CheckFatal(err)
-	copy(data, sig)
-	for i, b := range accountAddr.Bytes() {
-		data[4+12+i] = b
-	}
-	//
-	data = append(data)
-	msg := ethereum.CallMsg{
-		To:   &cfAddr,
-		Data: data,
-	}
-	returnData, err := client.CallContract(context.TODO(), msg, big.NewInt(blockNum))
+	extra := make([]byte, 12)
+	extra = append(extra, accountAddr.Bytes()...)
+	returnData, err := CallFuncWithExtraBytes(client, "b451cecc", cfAddr, blockNum, extra)
 	log.CheckFatal(err)
 	return new(big.Int).SetBytes(returnData)
 

@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -40,7 +41,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		token := newPriceFeedEvent.Token.Hex()
 		oracle := newPriceFeedEvent.PriceFeed.Hex()
 		version := mdl.GetVersion()
-		priceFeedType, err := mdl.checkPriceFeedContract(blockNum, oracle)
+		priceFeedType, bounded, err := mdl.checkPriceFeedContract(blockNum, oracle)
 		if err != nil {
 			log.Fatalf("Oracle %s, err: %s", oracle, err)
 		}
@@ -54,17 +55,20 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 				BlockNumber: blockNum,
 				Version:     version,
 				FeedType:    priceFeedType,
-			})
+			}, bounded)
 		default:
 			log.Fatal("Unknown PriceFeed type", priceFeedType)
 		}
 	}
 }
 
-func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string) (string, error) {
+func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string) (string, bool, error) { // type, bounded , error
+	if oracle == "0xE26FB07da646138553f635c94E2a345270240e30" { // for goerli , the chainlink bounded oracle doesn't have phaseId method // LUSD price oracle
+		return ds.ChainlinkPriceFeed, true, nil
+	}
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracle), mdl.Client)
 	if err != nil {
-		return ds.UnknownPF, err
+		return ds.UnknownPF, false, err
 	}
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(discoveredAt),
@@ -74,30 +78,33 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 		if utils.Contains([]string{"VM execution error.", "execution reverted"}, err.Error()) {
 			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 			if err != nil {
-				return ds.UnknownPF, err
+				return ds.UnknownPF, false, err
 			}
 			_, err = yearnContract.YVault(opts)
 			if err != nil {
 				description, err := yearnContract.Description(opts)
 				if strings.Contains(description, "CurveLP pricefeed") {
-					return ds.CurvePF, nil
+					return ds.CurvePF, false, nil
 				} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
-					return ds.YearnPF, nil
+					return ds.YearnPF, false, nil
 				} else if strings.Contains(description, "Bounded") {
-					return ds.YearnPF, nil
+					return ds.ChainlinkPriceFeed, true, nil
 				} else if strings.Contains(description, "Zero pricefeed") {
-					return ds.ZeroPF, nil
+					return ds.ZeroPF, false, nil
 				} else if strings.Contains(description, "ZERO (one) priceFeed") {
-					return ds.AlmostZeroPF, nil
+					return ds.AlmostZeroPF, false, nil
 				} else {
 					log.Info(description, oracle)
-					return ds.UnknownPF, fmt.Errorf("neither chainlink nor yearn nor curve price feed %v, got %s", err, description)
+					return ds.UnknownPF, false, fmt.Errorf("neither chainlink nor yearn nor curve price feed %v, got %s", err, description)
 				}
 			}
-			return ds.YearnPF, nil
+			return ds.YearnPF, false, nil
 		}
 	} else {
-		return ds.ChainlinkPriceFeed, nil
+		description, err := dc_wrapper.CallFuncWithExtraBytes(mdl.Client, "7284e416", common.HexToAddress(oracle), discoveredAt, nil)
+		return ds.ChainlinkPriceFeed,
+			(err == nil) && strings.Contains(string(description), "Bounded"),
+			nil
 	}
-	return ds.UnknownPF, fmt.Errorf("PriceFeed type not found")
+	return ds.UnknownPF, false, fmt.Errorf("PriceFeed type not found")
 }

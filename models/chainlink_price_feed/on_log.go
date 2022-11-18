@@ -17,6 +17,7 @@ func (mdl *ChainlinkPriceFeed) OnLog(txLog types.Log) {
 }
 func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 	var blockNums []int64
+	upperLimit := mdl.upperLimit()
 	for txLogInd, txLog := range txLogs {
 		var priceFeed *schemas.PriceFeed
 		blockNum := int64(txLog.BlockNumber)
@@ -41,6 +42,10 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			answerBI, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
 			if !ok {
 				log.Fatal("answer parsing failed", txLog.Topics[1].Hex())
+			}
+			// for bounded oracle, if answerBI is more than upperLimit, set answer to upperLimit
+			if upperLimit.Cmp(new(big.Int)) != 0 && answerBI.Cmp(upperLimit) > 0 {
+				answerBI = upperLimit
 			}
 			isPriceInUSD := mdl.GetVersion() > 1
 			var decimals int8 = 18 // for eth

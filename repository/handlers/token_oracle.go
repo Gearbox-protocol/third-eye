@@ -120,7 +120,7 @@ func (repo *TokenOracleRepo) DirectlyAddTokenOracle(newTokenOracle *schemas.Toke
 }
 
 // called from chainlink feed and price oracle
-func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.TokenOracle) {
+func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.TokenOracle, bounded bool) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// SPECIAL CASE
@@ -174,6 +174,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 			newTokenOracle.BlockNumber,
 			repo.client, repo.repo,
 			newTokenOracle.Version,
+			bounded,
 		)
 		newTokenOracle.Feed = obj.Address
 		//
