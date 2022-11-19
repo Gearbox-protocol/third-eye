@@ -1,25 +1,21 @@
 package chainlink_price_feed
 
 import (
-	"context"
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type ChainlinkPriceFeed struct {
 	*ds.SyncAdapter
-	contractETH   *priceFeed.PriceFeed
 	Token         string
-	Oracle        string
+	MainAgg       *ChainlinkMainAgg
 	prevPriceFeed *schemas.PriceFeed
 }
 
@@ -55,12 +51,6 @@ func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core
 		syncAdapter,
 		true,
 	)
-	// repo.AddTokenOracle(&schemas.TokenOracle{
-	// 	Token:       token,
-	// 	Oracle:      adapter.Oracle,
-	// 	Feed:        adapter.Address,
-	// 	BlockNumber: discoveredAt,
-	// 	Version:     version})
 	// repo.AddUniPoolsForToken(adapter.DiscoveredAt, token)
 	return adapter
 }
@@ -74,20 +64,14 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 	if !ok {
 		log.Fatal("Get token addr(%v) for oracle(%s) feed(%s)", adapter.Details["token"], oracleAddr, adapter.GetAddress())
 	}
-
-	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracleAddr), adapter.Client)
-	if err != nil {
-		log.Fatal(err)
-	}
 	obj := &ChainlinkPriceFeed{
 		SyncAdapter: adapter,
-		contractETH: pfContract,
+		MainAgg:     NewMainAgg(adapter.Client, common.HexToAddress(oracleAddr)),
 		Token:       token,
-		Oracle:      oracleAddr,
 	}
-	// feed address is emptyz
+	// feed address is empty
 	if adapter.Address == "" {
-		pfAddr, _ := obj.GetPriceFeedAddr(adapter.DiscoveredAt)
+		pfAddr, _ := obj.MainAgg.GetPriceFeedAddr(adapter.DiscoveredAt)
 		obj.SetAddress(pfAddr.Hex())
 	}
 	// get the last log before the chainlink feed is added to price oracle.
@@ -108,18 +92,18 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 }
 
 func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
-	newPriceFeed, newPhaseId := mdl.GetPriceFeedAddr(syncedTill)
+	newPriceFeed, newPhaseId := mdl.MainAgg.GetPriceFeedAddr(syncedTill)
 	if newPriceFeed != common.HexToAddress(mdl.Address) && newPriceFeed != core.NULL_ADDR {
 		var discoveredAt int64
 		if newPhaseId != -1 {
-			discoveredAt = mdl.GetFeedUpdateBlockUsingPhaseId(uint16(newPhaseId), mdl.LastSync+1, syncedTill)
+			discoveredAt = mdl.MainAgg.GetFeedUpdateBlockUsingPhaseId(uint16(newPhaseId), mdl.LastSync+1, syncedTill)
 		} else {
-			discoveredAt = mdl.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
+			discoveredAt = mdl.MainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
 		}
 		mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 			Token:       mdl.Token,
-			Oracle:      mdl.Oracle,
-			Feed:        mdl.Oracle, // feed is same as oracle
+			Oracle:      mdl.MainAgg.Addr.Hex(),
+			Feed:        mdl.MainAgg.Addr.Hex(), // feed is same as oracle
 			BlockNumber: discoveredAt,
 			Version:     mdl.GetVersion(),
 			FeedType:    ds.ChainlinkPriceFeed,
@@ -135,59 +119,4 @@ func (mdl *ChainlinkPriceFeed) upperLimit() *big.Int {
 	}
 	upperLimit := details["upperLimit"].(string)
 	return utils.StringToInt(upperLimit)
-}
-
-func (mdl *ChainlinkPriceFeed) GetFeedUpdateBlockUsingPhaseId(newPhaseId uint16, from, to int64) int64 {
-	if from == to {
-		return from
-	}
-	midBlockNum := (from + to) / 2
-	phaseId, err := mdl.contractETH.PhaseId(&bind.CallOpts{BlockNumber: big.NewInt(midBlockNum)})
-	log.CheckFatal(err)
-	if phaseId != newPhaseId {
-		return mdl.GetFeedUpdateBlockUsingPhaseId(newPhaseId, midBlockNum+1, to)
-	} else {
-		return mdl.GetFeedUpdateBlockUsingPhaseId(newPhaseId, from, midBlockNum)
-	}
-}
-
-func (mdl *ChainlinkPriceFeed) GetFeedUpdateBlockAggregator(newAggAddr common.Address, from, to int64) int64 {
-	if from == to {
-		return from
-	}
-	midBlockNum := (from + to) / 2
-	aggAddr, err := mdl.contractETH.Aggregator(&bind.CallOpts{BlockNumber: big.NewInt(midBlockNum)})
-	log.CheckFatal(err)
-	if aggAddr != newAggAddr {
-		return mdl.GetFeedUpdateBlockAggregator(newAggAddr, midBlockNum+1, to)
-	} else {
-		return mdl.GetFeedUpdateBlockAggregator(newAggAddr, from, midBlockNum)
-	}
-}
-
-func (mdl *ChainlinkPriceFeed) GetPriceFeedAddr(blockNum int64) (common.Address, int16) {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-	phaseId, err := mdl.contractETH.PhaseId(opts)
-	if err != nil {
-		newPriceFeed, err2 := mdl.contractETH.Aggregator(opts)
-		log.CheckFatal(err2)
-		return newPriceFeed, -1
-	}
-	var newPriceFeed common.Address
-	newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, false)
-	if err != nil {
-		chainId, err2 := mdl.Client.ChainID(context.TODO())
-		log.CheckFatal(err2)
-		if chainId.Int64() == 42 || chainId.Int64() == 5 { // for goerli and kovan test the phaseaggregator method is without 's'
-			newPriceFeed, err = mdl.contractETH.PhaseAggregators(opts, phaseId, true)
-			// try with method name phaseAggregator instead of phaseAggregators
-			// true is sets typo=true so that phaseAggregator method is used.
-		}
-		if err != nil {
-			log.Fatal(mdl.Address, mdl.Details, mdl.GetVersion(), err)
-		}
-	}
-	return newPriceFeed, int16(phaseId)
 }

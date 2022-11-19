@@ -19,9 +19,10 @@ const (
 )
 
 const (
-	UnknownPF    = "UnknownPF"
-	YearnPF      = "YearnPF"
-	CurvePF      = "CurvePF"
-	ZeroPF       = "ZeroPF"
-	AlmostZeroPF = "AlmostZeroPF"
+	UnknownPF            = "UnknownPF"
+	YearnPF              = "YearnPF"
+	CurvePF              = "CurvePF"
+	ZeroPF               = "ZeroPF"
+	CompositeChainlinkPF = "CompositeChainlinkPF"
+	AlmostZeroPF         = "AlmostZeroPF"
 )

@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/composite_chainlink"
 	"gorm.io/gorm"
 )
 
@@ -192,6 +193,21 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 		if newTokenOracle.Token != "0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0" {
 			repo.adapters.AddSyncAdapter(obj)
 		}
+	case ds.CompositeChainlinkPF:
+		obj := composite_chainlink.NewCompositeChainlinkPF(
+			newTokenOracle.Token,
+			newTokenOracle.Oracle,
+			newTokenOracle.BlockNumber,
+			repo.client, repo.repo,
+			newTokenOracle.Version,
+		)
+		newTokenOracle.Feed = obj.Address
+		//
+		if repo.alreadyActiveFeedForToken(newTokenOracle) {
+			return
+		}
+		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
+		repo.adapters.AddSyncAdapter(obj)
 	default:
 		log.Fatal(newTokenOracle.FeedType, "not handled")
 	}

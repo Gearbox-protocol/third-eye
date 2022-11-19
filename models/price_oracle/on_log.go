@@ -47,7 +47,9 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		}
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account
-		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF:
+		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF, ds.CompositeChainlinkPF:
+			log.Info("##")
+			log.Info(token)
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 				Token:       token,
 				Oracle:      oracle,
@@ -83,7 +85,9 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 			_, err = yearnContract.YVault(opts)
 			if err != nil {
 				description, err := yearnContract.Description(opts)
-				if strings.Contains(description, "CurveLP pricefeed") {
+				if strings.Contains(description, "ETH/USD Composite") {
+					return ds.CompositeChainlinkPF, false, nil
+				} else if strings.Contains(description, "CurveLP pricefeed") {
 					return ds.CurvePF, false, nil
 				} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
 					return ds.YearnPF, false, nil

@@ -61,8 +61,33 @@ type SyncAdapterI interface {
 	GetDetailsByKey(key string) string
 	GetDetails() core.Json
 	GetVersion() int16
+	GetSecondayAddrs() []common.Address
 }
 
+func (s SyncAdapter) GetSecondayAddrs() (addrs []common.Address) {
+	if s.Details == nil {
+		return
+	}
+	secAddrs := s.Details["secAddrs"]
+	if secAddrs == nil {
+		return
+	}
+	m := secAddrs.(map[string]interface{})
+	for _, v := range m {
+		addrs = append(addrs, InterfaceToAddr(v))
+	}
+	return
+}
+
+func InterfaceToAddr(v interface{}) common.Address {
+	switch obj := v.(type) {
+	case string:
+		return common.HexToAddress(obj)
+	case common.Address:
+		return obj
+	}
+	panic("")
+}
 func (s *SyncAdapter) SetDetails(obj interface{}) {
 }
 func (s *SyncAdapter) WillBeSyncedTo(blockNum int64) {
