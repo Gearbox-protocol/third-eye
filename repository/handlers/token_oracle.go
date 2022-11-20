@@ -201,7 +201,6 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 			repo.client, repo.repo,
 			newTokenOracle.Version,
 		)
-		newTokenOracle.Feed = obj.Address
 		//
 		if repo.alreadyActiveFeedForToken(newTokenOracle) {
 			return

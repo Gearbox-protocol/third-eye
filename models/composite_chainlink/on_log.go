@@ -3,7 +3,6 @@ package composite_chainlink
 import (
 	"math"
 	"math/big"
-	"strconv"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -42,7 +41,6 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 		}
 	}
 	targetETHPF := mdl.getAddrFromDetails("target")
-	lastInds := map[common.Address]int{}
 	for txLogInd, txLog := range txLogs {
 		blockNum := int64(txLog.BlockNumber)
 		if breakPoint <= blockNum {
@@ -50,23 +48,10 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 		}
 		switch txLog.Topics[0] {
 		case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
-			// there might be 2 AnswerUpdated events for same block, use the last one
-			// example
-			// https://goerli.etherscan.io/tx/0x03308a0b6f024e6c35a92e7708ab5a72322f733d22427d51624862d82ca1983a
-			// https://goerli.etherscan.io/tx/0x38e5551ae639d22554072ba1a53e026a0858c2cfedcedb83e5cc63bb1c8b8ea8
-			// on mainnet
-			// https://etherscan.io/tx/0xb3aaa84cac23a30ab20cbd254b2297840f23057faf1f05e7655304be6cffc19e#eventlog
-			// https://etherscan.io/tx/0x3112f0a42f288ca56a2c8f8003355ad20e87e1f23c3ffa991633f6bb25eb8c58#eventlog
-			lastInd, exists := lastInds[txLog.Address]
-			if exists && int64(txLogs[lastInd].BlockNumber) == blockNum {
-				continue
-			}
-			lastInds[txLog.Address] = txLogInd
-			//
-			roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
-			if err != nil {
-				log.Fatal("TxHash", txLog.TxHash.Hex(), "roundid failed", txLog.Topics[2].Hex())
-			}
+			// roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
+			// if err != nil {
+			// 	log.Fatal("TxHash", txLog.TxHash.Hex(), "roundid failed", txLog.Topics[2].Hex())
+			// }
 			answerBI, ok := new(big.Int).SetString(txLog.Topics[1].Hex()[2:], 16)
 			if !ok {
 				log.Fatal("answer parsing failed", txLog.Topics[1].Hex())
@@ -76,27 +61,32 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 			} else {
 				mdl.ETHUSDPrice = answerBI
 			}
-			answerBI = utils.GetInt64(
-				new(big.Int).Mul(mdl.TokenETHPrice, mdl.ETHUSDPrice),
-				18,
-			)
-			// only usd price feed
-			priceFeed := &schemas.PriceFeed{
-				BlockNumber:  blockNum,
-				Token:        mdl.Token,
-				Feed:         mdl.Address,
-				RoundId:      roundId,
-				PriceBI:      (*core.BigInt)(answerBI),
-				Price:        utils.GetFloat64Decimal(answerBI, 8),
-				IsPriceInUSD: true,
+			// there might be 2 AnswerUpdated events for same block, use the last one
+			// example
+			// https://goerli.etherscan.io/tx/0x03308a0b6f024e6c35a92e7708ab5a72322f733d22427d51624862d82ca1983a
+			// https://goerli.etherscan.io/tx/0x38e5551ae639d22554072ba1a53e026a0858c2cfedcedb83e5cc63bb1c8b8ea8
+			// on mainnet
+			// https://etherscan.io/tx/0xb3aaa84cac23a30ab20cbd254b2297840f23057faf1f05e7655304be6cffc19e#eventlog
+			// https://etherscan.io/tx/0x3112f0a42f288ca56a2c8f8003355ad20e87e1f23c3ffa991633f6bb25eb8c58#eventlog
+			if txLogInd+1 < len(txLogs) && int64(txLogs[txLogInd+1].BlockNumber) == blockNum {
+				continue
 			}
-			mdl.Repo.AddPriceFeed(priceFeed)
+			mdl.addPriceToDB(blockNum)
+			//
+
 		}
 	}
 	if breakPoint != math.MaxInt64 {
 		oracleAddr := common.HexToAddress(mdl.GetDetailsByKey("oracle"))
 		targetPF := getAddrFromRPC(mdl.Client, "targetETH", oracleAddr, breakPoint)
 		basePF := getAddrFromRPC(mdl.Client, "ETHUSD", oracleAddr, breakPoint)
+		mdl.Details["secAddrs"] = map[string]interface{}{
+			"target": targetPF,
+			"base":   basePF,
+		}
+		mdl.setPrices(breakPoint)
+		mdl.addPriceToDB(breakPoint)
+		//
 		txLogs, err := core.Node{Client: mdl.Client}.GetLogs(
 			breakPoint,
 			mdl.WillSyncTill,
@@ -108,6 +98,24 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 		log.CheckFatal(err)
 		mdl.OnLogs(txLogs)
 	}
+}
+
+func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
+	answerBI := utils.GetInt64(
+		new(big.Int).Mul(mdl.TokenETHPrice, mdl.ETHUSDPrice),
+		18,
+	)
+	// only usd price feed
+	priceFeed := &schemas.PriceFeed{
+		BlockNumber:  blockNum,
+		Token:        mdl.Token,
+		Feed:         mdl.Address,
+		RoundId:      0,
+		PriceBI:      (*core.BigInt)(answerBI),
+		Price:        utils.GetFloat64Decimal(answerBI, 8),
+		IsPriceInUSD: true,
+	}
+	mdl.Repo.AddPriceFeed(priceFeed)
 }
 
 func (mdl *CompositeChainlinkPF) OnLog(types.Log) {

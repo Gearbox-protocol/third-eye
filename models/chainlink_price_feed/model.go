@@ -66,9 +66,10 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 	}
 	obj := &ChainlinkPriceFeed{
 		SyncAdapter: adapter,
-		MainAgg:     NewMainAgg(adapter.Client, common.HexToAddress(oracleAddr)),
 		Token:       token,
 	}
+	obj.MainAgg = NewMainAgg(adapter.Client, common.HexToAddress(oracleAddr), obj.upperLimit().Cmp(new(big.Int)) != 0) // isBounded if upperlimit is not 0
+
 	// feed address is empty
 	if adapter.Address == "" {
 		pfAddr, _ := obj.MainAgg.GetPriceFeedAddr(adapter.DiscoveredAt)

@@ -51,3 +51,8 @@ update credit_managers cm set
     total_profit=cms.total_profit,
     unique_users=cms.unique_users from (select distinct on (credit_manager) * from credit_manager_stats order by credit_manager, block_num desc) cms 
     where cm.address= cms.credit_manager;
+
+-- delete from sync_adapters where discovered_at> 32818788;
+-- delete from price_feeds where block_num >  32818788;
+-- delete from token_oracle where block_num > 32818788;
+-- update sync_adapters set last_sync=32818788 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');

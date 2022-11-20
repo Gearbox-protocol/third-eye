@@ -96,7 +96,7 @@ func getDepGraph(chainId int64) map[string][]string {
 		// diesel tokens
 		// "dUSDC":   {"USDC"},
 		// "dDAI":    {"DAI"},
-		// "dWETH":   {"ETH"},
+		// "dWETH":   {"WETH"},
 		// "dwstETH": {"stETH"},
 		// "dWBTC":   {"WBTC"},
 		// 3 crv
@@ -116,9 +116,9 @@ func getDepGraph(chainId int64) map[string][]string {
 		"stkcvxgusd3CRV": {"GUSD", "DAI", "USDC", "USDT"},
 		"cvxgusd3CRV":    {"GUSD", "DAI", "USDC", "USDT"},
 		// steth/eth
-		"steCRV":        {"stETH", "ETH"},
-		"yvCurve-stETH": {"stETH", "ETH"},
-		"cvxsteCRV":     {"stETH", "ETH"},
+		"steCRV":        {"stETH", "WETH"},
+		"yvCurve-stETH": {"stETH", "WETH"},
+		"cvxsteCRV":     {"stETH", "WETH"},
 	}
 	if chainId == 5 {
 		for _, token := range []string{"yvWBTC", "yvCurve-FRAX", "yvDAI", "yvCurve-stETH", "yvUSDC"} {

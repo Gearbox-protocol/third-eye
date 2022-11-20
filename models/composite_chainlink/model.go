@@ -60,6 +60,7 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 		},
 	}
 	compositeMdl.setPrices(discoveredAt)
+	compositeMdl.addPriceToDB(discoveredAt)
 	return compositeMdl
 }
 
@@ -113,9 +114,9 @@ func getAddrFromRPC(client core.ClientI, targetMethod string, oracle common.Addr
 	var sig string
 	switch targetMethod {
 	case "targetETH":
-		sig = ""
+		sig = "f1a75c6e" // targetEthPriceFeed
 	case "ETHUSD":
-		sig = ""
+		sig = "42f6fb29" // ethUsdPriceFeed
 	default:
 		log.Fatal(targetMethod, "not found")
 	}
