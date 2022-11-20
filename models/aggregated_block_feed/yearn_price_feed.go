@@ -19,11 +19,11 @@ import (
 
 type QueryPriceFeed struct {
 	*ds.SyncAdapter
-	contractETH       *yearnPriceFeed.YearnPriceFeed
-	YVaultContract    *yVault.YVault
-	PriceFeedContract *priceFeed.PriceFeed
 	DecimalDivider    *big.Int
 	mu                *sync.Mutex
+	contractETH       *yearnPriceFeed.YearnPriceFeed // for yearn manual price calculation
+	YVaultContract    *yVault.YVault                 //f or yearn manual price calculation
+	PriceFeedContract *priceFeed.PriceFeed
 }
 
 // single querypricefeed can be valid for multiple tokens so we have to maintain tokens within the details
@@ -44,9 +44,11 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 		},
 		Repo: repo,
 	}
-	return NewQueryPriceFeedFromAdapter(
+	mdl := NewQueryPriceFeedFromAdapter(
 		syncAdapter,
 	)
+	mdl.addPriceForToken(token, discoveredAt)
+	return mdl
 }
 
 func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) *QueryPriceFeed {
@@ -196,10 +198,34 @@ func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 			}
 		}
 		obj[token] = []int64{discoveredAt}
+		mdl.addPriceForToken(token, discoveredAt)
 		mdl.Details["token"] = obj
 	} else {
 		log.Fatal("Can't reach this part in the yearn price feed")
 	}
+}
+
+func (mdl *QueryPriceFeed) addPriceForToken(token string, discoveredAt int64) {
+	if mdl.PriceFeedContract == nil {
+		priceFeedContract, err := priceFeed.NewPriceFeed(common.HexToAddress(mdl.Address), mdl.Client)
+		log.CheckFatal(err)
+		mdl.PriceFeedContract = priceFeedContract
+	}
+	data, err := mdl.PriceFeedContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
+	log.CheckFatal(err)
+	var decimals int8 = 8
+	if mdl.GetVersion() == 1 {
+		decimals = 18
+	}
+	mdl.Repo.AddPriceFeed(&schemas.PriceFeed{
+		BlockNumber:  discoveredAt,
+		Feed:         mdl.Address,
+		Token:        token,
+		RoundId:      data.RoundId.Int64(),
+		IsPriceInUSD: mdl.GetVersion() > 1, // for version more than 1
+		PriceBI:      (*core.BigInt)(data.Answer),
+		Price:        utils.GetFloat64Decimal(data.Answer, decimals),
+	})
 }
 
 func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
@@ -227,7 +253,7 @@ func (mdl *QueryPriceFeed) DisableToken(token string, disabledAt int64) {
 		obj = mdl.Details["token"].(map[string]interface{})
 		ints := ConvertToListOfInt64(obj[token])
 		if len(ints) != 1 {
-			log.Fatal("%s's enable block number for pricefeed is malformed: %v", ints)
+			log.Fatalf("%s's enable block number for pricefeed is malformed: %v", token, ints)
 		}
 		ints = append(ints, disabledAt)
 		obj[token] = ints
