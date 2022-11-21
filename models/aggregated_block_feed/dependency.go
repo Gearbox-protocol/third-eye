@@ -116,9 +116,10 @@ func getDepGraph(chainId int64) map[string][]string {
 		"stkcvxgusd3CRV": {"GUSD", "DAI", "USDC", "USDT"},
 		"cvxgusd3CRV":    {"GUSD", "DAI", "USDC", "USDT"},
 		// steth/eth
-		"steCRV":        {"stETH", "WETH"},
-		"yvCurve-stETH": {"stETH", "WETH"},
-		"cvxsteCRV":     {"stETH", "WETH"},
+		"stkcvxsteCRV":  {"stETH", "WETH"}, // phantom convex on mainnet
+		"steCRV":        {"stETH", "WETH"}, // curve steth
+		"yvCurve-stETH": {"stETH", "WETH"}, // yearn
+		"cvxsteCRV":     {"stETH", "WETH"}, // convex token for steth
 	}
 	if chainId == 5 {
 		for _, token := range []string{"yvWBTC", "yvCurve-FRAX", "yvDAI", "yvCurve-stETH", "yvUSDC"} {
