@@ -198,6 +198,8 @@ func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 			}
 		}
 		obj[token] = []int64{discoveredAt}
+		// when token is added to the feed, price at discoveredAt is added for that token
+		// so we can ignore that token is valid at discoveredAt, hence added one to discoveredAt
 		mdl.addPriceForToken(token, discoveredAt)
 		mdl.Details["token"] = obj
 	} else {
@@ -269,7 +271,9 @@ func (mdl *QueryPriceFeed) TokensValidAtBlock(blockNum int64) []string {
 		obj := mdl.Details["token"].(map[string]interface{})
 		for token, info := range obj {
 			ints := ConvertToListOfInt64(info)
-			if ints[0] <= blockNum && (len(ints) == 1 || blockNum < ints[1]) {
+			// when token is added to the feed, price at discoveredAt is added for that token
+			// so we can ignore that token is valid at discoveredAt, hence added one to discoveredAt
+			if ints[0]+1 <= blockNum && (len(ints) == 1 || blockNum < ints[1]) {
 				tokens = append(tokens, token)
 			}
 		}
