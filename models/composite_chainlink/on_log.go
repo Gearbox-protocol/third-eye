@@ -13,34 +13,34 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *CompositeChainlinkPF) breakPoint(tokenType string, mainAgg *cpf.ChainlinkMainAgg) (int64, bool) {
-	newPriceFeed, newPhaseId := mainAgg.GetPriceFeedAddr(mdl.WillSyncTill)
-	previousPF := mdl.getAddrFromDetails(tokenType)
-	if newPriceFeed != previousPF && newPriceFeed != core.NULL_ADDR {
+func (mdl *CompositeChainlinkPF) breakPoint(tokenType string, mainAgg *cpf.ChainlinkMainAgg) (common.Address, int64) {
+	newPhaseAgg, newPhaseId := mainAgg.GetPriceFeedAddr(mdl.WillSyncTill)
+	previousPhaseAgg := mdl.getAddrFromDetails(tokenType)
+	if previousPhaseAgg != newPhaseAgg && newPhaseAgg != core.NULL_ADDR {
 		var discoveredAt int64
 		if newPhaseId != -1 {
 			discoveredAt = mainAgg.GetFeedUpdateBlockUsingPhaseId(uint16(newPhaseId), mdl.LastSync+1, mdl.WillSyncTill)
 		} else {
-			discoveredAt = mainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, mdl.WillSyncTill)
+			discoveredAt = mainAgg.GetFeedUpdateBlockAggregator(newPhaseAgg, mdl.LastSync+1, mdl.WillSyncTill)
 		}
-		return discoveredAt, true
+		return newPhaseAgg, discoveredAt
 	}
-	return 0, false
+	return newPhaseAgg, math.MaxInt64
 }
 
 func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 	var breakPoint int64 = math.MaxInt64
-	if bp, valid := mdl.breakPoint("target", mdl.MainAgg); valid {
-		if bp < breakPoint {
-			breakPoint = bp
-		}
+	//
+	newMainPhaseAgg, bpOne := mdl.breakPoint("targetPhase", mdl.MainAgg)
+	if bpOne < breakPoint {
+		breakPoint = bpOne
 	}
-	if bp, valid := mdl.breakPoint("base", mdl.BaseTokenMainAgg); valid {
-		if bp < breakPoint {
-			breakPoint = bp
-		}
+	newBasePhaseAgg, bpTwo := mdl.breakPoint("basePhase", mdl.BaseTokenMainAgg)
+	if bpTwo < breakPoint {
+		breakPoint = bpTwo
 	}
-	targetETHPF := mdl.getAddrFromDetails("target")
+	//
+	targetETHPF := mdl.getAddrFromDetails("targetPhase")
 	for txLogInd, txLog := range txLogs {
 		blockNum := int64(txLog.BlockNumber)
 		if breakPoint <= blockNum {
@@ -77,20 +77,19 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 		}
 	}
 	if breakPoint != math.MaxInt64 {
-		oracleAddr := common.HexToAddress(mdl.GetDetailsByKey("oracle"))
-		targetPF := getAddrFromRPC(mdl.Client, "targetETH", oracleAddr, breakPoint)
-		basePF := getAddrFromRPC(mdl.Client, "ETHUSD", oracleAddr, breakPoint)
 		mdl.Details["secAddrs"] = map[string]interface{}{
-			"target": targetPF,
-			"base":   basePF,
+			"target":      mdl.getAddrFromDetails("target"),
+			"base":        mdl.getAddrFromDetails("base"),
+			"targetPhase": newMainPhaseAgg,
+			"basePhase":   newBasePhaseAgg,
 		}
 		mdl.setPrices(breakPoint)
-		mdl.addPriceToDB(breakPoint)
+		mdl.addPriceToDB(breakPoint) // H1
 		//
 		txLogs, err := core.Node{Client: mdl.Client}.GetLogs(
-			breakPoint,
+			breakPoint+1, // bcz price for breakPoint already added at H1
 			mdl.WillSyncTill,
-			[]common.Address{targetPF, basePF},
+			[]common.Address{newMainPhaseAgg, newBasePhaseAgg},
 			[][]common.Hash{
 				{core.Topic("AnswerUpdated(int256,uint256,uint256)")},
 			},

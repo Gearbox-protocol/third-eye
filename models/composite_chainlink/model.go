@@ -32,6 +32,10 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 	baseTokenMainAgg := cpf.NewMainAgg(client, ethUSDPF)
 	//
 	identifier := common.BytesToAddress(append(oracleAddr.Bytes(), big.NewInt(discoveredAt).Bytes()...))
+
+	//
+	mainPhaseAgg, _ := mainAgg.GetPriceFeedAddr(discoveredAt)
+	basePhaseAgg, _ := baseTokenMainAgg.GetPriceFeedAddr(discoveredAt)
 	compositeMdl := &CompositeChainlinkPF{
 		BaseTokenMainAgg: baseTokenMainAgg,
 		MainAgg:          mainAgg,
@@ -49,8 +53,10 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 					"oracle": oracle,
 					"token":  token,
 					"secAddrs": map[string]interface{}{
-						"target": tokenETHPF.Hex(),
-						"base":   ethUSDPF.Hex(),
+						"target":      tokenETHPF.Hex(),
+						"base":        ethUSDPF.Hex(),
+						"targetPhase": mainPhaseAgg.Hex(),
+						"basePhase":   basePhaseAgg.Hex(),
 					}},
 				LastSync: discoveredAt,
 				V:        version,
