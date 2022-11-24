@@ -16,7 +16,8 @@ type FacadeAccountActionv2 struct {
 	Data       *schemas.AccountOperation
 	Type       int
 	multicalls []*schemas.AccountOperation
-	//
+	// end if MulticallFinished is emitted / addcollateral is emitted after openCreditAccountWithoutMulticall
+	ended bool
 }
 
 func (v FacadeAccountActionv2) LenofMulticalls() int {
@@ -39,14 +40,14 @@ func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperati
 	if !p.running { // non multicall
 		// open credit account without multicall (done to calculate initialamount)
 		if lastMainAction != nil && lastMainAction.Type == GBv2FacadeOpenEvent &&
-			operation.Action == "AddCollateral(address,address,uint256)" {
+			operation.Action == "AddCollateral(address,address,uint256)" && !lastMainAction.ended {
 			//
 			openEventWithoutMulticall := lastMainAction.Data
 			if len(openEventWithoutMulticall.MultiCall) != 0 {
 				log.Fatal("previous addcollateral for openevent found", utils.ToJson(operation))
 			}
-			openEventWithoutMulticall.MultiCall = make([]*schemas.AccountOperation, 0, 1)
-			openEventWithoutMulticall.MultiCall = append(openEventWithoutMulticall.MultiCall, operation)
+			openEventWithoutMulticall.MultiCall = []*schemas.AccountOperation{operation}
+			lastMainAction.ended = true
 		} else {
 			p.nonMultiCallEvents = append(p.nonMultiCallEvents, operation)
 		}
@@ -82,7 +83,7 @@ func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOpe
 		log.Fatal("Previously started multicall(%s) is not ended for txHash(%s)",
 			utils.ToJson(lastMainAction), txHash)
 	}
-	if lastMainAction == nil || lastMainAction.Type != GBv2FacadeOpenEvent { // for openwithmulticall no need to add another mainAction
+	if lastMainAction == nil || lastMainAction.ended {
 		p.facadeActions = append(p.facadeActions, &FacadeAccountActionv2{
 			Data: startEvent,
 			Type: GBv2FacadeMulticallEvent,
@@ -102,6 +103,10 @@ func (p *MultiCallProcessor) AddCloseOrLiquidateEvent(event *schemas.AccountOper
 func (p *MultiCallProcessor) End() {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
+	}
+	lastMainAction := p.lastMainAction()
+	if lastMainAction != nil {
+		lastMainAction.ended = true
 	}
 	p.running = false
 }

@@ -151,7 +151,9 @@ func (mdl *CreditManager) onNewTxHashV2() {
 func (mdl *CreditManager) validateMulticallEntriesAndProcess(mainCalls []*ds.FacadeCallNameWithMulticall,
 	mainActions []*FacadeAccountActionv2) {
 	if len(mainCalls) > len(mainActions) {
-		log.Fatal("Len of calls can't be more than separated close/liquidate and multicall.")
+		log.Fatalf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
+			len(mainCalls), len(mainActions),
+		)
 	}
 	//
 	var result []*FacadeAccountActionv2
@@ -207,15 +209,15 @@ func (mdl *CreditManager) validateMulticallEntriesAndProcess(mainCalls []*ds.Fac
 			log.Fatal(msg)
 		}
 		//
-		multicallEvents := mainAction.multicalls
-		if !mainCall.SameLenAsEvents(multicallEvents) {
-			log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
-				mainCall.Name, mainCall.LenOfMulticalls(), len(multicallEvents),
-				utils.ToJson(multicallEvents), mainCall.String(), mainEvent.TxHash)
+		eventMulticalls := mainAction.multicalls
+		if !mainCall.SameLenAsEvents(eventMulticalls) {
+			log.Fatalf("%s expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
+				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
+				utils.ToJson(eventMulticalls), mainCall.String(), mainEvent.TxHash)
 		}
 		//
 		// called for  open_with_multicall, multicall, liquidate, close
-		mdl.multiCallHandler(mainEvent, mainAction.multicalls)
+		mdl.multiCallHandler(mainEvent, eventMulticalls)
 	}
 }
 

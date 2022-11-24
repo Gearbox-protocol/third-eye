@@ -29,6 +29,10 @@ type FacadeCallNameWithMulticall struct {
 	TestLen    int                        `json:"len"`
 }
 
+func (a FacadeCallNameWithMulticall) GetMulticalls() []multicall.Multicall2Call {
+	return a.multiCalls
+}
+
 func NewFacadeCallNameWithMulticall(name string, multicalls []multicall.Multicall2Call) *FacadeCallNameWithMulticall {
 	return &FacadeCallNameWithMulticall{
 		Name:       name,
