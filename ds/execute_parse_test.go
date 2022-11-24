@@ -9,7 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 )
 
-func getCallsAndEvents(callSigs []string, eventNames []string) (mainAction MainactionWithMulticall, events []*schemas.AccountOperation) {
+func getCallsAndEvents(callSigs []string, eventNames []string) (mainAction FacadeCallNameWithMulticall, events []*schemas.AccountOperation) {
 	for _, name := range eventNames {
 		events = append(events, &schemas.AccountOperation{Action: name})
 	}
@@ -21,7 +21,7 @@ func getCallsAndEvents(callSigs []string, eventNames []string) (mainAction Maina
 			CallData: bytes,
 		})
 	}
-	mainAction = MainactionWithMulticall{MultiCalls: multicalls}
+	mainAction = FacadeCallNameWithMulticall{multiCalls: multicalls}
 	return
 }
 func TestCmpLenSimple(t *testing.T) {

@@ -6,89 +6,127 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
+const (
+	GBv2FacadeOpenEvent = iota
+	GBv2FacadeMulticallEvent
+	GBv2FacadeCloseEvent
+)
+
+type FacadeAccountActionv2 struct {
+	Data       *schemas.AccountOperation
+	Type       int
+	multicalls []*schemas.AccountOperation
+	//
+}
+
+func (v FacadeAccountActionv2) LenofMulticalls() int {
+	return len(v.multicalls)
+}
+
 type MultiCallProcessor struct {
 	// borrower            string
-	txHash              string
-	running             bool // is the multicall running
-	MultiCallStartEvent *schemas.AccountOperation
-	events              []*schemas.AccountOperation
-	//
+	txHash             string
+	running            bool // is the multicall running
 	nonMultiCallEvents []*schemas.AccountOperation
-	//
-	OpenEvent *schemas.AccountOperation
+	noOfOpens          int
+	facadeActions      []*FacadeAccountActionv2
 }
 
 // edge case it was adds non multicall addCollateral for open credit account
 func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperation) {
+	lastMainAction := p.lastMainAction()
+	//
 	if !p.running { // non multicall
 		// open credit account without multicall (done to calculate initialamount)
-		if p.OpenEvent != nil && operation.Action == "AddCollateral(address,address,uint256)" {
-			if len(p.OpenEvent.MultiCall) != 0 {
-				log.Info("previous addcollateral for openevent found", utils.ToJson(operation))
+		if lastMainAction != nil && lastMainAction.Type == GBv2FacadeOpenEvent &&
+			operation.Action == "AddCollateral(address,address,uint256)" {
+			//
+			openEventWithoutMulticall := lastMainAction.Data
+			if len(openEventWithoutMulticall.MultiCall) != 0 {
+				log.Fatal("previous addcollateral for openevent found", utils.ToJson(operation))
 			}
-			p.OpenEvent.MultiCall = make([]*schemas.AccountOperation, 0, 1)
-			p.OpenEvent.MultiCall = append(p.OpenEvent.MultiCall, operation)
+			openEventWithoutMulticall.MultiCall = make([]*schemas.AccountOperation, 0, 1)
+			openEventWithoutMulticall.MultiCall = append(openEventWithoutMulticall.MultiCall, operation)
 		} else {
 			p.nonMultiCallEvents = append(p.nonMultiCallEvents, operation)
 		}
 	} else { // multicall
 		if operation.TxHash != p.txHash {
-			log.Info("While multicall is running, event(%s) has different txhash %s", utils.ToJson(p.events), operation.TxHash)
+			log.Info("While multicall is running, event(%s) has different txhash %s", utils.ToJson(lastMainAction.multicalls), operation.TxHash)
 		}
-		// operation.Borrower = p.borrower
-		p.events = append(p.events, operation)
+		lastMainAction.multicalls = append(lastMainAction.multicalls, operation)
 	}
 }
+
 func (p *MultiCallProcessor) AddOpenEvent(openEvent *schemas.AccountOperation) {
-	if len(p.events) > 0 {
-		log.Fatal("Previous multicall events not processed", utils.ToJson(p.events))
+	if p.noOfOpens > 0 {
+		log.Fatal("2 opencreditaccount event are in same txhash", utils.ToJson(p.facadeActions), utils.ToJson(openEvent))
 	}
-	if len(p.nonMultiCallEvents) > 0 {
-		log.Fatal("There can't be non multicall events while multicall is running",
-			utils.ToJson(p.nonMultiCallEvents))
-	}
-	if p.OpenEvent != nil {
-		log.Fatal("2 opencreditaccount event are in same txhash", utils.ToJson(p.OpenEvent), utils.ToJson(openEvent))
-	}
-	p.OpenEvent = openEvent
+	p.facadeActions = append(p.facadeActions, &FacadeAccountActionv2{
+		Data: openEvent,
+		Type: GBv2FacadeOpenEvent,
+	})
+	p.noOfOpens++
 }
-func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOperation) {
-	if len(p.events) > 0 {
-		log.Fatalf("Previous multicall events not processed %s", utils.ToJson(p.events))
+
+func (p *MultiCallProcessor) lastMainAction() *FacadeAccountActionv2 {
+	if len(p.facadeActions) > 0 {
+		return p.facadeActions[len(p.facadeActions)-1]
 	}
-	if len(p.nonMultiCallEvents) > 0 {
-		log.Fatal("There can't be non multicall events while multicall is running",
-			utils.ToJson(p.nonMultiCallEvents))
+	return nil
+}
+
+func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOperation) {
+	lastMainAction := p.lastMainAction()
+	if p.running {
+		log.Fatal("Previously started multicall(%s) is not ended for txHash(%s)",
+			utils.ToJson(lastMainAction), txHash)
+	}
+	if lastMainAction == nil || lastMainAction.Type != GBv2FacadeOpenEvent { // for openwithmulticall no need to add another mainAction
+		p.facadeActions = append(p.facadeActions, &FacadeAccountActionv2{
+			Data: startEvent,
+			Type: GBv2FacadeMulticallEvent,
+		})
 	}
 	p.txHash = txHash
-	// p.borrower = borrower
-	p.MultiCallStartEvent = startEvent
 	p.running = true
 }
 
 func (p *MultiCallProcessor) AddCloseOrLiquidateEvent(event *schemas.AccountOperation) {
-	p.MultiCallStartEvent = event
+	p.facadeActions = append(p.facadeActions, &FacadeAccountActionv2{
+		Data: event,
+		Type: GBv2FacadeCloseEvent,
+	})
 }
-func (p *MultiCallProcessor) lenOfMultiCalls() int {
-	return len(p.events)
-}
+
 func (p *MultiCallProcessor) End() {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
 	}
-	if len(p.nonMultiCallEvents) > 0 {
-		log.Fatal("There can't be non multicall events while multicall is running")
-	}
 	p.running = false
 }
-func (p *MultiCallProcessor) PopMulticallEventsV2() []*schemas.AccountOperation {
-	collaterals := p.events
-	p.events = []*schemas.AccountOperation{}
-	return collaterals
+
+// pops
+// - facadeActions are openWithMulticall, closed, liquidated and multicall actions
+// - open call without multicalls
+// open call have the multicalls in them
+// liquidated, closed and directly multicalls are separated entries
+func (p *MultiCallProcessor) PopMainActionsv2() (facadeActions, openEventWithoutMulticall []*FacadeAccountActionv2) {
+	defer func() { p.facadeActions = nil }()
+	p.noOfOpens = 0
+	for _, entry := range p.facadeActions {
+		if entry.Type == GBv2FacadeOpenEvent && entry.Data != nil && // only for open credit accounts without multicalls
+			entry.LenofMulticalls() == 0 {
+			openEventWithoutMulticall = append(openEventWithoutMulticall, entry)
+		} else {
+			facadeActions = append(facadeActions, entry)
+		}
+	}
+	return
 }
 
 func (p *MultiCallProcessor) popNonMulticallEventsV2() []*schemas.AccountOperation {
 	calls := p.nonMultiCallEvents
-	p.nonMultiCallEvents = []*schemas.AccountOperation{}
+	p.nonMultiCallEvents = nil
 	return calls
 }

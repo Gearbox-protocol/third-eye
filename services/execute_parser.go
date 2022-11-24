@@ -193,7 +193,7 @@ func init() {
 // parser functions for v2
 //////////////////////////
 // GetMainEventLogs
-func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.MainactionWithMulticall {
+func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
 	trace := ep.GetTxTrace(txHash)
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
 	if err != nil {
@@ -202,8 +202,8 @@ func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.Mai
 	return data
 }
 
-func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*ds.MainactionWithMulticall, error) {
-	mainEvents := []*ds.MainactionWithMulticall{}
+func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) ([]*ds.FacadeCallNameWithMulticall, error) {
+	mainEvents := []*ds.FacadeCallNameWithMulticall{}
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
 			switch call.Input[2:10] {
@@ -232,7 +232,7 @@ func (ep *ExecuteParser) getMainEvents(call *Call, creditFacade common.Address) 
 	return mainEvents, nil
 }
 
-func getCreditFacadeMainEvent(input string) (*ds.MainactionWithMulticall, error) {
+func getCreditFacadeMainEvent(input string) (*ds.FacadeCallNameWithMulticall, error) {
 	hexData, err := hex.DecodeString(input[2:])
 	if err != nil {
 		return nil, err
@@ -261,10 +261,10 @@ func getCreditFacadeMainEvent(input string) (*ds.MainactionWithMulticall, error)
 			CallData: call.CallData,
 		})
 	}
-	return &ds.MainactionWithMulticall{
-		Name:       method.Name,
-		MultiCalls: multicalls,
-	}, nil
+	return ds.NewFacadeCallNameWithMulticall(
+		ds.FacadeAccountMethodSigToCallName(method.Name),
+		multicalls,
+	), nil
 }
 
 // GetTransfers

@@ -1,5 +1,7 @@
 package ds
 
+import "log"
+
 const (
 	AddressProvider     = "AddressProvider"
 	ContractRegister    = "ContractRegister"
@@ -26,3 +28,28 @@ const (
 	CompositeChainlinkPF = "CompositeChainlinkPF"
 	AlmostZeroPF         = "AlmostZeroPF"
 )
+
+const (
+	FacadeMulticallCall        = "FacadeMulticall"
+	FacadeOpenMulticallCall    = "FacadeOpenMulticall"
+	FacadeLiquidateCall        = "FacadeLiquidate"
+	FacadeLiquidateExpiredCall = "FacadeLiquidateExpired"
+	FacadeCloseAccountCall     = "FacadeCloseAccount"
+)
+
+func FacadeAccountMethodSigToCallName(funcSig string) string {
+	switch funcSig {
+	case "openCreditAccountMulticall":
+		return FacadeOpenMulticallCall
+	case "liquidateCreditAccount":
+		return FacadeLiquidateCall
+	case "liquidateExpiredCreditAccount":
+		return FacadeLiquidateExpiredCall
+	case "closeCreditAccount":
+		return FacadeCloseAccountCall
+	case "multicall":
+		return FacadeMulticallCall
+	}
+	log.Fatal()
+	return ""
+}

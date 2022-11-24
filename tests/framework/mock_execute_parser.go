@@ -7,7 +7,7 @@ import (
 
 type MockExecuteParser struct {
 	executeCalls     map[string][]*ds.KnownCall
-	mainEventLogs    map[string][]*ds.MainactionWithMulticall
+	mainEventLogs    map[string][]*ds.FacadeCallNameWithMulticall
 	executeTransfers map[string]core.Transfers
 }
 
@@ -19,7 +19,7 @@ func (m *MockExecuteParser) setCalls(obj map[string][]*ds.KnownCall) {
 		m.executeCalls[txHash] = calls
 	}
 }
-func (m *MockExecuteParser) setMainEvents(obj map[string][]*ds.MainactionWithMulticall) {
+func (m *MockExecuteParser) setMainEvents(obj map[string][]*ds.FacadeCallNameWithMulticall) {
 	if obj == nil {
 		return
 	}
@@ -40,7 +40,7 @@ func (m *MockExecuteParser) setTransfers(obj map[string]core.Transfers) {
 func NewMockExecuteParser() *MockExecuteParser {
 	return &MockExecuteParser{
 		executeCalls:     map[string][]*ds.KnownCall{},
-		mainEventLogs:    map[string][]*ds.MainactionWithMulticall{},
+		mainEventLogs:    map[string][]*ds.FacadeCallNameWithMulticall{},
 		executeTransfers: map[string]core.Transfers{},
 	}
 }
@@ -48,8 +48,13 @@ func NewMockExecuteParser() *MockExecuteParser {
 func (m *MockExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	return m.executeCalls[txHash]
 }
-func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.MainactionWithMulticall {
-	return m.mainEventLogs[txHash]
+func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) (mainCalls []*ds.FacadeCallNameWithMulticall) {
+	for _, entry := range m.mainEventLogs[txHash] {
+		entry.Name = ds.FacadeAccountMethodSigToCallName(entry.Name)
+		mainCalls = append(mainCalls, entry)
+	}
+
+	return mainCalls
 }
 func (m *MockExecuteParser) GetTransfers(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	return m.executeTransfers[txHash]

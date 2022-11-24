@@ -1,6 +1,7 @@
 package credit_manager
 
 import (
+	"fmt"
 	"math/big"
 	"strings"
 
@@ -147,6 +148,77 @@ func (mdl *CreditManager) onNewTxHashV2() {
 	mdl.processNonMultiCalls()
 }
 
+func (mdl *CreditManager) validateMulticallEntriesAndProcess(mainCalls []*ds.FacadeCallNameWithMulticall,
+	mainActions []*FacadeAccountActionv2) {
+	if len(mainCalls) > len(mainActions) {
+		log.Fatal("Len of calls can't be more than separated close/liquidate and multicall.")
+	}
+	//
+	var result []*FacadeAccountActionv2
+	var ind int
+	for _, mainCall := range mainCalls {
+		action := mainActions[ind]
+		switch mainCall.Name {
+		case ds.FacadeOpenMulticallCall:
+			if action.Type != GBv2FacadeOpenEvent {
+				log.Fatal()
+			}
+			result = append(result, action)
+		case ds.FacadeMulticallCall:
+			result = append(result, action)
+		case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall, ds.FacadeCloseAccountCall:
+			if mainCall.LenOfMulticalls() != 0 && len(mainActions) > ind+1 { // combine next facadeAccountAction with current,
+				// if number of multicall reported by tenderly are more than 0 for close,expiredliquidate or liquidate calls.
+				multicallToAttach := action.multicalls
+				action = mainActions[ind+1]
+				action.multicalls = multicallToAttach
+				ind++
+			}
+			result = append(result, action)
+		}
+		ind++
+	}
+	//
+	if ind != len(mainActions) {
+		log.Fatalf(`Not able to completely process facade action in tx, 
+		mismatch with facade calls we got from tenderly. 
+		Len: %d, processed: %d`, len(mainActions), ind)
+	}
+	for ind, mainAction := range result {
+		mainEvent := mainAction.Data
+
+		mainCall := mainCalls[ind]
+		var mainEventFromCall string
+		switch mainCall.Name {
+		case ds.FacadeMulticallCall:
+			mdl.setUpdateSession(mainEvent.SessionId)
+			mainEventFromCall = "MultiCallStarted(address)"
+		case ds.FacadeOpenMulticallCall:
+			mdl.setUpdateSession(mainEvent.SessionId)
+			mainEventFromCall = "OpenCreditAccount(address,address,uint256,uint16)"
+		case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall:
+			mdl.setLiquidateStatus(mainEvent.SessionId, mainCall.Name == ds.FacadeLiquidateExpiredCall)
+			mainEventFromCall = "LiquidateCreditAccount(address,address,address,uint256)"
+		case ds.FacadeCloseAccountCall:
+			mainEventFromCall = "CloseCreditAccount(address,address)"
+		}
+		if mainEventFromCall != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
+			msg := fmt.Sprintf("Tenderly call(%s)is different from facade event(%s)", mainCall.Name, mainEvent.Action)
+			log.Fatal(msg)
+		}
+		//
+		multicallEvents := mainAction.multicalls
+		if !mainCall.SameLenAsEvents(multicallEvents) {
+			log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
+				mainCall.Name, mainCall.LenOfMulticalls(), len(multicallEvents),
+				utils.ToJson(multicallEvents), mainCall.String(), mainEvent.TxHash)
+		}
+		//
+		// called for  open_with_multicall, multicall, liquidate, close
+		mdl.multiCallHandler(mainEvent, mainAction.multicalls)
+	}
+}
+
 // opencreditaccount
 // addcollateral
 // increase/decase borrow amount
@@ -160,29 +232,20 @@ func (mdl *CreditManager) onNewTxHashV2() {
 // multicallstarted => other calls
 // other calls => closed/liquidated
 func (mdl *CreditManager) processRemainingMultiCalls() {
-	defer func() {
-		mdl.multicall.OpenEvent = nil
-		mdl.multicall.MultiCallStartEvent = nil
-	}()
+	txHash := mdl.multicall.txHash
 
-	// opencreditaccount without mulitcall
-	openWithoutMC := mdl.multicall.OpenEvent
-	if openWithoutMC != nil && mdl.multicall.lenOfMultiCalls() == 0 {
+	mainActions, openEventWithoutMulticall := mdl.multicall.PopMainActionsv2()
+
+	for _, entry := range openEventWithoutMulticall {
+		// opencreditaccount without mulitcall
+		openWithoutMC := entry.Data
 		mdl.setUpdateSession(openWithoutMC.SessionId)
 		mdl.Repo.AddAccountOperation(openWithoutMC)
 		mdl.addCollteralForOpenCreditAccount(openWithoutMC.BlockNumber, openWithoutMC)
-		return
 	}
-	//
-	// for multicalls
-	mainAction := mdl.multicall.OpenEvent
-	if mainAction == nil { // other multicall operations
-		mainAction = mdl.multicall.MultiCallStartEvent
-	}
-	// called for  open_with_multicall, multicall , liquidate, close
-	if mainAction != nil {
-		mdl.multiCallHandler(mainAction)
-	}
+
+	mainCalls := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
+	mdl.validateMulticallEntriesAndProcess(mainCalls, mainActions)
 }
 
 func (mdl *CreditManager) setUpdateSession(sessionId string) {

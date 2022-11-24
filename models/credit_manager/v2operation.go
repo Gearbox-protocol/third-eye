@@ -37,43 +37,13 @@ func (mdl *CreditManager) getBorrowAmountForBlockAndClear() *big.Int {
 }
 
 // multicall
-func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation) {
+func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation, multicallEvents []*schemas.AccountOperation) {
 	account := strings.Split(mainEvent.SessionId, "_")[0]
 	txHash := mainEvent.TxHash
-	mainactionWithMulticall := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
-	if len(mainactionWithMulticall) != 1 { // if more than oneAction per tx
-		log.Fatal(utils.ToJson(mainactionWithMulticall), utils.ToJson(mainEvent))
-	}
-	mainCall := mainactionWithMulticall[0] // assuming only one action per tx
-	var mainEventFromCall string
-	switch mainCall.Name {
-	case "multicall":
-		mdl.setUpdateSession(mainEvent.SessionId)
-		mainEventFromCall = "MultiCallStarted(address)"
-	case "openCreditAccountMulticall":
-		mdl.setUpdateSession(mainEvent.SessionId)
-		mainEventFromCall = "OpenCreditAccount(address,address,uint256,uint16)"
-	case "liquidateCreditAccount", "liquidateExpiredCreditAccount":
-		mdl.setLiquidateStatus(mainEvent.SessionId, mainCall.Name == "liquidateExpiredCreditAccount")
-		mainEventFromCall = "LiquidateCreditAccount(address,address,address,uint256)"
-	case "closeCreditAccount":
-		mainEventFromCall = "CloseCreditAccount(address,address)"
-	}
-	if mainEventFromCall != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
-		msg := fmt.Sprintf("Tenderly event %s is different from %s", mainCall.Name, mainEvent.Action)
-		log.Fatal(msg)
-	}
-	events := mdl.multicall.PopMulticallEventsV2()
-	//
-	if !mainCall.SameLenAsEvents(events) {
-		log.Fatalf("%s expected %d of multi calls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
-			mainCall.Name, mainCall.Len(), len(events),
-			utils.ToJson(events), mainCall.String(), mainEvent.TxHash)
-	}
 	//
 	executeEvents := []ds.ExecuteParams{}
 	var multicalls []*schemas.AccountOperation
-	for _, event := range events {
+	for _, event := range multicallEvents {
 		if event.BlockNumber != mainEvent.BlockNumber || event.TxHash != txHash {
 			log.Fatal("%s has different blockNumber or txhash from opencreditaccount(%d, %s)",
 				utils.ToJson(event), mainEvent.BlockNumber, txHash)

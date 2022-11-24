@@ -23,42 +23,46 @@ type GBv2Multicall []struct {
 	Target   common.Address `json:"target"`
 	CallData []uint8        `json:"callData"`
 }
-type MainactionWithMulticall struct {
+type FacadeCallNameWithMulticall struct {
 	Name       string                     `json:"name"`
-	MultiCalls []multicall.Multicall2Call `json:"-"`
+	multiCalls []multicall.Multicall2Call `json:"-"`
 	TestLen    int                        `json:"len"`
 }
 
-func (obj MainactionWithMulticall) String() string {
+func NewFacadeCallNameWithMulticall(name string, multicalls []multicall.Multicall2Call) *FacadeCallNameWithMulticall {
+	return &FacadeCallNameWithMulticall{
+		Name:       name,
+		multiCalls: multicalls,
+	}
+}
+
+func (obj FacadeCallNameWithMulticall) String() string {
 	str := ""
-	for _, entry := range obj.MultiCalls {
+	for _, entry := range obj.multiCalls {
 		funcSig := hex.EncodeToString(entry.CallData[:4])
 		str += fmt.Sprintf("%s@%s ", entry.Target, funcSig)
 	}
 	return str
 }
 
-func (f MainactionWithMulticall) Len() int {
-	return len(f.MultiCalls)
+func (f FacadeCallNameWithMulticall) LenOfMulticalls() int {
+	if f.TestLen != 0 {
+		return f.TestLen
+	}
+	return len(f.multiCalls)
 }
 
-func (f *MainactionWithMulticall) SameLenAsEvents(events []*schemas.AccountOperation) bool {
-	// for _, event := range events {
-	// 	log.Info(event.Action)
-	// }
-	// log.Info("###")
-	// for _, call := range f.MultiCalls {
-	// 	log.Info(hex.EncodeToString(call.CallData[:4]))
-	// }
+// handles revertIflessthan case where event is not emitted.
+func (f *FacadeCallNameWithMulticall) SameLenAsEvents(events []*schemas.AccountOperation) bool {
 	if f.TestLen != 0 {
 		return f.TestLen == len(events)
 	}
 	eventInd := 0
 	callInd := 0
-	callLen := len(f.MultiCalls)
+	callLen := len(f.multiCalls)
 	eventLen := len(events)
 	for callInd < callLen && (eventLen == 0 || eventInd < eventLen) {
-		multiCall := f.MultiCalls[callInd]
+		multiCall := f.multiCalls[callInd]
 		sig := hex.EncodeToString(multiCall.CallData[:4])
 		switch sig {
 		case "59781034": // add collateral
@@ -102,7 +106,7 @@ func (f *MainactionWithMulticall) SameLenAsEvents(events []*schemas.AccountOpera
 			}
 			executeCall := 0
 			for callInd < callLen && !utils.Contains([]string{"59781034", "2b7c7b11", "2a7ba1f7", "c690908a", "23e27a64", "81314b59"},
-				hex.EncodeToString(f.MultiCalls[callInd].CallData[:4])) {
+				hex.EncodeToString(f.multiCalls[callInd].CallData[:4])) {
 				executeCall++
 				callInd++
 			}
@@ -121,7 +125,7 @@ type BorrowerAndTo struct {
 type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
 	// ignores revertIfLessThan
-	GetMainEventLogs(txHash, creditFacade string) []*MainactionWithMulticall
+	GetMainEventLogs(txHash, creditFacade string) []*FacadeCallNameWithMulticall
 	GetTransfers(txHash string, account, underlyingToken string, users BorrowerAndTo) core.Transfers
 }
 
