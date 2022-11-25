@@ -9,7 +9,6 @@ import (
 func (repo *Repository) Flush() error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	log.Fatal()
 	// preferred order (adapter | token) => pools => cm => credit session => blocks => allowedTokens
 
 	// credit manager depends on pools

@@ -54,7 +54,6 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 }
 
 func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
-	log.Info("a")
 	curDebt := schemas.CurrentDebt{
 		SessionId: debt.SessionId,
 		CommonDebtFields: schemas.CommonDebtFields{

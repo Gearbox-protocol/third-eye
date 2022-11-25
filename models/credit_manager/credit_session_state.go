@@ -20,7 +20,7 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 	for sessionId, closeDetails := range mdl.ClosedSessions {
 		updates := mdl.UpdatedSessions[sessionId]
 		if updates != 0 {
-			log.Fatalf("Session: %s updated %d before close %+v in same block %d\n", sessionId, updates, closeDetails, blockNum)
+			log.Warnf("Session: %s updated %d before close %+v in same block %d\n", sessionId, updates, closeDetails, blockNum)
 		}
 		mdl.closeSession(sessionId, blockNum, closeDetails)
 	}

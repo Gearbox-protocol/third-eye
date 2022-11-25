@@ -1,6 +1,7 @@
 package credit_manager
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
@@ -27,6 +28,11 @@ type SessionCloseDetails struct {
 	TxHash           string
 	Borrower         string
 	AccountOperation *schemas.AccountOperation
+}
+
+func (x SessionCloseDetails) String() string {
+	return fmt.Sprintf("ClosingDetails(Status: %d LogId %d TxHash %s Borrower %s RemainingFunds %s)",
+		x.Status, x.LogId, x.TxHash, x.Borrower, x.RemainingFunds)
 }
 
 type CreditManager struct {
