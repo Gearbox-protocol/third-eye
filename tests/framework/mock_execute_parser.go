@@ -48,7 +48,7 @@ func NewMockExecuteParser() *MockExecuteParser {
 func (m *MockExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	return m.executeCalls[txHash]
 }
-func (m *MockExecuteParser) GetMainEventLogs(txHash, creditFacade string) (mainCalls []*ds.FacadeCallNameWithMulticall) {
+func (m *MockExecuteParser) GetMainCalls(txHash, creditFacade string) (mainCalls []*ds.FacadeCallNameWithMulticall) {
 	for _, entry := range m.mainEventLogs[txHash] {
 		entry.Name = ds.FacadeAccountMethodSigToCallName(entry.Name)
 		mainCalls = append(mainCalls, entry)

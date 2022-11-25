@@ -179,6 +179,7 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 	}
 	// after sync
 	mdl.AfterSyncHook(utils.Min(mdl.GetBlockToDisableOn(), syncTill))
+	// log.Infof("synced %s(%s)", mdl.GetName(), mdl.GetAddress())
 }
 
 func (e *Engine) isEventPausedOrUnParsed(txLog types.Log) bool {

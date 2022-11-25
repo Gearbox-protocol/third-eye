@@ -11,7 +11,7 @@ import (
 
 func TestGetMainEventLogs(t *testing.T) {
 	ep := NewExecuteParser(&config.Config{ChainId: 42})
-	actionWithMulticall := ep.GetMainEventLogs("0xfbbfbca8d6300adc20c1fd9b2bf2074a14cad0873ad5ed8492ef226861f7c0cc", "0x5aacdab79aa2d30f4242898ecdafda2ed2216db2")
+	actionWithMulticall := ep.GetMainCalls("0xfbbfbca8d6300adc20c1fd9b2bf2074a14cad0873ad5ed8492ef226861f7c0cc", "0x5aacdab79aa2d30f4242898ecdafda2ed2216db2")
 	if len(actionWithMulticall) != 1 || actionWithMulticall[0].Name != "FacadeOpenMulticall" || actionWithMulticall[0].LenOfMulticalls() != 1 {
 		log.Fatal(utils.ToJson(actionWithMulticall))
 	}

@@ -113,11 +113,10 @@ func (ep *ExecuteParser) getTenderlyData(txHash string) (*TxTrace, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// log.Infof("%s",body)
 	trace := &TxTrace{}
 	err = json.Unmarshal(body, trace)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err, " for ", txHash)
 		return nil, err
 	}
 	return trace, nil
@@ -192,8 +191,8 @@ func init() {
 //////////////////////////
 // parser functions for v2
 //////////////////////////
-// GetMainEventLogs
-func (ep *ExecuteParser) GetMainEventLogs(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
+// GetMainCalls
+func (ep *ExecuteParser) GetMainCalls(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
 	trace := ep.GetTxTrace(txHash)
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
 	if err != nil {

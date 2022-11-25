@@ -3,12 +3,10 @@ package credit_manager
 import (
 	"fmt"
 	"math/big"
-	"sort"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
@@ -36,59 +34,7 @@ func (mdl *CreditManager) getBorrowAmountForBlockAndClear() *big.Int {
 	return lastValue
 }
 
-// multicall
-func (mdl *CreditManager) multiCallHandler(mainEvent *schemas.AccountOperation, multicallEvents []*schemas.AccountOperation) {
-	account := strings.Split(mainEvent.SessionId, "_")[0]
-	txHash := mainEvent.TxHash
-	//
-	executeEvents := []ds.ExecuteParams{}
-	var multicalls []*schemas.AccountOperation
-	for _, event := range multicallEvents {
-		if event.BlockNumber != mainEvent.BlockNumber || event.TxHash != txHash {
-			log.Fatal("%s has different blockNumber or txhash from opencreditaccount(%d, %s)",
-				utils.ToJson(event), mainEvent.BlockNumber, txHash)
-		}
-
-		switch event.Action {
-		case "AddCollateral(address,address,uint256)":
-			if event.Borrower == mainEvent.Borrower {
-				multicalls = append(multicalls, event)
-				// add collateral can have different borrower then the mainaction user/borrower.
-				// related to issue #37.
-			} else {
-				mdl.Repo.AddAccountOperation(event)
-			}
-		case "TokenEnabled(address,address)",
-			"DisableToken(address,address)",
-			"IncreaseBorrowedAmount(address,uint256)",
-			"DecreaseBorrowedAmount(address,uint256)":
-			multicalls = append(multicalls, event)
-		case "ExecuteOrder":
-			executeEvents = append(executeEvents, ds.ExecuteParams{
-				SessionId:     mainEvent.SessionId,
-				CreditAccount: common.HexToAddress(account),
-				Protocol:      common.HexToAddress(event.Dapp),
-				Borrower:      common.HexToAddress(mainEvent.Borrower),
-				Index:         event.LogId,
-				BlockNumber:   event.BlockNumber,
-			})
-		default:
-			log.Fatal(utils.ToJson(event))
-		}
-	}
-	//
-	multicalls = append(multicalls, mdl.getProcessedExecuteEvents(txHash, executeEvents)...)
-	sort.Slice(multicalls, func(i, j int) bool { return multicalls[i].LogId < multicalls[j].LogId })
-	//
-	mainEvent.MultiCall = multicalls
-	// calculate initialAmount on open new credit creditaccount
-	if mainEvent.Action == "OpenCreditAccount(address,address,uint256,uint16)" {
-		mdl.addCollteralForOpenCreditAccount(mainEvent.BlockNumber, mainEvent)
-	}
-	mdl.Repo.AddAccountOperation(mainEvent)
-}
-
-func (mdl *CreditManager) getProcessedExecuteEvents(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
+func (mdl *CreditManager) getExecuteOrderAccountOperationFromParams(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
 	// credit manager has the execute event
 	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash, mdl.Address, executeParams)
 	for i, call := range calls {

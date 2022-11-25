@@ -65,7 +65,7 @@ func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
 	return nil
 }
 
-// tenderly has logs for events(we mainly use for Transfer on token) and balance_diff for native eth exchange
+// tenderly has logs for events(which we mainly use for Transfer on token) and balance_diff for native eth exchange
 // handling native eth exchange is not needed for execution transfer or swaps
 func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents map[string]bool) []core.Transfers {
 	balances := make(core.Transfers)

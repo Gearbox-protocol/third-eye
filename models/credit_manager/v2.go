@@ -148,32 +148,31 @@ func (mdl *CreditManager) onNewTxHashV2() {
 	mdl.processNonMultiCalls()
 }
 
-func (mdl *CreditManager) validateMulticallEntriesAndProcess(mainCalls []*ds.FacadeCallNameWithMulticall,
-	mainActions []*FacadeAccountActionv2) {
-	if len(mainCalls) > len(mainActions) {
+func (mdl *CreditManager) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
+	facadeActions []*ds.FacadeAccountActionv2) (result []*ds.FacadeAccountActionv2) {
+	if len(mainCalls) > len(facadeActions) {
 		log.Fatalf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
-			len(mainCalls), len(mainActions),
+			len(mainCalls), len(facadeActions),
 		)
 	}
 	//
-	var result []*FacadeAccountActionv2
 	var ind int
 	for _, mainCall := range mainCalls {
-		action := mainActions[ind]
+		action := facadeActions[ind]
 		switch mainCall.Name {
 		case ds.FacadeOpenMulticallCall:
-			if action.Type != GBv2FacadeOpenEvent {
+			if action.Type != ds.GBv2FacadeOpenEvent {
 				log.Fatal()
 			}
 			result = append(result, action)
 		case ds.FacadeMulticallCall:
 			result = append(result, action)
 		case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall, ds.FacadeCloseAccountCall:
-			if mainCall.LenOfMulticalls() != 0 && len(mainActions) > ind+1 { // combine next facadeAccountAction with current,
+			if mainCall.LenOfMulticalls() != 0 && len(facadeActions) > ind+1 { // combine next facadeAccountAction with current,
 				// if number of multicall reported by tenderly are more than 0 for close,expiredliquidate or liquidate calls.
-				multicallToAttach := action.multicalls
-				action = mainActions[ind+1]
-				action.multicalls = multicallToAttach
+				multicallToAttach := action.GetMulticalls()
+				action = facadeActions[ind+1]
+				action.SetMulticalls(multicallToAttach)
 				ind++
 			}
 			result = append(result, action)
@@ -181,12 +180,20 @@ func (mdl *CreditManager) validateMulticallEntriesAndProcess(mainCalls []*ds.Fac
 		ind++
 	}
 	//
-	if ind != len(mainActions) {
+	if ind != len(facadeActions) {
 		log.Fatalf(`Not able to completely process facade action in tx, 
 		mismatch with facade calls we got from tenderly. 
-		Len: %d, processed: %d`, len(mainActions), ind)
+		Len: %d, processed: %d`, len(facadeActions), ind)
 	}
-	for ind, mainAction := range result {
+	return
+}
+
+// check name
+// check multicall for facade action vs tenderly response
+// add to db
+func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string, facadeActions []*ds.FacadeAccountActionv2, mainCalls []*ds.FacadeCallNameWithMulticall) {
+	executeParams := []ds.ExecuteParams{}
+	for ind, mainAction := range facadeActions {
 		mainEvent := mainAction.Data
 
 		mainCall := mainCalls[ind]
@@ -209,15 +216,40 @@ func (mdl *CreditManager) validateMulticallEntriesAndProcess(mainCalls []*ds.Fac
 			log.Fatal(msg)
 		}
 		//
-		eventMulticalls := mainAction.multicalls
-		if !mainCall.SameLenAsEvents(eventMulticalls) {
+		eventMulticalls := mainAction.GetMulticalls()
+		if !mainCall.SameMulticallLenAsEvents(eventMulticalls) {
 			log.Fatalf("%s expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
 				utils.ToJson(eventMulticalls), mainCall.String(), mainEvent.TxHash)
 		}
-		//
-		// called for  open_with_multicall, multicall, liquidate, close
-		mdl.multiCallHandler(mainEvent, eventMulticalls)
+		account := strings.Split(mainEvent.SessionId, "_")[0]
+		for _, event := range eventMulticalls {
+			if event.Action == "ExecuteOrder" {
+				executeParams = append(executeParams, ds.ExecuteParams{
+					SessionId:     mainEvent.SessionId,
+					CreditAccount: common.HexToAddress(account),
+					Protocol:      common.HexToAddress(event.Dapp),
+					Borrower:      common.HexToAddress(mainEvent.Borrower),
+					Index:         event.LogId,
+					BlockNumber:   event.BlockNumber,
+				})
+			}
+		}
+	}
+	tenderlyExecuteEvents := mdl.getExecuteOrderAccountOperationFromParams(txHash, executeParams)
+	// called for  open_with_multicall, multicall, liquidate, close
+	var ind int
+	for _, mainAction := range facadeActions {
+		mainEvent := mainAction.Data
+		multicalls := mainAction.GetMulticalls()
+		for multicallInd, innerEvent := range multicalls {
+			if innerEvent.Action == "ExecuteOrder" {
+				multicalls[multicallInd] = tenderlyExecuteEvents[ind]
+				ind++
+			}
+		}
+		mdl.addMulticallToMainEvent(mainEvent, multicalls)
+		mdl.Repo.AddAccountOperation(mainEvent)
 	}
 }
 
@@ -234,9 +266,8 @@ func (mdl *CreditManager) validateMulticallEntriesAndProcess(mainCalls []*ds.Fac
 // multicallstarted => other calls
 // other calls => closed/liquidated
 func (mdl *CreditManager) processRemainingMultiCalls() {
-	txHash := mdl.multicall.txHash
 
-	mainActions, openEventWithoutMulticall := mdl.multicall.PopMainActionsv2()
+	facadeActions, openEventWithoutMulticall := mdl.multicall.PopMainActionsv2()
 
 	for _, entry := range openEventWithoutMulticall {
 		// opencreditaccount without mulitcall
@@ -245,9 +276,12 @@ func (mdl *CreditManager) processRemainingMultiCalls() {
 		mdl.Repo.AddAccountOperation(openWithoutMC)
 		mdl.addCollteralForOpenCreditAccount(openWithoutMC.BlockNumber, openWithoutMC)
 	}
-
-	mainCalls := mdl.Repo.GetExecuteParser().GetMainEventLogs(txHash, mdl.GetCreditFacadeAddr())
-	mdl.validateMulticallEntriesAndProcess(mainCalls, mainActions)
+	if len(facadeActions) > 0 { // account operation will only exist if there are one or more facade actions
+		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(mdl.LastTxHash, mdl.GetCreditFacadeAddr())
+		fixedFacadeActions := mdl.fixFacadeActionStructureViaTenderlyCalls(mainCalls, facadeActions)
+		mdl.validateAndSaveFacadeActions(mdl.LastTxHash, fixedFacadeActions, mainCalls)
+		// mdl.
+	}
 }
 
 func (mdl *CreditManager) setUpdateSession(sessionId string) {
@@ -256,7 +290,7 @@ func (mdl *CreditManager) setUpdateSession(sessionId string) {
 }
 
 func (mdl *CreditManager) processNonMultiCalls() {
-	events := mdl.multicall.popNonMulticallEventsV2()
+	events := mdl.multicall.PopNonMulticallEventsV2()
 	executeEvents := []ds.ExecuteParams{}
 	for _, event := range events {
 		switch event.Action {

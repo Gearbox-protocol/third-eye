@@ -88,7 +88,7 @@ func (mdl *CreditManager) logHandler(txLog types.Log) {
 // handles for v2(for multicalls) and v1 (for executeorder)
 func (mdl *CreditManager) onTxHash(newTxHash string) {
 	// on txHash
-	if mdl.LastTxHash != newTxHash {
+	if mdl.LastTxHash != "" && mdl.LastTxHash != newTxHash {
 		switch mdl.GetVersion() {
 		case 1:
 			// storing execute order in a single tx and processing them in a single go on next tx
@@ -99,6 +99,6 @@ func (mdl *CreditManager) onTxHash(newTxHash string) {
 		case 2:
 			mdl.onNewTxHashV2()
 		}
-		mdl.LastTxHash = newTxHash
 	}
+	mdl.LastTxHash = newTxHash
 }

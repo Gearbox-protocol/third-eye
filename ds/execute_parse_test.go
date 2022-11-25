@@ -30,7 +30,7 @@ func TestCmpLenSimple(t *testing.T) {
 		[]string{"59781034"},
 		[]string{"AddCollateral(address,address,uint256)"},
 	)
-	if !mainAction.SameLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(events) {
 		log.Fatal()
 	}
 }
@@ -40,7 +40,7 @@ func TestCmpLenWith2Events(t *testing.T) {
 		[]string{"59781034", "d0e30db0"},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder"},
 	)
-	if !mainAction.SameLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(events) {
 		log.Fatal()
 	}
 }
@@ -50,7 +50,7 @@ func TestCmpLenWith2PlusRevertEvents(t *testing.T) {
 		[]string{"59781034", "81314b59", "c7fbf4de", "bdbeaa31"},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder", "ExecuteOrder"},
 	)
-	if !mainAction.SameLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(events) {
 		log.Fatal()
 	}
 }
@@ -61,7 +61,7 @@ func TestCmpLenTrivalRevert(t *testing.T) {
 		[]string{"81314b59"},
 		nil,
 	)
-	if !mainAction.SameLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(events) {
 		log.Fatal()
 	}
 }

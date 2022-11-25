@@ -57,7 +57,7 @@ func (f FacadeCallNameWithMulticall) LenOfMulticalls() int {
 }
 
 // handles revertIflessthan case where event is not emitted.
-func (f *FacadeCallNameWithMulticall) SameLenAsEvents(events []*schemas.AccountOperation) bool {
+func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(events []*schemas.AccountOperation) bool {
 	if f.TestLen != 0 {
 		return f.TestLen == len(events)
 	}
@@ -129,7 +129,7 @@ type BorrowerAndTo struct {
 type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
 	// ignores revertIfLessThan
-	GetMainEventLogs(txHash, creditFacade string) []*FacadeCallNameWithMulticall
+	GetMainCalls(txHash, creditFacade string) []*FacadeCallNameWithMulticall
 	GetTransfers(txHash string, account, underlyingToken string, users BorrowerAndTo) core.Transfers
 }
 

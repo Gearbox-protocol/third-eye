@@ -1,4 +1,4 @@
-package credit_manager
+package ds
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -12,6 +12,7 @@ const (
 	GBv2FacadeCloseEvent
 )
 
+// facade Action
 type FacadeAccountActionv2 struct {
 	Data       *schemas.AccountOperation
 	Type       int
@@ -23,10 +24,15 @@ type FacadeAccountActionv2 struct {
 func (v FacadeAccountActionv2) LenofMulticalls() int {
 	return len(v.multicalls)
 }
+func (v FacadeAccountActionv2) GetMulticalls() []*schemas.AccountOperation {
+	return v.multicalls
+}
+func (v *FacadeAccountActionv2) SetMulticalls(ops []*schemas.AccountOperation) {
+	v.multicalls = ops
+}
 
 type MultiCallProcessor struct {
 	// borrower            string
-	txHash             string
 	running            bool // is the multicall running
 	nonMultiCallEvents []*schemas.AccountOperation
 	noOfOpens          int
@@ -52,9 +58,6 @@ func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperati
 			p.nonMultiCallEvents = append(p.nonMultiCallEvents, operation)
 		}
 	} else { // multicall
-		if operation.TxHash != p.txHash {
-			log.Info("While multicall is running, event(%s) has different txhash %s", utils.ToJson(lastMainAction.multicalls), operation.TxHash)
-		}
 		lastMainAction.multicalls = append(lastMainAction.multicalls, operation)
 	}
 }
@@ -89,7 +92,6 @@ func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOpe
 			Type: GBv2FacadeMulticallEvent,
 		})
 	}
-	p.txHash = txHash
 	p.running = true
 }
 
@@ -130,7 +132,7 @@ func (p *MultiCallProcessor) PopMainActionsv2() (facadeActions, openEventWithout
 	return
 }
 
-func (p *MultiCallProcessor) popNonMulticallEventsV2() []*schemas.AccountOperation {
+func (p *MultiCallProcessor) PopNonMulticallEventsV2() []*schemas.AccountOperation {
 	calls := p.nonMultiCallEvents
 	p.nonMultiCallEvents = nil
 	return calls

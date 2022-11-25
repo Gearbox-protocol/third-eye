@@ -35,7 +35,7 @@ type CMv2Fields struct {
 	configuratorSyncer *SubsidiarySyncer
 	facadeSyncer       *SubsidiarySyncer
 	//
-	multicall MultiCallProcessor
+	multicall ds.MultiCallProcessor
 	//
 	contractETHV2    *creditManagerv2.CreditManagerv2
 	facadeContractV2 *creditFacade.CreditFacade

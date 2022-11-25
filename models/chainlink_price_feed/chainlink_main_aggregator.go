@@ -69,7 +69,7 @@ func (mdl *ChainlinkMainAgg) GetPriceFeedAddr(blockNum int64) (common.Address, i
 	}
 	phaseId, err := mdl.contractETH.PhaseId(opts)
 	if err != nil {
-		log.Fatal("PhaseId not founded for", mdl.Addr)
+		log.Fatal("PhaseId not founded for ", mdl.Addr)
 	}
 	var newPhaseAgg common.Address
 	newPhaseAgg, err = mdl.contractETH.PhaseAggregators(opts, phaseId, false)
