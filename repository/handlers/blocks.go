@@ -209,7 +209,7 @@ func (repo *BlocksRepo) setTokenCurrentPrice(pf *schemas.PriceFeed) {
 			repo.currentPrices[pf.Token] = &schemas.TokenCurrentPrice{
 				PriceBI:  pf.PriceBI,
 				Price:    pf.Price,
-				BlockNum: lastBlockNum,
+				BlockNum: pf.BlockNumber,
 				Token:    pf.Token,
 				Updated:  true,
 			}
