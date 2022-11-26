@@ -108,7 +108,7 @@ func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 	priceFeed := &schemas.PriceFeed{
 		BlockNumber:  blockNum,
 		Token:        mdl.Token,
-		Feed:         mdl.Address,
+		Feed:         mdl.GetDetailsByKey("oracle"),
 		RoundId:      0,
 		PriceBI:      (*core.BigInt)(answerBI),
 		Price:        utils.GetFloat64Decimal(answerBI, 8),
