@@ -25,6 +25,11 @@ Adapters are of two types: `Event` and `Query` based.
 - `ChainlinkPriceFeed(CPF)`: For syncing prices of tokens that have chainlink Feed available. 
     * PriceOracle has tokens and corresponding ChainlinkOracle addresses. Chainlink oracle contract internally manages a list of versioned AggregatedInterface contracts that stores the token's price. CPF adapter gets the latest AggregatedInterface address and listens for `AnswerUpdated` event. 
     * CPF checks for the new Aggregated interface(Feed) on the `ChainlinkOracle` contract. If a new interface is detected, another CPF adapter is created with the feed set to the new interface address and the same oracle address while the previous adapter is disabled.
+- `CompositeChainlinkPF`: Composite chainlink price feed uses 2 chainlink price feeds for getting the token price in usd. One pair is token/ETH(A) and another is ETH/USD(B) price oracle. This adapter monitors `AnswerUpdated` event on the phaseAggregator behind these two priceFeeds. And uses below formula for calculating the price.
+```
+  Token's USD price = A*B/10^18
+```
+
 - `ContractRegister`: Getting addresses of CreditManager and pools.
 - `GearToken`: Getting token transfers for Gear Token.
 - `Pool`: Getting Pool operations like add/remove liquidity and borrow/repay etc.
@@ -37,8 +42,8 @@ Adapters are of two types: `Event` and `Query` based.
 
 #### Query Based
 - `AggregatedBlockFeed`: Maintains list of yearn and curve price feeds, and uniswap v2/v3 pools for token/eth pairs. It uses multicall for getting involving prices after a set interval:
-    * prices from yearn and curve feeds.
-    * uni v3 TWAP, uniswap v2 quoted price and uniswap v3 quoted price. 
+    * prices from yearn, curve feeds.
+    * yearn and curve feeds internally uses chainlink price feed. If any major change occurs in the chainlink feed, yearn/curve token's price will also be affected. To account for this, aggregatedBlockFeed maintains a dependency graph of chainlink-based tokens and dependent yearn/curve tokens. Since chainlink price feed syncs before aggregatedBlockFeed, aggregatedblockFeed can get a list of block numbers where the chainlink-based token's price changed. If aggregatedBlockFeed missed getting the price for any of the chainlink feeds' updated blocks, it would fetch the price for dependent tokens for these remaining block numbers.
 
 ## Repo
 Repo is used by both sync and debt engines to get data from DB and store fetched data to DB. It acts as an intermediate between different adapters. Repo syncs all this data to DB using a single transaction in `save.go`, this provides the atomic guarantee that either all data is saved or nothing. On crash, the sync engine will restart with the previous state fetched from DB.
@@ -58,6 +63,7 @@ This requires tracking the state of Gearbox protocols so that the calculated val
 - `Liquidity Threshold`.
 - `Pool Cumulative Index` and `blockNumber` of last operation on pool(add/remove liquidity and repay/borrow)
 
+### Debt throttling conditions
 There were around 20k active accounts in Kovan on 15 Jan 2022, storing entries on every block or even on the block where any value changes would result in hundreds of millions of rows in the debt table. To prevent the debt table from unexpected growth, we added throttling to slow the calculation of the debt parameters. The conditions for throttling are:
 
 - Calculate for the block where we have an event for the credit Account. In such a case, `Credit Session Snapshot` will be present for that block. This is a `forced condition` and entry will always be added to DB.
