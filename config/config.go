@@ -18,8 +18,8 @@ type Config struct {
 	ChainId int64
 
 	Port                   string `env:"PORT" default:"8080" validate:"required"`
-	AMPQUrl                string `env:"CLOUDAMQP_URL" validate:"required"`
-	AMPQEnable             string `env:"AMPQ_ENABLE" validate:"required"`
+	AMQPUrl                string `env:"CLOUDAMQP_URL" validate:"required"`
+	AMQPEnable             string `env:"AMPQ_ENABLE" validate:"required"`
 	DebtDCMatchingStr      string `env:"DEBT_DC_MATCHING" validate:"required"`
 	DebtDCMatching         bool
 	DisableDebtEngineStr   string `env:"DISABLE_DEBT_ENGINE" validate:"required"`

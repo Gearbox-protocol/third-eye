@@ -312,7 +312,11 @@ func greaterFluctuation(a, b float64) bool {
 var SaveRelations, SaveAtAll bool
 
 func StartServer(lc fx.Lifecycle, handler *DBhandler, config *config.Config, shutdowner fx.Shutdowner) {
-	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl, "Uni Price Compare")
+	log.NewAMQPService(config.AMQPEnable, config.AMQPUrl, log.LoggingConfig{
+		App:      "Uni Price Compare",
+		Network:  log.GetNetworkName(config.ChainId),
+		Exchange: "TelegramBot",
+	})
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

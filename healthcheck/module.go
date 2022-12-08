@@ -5,5 +5,5 @@ import (
 )
 
 var Module = fx.Option(
-	fx.Invoke(newHealthcheckEndpoint),
+	fx.Invoke(newMetEngine),
 )

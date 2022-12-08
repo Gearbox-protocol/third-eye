@@ -2,6 +2,7 @@ package engine
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -20,6 +21,7 @@ type Engine struct {
 	config              *config.Config
 	repo                ds.RepositoryI
 	debtEng             ds.DebtEngineI
+	syncedBlock         atomic.Value
 	batchSizeForHistory int64
 	UsingThreads        bool
 }
@@ -73,6 +75,8 @@ func (e *Engine) SyncHandler() {
 	e.init()
 	latestBlockNum := e.GetLatestBlockNumber()
 	lastSyncedTill := e.getLastSyncedTill()
+	e.syncedBlock.Store(lastSyncedTill)
+	//
 	// only do batch sync if latestblock is far from currently synced block
 	if lastSyncedTill+e.batchSizeForHistory <= latestBlockNum {
 		syncedTill := e.syncLoop(lastSyncedTill, latestBlockNum)
@@ -88,18 +92,17 @@ func (e *Engine) SyncHandler() {
 
 func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 	loopStartBlock := syncedTill
-	syncTill := syncedTill + e.batchSizeForHistory
 	loopStartTime := time.Now()
-	for syncTill <= latestBlockNum {
+	//
+	for syncTarget := syncedTill + e.batchSizeForHistory; syncTarget <= latestBlockNum; syncTarget += e.batchSizeForHistory {
 		roundStartTime := time.Now()
-		e.SyncAndFlush(syncTill)
-		syncedTill = syncTill
+		e.SyncAndFlush(syncTarget)
+		syncedTill = syncTarget
+		//
 		roundSyncDur := (time.Since(roundStartTime).Minutes()) // Since ==  Now().Sub
 		timePerBlock := time.Since(loopStartTime).Minutes() / float64(syncedTill-loopStartBlock)
 		remainingTime := (timePerBlock * float64(latestBlockNum-syncedTill)) / (60)
 		log.Infof("Synced till %d in %f mins. Remaining time %f hrs ", syncedTill, roundSyncDur, remainingTime)
-		// new sync target
-		syncTill += e.batchSizeForHistory
 	}
 	return syncedTill
 }
@@ -108,7 +111,13 @@ func (e *Engine) SyncAndFlush(syncTill int64) {
 	e.Sync(syncTill)
 	e.repo.Flush()
 	e.debtEng.CalculateDebtAndClear(syncTill)
+	e.syncedBlock.Store(syncTill)
 }
+
+func (e *Engine) LastSyncedBlock() int64 {
+	return e.syncedBlock.Load().(int64)
+}
+
 func (e *Engine) Sync(syncTill int64) {
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
