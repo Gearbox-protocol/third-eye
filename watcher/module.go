@@ -1,4 +1,4 @@
-package healthcheck
+package watcher
 
 import (
 	"go.uber.org/fx"

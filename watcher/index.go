@@ -1,4 +1,4 @@
-package healthcheck
+package watcher
 
 import (
 	"encoding/json"
@@ -15,10 +15,6 @@ import (
 )
 
 var Version = "dev"
-
-type MetEngine struct {
-	eng ds.EngineI `json:"-"`
-}
 
 type Metrics struct {
 	Version     string `json:"version"`

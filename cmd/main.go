@@ -17,9 +17,9 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/engine"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/healthcheck"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
+	"github.com/Gearbox-protocol/third-eye/watcher"
 	_ "github.com/heroku/x/hmetrics/onload"
 	"go.uber.org/fx"
 )
@@ -63,7 +63,7 @@ func main() {
 		engine.Module,
 		fx.NopLogger,
 		debts.Module,
-		healthcheck.Module,
+		watcher.Module,
 		fx.Invoke(StartServer),
 	)
 	startCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
