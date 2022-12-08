@@ -63,11 +63,10 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 
 func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *handlers.ExtrasRepo) ds.RepositoryI {
 	r := GetRepository(db, client, config, ep)
-	r.init()
 	return r
 }
 
-func (repo *Repository) init() {
+func (repo *Repository) Init() {
 	// lastdebtsync is required to load credit session which are active or closed after lastdebtsync block number
 	lastDebtSync := repo.LoadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
@@ -97,6 +96,8 @@ func (repo *Repository) init() {
 	repo.loadAccountLastSession()
 	// credit_sessions
 	repo.LoadCreditSessions(repo.db, lastDebtSync)
+
+	repo.initChecks()
 }
 
 func (repo *Repository) AddAccountOperation(accountOperation *schemas.AccountOperation) {
@@ -118,7 +119,7 @@ func (obj *LastSyncAndType) String() string {
 	return fmt.Sprintf("%s(%s):%d", obj.Type, obj.Address, obj.LastSync)
 
 }
-func (repo *Repository) InitChecks() {
+func (repo *Repository) initChecks() {
 	data := []*LastSyncAndType{}
 	err := repo.db.Raw(`SELECT type, address,  last_sync AS last_calculated_at 
 		FROM sync_adapters 

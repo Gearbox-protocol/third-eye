@@ -11,14 +11,15 @@ import (
 type EngineI interface {
 	SyncHandler()
 	Sync(syncTill int64)
+	LastSyncedBlock() int64
 	UseThreads()
 }
 
 type RepositoryI interface {
+	Init()
 	// sync adapters
 	GetKit() *AdapterKit
 	AddSyncAdapter(adapterI SyncAdapterI)
-	InitChecks()
 	// saving to the db
 	Flush() error
 	// adding block/timestamp

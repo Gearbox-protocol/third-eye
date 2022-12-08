@@ -11,13 +11,15 @@ import (
 type DummyRepo struct {
 }
 
+func (DummyRepo) Init() {
+
+}
+
 // sync adapters
 func (DummyRepo) GetKit() *AdapterKit {
 	return nil
 }
 func (DummyRepo) AddSyncAdapter(adapterI SyncAdapterI) {
-}
-func (DummyRepo) InitChecks() {
 }
 func (DummyRepo) GetChainId() uint {
 	return 0

@@ -8,6 +8,8 @@ package main
 
 import (
 	"context"
+	"time"
+
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/debts"
@@ -16,11 +18,14 @@ import (
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/Gearbox-protocol/third-eye/services"
 	"go.uber.org/fx"
-	"time"
 )
 
 func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, config *config.Config, shutdowner fx.Shutdowner) {
-	log.NewAMQPService(config.ChainId, config.AMPQEnable, config.AMPQUrl, "Debts")
+	log.NewAMQPService(config.AMQPEnable, config.AMQPUrl, log.LoggingConfig{
+		App:      "Debts",
+		Network:  log.GetNetworkName(config.ChainId),
+		Exchange: "TelegramBot",
+	})
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and
