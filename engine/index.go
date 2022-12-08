@@ -50,8 +50,8 @@ func (e *Engine) UseThreads() {
 
 func (e *Engine) init() {
 	log.Msg("Starting Third-eye")
+	e.repo.Init()
 	// debt engine initialisation
-	e.repo.InitChecks()
 	e.debtEng.ProcessBackLogs()
 }
 
@@ -115,7 +115,11 @@ func (e *Engine) SyncAndFlush(syncTill int64) {
 }
 
 func (e *Engine) LastSyncedBlock() int64 {
-	return e.syncedBlock.Load().(int64)
+	v := e.syncedBlock.Load()
+	if v == nil {
+		return 0
+	}
+	return v.(int64)
 }
 
 func (e *Engine) Sync(syncTill int64) {

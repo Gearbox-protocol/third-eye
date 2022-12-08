@@ -17,7 +17,7 @@ type Config struct {
 
 	ChainId int64
 
-	Port                   string `env:"PORT" default:"8080" validate:"required"`
+	Port                   string `env:"PORT" default:"0" validate:"required"`
 	AMQPUrl                string `env:"CLOUDAMQP_URL" validate:"required"`
 	AMQPEnable             string `env:"AMPQ_ENABLE" validate:"required"`
 	DebtDCMatchingStr      string `env:"DEBT_DC_MATCHING" validate:"required"`

@@ -16,10 +16,10 @@ type EngineI interface {
 }
 
 type RepositoryI interface {
+	Init()
 	// sync adapters
 	GetKit() *AdapterKit
 	AddSyncAdapter(adapterI SyncAdapterI)
-	InitChecks()
 	// saving to the db
 	Flush() error
 	// adding block/timestamp

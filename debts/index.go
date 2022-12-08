@@ -62,6 +62,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	if eng.config.DisableDebtEngine {
 		return
 	}
+	log.Info("Starting Debt engine")
 	// synced till
 	lastDebtSynced := eng.repo.LoadLastDebtSync()
 	eng.loadLastCSS(lastDebtSynced)
