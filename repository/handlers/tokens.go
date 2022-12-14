@@ -66,6 +66,9 @@ func (repo *TokensRepo) Save(tx *gorm.DB) {
 // not to be called directly
 // only exposed for testing framework
 func (repo *TokensRepo) addTokenObj(t *schemas.Token) {
+	if t.Address == "0xEe8Adf657c5EF8e10622b6B47014D2C6f6993E5E" { // in goerli , for yvWETH the symbol is set to WETH.
+		t.Symbol = "yvWETH"
+	}
 	// set usdc addr in repo
 	if t.Symbol == "USDC" {
 		repo.usdcAddr = t.Address
@@ -111,14 +114,6 @@ func (repo *TokensRepo) GetToken(addr string) *schemas.Token {
 		panic(err)
 	}
 	return token
-}
-
-func (repo TokensRepo) GetAddressBySymbol(symbol string) string {
-	tokenAddress := repo.symToToken[symbol]
-	if tokenAddress == "" {
-		log.Fatalf("Sym(%s) to token not found", symbol)
-	}
-	return tokenAddress
 }
 
 func (repo *TokensRepo) GetTokens() []string {

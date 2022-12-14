@@ -12,6 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type repoI interface {
+	GetKit() *ds.AdapterKit
+	GetOracleForV2Token(token string) *schemas.TokenOracle
+	GetTokens() []string
+	GetToken(string) *schemas.Token
+}
+
 // ignoring dependencies for v1
 type QueryPFDependencies struct {
 	// chainlink symbol to dependent query pf
@@ -25,7 +32,8 @@ type QueryPFDependencies struct {
 	// yearn feed prices to be ordered
 	depBasedExtraPrices []*schemas.PriceFeed
 	//
-	repo   ds.RepositoryI
+	repo repoI
+	TokenSymMap
 	mu     *sync.Mutex
 	client core.ClientI
 }
@@ -33,22 +41,23 @@ type QueryPFDependencies struct {
 func NewQueryPFDepenencies(repo ds.RepositoryI, client core.ClientI) *QueryPFDependencies {
 	chainId, err := client.ChainID(context.TODO())
 	log.CheckFatal(err)
-	depGraph := getDepGraph(chainId.Int64())
+	depGraph := getDepGraph()
 	return &QueryPFDependencies{
 		depGraph:                    depGraph,
 		ChainlinkSymToQueryPFSyms:   getInvertDependencyGraph(depGraph),
 		ChainlinkSymToUpdatedBlocks: map[string][]int64{},
 		//
-		repo:   repo,
-		mu:     &sync.Mutex{},
-		client: client,
+		repo:        repo,
+		mu:          &sync.Mutex{},
+		TokenSymMap: newTokenSymMap(chainId.Int64()),
+		client:      client,
 	}
 }
 
 func (q *QueryPFDependencies) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
-	chainlinkSym := q.repo.GetToken(token).Symbol
+	q.updateIfTest(q.repo)
+	chainlinkSym := q.getTokenSym(token)
 	q.ChainlinkSymToUpdatedBlocks[chainlinkSym] = blockNums
-
 }
 
 func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[string]bool {
@@ -59,7 +68,7 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[stri
 		updatedChainlinkSym = append(updatedChainlinkSym, chainlinkSym)
 		//
 		for _, dependentSym := range q.ChainlinkSymToQueryPFSyms[chainlinkSym] {
-			depAddr := q.repo.GetAddressBySymbol(dependentSym)
+			depAddr := q.getTokenAddr(dependentSym)
 			for _, blockNum := range blockNums {
 				if updates[blockNum] == nil {
 					updates[blockNum] = map[string]bool{}
@@ -75,15 +84,16 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[stri
 	return updates
 }
 
-func getDepGraph(chainId int64) map[string][]string {
+func getDepGraph() map[string][]string {
 	depGraph := map[string][]string{
 		// frax and curve
-		"yvCurve-FRAX":     {"FRAX", "USDC", "USDT", "DAI"},
-		"FRAX3CRV-f":       {"FRAX", "USDC", "USDT", "DAI"},
-		"stkcvxFRAX3CRV-f": {"FRAX", "USDC", "USDT", "DAI"},
-		"cvxFRAX3CRV-f":    {"FRAX", "USDC", "USDT", "DAI"},
+		"yvCURVE_FRAX":   {"FRAX", "USDC", "USDT", "DAI"},
+		"FRAX3CRV":       {"FRAX", "USDC", "USDT", "DAI"},
+		"stkcvxFRAX3CRV": {"FRAX", "USDC", "USDT", "DAI"},
+		"cvxFRAX3CRV":    {"FRAX", "USDC", "USDT", "DAI"},
 		// frax and usdc
 		"crvFRAX":       {"USDC", "FRAX"},
+		"cvxcrvFRAX":    {"USDC", "FRAX"},
 		"stkcvxcrvFRAX": {"USDC", "FRAX"},
 
 		// yearn
@@ -100,13 +110,13 @@ func getDepGraph(chainId int64) map[string][]string {
 		// "dwstETH": {"stETH"},
 		// "dWBTC":   {"WBTC"},
 		// 3 crv
-		"3Crv":       {"USDC", "USDT", "DAI"},
+		"3CRV":       {"USDC", "USDT", "DAI"},
 		"stkcvx3Crv": {"USDC", "USDT", "DAI"},
 		"cvx3Crv":    {"USDC", "USDT", "DAI"},
 		// lusd and 3crv
-		"LUSD3CRV-f":       {"LUSD", "DAI", "USDC", "USDT"},
-		"stkcvxLUSD3CRV-f": {"LUSD", "DAI", "USDC", "USDT"},
-		"cvxLUSD3CRV-f":    {"LUSD", "DAI", "USDC", "USDT"},
+		"LUSD3CRV":       {"LUSD", "DAI", "USDC", "USDT"},
+		"stkcvxLUSD3CRV": {"LUSD", "DAI", "USDC", "USDT"},
+		"cvxLUSD3CRV":    {"LUSD", "DAI", "USDC", "USDT"},
 		// susd and 3crv
 		"cvxcrvPlain3andSUSD":    {"SUSD", "DAI", "USDC", "USDT"},
 		"stkcvxcrvPlain3andSUSD": {"SUSD", "DAI", "USDC", "USDT"},
@@ -115,19 +125,12 @@ func getDepGraph(chainId int64) map[string][]string {
 		// gusd and 3crv
 		"stkcvxgusd3CRV": {"GUSD", "DAI", "USDC", "USDT"},
 		"cvxgusd3CRV":    {"GUSD", "DAI", "USDC", "USDT"},
-		"gusd3CRV":       {"GUSD", "DAI", "USDC", "USDT"},
+		"GUSD3CRV":       {"GUSD", "DAI", "USDC", "USDT"},
 		// steth/eth
 		"stkcvxsteCRV":  {"stETH", "WETH"}, // phantom convex on mainnet
 		"steCRV":        {"stETH", "WETH"}, // curve steth
-		"yvCurve-stETH": {"stETH", "WETH"}, // yearn
+		"yvCurve_stETH": {"stETH", "WETH"}, // yearn
 		"cvxsteCRV":     {"stETH", "WETH"}, // convex token for steth
-	}
-	if chainId == 5 {
-		for _, token := range []string{"yvWBTC", "yvCurve-FRAX", "yvDAI", "yvCurve-stETH", "yvUSDC"} {
-			depGraph["Yearn "+token] = depGraph[token]
-			delete(depGraph, token)
-		}
-		delete(depGraph, "yvWETH")
 	}
 	return depGraph
 }
@@ -143,7 +146,7 @@ func getInvertDependencyGraph(depGraph map[string][]string) map[string][]string 
 }
 
 func (q *QueryPFDependencies) checkInDepGraph(token, oracle string, blockNum int64) {
-	depQueryPFSym := q.repo.GetToken(token).Symbol
+	depQueryPFSym := q.getTokenSym(token)
 	if q.depGraph[depQueryPFSym] == nil {
 		log.Fatalf("Dep for query based price feed(%s) not found for token(%s) at %d", oracle, depQueryPFSym, blockNum)
 	}

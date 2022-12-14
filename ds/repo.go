@@ -73,7 +73,6 @@ type RepositoryI interface {
 	GetWETHAddr() string
 	GetUSDCAddr() string
 	GetGearTokenAddr() string
-	GetAddressBySymbol(string) string
 	// credit manager
 	AddAccountTokenTransfer(tt *schemas.TokenTransfer)
 	AddCreditManagerStats(cms *schemas.CreditManagerStat)

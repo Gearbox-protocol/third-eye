@@ -144,9 +144,6 @@ func (DummyRepo) GetUSDCAddr() string {
 func (DummyRepo) GetGearTokenAddr() string {
 	return ""
 }
-func (DummyRepo) GetAddressBySymbol(sym string) string {
-	return ""
-}
 
 // credit manager
 func (DummyRepo) AddAccountTokenTransfer(tt *schemas.TokenTransfer) {
