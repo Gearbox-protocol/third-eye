@@ -14,7 +14,7 @@ type TokenSymMap struct {
 
 func newTokenSymMap(chainId int64) TokenSymMap {
 	if chainId == 1337 {
-		return TokenSymMap{chainId: 1337}
+		return TokenSymMap{chainId: chainId}
 	} else {
 		return tokenSymMapFromchainId(chainId)
 	}
@@ -46,6 +46,7 @@ func tokenSymMapFromchainId(chainId int64) TokenSymMap {
 	return TokenSymMap{
 		symToAddr: symToAddr.Tokens,
 		addrToSym: addrToSym,
+		chainId:   chainId,
 	}
 }
 

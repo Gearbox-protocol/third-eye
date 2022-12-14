@@ -14,6 +14,7 @@ import (
 
 type repoI interface {
 	GetKit() *ds.AdapterKit
+	// if returned value is nil, it means that token oracle hasn't been added yet.
 	GetOracleForV2Token(token string) *schemas.TokenOracle
 	GetTokens() []string
 	GetToken(string) *schemas.Token
@@ -179,14 +180,19 @@ func (q *QueryPFDependencies) extraPriceForQueryFeed() []*schemas.PriceFeed {
 
 func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]bool,
 	ch <-chan int, wg *sync.WaitGroup) {
+	// get the latestRoundData call data
 	priceFeedABI := core.GetAbi("PriceFeed")
-	var calls []multicall.Multicall2Call
-
 	data, err := priceFeedABI.Pack("latestRoundData")
 	log.CheckFatal(err)
+
+	// generate calls
+	var calls []multicall.Multicall2Call
 	var tokenOracles []*schemas.TokenOracle
 	for token := range tokens {
 		details := q.repo.GetOracleForV2Token(token)
+		if details == nil {
+			continue
+		}
 		tokenOracles = append(tokenOracles, details)
 		call := multicall.Multicall2Call{
 			Target:   common.HexToAddress(details.Feed),
@@ -194,7 +200,9 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 		}
 		calls = append(calls, call)
 	}
+	// get result
 	results := core.MakeMultiCall(q.client, blockNum, false, calls, 30)
+	// parse result and create PriceFeed obj
 	var newPrices []*schemas.PriceFeed
 	for ind, entry := range results {
 		details := tokenOracles[ind]
@@ -204,7 +212,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 			newPrice = parseRoundData(entry.ReturnData, true) // only valid for v2
 		} else {
 			// if failed check if pfType of the queryPrice is YearnPF
-			adapterI := q.repo.GetKit().GetAdapter(tokenOracles[ind].Feed)
+			adapterI := q.repo.GetKit().GetAdapter(details.Feed)
 			adapter := adapterI.(*QueryPriceFeed)
 			switch adapter.GetDetailsByKey("pfType") {
 			case ds.YearnPF:

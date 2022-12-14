@@ -216,10 +216,8 @@ func (repo *TokenOracleRepo) GetTokenOracles() map[int16]map[string]*schemas.Tok
 	return repo.tokensCurrentOracle
 }
 
+// if returned value is nil, it means that token oracle hasn't been added yet.
 func (repo *TokenOracleRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
 	obj := repo.tokensCurrentOracle[2][token]
-	if obj == nil {
-		log.Fatalf("No oracle found for token(%s)", token)
-	}
 	return obj
 }
