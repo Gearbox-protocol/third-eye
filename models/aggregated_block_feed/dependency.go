@@ -115,6 +115,7 @@ func getDepGraph(chainId int64) map[string][]string {
 		// gusd and 3crv
 		"stkcvxgusd3CRV": {"GUSD", "DAI", "USDC", "USDT"},
 		"cvxgusd3CRV":    {"GUSD", "DAI", "USDC", "USDT"},
+		"gusd3CRV":       {"GUSD", "DAI", "USDC", "USDT"},
 		// steth/eth
 		"stkcvxsteCRV":  {"stETH", "WETH"}, // phantom convex on mainnet
 		"steCRV":        {"stETH", "WETH"}, // curve steth
