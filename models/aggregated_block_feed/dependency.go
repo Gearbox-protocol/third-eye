@@ -13,7 +13,7 @@ import (
 )
 
 type repoI interface {
-	GetKit() *ds.AdapterKit
+	GetAdapter(addr string) ds.SyncAdapterI
 	// if returned value is nil, it means that token oracle hasn't been added yet.
 	GetOracleForV2Token(token string) *schemas.TokenOracle
 	GetTokens() []string
@@ -213,24 +213,22 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 			newPrice = parseRoundData(entry.ReturnData, true, details.Feed) // only valid for v2
 		} else {
 			// if failed check and pfType of the queryPrice is YearnPF
-			adapterI := q.repo.GetKit().GetAdapter(details.Feed)
-			adapter := adapterI.(*QueryPriceFeed)
-			switch adapter.GetDetailsByKey("pfType") {
-			case ds.YearnPF:
-				_newPrice, err := adapter.calculateYearnPFInternally(blockNum)
-				// if not able to calculate the price for yearn feed
-				// skip this token
-				if err != nil {
-					continue
+			adapterI := q.repo.GetAdapter(details.Feed)
+			if adapter, ok := adapterI.(*QueryPriceFeed); !ok {
+				log.Fatal("Conversion of adapter to queryPriceFeed failed ", details.Feed)
+			} else if adapter.GetDetailsByKey("pfType") == ds.YearnPF {
+				if _newPrice, err := adapter.calculateYearnPFInternally(blockNum); err == nil {
+					newPrice = _newPrice
 				}
-				newPrice = _newPrice
 			}
 		}
-		// add token and feed details
-		newPrice.Token = details.Token
-		newPrice.Feed = details.Feed
-		newPrice.BlockNumber = blockNum
-		newPrices = append(newPrices, newPrice)
+		if newPrice != nil {
+			// add token and feed details
+			newPrice.Token = details.Token
+			newPrice.Feed = details.Feed
+			newPrice.BlockNumber = blockNum
+			newPrices = append(newPrices, newPrice)
+		}
 	}
 	q.updateQueryPrices(newPrices)
 	// sync control

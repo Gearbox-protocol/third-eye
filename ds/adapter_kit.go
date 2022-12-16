@@ -7,6 +7,9 @@ type AdapterKit struct {
 	len                int
 }
 
+func (x AdapterKit) GetAddrsMap() map[string]SyncAdapterI {
+	return x.addressMap
+}
 func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})

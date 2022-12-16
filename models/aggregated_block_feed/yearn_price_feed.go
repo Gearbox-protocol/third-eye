@@ -47,7 +47,6 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 	mdl := NewQueryPriceFeedFromAdapter(
 		syncAdapter,
 	)
-	mdl.addPriceForToken(token, discoveredAt)
 	return mdl
 }
 
@@ -104,17 +103,18 @@ func (mdl *QueryPriceFeed) GetTokenAddr() string {
 
 func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) (*schemas.PriceFeed, error) {
 	if mdl.YVaultContract == nil || mdl.PriceFeedContract == nil || mdl.DecimalDivider == nil {
-		mdl.setContracts(blockNum)
+		if err := mdl.setContracts(blockNum); err != nil {
+			return nil, err
+		}
 	}
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
-
-	roundData, err := mdl.PriceFeedContract.LatestRoundData(opts)
+	pricePerShare, err := mdl.YVaultContract.PricePerShare(opts)
 	if err != nil {
 		return nil, err
 	}
-	pricePerShare, err := mdl.YVaultContract.PricePerShare(opts)
+	roundData, err := mdl.PriceFeedContract.LatestRoundData(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -158,28 +158,36 @@ func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) (*schemas.
 	}, nil
 }
 
-func (mdl *QueryPriceFeed) setContracts(blockNum int64) {
+func (mdl *QueryPriceFeed) setContracts(blockNum int64) error {
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	}
 	// set the price feed contract
-	priceFeedAddr, err := mdl.contractETH.PriceFeed(opts)
-	log.CheckFatal(err)
-	priceFeedContract, err := priceFeed.NewPriceFeed(priceFeedAddr, mdl.Client)
-	log.CheckFatal(err)
-	mdl.PriceFeedContract = priceFeedContract
+	if priceFeedAddr, err := mdl.contractETH.PriceFeed(opts); err != nil {
+		return err
+	} else if priceFeedContract, err := priceFeed.NewPriceFeed(priceFeedAddr, mdl.Client); err != nil {
+		return err
+	} else {
+		mdl.PriceFeedContract = priceFeedContract
+	}
 
 	// set the yvault contract
-	yVaultAddr, err := mdl.contractETH.YVault(opts)
-	log.CheckFatal(err)
-	yVaultContract, err := yVault.NewYVault(yVaultAddr, mdl.Client)
-	log.CheckFatal(err)
-	mdl.YVaultContract = yVaultContract
+	if yVaultAddr, err := mdl.contractETH.YVault(opts); err != nil {
+		return err
+	} else if yVaultContract, err := yVault.NewYVault(yVaultAddr, mdl.Client); err != nil {
+		return err
+	} else {
+		mdl.YVaultContract = yVaultContract
+	}
 
 	// set the decimals
-	decimals, err := yVaultContract.Decimals(opts)
-	log.CheckFatal(err)
-	mdl.DecimalDivider = utils.GetExpInt(int8(decimals))
+	if decimals, err := mdl.YVaultContract.Decimals(opts); err != nil {
+		return err
+	} else {
+		mdl.DecimalDivider = utils.GetExpInt(int8(decimals))
+	}
+	//
+	return nil
 }
 
 ///////////////////////
@@ -206,36 +214,10 @@ func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 			}
 		}
 		obj[token] = []int64{discoveredAt}
-		// when token is added to the feed, price at discoveredAt is added for that token
-		// so we can ignore that token is valid at discoveredAt, hence added one to discoveredAt
-		mdl.addPriceForToken(token, discoveredAt)
 		mdl.Details["token"] = obj
 	} else {
 		log.Fatal("Can't reach this part in the yearn price feed")
 	}
-}
-
-func (mdl *QueryPriceFeed) addPriceForToken(token string, discoveredAt int64) {
-	if mdl.PriceFeedContract == nil {
-		priceFeedContract, err := priceFeed.NewPriceFeed(common.HexToAddress(mdl.Address), mdl.Client)
-		log.CheckFatal(err)
-		mdl.PriceFeedContract = priceFeedContract
-	}
-	data, err := mdl.PriceFeedContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
-	log.CheckFatal(err)
-	var decimals int8 = 8
-	if mdl.GetVersion() == 1 {
-		decimals = 18
-	}
-	mdl.Repo.AddPriceFeed(&schemas.PriceFeed{
-		BlockNumber:  discoveredAt,
-		Feed:         mdl.Address,
-		Token:        token,
-		RoundId:      data.RoundId.Int64(),
-		IsPriceInUSD: mdl.GetVersion() > 1, // for version more than 1
-		PriceBI:      (*core.BigInt)(data.Answer),
-		Price:        utils.GetFloat64Decimal(data.Answer, decimals),
-	})
 }
 
 func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {

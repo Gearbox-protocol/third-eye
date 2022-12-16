@@ -136,6 +136,9 @@ func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if trace.CallTrace == nil {
+			log.Fatal("Retry failed for tenderly: ", txHash)
+		}
 		return trace
 	}
 	return trace

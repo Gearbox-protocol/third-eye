@@ -14,7 +14,7 @@ func (repo *Repository) loadGearBalances() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	geartokenAddr := repo.GetKit().GetAdapterAddressByName(ds.GearToken)
+	geartokenAddr := repo.GetAdapterAddressByName(ds.GearToken)
 	if len(geartokenAddr) > 0 {
 		if adapter := repo.GetAdapter(geartokenAddr[0]); adapter != nil {
 			adapter.SetUnderlyingState(data)

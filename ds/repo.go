@@ -18,7 +18,8 @@ type EngineI interface {
 type RepositoryI interface {
 	Init()
 	// sync adapters
-	GetKit() *AdapterKit
+	GetAdapter(addr string) SyncAdapterI
+	GetAdapterAddressByName(name string) []string
 	AddSyncAdapter(adapterI SyncAdapterI)
 	// saving to the db
 	Flush() error

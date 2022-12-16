@@ -186,7 +186,7 @@ func (repo *SyncAdaptersRepo) GetKit() *ds.AdapterKit {
 }
 
 func (repo *SyncAdaptersRepo) GetAdapter(addr string) ds.SyncAdapterI {
-	adapter := repo.GetKit().GetAdapter(addr)
+	adapter := repo.kit.GetAdapter(addr)
 	if adapter == nil {
 		feeds := repo.AggregatedFeed.GetQueryFeeds()
 		for _, feed := range feeds {
@@ -196,6 +196,10 @@ func (repo *SyncAdaptersRepo) GetAdapter(addr string) ds.SyncAdapterI {
 		}
 	}
 	return adapter
+}
+
+func (repo SyncAdaptersRepo) GetAdapterAddressByName(name string) []string {
+	return repo.kit.GetAdapterAddressByName(name)
 }
 
 func (repo *SyncAdaptersRepo) GetYearnFeedAddrs() (addrs []string) {

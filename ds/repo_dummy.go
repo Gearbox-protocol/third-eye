@@ -16,9 +16,14 @@ func (DummyRepo) Init() {
 }
 
 // sync adapters
-func (DummyRepo) GetKit() *AdapterKit {
+func (DummyRepo) GetAdapter(addr string) SyncAdapterI {
 	return nil
 }
+
+func (DummyRepo) GetAdapterAddressByName(name string) []string {
+	return nil
+}
+
 func (DummyRepo) AddSyncAdapter(adapterI SyncAdapterI) {
 }
 func (DummyRepo) GetChainId() uint {

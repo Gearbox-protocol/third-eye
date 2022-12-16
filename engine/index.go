@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
+	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -19,7 +20,7 @@ import (
 type Engine struct {
 	*core.Node
 	config              *config.Config
-	repo                ds.RepositoryI
+	repo                *repository.Repository
 	debtEng             ds.DebtEngineI
 	syncedBlock         atomic.Value
 	batchSizeForHistory int64
@@ -35,7 +36,7 @@ func NewEngine(config *config.Config,
 	eng := &Engine{
 		debtEng:             debtEng,
 		config:              config,
-		repo:                repo,
+		repo:                repo.(*repository.Repository),
 		batchSizeForHistory: config.BatchSizeForHistory,
 		Node: &core.Node{
 			Client: ec,

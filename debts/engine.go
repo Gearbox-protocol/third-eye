@@ -184,7 +184,7 @@ func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt in
 
 func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uint64) map[string]*ds.CumIndexAndUToken {
 	// this is assuming that credit managers are not disabled
-	cmAddrs := eng.repo.GetKit().GetAdapterAddressByName(ds.CreditManager)
+	cmAddrs := eng.repo.GetAdapterAddressByName(ds.CreditManager)
 	cmToCumIndex := make(map[string]*ds.CumIndexAndUToken)
 	for _, cmAddr := range cmAddrs {
 		cmState := eng.repo.GetCMState(cmAddr)
