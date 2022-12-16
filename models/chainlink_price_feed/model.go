@@ -80,7 +80,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		if lastLogBeforeDiscoverNum, err := obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
 			core.Topic("AnswerUpdated(int256,uint256,uint256)"),
 		}); err != nil {
-			log.Fatal(err, "for chainlink", adapter.GetAddress(), "with discovered_at", obj.DiscoveredAt)
+			log.Fatalf("%s for chainlink(%s) discovered_at %d", err, adapter.GetAddress(), obj.DiscoveredAt)
 		} else {
 			if lastLogBeforeDiscoverNum != 0 {
 				obj.LastSync = lastLogBeforeDiscoverNum - 1

@@ -127,63 +127,63 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64, weth, whatToQuery stri
 	var queryFeedPrices []*schemas.PriceFeed
 	uniPricesByToken := map[string]*schemas.UniPoolPrices{}
 	//
-	for i, entry := range result {
-		if i < yearnFeedLen {
-			pf := mdl.processRoundData(blockNum, queryAbleAdapters[i], entry)
-			queryFeedPrices = append(queryFeedPrices, pf...)
-		} else {
-			tokenInd := (i - yearnFeedLen) / 3
-			callInd := i - yearnFeedLen - tokenInd*3
-			token := uniTokens[tokenInd]
-			tokenDetails := mdl.priceOnUNIFetcher.tokenInfos[token]
-			prices := &schemas.UniPoolPrices{BlockNum: blockNum, Token: token}
-			if uniPricesByToken[token] != nil {
-				prices = uniPricesByToken[token]
+	for ind, entry := range result[:yearnFeedLen] {
+		pf := mdl.processRoundData(blockNum, queryAbleAdapters[ind], entry)
+		queryFeedPrices = append(queryFeedPrices, pf...)
+	}
+	//
+	for ind, entry := range result[yearnFeedLen:] {
+		tokenInd := ind / 3
+		callInd := ind - tokenInd*3
+		token := uniTokens[tokenInd]
+		tokenDetails := mdl.priceOnUNIFetcher.tokenInfos[token]
+		prices := &schemas.UniPoolPrices{BlockNum: blockNum, Token: token}
+		if uniPricesByToken[token] != nil {
+			prices = uniPricesByToken[token]
+		}
+		// ignore if failed
+		if !entry.Success {
+			continue
+		}
+		uniPricesByToken[token] = prices
+		switch callInd {
+		case 0:
+			value, err := v2ABI.Unpack("getReserves", entry.ReturnData)
+			log.CheckFatal(err)
+			r0 := value[0].(*big.Int)
+			r1 := value[1].(*big.Int)
+			uniswapv2Price := priceInWETH(token, weth, tokenDetails.Decimals, r0, r1)
+			prices.PriceV2 = utils.GetFloat64Decimal(uniswapv2Price, 18)
+			prices.PriceV2Success = true
+		case 1:
+			value, err := v3ABI.Unpack("slot0", entry.ReturnData)
+			log.CheckFatal(err)
+			//https://docs.uniswap.org/sdk/guides/fetching-prices#understanding-sqrtprice
+			// [(slot0**2 *Token0decimals)/2**192], divide by token for getting the float price in WETH
+			//
+			price := univ3SlotToPriceInBase(value[0].(*big.Int), areSorted(token, weth), tokenDetails.Decimals)
+			prices.PriceV3 = utils.GetFloat64Decimal(price, 18)
+			prices.PriceV3Success = true
+		case 2:
+			value, err := v3ABI.Unpack("observe", entry.ReturnData)
+			log.CheckFatal(err)
+			ticks := value[0].([]*big.Int)
+			// https://medium.com/blockchain-development-notes/a-guide-on-uniswap-v3-twap-oracle-2aa74a4a97c5
+			// (t1-t0)/interval
+			tickDiff := new(big.Int).Quo(new(big.Int).Sub(ticks[1], ticks[0]), big.NewInt(600))
+			sqrtPrice := powFloat(tickDiff)
+			decimal := 18 - tokenDetails.Decimals
+			if decimal != 0 {
+				sqrtPrice = new(big.Float).Mul(utils.GetExpFloat(decimal), sqrtPrice)
+				sqrtPrice = new(big.Float).Quo(big.NewFloat(1), sqrtPrice)
 			}
-			// ignore if failed
-			if !entry.Success {
-				continue
+			twapV3Price, _ := sqrtPrice.Float64()
+			prices.TwapV3 = twapV3Price
+			// if sorted use resiprocal
+			if tokenDetails.Symbol == "YFI" {
+				prices.TwapV3 = 1 / prices.TwapV3
 			}
-			uniPricesByToken[token] = prices
-			switch callInd {
-			case 0:
-				value, err := v2ABI.Unpack("getReserves", entry.ReturnData)
-				log.CheckFatal(err)
-				r0 := value[0].(*big.Int)
-				r1 := value[1].(*big.Int)
-				uniswapv2Price := priceInWETH(token, weth, tokenDetails.Decimals, r0, r1)
-				prices.PriceV2 = utils.GetFloat64Decimal(uniswapv2Price, 18)
-				prices.PriceV2Success = true
-			case 1:
-				value, err := v3ABI.Unpack("slot0", entry.ReturnData)
-				log.CheckFatal(err)
-				//https://docs.uniswap.org/sdk/guides/fetching-prices#understanding-sqrtprice
-				// [(slot0**2 *Token0decimals)/2**192], divide by token for getting the float price in WETH
-				//
-				price := univ3SlotToPriceInBase(value[0].(*big.Int), areSorted(token, weth), tokenDetails.Decimals)
-				prices.PriceV3 = utils.GetFloat64Decimal(price, 18)
-				prices.PriceV3Success = true
-			case 2:
-				value, err := v3ABI.Unpack("observe", entry.ReturnData)
-				log.CheckFatal(err)
-				ticks := value[0].([]*big.Int)
-				// https://medium.com/blockchain-development-notes/a-guide-on-uniswap-v3-twap-oracle-2aa74a4a97c5
-				// (t1-t0)/interval
-				tickDiff := new(big.Int).Quo(new(big.Int).Sub(ticks[1], ticks[0]), big.NewInt(600))
-				sqrtPrice := powFloat(tickDiff)
-				decimal := 18 - tokenDetails.Decimals
-				if decimal != 0 {
-					sqrtPrice = new(big.Float).Mul(utils.GetExpFloat(decimal), sqrtPrice)
-					sqrtPrice = new(big.Float).Quo(big.NewFloat(1), sqrtPrice)
-				}
-				twapV3Price, _ := sqrtPrice.Float64()
-				prices.TwapV3 = twapV3Price
-				// if sorted use resiprocal
-				if tokenDetails.Symbol == "YFI" {
-					prices.TwapV3 = 1 / prices.TwapV3
-				}
-				prices.TwapV3Success = true
-			}
+			prices.TwapV3Success = true
 		}
 	}
 	return queryFeedPrices, uniPricesByToken
@@ -212,12 +212,14 @@ func (mdl *AggregatedBlockFeed) processRoundData(blockNum int64, adapter *QueryP
 	var priceData *schemas.PriceFeed
 	if entry.Success {
 		isPriceInUSD := adapter.GetVersion() > 1
-		priceData = parseRoundData(entry.ReturnData, isPriceInUSD)
+		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
 		adapter.setNotified(false)
 	} else {
 		switch adapter.GetDetailsByKey("pfType") {
 		case ds.YearnPF:
-			priceData = adapter.calculateYearnPFInternally(blockNum)
+			_priceData, err := adapter.calculateYearnPFInternally(blockNum)
+			log.CheckFatal(err)
+			priceData = _priceData
 		}
 	}
 	priceFeeds := []*schemas.PriceFeed{}
@@ -233,11 +235,13 @@ func (mdl *AggregatedBlockFeed) processRoundData(blockNum int64, adapter *QueryP
 	return priceFeeds
 }
 
-func parseRoundData(returnData []byte, isPriceInUSD bool) *schemas.PriceFeed {
+func parseRoundData(returnData []byte, isPriceInUSD bool, feed string) *schemas.PriceFeed {
 	priceFeedABI := core.GetAbi("PriceFeed")
 	roundData := schemas.LatestRounData{}
 	value, err := priceFeedABI.Unpack("latestRoundData", returnData)
-	log.CheckFatal(err)
+	if err != nil {
+		log.Fatalf("For feed(%s) can't get the lastestRounData: %s", feed, err)
+	}
 	roundData.RoundId = *abi.ConvertType(value[0], new(*big.Int)).(**big.Int)
 	roundData.Answer = *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
 	// roundData.StartedAt = *abi.ConvertType(value[2], new(*big.Int)).(**big.Int)

@@ -102,7 +102,7 @@ func (mdl *QueryPriceFeed) GetTokenAddr() string {
 	return tokenAddr
 }
 
-func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) *schemas.PriceFeed {
+func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) (*schemas.PriceFeed, error) {
 	if mdl.YVaultContract == nil || mdl.PriceFeedContract == nil || mdl.DecimalDivider == nil {
 		mdl.setContracts(blockNum)
 	}
@@ -111,14 +111,22 @@ func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) *schemas.P
 	}
 
 	roundData, err := mdl.PriceFeedContract.LatestRoundData(opts)
-	log.CheckFatal(err)
+	if err != nil {
+		return nil, err
+	}
 	pricePerShare, err := mdl.YVaultContract.PricePerShare(opts)
-	log.CheckFatal(err)
+	if err != nil {
+		return nil, err
+	}
 
 	lowerBound, err := mdl.contractETH.LowerBound(opts)
-	log.CheckFatal(err)
+	if err != nil {
+		return nil, err
+	}
 	uppwerBound, err := mdl.contractETH.UpperBound(opts)
-	log.CheckFatal(err)
+	if err != nil {
+		return nil, err
+	}
 	if !(pricePerShare.Cmp(lowerBound) >= 0 && pricePerShare.Cmp(uppwerBound) <= 0) {
 		if !mdl.isNotified() {
 			mdl.setNotified(true)
@@ -147,7 +155,7 @@ func (mdl *QueryPriceFeed) calculateYearnPFInternally(blockNum int64) *schemas.P
 		PriceBI:      (*core.BigInt)(newAnswer),
 		Price:        utils.GetFloat64Decimal(newAnswer, decimals),
 		IsPriceInUSD: isPriceInUSD,
-	}
+	}, nil
 }
 
 func (mdl *QueryPriceFeed) setContracts(blockNum int64) {

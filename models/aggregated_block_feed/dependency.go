@@ -208,15 +208,22 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 		details := tokenOracles[ind]
 		var newPrice *schemas.PriceFeed
 		/// parse price
-		if entry.Success {
-			newPrice = parseRoundData(entry.ReturnData, true) // only valid for v2
+		// there is no check that call was made for feed that is existing for given blockNum
+		if entry.Success && len(entry.ReturnData) != 0 {
+			newPrice = parseRoundData(entry.ReturnData, true, details.Feed) // only valid for v2
 		} else {
-			// if failed check if pfType of the queryPrice is YearnPF
+			// if failed check and pfType of the queryPrice is YearnPF
 			adapterI := q.repo.GetKit().GetAdapter(details.Feed)
 			adapter := adapterI.(*QueryPriceFeed)
 			switch adapter.GetDetailsByKey("pfType") {
 			case ds.YearnPF:
-				newPrice = adapter.calculateYearnPFInternally(blockNum)
+				_newPrice, err := adapter.calculateYearnPFInternally(blockNum)
+				// if not able to calculate the price for yearn feed
+				// skip this token
+				if err != nil {
+					continue
+				}
+				newPrice = _newPrice
 			}
 		}
 		// add token and feed details
