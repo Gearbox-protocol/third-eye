@@ -13,13 +13,7 @@ go build ./cmd/main.go && ./main
 
 It's also possible to run migrate with docker:
 ```
-docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "postgres://postgres:mysecretpassword@localhost:5432/postgres?sslmode=disable" up
-```
-
-## Testing
-
-```
-go test ./tests && go test ./ds
+docker run -v $(pwd)/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "${url}" up
 ```
 
 ## Licensing
