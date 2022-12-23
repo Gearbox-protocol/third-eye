@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -156,6 +157,8 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 			call.Transfers = executeTransfers[i]
 		}
 	} else {
+		fileName := fmt.Sprintf("trace-%s-%s.json", txHash, time.Now())
+		os.WriteFile(fileName, []byte(utils.ToJson(trace)), os.ModePerm)
 		log.Fatalf("Calls %d execute details %d tx:%s creditManager:%s",
 			len(calls), len(executeTransfers), txHash, creditManagerAddr)
 	}
