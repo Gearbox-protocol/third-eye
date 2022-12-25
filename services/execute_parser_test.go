@@ -25,8 +25,11 @@ type getTransferTestInput struct {
 }
 
 func TestGetTransfers(t *testing.T) {
+
+	// create other variables
 	input := getTransferTestInput{}
 	utils.ReadJsonAndSetInterface("../inputs/execute_parser_transfers/get_transfers.json", &input)
+
 	transfers := getCloseAccountv2Transfers(input.CallTrace, input.Account, input.UnderlyingToken, input.Users)
 	if len(transfers) != 1 || transfers[input.UnderlyingToken].String() != "1999963055379350458" {
 		t.Fatal(utils.ToJson(transfers))

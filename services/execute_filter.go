@@ -75,7 +75,7 @@ func (ef *ExecuteFilter) getExecuteTransfers(txLogs []Log, cmEvents map[common.H
 	for _, raw := range txLogs {
 		eventLog := raw.Raw
 		eventSig := eventLog.Topics[0]
-		eventLogAddress := common.HexToAddress(eventLog.Address).Hex()
+		eventLogAddress := eventLog.Address.Hex()
 		// if any other creditmanager event is emitted add to the execute
 		if cmEvents[eventSig] && parsingTransfer {
 			execEventBalances = append(execEventBalances, balances)
