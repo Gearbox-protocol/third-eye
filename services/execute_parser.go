@@ -50,31 +50,33 @@ type ExecuteParams struct {
 
 type ExecuteParser struct {
 	Client              http.Client
-	IgnoreCMEventIds    map[string]bool
+	IgnoreCMEventIds    map[common.Hash]bool
 	ExecuteOrderFuncSig string
 	ChainId             int64
+	txLogger            TxLogger
 }
 
-func getCMEventIds() map[string]bool {
-	ids := map[string]bool{}
+func getCMEventIds() map[common.Hash]bool {
+	ids := map[common.Hash]bool{}
 	if abiObj, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI)); err == nil {
 		for _, event := range abiObj.Events {
-			ids[event.ID.Hex()] = true
+			ids[event.ID] = true
 		}
 	}
 	if abiObj, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
 		for _, event := range abiObj.Events {
-			ids[event.ID.Hex()] = true
+			ids[event.ID] = true
 		}
 	}
 	return ids
 }
-func NewExecuteParser(config *config.Config) ds.ExecuteParserI {
+func NewExecuteParser(config *config.Config, client core.ClientI) ds.ExecuteParserI {
 	return &ExecuteParser{
 		Client:              http.Client{},
 		IgnoreCMEventIds:    getCMEventIds(),
 		ExecuteOrderFuncSig: "0x6ce4074a",
 		ChainId:             config.ChainId,
+		txLogger:            NewTxLogger(client, config.BatchSizeForHistory),
 	}
 }
 
@@ -88,19 +90,21 @@ type Call struct {
 	Depth    uint8
 }
 
+type RawLog struct {
+	Address string        `json:"address"`
+	Topics  []common.Hash `json:"topics"`
+	Data    string        `json:"data"`
+}
 type Log struct {
 	Name string `json:"name"`
-	Raw  struct {
-		Address string   `json:"address"`
-		Topics  []string `json:"topics"`
-		Data    string   `json:"data"`
-	} `json:"raw"`
+	Raw  RawLog `json:"raw"`
 }
 
 type TxTrace struct {
-	CallTrace *Call  `json:"call_trace"`
-	TxHash    string `json:"transaction_id"`
-	Logs      []Log  `json:"logs"`
+	CallTrace   *Call  `json:"call_trace"`
+	TxHash      string `json:"transaction_id"`
+	Logs        []Log  `json:"logs"`
+	BlockNumber int64  `json:"block_number"`
 }
 
 func (ep *ExecuteParser) getTenderlyData(txHash string) (*TxTrace, error) {
@@ -149,7 +153,8 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	trace := ep.GetTxTrace(txHash)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)
-	executeTransfers := filter.getExecuteTransfers(trace, ep.IgnoreCMEventIds)
+
+	executeTransfers := filter.getExecuteTransfers(ep.txLogger.GetLogs(trace), ep.IgnoreCMEventIds)
 
 	// check if parsed execute Order currently
 	if len(calls) == len(executeTransfers) {
@@ -277,14 +282,15 @@ func getCreditFacadeMainEvent(input string) (*ds.FacadeCallNameWithMulticall, er
 func (ep *ExecuteParser) GetTransfers(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	trace := ep.GetTxTrace(txHash)
 	// log.Info(utils.ToJson(trace), account, underlyingToken, utils.ToJson(users))
-	return getCloseAccountv2Transfers(trace, account, underlyingToken, users)
+	return ep.getCloseAccountv2Transfers(trace, account, underlyingToken, users)
 }
 
 // currently only valid for closeCreditAccount v2
-func getCloseAccountv2Transfers(trace *TxTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
-	transfers := getTransfersToUser(trace, account, underlyingToken, users)
+func (ep ExecuteParser) getCloseAccountv2Transfers(trace *TxTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+	transfers := getTransfersToUser(ep.txLogger.GetLogs(trace), account, underlyingToken, users)
 	// convertWETH is set, only valid for closecreditaccountv2
 	convertWETHInd := 2 + 8 + 64 + 64 + 64
+	// for close call if convertEThInd is true
 	if trace.CallTrace.Input[:10] == "0x5f73fbec" && trace.CallTrace.Input[convertWETHInd-1] == '1' {
 		ethAmount := ethTransferDueToConvertWETH(trace.CallTrace, users)
 		if ethAmount == nil {
@@ -317,13 +323,14 @@ func ethTransferDueToConvertWETH(call *Call, users ds.BorrowerAndTo) (ethAmount 
 // tenderly has logs for events(we mainly use for Transfer on token) and calls( for unwrapETH on wethgateway)
 // wrapWETH is also present in closecreditaccount, but it sends the wrapped eth back to user and then the user has approval on weth for creditmanager so in second step the weth is transferred
 // handling native eth refund is only needed when convertETH is true
-func getTransfersToUser(trace *TxTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+// native eth transfer from account is handled in parent function, not in this function
+func getTransfersToUser(txLogs []Log, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	transfers := core.Transfers{}
-	for _, raw := range trace.Logs {
+	for _, raw := range txLogs {
 		eventLog := raw.Raw
-		if eventLog.Topics[0] == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" { // transfer event
-			to := common.HexToAddress(eventLog.Topics[2])
-			from := common.HexToAddress(eventLog.Topics[1])
+		if eventLog.Topics[0] == core.Topic("Transfer(address,address,uint256)") { // transfer event
+			to := common.BytesToAddress(eventLog.Topics[2][:])
+			from := common.BytesToAddress(eventLog.Topics[1][:])
 			token := common.HexToAddress(eventLog.Address).Hex()
 			var sign *big.Int
 			if from == users.Borrower && to.Hex() == account && token == underlyingToken {

@@ -25,8 +25,9 @@ type AccountData struct {
 	Address      string
 	blockNums    []int64
 	blockPresent map[int64]bool
-	transfers    map[int64]map[string][]*schemas.TokenTransfer
-	Details      []*SessionData
+	// blocknum -> txhash -> transfer
+	transfers map[int64]map[string][]*schemas.TokenTransfer
+	Details   []*SessionData
 }
 
 func newAccountData(addr string) *AccountData {

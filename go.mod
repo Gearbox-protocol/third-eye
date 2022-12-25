@@ -6,6 +6,7 @@ require (
 	github.com/Gearbox-protocol/sdk-go v0.0.0-20221214115820-3e5a79c79801
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/go-playground/validator/v10 v10.4.1
+	github.com/google/go-cmp v0.5.8
 	github.com/heroku/x v0.0.42
 	github.com/joho/godotenv v1.3.0
 	github.com/prometheus/client_golang v1.14.0
