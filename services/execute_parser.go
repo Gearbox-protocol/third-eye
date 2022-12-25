@@ -91,9 +91,9 @@ type Call struct {
 }
 
 type RawLog struct {
-	Address string        `json:"address"`
-	Topics  []common.Hash `json:"topics"`
-	Data    string        `json:"data"`
+	Address common.Address `json:"address"`
+	Topics  []common.Hash  `json:"topics"`
+	Data    string         `json:"data"`
 }
 type Log struct {
 	Name string `json:"name"`
@@ -129,7 +129,7 @@ func (ep *ExecuteParser) getTenderlyData(txHash string) (*TxTrace, error) {
 
 // executeOrder
 
-func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
+func (ep *ExecuteParser) _getTxTrace(txHash string) *TxTrace {
 	trace, err := ep.getTenderlyData(txHash)
 	if err != nil {
 		log.Fatal(err)
@@ -149,12 +149,20 @@ func (ep *ExecuteParser) GetTxTrace(txHash string) *TxTrace {
 	return trace
 }
 
+func (ep ExecuteParser) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *TxTrace {
+	trace := ep._getTxTrace(txHash)
+	if canLoadLogsFromRPC && len(trace.Logs) == 0 {
+		trace.Logs = ep.txLogger.GetLogs(int(trace.BlockNumber), trace.TxHash)
+	}
+	return trace
+}
+
 func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
-	trace := ep.GetTxTrace(txHash)
+	trace := ep.GetTxTrace(txHash, true)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)
 
-	executeTransfers := filter.getExecuteTransfers(ep.txLogger.GetLogs(trace), ep.IgnoreCMEventIds)
+	executeTransfers := filter.getExecuteTransfers(trace.Logs, ep.IgnoreCMEventIds)
 
 	// check if parsed execute Order currently
 	if len(calls) == len(executeTransfers) {
@@ -204,7 +212,7 @@ func init() {
 //////////////////////////
 // GetMainCalls
 func (ep *ExecuteParser) GetMainCalls(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
-	trace := ep.GetTxTrace(txHash)
+	trace := ep.GetTxTrace(txHash, false)
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
 	if err != nil {
 		log.Fatal(err.Error(), "for txHash", txHash)
@@ -280,14 +288,13 @@ func getCreditFacadeMainEvent(input string) (*ds.FacadeCallNameWithMulticall, er
 // GetTransfers
 // currently only valid for closeCreditAccount v2
 func (ep *ExecuteParser) GetTransfers(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
-	trace := ep.GetTxTrace(txHash)
-	// log.Info(utils.ToJson(trace), account, underlyingToken, utils.ToJson(users))
-	return ep.getCloseAccountv2Transfers(trace, account, underlyingToken, users)
+	trace := ep.GetTxTrace(txHash, true)
+	return getCloseAccountv2Transfers(trace, account, underlyingToken, users)
 }
 
 // currently only valid for closeCreditAccount v2
-func (ep ExecuteParser) getCloseAccountv2Transfers(trace *TxTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
-	transfers := getTransfersToUser(ep.txLogger.GetLogs(trace), account, underlyingToken, users)
+func getCloseAccountv2Transfers(trace *TxTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+	transfers := getTransfersToUser(trace.Logs, account, underlyingToken, users)
 	// convertWETH is set, only valid for closecreditaccountv2
 	convertWETHInd := 2 + 8 + 64 + 64 + 64
 	// for close call if convertEThInd is true
@@ -331,7 +338,7 @@ func getTransfersToUser(txLogs []Log, account, underlyingToken string, users ds.
 		if eventLog.Topics[0] == core.Topic("Transfer(address,address,uint256)") { // transfer event
 			to := common.BytesToAddress(eventLog.Topics[2][:])
 			from := common.BytesToAddress(eventLog.Topics[1][:])
-			token := common.HexToAddress(eventLog.Address).Hex()
+			token := eventLog.Address.Hex()
 			var sign *big.Int
 			if from == users.Borrower && to.Hex() == account && token == underlyingToken {
 				sign = big.NewInt(-1)

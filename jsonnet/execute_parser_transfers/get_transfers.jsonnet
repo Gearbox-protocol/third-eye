@@ -1,5 +1,6 @@
 {
   callTrace: {
+    block_number: 7726767,
     call_trace: {
       from: '0xf13df765f3047850cede5aa9fdf20a12a75f7f70',
       to: '0x60cb039204743fe1cbc52ebbde43e91c54a78b93',
@@ -354,7 +355,7 @@
         },
       },
       {
-        name: 'Transfer',
+        name: '',
         raw: {
           address: '0x595dfff822767c2e14cfb7d5e0b5a5e23ecfacdd',
           topics: [
@@ -366,7 +367,7 @@
         },
       },
       {
-        name: 'Withdrawal',
+        name: '',
         raw: {
           address: '0x595dfff822767c2e14cfb7d5e0b5a5e23ecfacdd',
           topics: [
@@ -377,7 +378,7 @@
         },
       },
       {
-        name: 'Transfer',
+        name: '',
         raw: {
           address: '0x595dfff822767c2e14cfb7d5e0b5a5e23ecfacdd',
           topics: [
@@ -389,7 +390,7 @@
         },
       },
       {
-        name: 'Transfer',
+        name: '',
         raw: {
           address: '0xfb906e19e71ed61bcb5ea0e11d77941a058eafbd',
           topics: [

@@ -26,19 +26,18 @@ func NewTxLogger(client core.ClientI, storeLen int64) TxLogger {
 }
 
 // works only for logs of a txHash which has executeOrder or closeCreditAccount in them
-func (m *TxLogger) GetLogs(trace *TxTrace) []Log {
-	if trace.Logs != nil {
-		return trace.Logs
-	}
-	blockNum := int(trace.BlockNumber)
-	if m.store[blockNum] == nil || m.store[blockNum][trace.TxHash] == nil {
+func (m *TxLogger) GetLogs(blockNum int, txHash string) []Log {
+	if m.store[blockNum] == nil || m.store[blockNum][txHash] == nil {
 		m.nums = insertInSlice(m.nums, int(blockNum))
 		m.store[blockNum] = m.fetchLogs(int64(blockNum))
 	}
 	//
-	ansTxLogs := m.store[blockNum][trace.TxHash]
-	// delete(m.store[blockNum], trace.TxHash)
+	ansTxLogs := m.store[blockNum][txHash]
+	// delete(m.store[blockNum], txHash)
 	m.nums = deleteInSlice(m.nums, blockNum-m.storeLen, m.store)
+	if len(ansTxLogs) == 0 {
+		log.Fatal("TxLogger returned 0 logs for ", txHash)
+	}
 	return ansTxLogs
 }
 
@@ -62,7 +61,7 @@ func (m TxLogger) fetchLogs(blockNum int64) map[string][]Log {
 		formattedLog := Log{
 			Name: "",
 			Raw: RawLog{
-				Address: txLog.Address.Hex(),
+				Address: txLog.Address,
 				Topics:  txLog.Topics,
 				Data:    fmt.Sprintf("0x%s", hex.EncodeToString(txLog.Data)),
 			},
