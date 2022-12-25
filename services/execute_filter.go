@@ -67,12 +67,12 @@ func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
 
 // tenderly has logs for events(which we mainly use for Transfer on token) and balance_diff for native eth exchange
 // handling native eth exchange is not needed for execution transfer or swaps
-func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents map[string]bool) []core.Transfers {
+func (ef *ExecuteFilter) getExecuteTransfers(txLogs []Log, cmEvents map[common.Hash]bool) []core.Transfers {
 	balances := make(core.Transfers)
 	var execEventBalances []core.Transfers
 	parsingTransfer := false
 	paramsIndex := -1
-	for _, raw := range trace.Logs {
+	for _, raw := range txLogs {
 		eventLog := raw.Raw
 		eventSig := eventLog.Topics[0]
 		eventLogAddress := common.HexToAddress(eventLog.Address).Hex()
@@ -83,16 +83,16 @@ func (ef *ExecuteFilter) getExecuteTransfers(trace *TxTrace, cmEvents map[string
 			parsingTransfer = false
 		}
 		// ExecuteOrder
-		if eventSig == "0xaed1eb34af6acd8c1e3911fb2ebb875a66324b03957886bd002227b17f52ab03" {
+		if eventSig == core.Topic("ExecuteOrder(address,address)") {
 			paramsIndex += 1
 			balances = make(core.Transfers)
 			parsingTransfer = true
 		}
 		// Transfer
-		if eventSig == "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef" &&
+		if eventSig == core.Topic("Transfer(address,address,uint256)") &&
 			len(eventLog.Topics) == 3 && parsingTransfer {
-			src := common.HexToAddress(eventLog.Topics[1])
-			dest := common.HexToAddress(eventLog.Topics[2])
+			src := common.BytesToAddress(eventLog.Topics[1][:])
+			dest := common.BytesToAddress(eventLog.Topics[2][:])
 			amt, b := new(big.Int).SetString(eventLog.Data[2:], 16)
 			if !b {
 				log.Fatal("failed at serializing transfer data in int")
