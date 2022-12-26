@@ -23,7 +23,6 @@
         blockNum: 3,
         borrower: '#User_1',
         dapp: '#CreditManager_1',
-        depth: 0,
         logId: 3,
         sessionId: '#Account_1_3_3',
         transfers: {
@@ -45,7 +44,6 @@
         blockNum: 3,
         borrower: '#User_1',
         dapp: '#CreditManager_1',
-        depth: 0,
         logId: 5,
         sessionId: '#Account_1_3_3',
         transfers: {
@@ -255,7 +253,6 @@
         blockNum: 4,
         borrower: '#User_1',
         dapp: '#CreditManager_1',
-        depth: 0,
         logId: 1,
         sessionId: '#Account_1_3_3',
         transfers: {
@@ -371,7 +368,6 @@
         blockNum: 5,
         borrower: '#User_1',
         dapp: '#Uniswapv2_1',
-        depth: 0,
         logId: 0,
         sessionId: '#Account_1_3_3',
         transfers: {
@@ -452,7 +448,6 @@
         blockNum: 6,
         borrower: '#User_1',
         dapp: '#Token_1',
-        depth: 0,
         logId: 2,
         sessionId: '#Account_1_3_3',
         transfers: {
@@ -471,7 +466,6 @@
         blockNum: 6,
         borrower: '#User_1',
         dapp: '#Token_2',
-        depth: 0,
         logId: 3,
         sessionId: '#Account_1_3_3',
         transfers: {

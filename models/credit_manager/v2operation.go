@@ -54,8 +54,6 @@ func (mdl *CreditManager) getExecuteOrderAccountOperationFromParams(txHash strin
 			Args:        call.Args,
 			AdapterCall: true,
 			Transfers:   &call.Transfers,
-			// extras
-			Depth: call.Depth,
 		}
 		multiCalls = append(multiCalls, accountOperation)
 	}

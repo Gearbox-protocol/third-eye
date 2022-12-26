@@ -57,6 +57,7 @@ func (f FacadeCallNameWithMulticall) LenOfMulticalls() int {
 }
 
 // handles revertIflessthan case where event is not emitted.
+// also handles cases where number of execute order events emitted is less than execute calls
 func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(events []*schemas.AccountOperation) bool {
 	if f.TestLen != 0 {
 		return f.TestLen == len(events)
@@ -135,7 +136,6 @@ type ExecuteParserI interface {
 
 type KnownCall struct {
 	// Input string
-	Depth     uint8          `json:"depth"`
 	Name      string         `json:"name"`
 	Args      *core.Json     `json:"args"`
 	Transfers core.Transfers `json:"transfers"`

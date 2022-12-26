@@ -3,13 +3,31 @@ package services
 import (
 	"encoding/hex"
 	"math/big"
+	"strings"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/universalAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/wstETHv1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnAdapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnv2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/services/getter"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
+
+// has code only for exeuction call
 
 type ExecuteFilter struct {
 	paramsList    []ds.ExecuteParams
@@ -17,7 +35,7 @@ type ExecuteFilter struct {
 	creditManager common.Address
 }
 
-func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*ds.KnownCall {
+func (ef *ExecuteFilter) getExecuteCalls(call *getter.Call) []*ds.KnownCall {
 	var calls []*ds.KnownCall
 	if ef.paramsIndex >= len(ef.paramsList) {
 		return calls
@@ -26,17 +44,14 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*ds.KnownCall {
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		// Execute call on credit manager
 		if ef.creditManager == common.HexToAddress(call.To) && len(call.Input) >= 10 && call.Input[:10] == "0x6ce4074a" {
-
-			dappcall := call.dappCall(ep.Protocol)
+			dappcall := dappCall(call, ep.Protocol)
 			// this check is there as there are 2 executeOrder call in
 			// https://kovan.etherscan.io/tx/0x9aeb9ccfb3e100c3c9e6ed5a140784e910a962be36e15f244938645b21c48a96
 			// only first call to the dapp as the gearbox don't recursively call adapter/creditManager executeOrder
-			dappcall.Depth = call.Depth
 			calls = append(calls, dappcall)
 			ef.paramsIndex += 1
 		} else {
 			for _, c := range call.Calls {
-				c.Depth = call.Depth + 1
 				calls = append(calls, ef.getExecuteCalls(c)...)
 			}
 		}
@@ -45,7 +60,7 @@ func (ef *ExecuteFilter) getExecuteCalls(call *Call) []*ds.KnownCall {
 }
 
 // this is called after ExecuteOrder event is seen on credit manager for both v1 and v2
-func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
+func dappCall(call *getter.Call, dappAddr common.Address) *ds.KnownCall {
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) && dappAddr == common.HexToAddress(call.To) {
 		name, arguments := ParseCallData(call.Input)
 		if arguments == nil {
@@ -57,7 +72,7 @@ func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
 		}
 	}
 	for _, c := range call.Calls {
-		knownCall := c.dappCall(dappAddr)
+		knownCall := dappCall(c, dappAddr)
 		if knownCall != nil {
 			return knownCall
 		}
@@ -67,7 +82,7 @@ func (call *Call) dappCall(dappAddr common.Address) *ds.KnownCall {
 
 // tenderly has logs for events(which we mainly use for Transfer on token) and balance_diff for native eth exchange
 // handling native eth exchange is not needed for execution transfer or swaps
-func (ef *ExecuteFilter) getExecuteTransfers(txLogs []Log, cmEvents map[common.Hash]bool) []core.Transfers {
+func (ef *ExecuteFilter) getExecuteTransfers(txLogs []getter.Log, cmEvents map[common.Hash]bool) []core.Transfers {
 	balances := make(core.Transfers)
 	var execEventBalances []core.Transfers
 	parsingTransfer := false
@@ -112,6 +127,28 @@ func (ef *ExecuteFilter) getExecuteTransfers(txLogs []Log, cmEvents map[common.H
 		execEventBalances = append(execEventBalances, balances)
 	}
 	return execEventBalances
+}
+
+var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
+	uniswapv2Adapter.Uniswapv2AdapterABI, uniswapv3Adapter.Uniswapv3AdapterABI,
+	iSwapRouter.ISwapRouterABI, testAdapter.TestAdapterABI,
+	// creditfacade for credit manager onlogs
+	// v2
+	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI, wstETHv1Adapter.WstETHv1AdapterABI,
+	convexAdapter.ConvexAdapterABI, curveAdapter.CurveAdapterABI,
+	yearnv2Adapter.Yearnv2AdapterABI, universalAdapter.UniversalAdapterABI,
+}
+
+var abiParsers []abi.ABI
+
+func init() {
+	for _, abiJSON := range abiJSONs {
+		abiParser, err := abi.JSON(strings.NewReader(abiJSON))
+		if err != nil {
+			log.Fatal(err)
+		}
+		abiParsers = append(abiParsers, abiParser)
+	}
 }
 
 //https://ethereum.stackexchange.com/questions/29809/how-to-decode-input-data-with-abi-using-golang/100247

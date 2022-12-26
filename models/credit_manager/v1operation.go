@@ -303,8 +303,6 @@ func (mdl *CreditManager) handleExecuteEvents(executeParams []ds.ExecuteParams) 
 			Args:        call.Args,
 			AdapterCall: true,
 			Transfers:   &call.Transfers,
-			// extras
-			Depth: call.Depth,
 		}
 		mdl.AddAccountOperation(accountOperation)
 		mdl.setUpdateSession(params.SessionId)

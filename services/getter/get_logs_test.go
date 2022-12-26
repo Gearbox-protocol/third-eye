@@ -1,4 +1,4 @@
-package services
+package getter
 
 import (
 	"testing"
@@ -51,12 +51,12 @@ func TestTxLogger(t *testing.T) {
 		return
 	}
 	client := ethclient.NewEthClient(&config.Config{EthProvider: url})
-	ep := NewExecuteParser(&config.Config{BatchSizeForHistory: 10}, client).(*ExecuteParser)
+	fetcher := NewInternalFetcher(&config.Config{BatchSizeForHistory: 10}, client)
 	// create other variables
-	input := getTransferTestInput{}
+	input := TenderlySampleTestInput{}
 	utils.ReadJsonAndSetInterface("../inputs/execute_parser_transfers/get_transfers.json", &input)
 	trace := input.CallTrace
 	// check 1
-	logs := ep.txLogger.GetLogs(int(trace.BlockNumber), trace.TxHash)
+	logs := fetcher.txLogger.GetLogs(int(trace.BlockNumber), trace.TxHash)
 	require.JSONEq(t, utils.ToJson(trace.Logs), utils.ToJson(logs))
 }

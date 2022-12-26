@@ -20,7 +20,6 @@
         blockNum: 4,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 0,
         multicalls: [
           {
@@ -39,7 +38,6 @@
             blockNum: 4,
             borrower: '#User_1',
             dapp: '#CreditFacade_1',
-            depth: 0,
             logId: 2,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -60,7 +58,6 @@
         blockNum: 4,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 0,
         multicalls: [
           {
@@ -79,7 +76,6 @@
             blockNum: 4,
             borrower: '#User_1',
             dapp: '#CreditFacade_1',
-            depth: 0,
             logId: 6,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -227,7 +223,6 @@
         blockNum: 6,
         borrower: '#User_2',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 4,
         multicalls: [
           {
@@ -246,7 +241,6 @@
             blockNum: 6,
             borrower: '#User_2',
             dapp: '#CreditFacade_1',
-            depth: 0,
             logId: 6,
             sessionId: '#Account_2_6_4',
             transfers: {
@@ -276,7 +270,6 @@
         blockNum: 6,
         borrower: '#User_1',
         dapp: '#CreditManager_1',
-        depth: 0,
         logId: 3,
         multicalls: [
           {
@@ -295,7 +288,6 @@
             blockNum: 6,
             borrower: '#User_1',
             dapp: '#CreditFacade_1',
-            depth: 0,
             logId: 1,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -326,7 +318,6 @@
         blockNum: 6,
         borrower: '#User_2',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 7,
         sessionId: '#Account_2_6_4',
         transfers: {

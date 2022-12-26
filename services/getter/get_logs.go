@@ -1,4 +1,4 @@
-package services
+package getter
 
 import (
 	"encoding/hex"
