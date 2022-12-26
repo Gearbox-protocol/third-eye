@@ -49,6 +49,12 @@ func (app InternalCallFetcher) getData(txHash string) ([]RPCTrace, error) {
 	return trace, nil
 }
 
+func (app InternalCallFetcher) GetData(txHash string) *TenderlyTrace {
+	rpcTrace, err := app.getData(txHash)
+	log.CheckFatal(err)
+	return getTenderlyCall(rpcTrace, txHash)
+}
+
 type RPCTrace struct {
 	Action struct {
 		From     string `json:"from"`

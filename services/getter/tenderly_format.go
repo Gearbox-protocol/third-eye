@@ -123,7 +123,14 @@ func NewInternalFetcher(cfg *config.Config, client core.ClientI) InternalFetcher
 }
 
 func (ep InternalFetcher) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *TenderlyTrace {
-	trace := ep.tenderlyFetcher._getTxTrace(txHash)
+	useTenderly := true
+	var trace *TenderlyTrace
+	if useTenderly {
+		trace = ep.tenderlyFetcher._getTxTrace(txHash)
+	} else {
+		trace = ep.internalCallsFetcher.GetData(txHash)
+	}
+	//
 	if canLoadLogsFromRPC && len(trace.Logs) == 0 {
 		trace.Logs = ep.txLogger.GetLogs(int(trace.BlockNumber), trace.TxHash)
 	}
