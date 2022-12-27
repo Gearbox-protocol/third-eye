@@ -83,7 +83,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 			_, err = yearnContract.YVault(opts)
 			if err != nil {
 				description, err := yearnContract.Description(opts)
-				if strings.Contains(description, "ETH/USD Composite") {
+				if strings.Contains(description, "USD Composite") {
 					return ds.CompositeChainlinkPF, false, nil
 				} else if strings.Contains(description, "CurveLP pricefeed") {
 					return ds.CurvePF, false, nil

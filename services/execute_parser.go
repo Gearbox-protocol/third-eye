@@ -158,6 +158,9 @@ func (ep ExecuteParser) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *TxTr
 }
 
 func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
+	if len(paramsList) == 0 {
+		return nil
+	}
 	trace := ep.GetTxTrace(txHash, true)
 	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
 	calls := filter.getExecuteCalls(trace.CallTrace)
