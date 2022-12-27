@@ -102,7 +102,7 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 	answerBI := utils.GetInt64(
 		new(big.Int).Mul(mdl.TokenETHPrice, mdl.ETHUSDPrice),
-		18,
+		mdl.decimalsOfBasePF,
 	)
 	// only usd price feed
 	priceFeed := &schemas.PriceFeed{

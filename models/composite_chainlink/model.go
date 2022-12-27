@@ -1,6 +1,7 @@
 package composite_chainlink
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
@@ -20,12 +21,15 @@ type CompositeChainlinkPF struct {
 	MainAgg          *cpf.ChainlinkMainAgg
 	TokenETHPrice    *big.Int
 	ETHUSDPrice      *big.Int
+	decimalsOfBasePF int8
 }
 
 // compositeChainlink price feed has token eth  oracle and eth usd base oracle for calculating the price of token in usd.
 func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *CompositeChainlinkPF {
 	oracleAddr := common.HexToAddress(oracle)
 	tokenETHPF := getAddrFromRPC(client, "targetETH", oracleAddr, discoveredAt)
+	// get decimals
+	decimalsToBasePF := getDecimals(client, tokenETHPF, discoveredAt)
 	mainAgg := cpf.NewMainAgg(client, tokenETHPF)
 
 	ethUSDPF := getAddrFromRPC(client, "ETHUSD", oracleAddr, discoveredAt)
@@ -50,8 +54,9 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 					Client:       client,
 				},
 				Details: map[string]interface{}{
-					"oracle": oracle,
-					"token":  token,
+					"oracle":   oracle,
+					"token":    token,
+					"decimals": decimalsToBasePF,
 					"secAddrs": map[string]interface{}{
 						"target":      tokenETHPF.Hex(),
 						"base":        ethUSDPF.Hex(),
@@ -72,8 +77,9 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 
 func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChainlinkPF {
 	compositeMdl := &CompositeChainlinkPF{
-		SyncAdapter: adapter,
-		Token:       adapter.GetDetailsByKey("token"),
+		SyncAdapter:      adapter,
+		Token:            adapter.GetDetailsByKey("token"),
+		decimalsOfBasePF: int8(adapter.GetDetails()["decimals"].(float64)),
 	}
 	compositeMdl.BaseTokenMainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("base"))
 	compositeMdl.MainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("target"))
@@ -117,22 +123,49 @@ func getPrice(entry multicall.Multicall2Result, feed common.Address) *big.Int {
 }
 
 func getAddrFromRPC(client core.ClientI, targetMethod string, oracle common.Address, blockNum int64) common.Address {
-	var sig string
-	switch targetMethod {
-	case "targetETH":
-		sig = "f1a75c6e" // targetEthPriceFeed
-	case "ETHUSD":
-		sig = "42f6fb29" // ethUsdPriceFeed
-	default:
-		log.Fatal(targetMethod, "not found")
-	}
+	chainId, err := client.ChainID(context.TODO())
+	log.CheckFatal(err)
+	sig := getSig(targetMethod, blockNum, chainId.Int64())
 	tokenETHPFData, err := dc_wrapper.CallFuncWithExtraBytes(client, sig, oracle, blockNum, nil)
 	if err != nil {
 		log.Fatalf("Oracle(%s) doesn't have valid %s: %s", oracle, targetMethod, err)
 	}
 	return common.BytesToAddress(tokenETHPFData)
 }
+func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 {
+	decimals, err := dc_wrapper.CallFuncWithExtraBytes(client, "313ce567", addr, blockNum, nil)
+	if err != nil {
+		log.Fatalf("Can't get decimals for addr(%s) : %s", addr, err)
+	}
+	return int8(new(big.Int).SetBytes(decimals).Int64())
+}
 
 func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
+}
+
+// there are two type of composite oracle
+// 1) with targetETh and ethUSD price feed.
+// 2) with baseToUSD and targetToBase price feed.
+func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string) {
+	oldMethods := (discoveredAt <= 15997386 && chainId == 1) ||
+		(discoveredAt <= 7966150 && chainId == 5)
+	//
+	switch targetMethod {
+	case "targetETH":
+		if oldMethods {
+			sig = "f1a75c6e" // targetEthPriceFeed
+		} else {
+			sig = "a76d5447" // targetToBasePriceFeed
+		}
+	case "ETHUSD":
+		if oldMethods {
+			sig = "42f6fb29" // ethUsdPriceFeed
+		} else {
+			sig = "51a799d6" // baseToUsdPriceFeed
+		}
+	default:
+		log.Fatal(targetMethod, "not found")
+	}
+	return
 }
