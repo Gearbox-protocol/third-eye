@@ -6,7 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/services/getter"
+	"github.com/Gearbox-protocol/third-eye/services/trace_service"
 )
 
 func TestGetMainEventLogs(t *testing.T) {
@@ -19,7 +19,7 @@ func TestGetMainEventLogs(t *testing.T) {
 
 func TestGetTransfers(t *testing.T) {
 	// create other variables
-	input := getter.TenderlySampleTestInput{}
+	input := trace_service.TenderlySampleTestInput{}
 	utils.ReadJsonAndSetInterface("../inputs/execute_parser_transfers/get_transfers.json", &input)
 
 	transfers := getCloseAccountv2Transfers(input.CallTrace, input.Account, input.UnderlyingToken, input.Users)

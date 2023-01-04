@@ -22,7 +22,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/services/getter"
+	"github.com/Gearbox-protocol/third-eye/services/trace_service"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -35,7 +35,7 @@ type ExecuteFilter struct {
 	creditManager common.Address
 }
 
-func (ef *ExecuteFilter) getExecuteCalls(call *getter.Call) []*ds.KnownCall {
+func (ef *ExecuteFilter) getExecuteCalls(call *trace_service.Call) []*ds.KnownCall {
 	var calls []*ds.KnownCall
 	if ef.paramsIndex >= len(ef.paramsList) {
 		return calls
@@ -60,7 +60,7 @@ func (ef *ExecuteFilter) getExecuteCalls(call *getter.Call) []*ds.KnownCall {
 }
 
 // this is called after ExecuteOrder event is seen on credit manager for both v1 and v2
-func dappCall(call *getter.Call, dappAddr common.Address) *ds.KnownCall {
+func dappCall(call *trace_service.Call, dappAddr common.Address) *ds.KnownCall {
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) && dappAddr == common.HexToAddress(call.To) {
 		name, arguments := ParseCallData(call.Input)
 		if arguments == nil {
@@ -82,7 +82,7 @@ func dappCall(call *getter.Call, dappAddr common.Address) *ds.KnownCall {
 
 // tenderly has logs for events(which we mainly use for Transfer on token) and balance_diff for native eth exchange
 // handling native eth exchange is not needed for execution transfer or swaps
-func (ef *ExecuteFilter) getExecuteTransfers(txLogs []getter.Log, cmEvents map[common.Hash]bool) []core.Transfers {
+func (ef *ExecuteFilter) getExecuteTransfers(txLogs []trace_service.Log, cmEvents map[common.Hash]bool) []core.Transfers {
 	balances := make(core.Transfers)
 	var execEventBalances []core.Transfers
 	parsingTransfer := false

@@ -16,7 +16,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/services/getter"
+	"github.com/Gearbox-protocol/third-eye/services/trace_service"
 
 	"math/big"
 
@@ -35,7 +35,7 @@ type ExecuteParams struct {
 
 type ExecuteParser struct {
 	IgnoreCMEventIds map[common.Hash]bool
-	getter.InternalFetcher
+	trace_service.InternalFetcher
 }
 
 func getCMEventIds() map[common.Hash]bool {
@@ -55,7 +55,7 @@ func getCMEventIds() map[common.Hash]bool {
 func NewExecuteParser(cfg *config.Config, client core.ClientI) ds.ExecuteParserI {
 	return &ExecuteParser{
 		IgnoreCMEventIds: getCMEventIds(),
-		InternalFetcher:  getter.NewInternalFetcher(cfg, client),
+		InternalFetcher:  trace_service.NewInternalFetcher(cfg, client),
 	}
 }
 
@@ -93,7 +93,7 @@ func (ep *ExecuteParser) GetMainCalls(txHash, creditFacade string) []*ds.FacadeC
 	return data
 }
 
-func (ep *ExecuteParser) getMainEvents(call *getter.Call, creditFacade common.Address) ([]*ds.FacadeCallNameWithMulticall, error) {
+func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade common.Address) ([]*ds.FacadeCallNameWithMulticall, error) {
 	mainEvents := []*ds.FacadeCallNameWithMulticall{}
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
@@ -170,7 +170,7 @@ func (ep *ExecuteParser) GetTransfers(txHash, account, underlyingToken string, u
 }
 
 // currently only valid for closeCreditAccount v2
-func getCloseAccountv2Transfers(trace *getter.TenderlyTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+func getCloseAccountv2Transfers(trace *trace_service.TenderlyTrace, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	transfers := getTransfersToUser(trace.Logs, account, underlyingToken, users)
 	// convertWETH is set, only valid for closecreditaccountv2
 	convertWETHInd := 2 + 8 + 64 + 64 + 64
@@ -190,7 +190,7 @@ func getCloseAccountv2Transfers(trace *getter.TenderlyTrace, account, underlying
 }
 
 // eth transfer due to convertWETH
-func ethTransferDueToConvertWETH(call *getter.Call, users ds.BorrowerAndTo) (ethAmount *big.Int) {
+func ethTransferDueToConvertWETH(call *trace_service.Call, users ds.BorrowerAndTo) (ethAmount *big.Int) {
 	if len(call.Input) == 10+64*2 && call.Input[:10] == "0x5869dba8" && common.HexToAddress(call.Input[10:74]) == users.To {
 		ethAmount, _ := new(big.Int).SetString(call.Input[74:], 16)
 		return ethAmount
@@ -208,7 +208,7 @@ func ethTransferDueToConvertWETH(call *getter.Call, users ds.BorrowerAndTo) (eth
 // wrapWETH is also present in closecreditaccount, but it sends the wrapped eth back to user and then the user has approval on weth for creditmanager so in second step the weth is transferred
 // handling native eth refund is only needed when convertETH is true
 // native eth transfer from account is handled in parent function, not in this function
-func getTransfersToUser(txLogs []getter.Log, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+func getTransfersToUser(txLogs []trace_service.Log, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	transfers := core.Transfers{}
 	for _, raw := range txLogs {
 		eventLog := raw.Raw

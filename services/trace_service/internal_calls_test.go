@@ -1,4 +1,4 @@
-package getter
+package trace_service
 
 import (
 	"encoding/json"
