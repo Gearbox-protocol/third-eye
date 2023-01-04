@@ -1,4 +1,4 @@
-package services
+package trace_service
 
 import (
 	"encoding/hex"

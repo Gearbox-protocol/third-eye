@@ -59,7 +59,6 @@
         blockNum: 8,
         borrower: '#User_1',
         dapp: '#CreditManager_1',
-        depth: 0,
         logId: 0,
         sessionId: '#Account_1_3_3',
         transfers: {

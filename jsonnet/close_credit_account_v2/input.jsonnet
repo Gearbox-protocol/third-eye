@@ -15,7 +15,6 @@ local extraBorrowedAmount = 1000;
             '': '#Account_1',
             deadline: 0,
           },
-          depth: 0,
           transfers: {
             '#Token_3': utils.bigInt(-2, 18),
             '#Token_1': utils.bigInt(4000, 6),

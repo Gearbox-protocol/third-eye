@@ -14,21 +14,21 @@ const (
 
 // facade Action
 type FacadeAccountActionv2 struct {
-	Data       *schemas.AccountOperation
-	Type       int
-	multicalls []*schemas.AccountOperation
+	Data      *schemas.AccountOperation
+	Type      int
+	withoutMC bool
 	// end if MulticallFinished is emitted / addcollateral is emitted after openCreditAccountWithoutMulticall
 	ended bool
 }
 
 func (v FacadeAccountActionv2) LenofMulticalls() int {
-	return len(v.multicalls)
+	return len(v.Data.MultiCall)
 }
-func (v FacadeAccountActionv2) GetMulticalls() []*schemas.AccountOperation {
-	return v.multicalls
+func (v FacadeAccountActionv2) GetMulticallsFromFA() []*schemas.AccountOperation {
+	return v.Data.MultiCall
 }
 func (v *FacadeAccountActionv2) SetMulticalls(ops []*schemas.AccountOperation) {
-	v.multicalls = ops
+	v.Data.MultiCall = ops
 }
 
 type MultiCallProcessor struct {
@@ -39,7 +39,7 @@ type MultiCallProcessor struct {
 	facadeActions      []*FacadeAccountActionv2
 }
 
-// edge case it was adds non multicall addCollateral for open credit account
+// edge case it adds non multicall addCollateral for open credit account
 func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperation) {
 	lastMainAction := p.lastMainAction()
 	//
@@ -53,12 +53,13 @@ func (p *MultiCallProcessor) AddMulticallEvent(operation *schemas.AccountOperati
 				log.Fatal("previous addcollateral for openevent found", utils.ToJson(operation))
 			}
 			openEventWithoutMulticall.MultiCall = []*schemas.AccountOperation{operation}
+			lastMainAction.withoutMC = true
 			lastMainAction.ended = true
 		} else {
 			p.nonMultiCallEvents = append(p.nonMultiCallEvents, operation)
 		}
 	} else { // multicall
-		lastMainAction.multicalls = append(lastMainAction.multicalls, operation)
+		lastMainAction.Data.MultiCall = append(lastMainAction.Data.MultiCall, operation)
 	}
 }
 
@@ -123,7 +124,7 @@ func (p *MultiCallProcessor) PopMainActionsv2() (facadeActions, openEventWithout
 	p.noOfOpens = 0
 	for _, entry := range p.facadeActions {
 		if entry.Type == GBv2FacadeOpenEvent && entry.Data != nil && // only for open credit accounts without multicalls
-			entry.LenofMulticalls() == 0 {
+			entry.withoutMC {
 			openEventWithoutMulticall = append(openEventWithoutMulticall, entry)
 		} else {
 			facadeActions = append(facadeActions, entry)

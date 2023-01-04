@@ -27,7 +27,7 @@ func (m *TokenSymMap) updateIfTest(repo repoI) {
 	symToAddr := map[string]common.Address{}
 	addrToSym := map[common.Address]string{}
 	for _, tokenStr := range repo.GetTokens() {
-		log.Info(tokenStr)
+		// log.Info(tokenStr)
 		sym := repo.GetToken(tokenStr).Symbol
 		token := common.HexToAddress(tokenStr)
 		symToAddr[sym] = token

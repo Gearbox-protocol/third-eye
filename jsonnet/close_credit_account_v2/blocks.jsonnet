@@ -58,7 +58,6 @@
         blockNum: 9,
         borrower: '#User_1',
         dapp: '#CreditManager_1',
-        depth: 0,
         logId: 3,
         multicalls: [
           {
@@ -84,7 +83,6 @@
             blockNum: 9,
             borrower: '#User_1',
             dapp: '#Uniswapv2_1',
-            depth: 0,
             logId: 1,
             sessionId: '#Account_1_4_0',
             transfers: {

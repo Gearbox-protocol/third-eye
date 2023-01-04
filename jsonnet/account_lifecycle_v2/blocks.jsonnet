@@ -20,7 +20,6 @@
         blockNum: 4,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 0,
         sessionId: '#Account_1_4_0',
         transfers: {
@@ -43,7 +42,6 @@
             blockNum: 4,
             borrower: '#User_1',
             dapp: '#CreditFacade_1',
-            depth: 0,
             logId: 1,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -68,7 +66,6 @@
         blockNum: 4,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 3,
         sessionId: '#Account_1_4_0',
         transfers: {
@@ -181,7 +178,6 @@
         blockNum: 5,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 0,
         multicalls: [
           {
@@ -200,7 +196,6 @@
             blockNum: 5,
             borrower: '#User_1',
             dapp: '#CreditFacade_1',
-            depth: 0,
             logId: 4,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -222,7 +217,6 @@
             blockNum: 5,
             borrower: '#User_1',
             dapp: '#CreditFacade_1',
-            depth: 0,
             logId: 5,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -364,7 +358,6 @@
         blockNum: 6,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
-        depth: 0,
         logId: 0,
         multicalls: [
           {
@@ -390,7 +383,6 @@
             blockNum: 6,
             borrower: '#User_1',
             dapp: '#Uniswapv2_1',
-            depth: 0,
             logId: 1,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -422,7 +414,6 @@
             blockNum: 6,
             borrower: '#User_1',
             dapp: '#Uniswapv2_1',
-            depth: 0,
             logId: 2,
             sessionId: '#Account_1_4_0',
             transfers: {
@@ -507,7 +498,6 @@
         blockNum: 7,
         borrower: '#User_1',
         dapp: '#Token_1',
-        depth: 0,
         logId: 3,
         sessionId: '#Account_1_4_0',
         transfers: {
@@ -526,7 +516,6 @@
         blockNum: 7,
         borrower: '#User_1',
         dapp: '#Token_2',
-        depth: 0,
         logId: 4,
         sessionId: '#Account_1_4_0',
         transfers: {

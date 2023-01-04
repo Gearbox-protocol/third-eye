@@ -12,7 +12,7 @@ import (
 )
 
 func (mdl *CreditManager) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
-	facadeActions []*ds.FacadeAccountActionv2) (result []*ds.FacadeAccountActionv2) {
+	facadeActions []*ds.FacadeAccountActionv2) (result []*ds.FacadeAccountActionv2) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
 		log.Fatalf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
 			len(mainCalls), len(facadeActions),
@@ -33,7 +33,8 @@ func (mdl *CreditManager) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*
 		case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall, ds.FacadeCloseAccountCall:
 			if mainCall.LenOfMulticalls() != 0 && len(facadeActions) > ind+1 { // combine next facadeAccountAction with current,
 				// if number of multicall reported by tenderly are more than 0 for close,expiredliquidate or liquidate calls.
-				multicallToAttach := action.GetMulticalls()
+				// this first action is multicall so just take the executeOrders from it.
+				multicallToAttach := action.GetMulticallsFromFA()
 				action = facadeActions[ind+1]
 				action.SetMulticalls(multicallToAttach)
 				ind++
@@ -79,7 +80,7 @@ func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string, facadeActi
 			log.Fatal(msg)
 		}
 		//
-		eventMulticalls := mainAction.GetMulticalls()
+		eventMulticalls := mainAction.GetMulticallsFromFA()
 		if !mainCall.SameMulticallLenAsEvents(eventMulticalls) {
 			log.Fatalf("%s expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
@@ -103,14 +104,14 @@ func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string, facadeActi
 	// called for  open_with_multicall, multicall, liquidate, close
 	var ind int
 	for _, mainAction := range facadeActions {
-		mainEvent := mainAction.Data
-		multicalls := mainAction.GetMulticalls()
+		multicalls := mainAction.GetMulticallsFromFA()
 		for multicallInd, innerEvent := range multicalls {
 			if innerEvent.Action == "ExecuteOrder" {
 				multicalls[multicallInd] = tenderlyExecuteEvents[ind]
 				ind++
 			}
 		}
+		mainEvent := mainAction.Data
 		mdl.addMulticallToMainEvent(mainEvent, multicalls)
 		mdl.Repo.AddAccountOperation(mainEvent)
 	}
@@ -120,7 +121,7 @@ func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string, facadeActi
 func (mdl *CreditManager) addMulticallToMainEvent(mainEvent *schemas.AccountOperation, allMulticalls []*schemas.AccountOperation) {
 	txHash := mainEvent.TxHash
 	//
-	var eventsMulticalls []*schemas.AccountOperation
+	eventsMulticalls := make([]*schemas.AccountOperation, 0, len(allMulticalls))
 	for _, event := range allMulticalls {
 		if event.BlockNumber != mainEvent.BlockNumber || event.TxHash != txHash {
 			log.Fatal("%s has different blockNumber or txhash from opencreditaccount(%d, %s)",

@@ -34,7 +34,6 @@ local newCollateral = 1;
             '': '#Account_1',
             deadline: 0,
           },
-          depth: 0,
           transfers: {
             '#Token_1': utils.bigInt(-2500, 6),
             '#Token_3': utils.bigInt(1, 18),
@@ -49,7 +48,6 @@ local newCollateral = 1;
             '': '#Account_1',
             deadline: 0,
           },
-          depth: 0,
           transfers: {
             '#Token_1': utils.bigInt(-2500, 6),
             '#Token_3': utils.bigInt(1, 18),
