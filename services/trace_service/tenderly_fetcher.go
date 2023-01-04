@@ -43,7 +43,7 @@ type TenderlyTrace struct {
 	BlockNumber int64  `json:"block_number"`
 }
 
-func (ep *TenderlyFetcher) getTenderlyData(txHash string) (*TenderlyTrace, error) {
+func (ep *TenderlyFetcher) getData(txHash string) (*TenderlyTrace, error) {
 	link := fmt.Sprintf("https://api.tenderly.co/api/v1/public-contract/%d/trace/%s", ep.ChainId, txHash)
 	req, _ := http.NewRequest(http.MethodGet, link, nil)
 	resp, err := ep.Client.Do(req)
@@ -63,15 +63,15 @@ func (ep *TenderlyFetcher) getTenderlyData(txHash string) (*TenderlyTrace, error
 	return trace, nil
 }
 
-func (ep *TenderlyFetcher) _getTxTrace(txHash string) *TenderlyTrace {
-	trace, err := ep.getTenderlyData(txHash)
+func (ep *TenderlyFetcher) getTxTrace(txHash string) *TenderlyTrace {
+	trace, err := ep.getData(txHash)
 	if err != nil {
 		log.Fatal(err)
 	}
 	if trace.CallTrace == nil {
 		log.Info("Call trace nil retrying in 30 sec")
 		time.Sleep(30 * time.Second)
-		trace, err = ep.getTenderlyData(txHash)
+		trace, err = ep.getData(txHash)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -88,7 +88,7 @@ type TenderlyFetcher struct {
 	ChainId int64
 }
 
-func NewTenderlyFetcher(client core.ClientI, chainId int64) TenderlyFetcher {
+func NewTenderlyFetcher(chainId int64) TenderlyFetcher {
 	return TenderlyFetcher{
 		ChainId: chainId,
 		Client:  http.Client{},
@@ -98,7 +98,7 @@ func NewTenderlyFetcher(client core.ClientI, chainId int64) TenderlyFetcher {
 // Tenderly test
 
 type TenderlySampleTestInput struct {
-	CallTrace       *TenderlyTrace   `json:"callTrace"`
+	TenderlyTrace   *TenderlyTrace   `json:"callTrace"`
 	Account         string           `json:"account"`
 	UnderlyingToken string           `json:"underlyingToken"`
 	Users           ds.BorrowerAndTo `json:"users"`
@@ -109,26 +109,38 @@ type TenderlySampleTestInput struct {
 ///////////////////////////
 
 type InternalFetcher struct {
-	txLogger             TxLogger
-	internalCallsFetcher *InternalCallFetcher
-	tenderlyFetcher      TenderlyFetcher
+	txLogger         TxLogger
+	parityFetcher    *ParityFetcher
+	tenderlyFetcher  TenderlyFetcher
+	useTenderlyTrace bool
 }
 
 func NewInternalFetcher(cfg *config.Config, client core.ClientI) InternalFetcher {
-	return InternalFetcher{
-		txLogger:             NewTxLogger(client, cfg.BatchSizeForHistory),
-		internalCallsFetcher: NewInternalCallFetcher(cfg.EthProvider),
-		tenderlyFetcher:      NewTenderlyFetcher(client, cfg.ChainId),
+	fetcher := InternalFetcher{
+		txLogger:         NewTxLogger(client, cfg.BatchSizeForHistory),
+		parityFetcher:    NewParityFetcher(cfg.EthProvider),
+		tenderlyFetcher:  NewTenderlyFetcher(cfg.ChainId),
+		useTenderlyTrace: cfg.UseTenderlyTrace == "1",
 	}
+	fetcher.check()
+	return fetcher
 }
 
+func (ep InternalFetcher) check() {
+	if !ep.useTenderlyTrace {
+		_, err := ep.parityFetcher.getData("")
+		if err != nil && err.Error() !=
+			"invalid argument 0: hex string has length 0, want 64 for common.Hash" {
+			log.CheckFatal(err)
+		}
+	}
+}
 func (ep InternalFetcher) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *TenderlyTrace {
-	useTenderly := true
 	var trace *TenderlyTrace
-	if useTenderly {
-		trace = ep.tenderlyFetcher._getTxTrace(txHash)
+	if ep.useTenderlyTrace {
+		trace = ep.tenderlyFetcher.getTxTrace(txHash)
 	} else {
-		trace = ep.internalCallsFetcher.GetData(txHash)
+		trace = ep.parityFetcher.getTxTrace(txHash)
 	}
 	//
 	if canLoadLogsFromRPC && len(trace.Logs) == 0 {

@@ -10,22 +10,31 @@ import (
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-type InternalCallFetcher struct {
+// https://docs.alchemy.com/reference/trace-api
+type ParityFetcher struct {
 	rpc    string
 	client http.Client
 }
 
-func NewInternalCallFetcher(rpc string) *InternalCallFetcher {
-	return &InternalCallFetcher{
+func NewParityFetcher(rpc string) *ParityFetcher {
+	return &ParityFetcher{
 		rpc:    rpc,
 		client: http.Client{},
 	}
 }
 
-func (app InternalCallFetcher) getData(txHash string) ([]RPCTrace, error) {
+type traceResp struct {
+	Error struct {
+		Code    int64  `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+	Result []RPCTrace
+}
+
+// https://docs.alchemy.com/reference/trace-transaction
+func (app ParityFetcher) getData(txHash string) ([]RPCTrace, error) {
 	format := `{"id":1,"jsonrpc":"2.0","params":["%s"],"method":"trace_transaction"}`
 	params := fmt.Sprintf(format, txHash)
 	//
@@ -40,19 +49,21 @@ func (app InternalCallFetcher) getData(txHash string) ([]RPCTrace, error) {
 	if err != nil {
 		return nil, fmt.Errorf("While reading body from response %s", err)
 	}
-	fmt.Println(utils.ToJson(data))
-	trace := []RPCTrace{}
-	err = json.Unmarshal(data, &trace)
+	traceObj := traceResp{}
+	err = json.Unmarshal(data, &traceObj)
 	if err != nil {
 		return nil, fmt.Errorf("While unmarshaling %s", err)
 	}
-	return trace, nil
+	if traceObj.Error.Code != 0 {
+		return nil, fmt.Errorf(traceObj.Error.Message)
+	}
+	return traceObj.Result, nil
 }
 
-func (app InternalCallFetcher) GetData(txHash string) *TenderlyTrace {
+func (app ParityFetcher) getTxTrace(txHash string) *TenderlyTrace {
 	rpcTrace, err := app.getData(txHash)
 	log.CheckFatal(err)
-	return getTenderlyCall(rpcTrace, txHash)
+	return convertToTenderlyTrace(rpcTrace, txHash)
 }
 
 type RPCTrace struct {
@@ -68,10 +79,10 @@ type RPCTrace struct {
 	TraceAddress []int `json:"traceAddress"`
 }
 
-func getTenderlyCall(old []RPCTrace, txHash string) *TenderlyTrace {
-	call, _ := toCall(old[0])
+func convertToTenderlyTrace(old []RPCTrace, txHash string) *TenderlyTrace {
+	call, _ := toTenderlyCall(old[0])
 	for _, rpcEntry := range old[1:] {
-		nextCall, path := toCall(rpcEntry)
+		nextCall, path := toTenderlyCall(rpcEntry)
 		cur := call
 		for _, step := range path[:len(path)-1] {
 			cur = cur.Calls[step]
@@ -85,7 +96,7 @@ func getTenderlyCall(old []RPCTrace, txHash string) *TenderlyTrace {
 	}
 }
 
-func toCall(old RPCTrace) (*Call, []int) {
+func toTenderlyCall(old RPCTrace) (*Call, []int) {
 	callerOp := strings.ToUpper(old.Action.CallType)
 	var valueStr string
 	if callerOp != "STATICCALL" {

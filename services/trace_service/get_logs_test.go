@@ -46,16 +46,16 @@ func TestDeleteInSlice(t *testing.T) {
 
 func TestTxLogger(t *testing.T) {
 	// create eth client rpc
-	url := config.GetEnv("GOERLI_ETH_PROVIDER", "")
+	url := utils.GetEnvOrDefault("GOERLI_ETH_PROVIDER", "")
 	if url == "" {
 		return
 	}
 	client := ethclient.NewEthClient(&config.Config{EthProvider: url})
-	fetcher := NewInternalFetcher(&config.Config{BatchSizeForHistory: 10}, client)
+	fetcher := NewInternalFetcher(&config.Config{BatchSizeForHistory: 10, UseTenderlyTrace: "1"}, client)
 	// create other variables
 	input := TenderlySampleTestInput{}
-	utils.ReadJsonAndSetInterface("../inputs/execute_parser_transfers/get_transfers.json", &input)
-	trace := input.CallTrace
+	utils.ReadJsonAndSetInterface("../../inputs/execute_parser_transfers/get_transfers.json", &input)
+	trace := input.TenderlyTrace
 	// check 1
 	logs := fetcher.txLogger.GetLogs(int(trace.BlockNumber), trace.TxHash)
 	require.JSONEq(t, utils.ToJson(trace.Logs), utils.ToJson(logs))

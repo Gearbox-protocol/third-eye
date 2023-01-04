@@ -8,11 +8,11 @@ package config
 
 import (
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 )
@@ -43,16 +43,9 @@ func NewConfig() *Config {
 		}
 	}
 
-	rv := reflect.ValueOf(&config).Elem()
-	num := rv.NumField()
-	for i := 0; i < num; i++ {
-		envValue := rv.Type().Field(i).Tag.Get("env")
-		defaultValue := rv.Type().Field(i).Tag.Get("default")
-		if envValue != "" {
-			value := strings.Replace(GetEnv(envValue, defaultValue), "\\n", "\n", -1)
-			rv.Field(i).SetString(value)
-		}
-	}
+	utils.ReadFromEnv(&config)
+	utils.ReadFromEnv(&config.DebtConfig)
+	utils.ReadFromEnv(&config.ReduntantConfig)
 
 	interval, err := strconv.Atoi(config.IntervalStr)
 	if err != nil {
@@ -90,25 +83,9 @@ func NewConfig() *Config {
 		config.ThrottleByHrs = int64(throttleHr)
 	}
 
-	// switch config.ChainId {
-	// case 1:
-	// 	config.EthProvider = config.EthProviderMainnet
-	// case 42:
-	// 	config.EthProvider = config.EthProviderKovan
-	// case 1337:
-	// 	config.EthProvider = config.EthProviderFork
-	// }
-
 	validate(&config)
 	return &config
 
-}
-
-func GetEnv(key, fallback string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-	return fallback
 }
 
 // Validate config structures. If errors found, it break program
