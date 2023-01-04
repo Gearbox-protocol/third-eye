@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -80,9 +80,9 @@ type RPCTrace struct {
 }
 
 func convertToTenderlyTrace(old []RPCTrace, txHash string) *TenderlyTrace {
-	call, _ := toTenderlyCall(old[0])
+	call, _ := toTenderlyCall(old[0], txHash)
 	for _, rpcEntry := range old[1:] {
-		nextCall, path := toTenderlyCall(rpcEntry)
+		nextCall, path := toTenderlyCall(rpcEntry, txHash)
 		cur := call
 		for _, step := range path[:len(path)-1] {
 			cur = cur.Calls[step]
@@ -96,13 +96,15 @@ func convertToTenderlyTrace(old []RPCTrace, txHash string) *TenderlyTrace {
 	}
 }
 
-func toTenderlyCall(old RPCTrace) (*Call, []int) {
+func toTenderlyCall(old RPCTrace, txHash string) (*Call, []int) {
 	callerOp := strings.ToUpper(old.Action.CallType)
 	var valueStr string
 	if callerOp != "STATICCALL" {
-		value, err := strconv.ParseInt(old.Action.Value[2:], 16, 64)
-		log.CheckFatal(err)
-		valueStr = fmt.Sprintf("%d", value)
+		value, ok := new(big.Int).SetString(old.Action.Value[2:], 16)
+		if !ok {
+			log.Fatal("For txhash (%s) can't parse ethValue %s", txHash, old.Action.Value)
+		}
+		valueStr = value.String()
 	}
 	var calls []*Call
 	if old.Subtraces > 0 {
