@@ -1,7 +1,8 @@
 # Third Eye
 
-[![GoDoc][doc-img]][doc] [![Github release][release-img]][release] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov] [![Go Report Card][report-card-img]][report-card]
+[![GoDoc][doc-img]][doc] [![Github release][release-img]][release] [![Build Status][ci-img]][ci]  [![Go Report Card][report-card-img]][report-card]
 
+<!-- `[![Coverage Status][cov-img]][cov]` -->
 
 Third-eye is used for getting gearbox contracts-related data from evm compatible chains, calculating interesting parameters, and storing them. Architecture docs are available [here](https://github.com/Gearbox-protocol/third-eye/blob/master/docs).
 
