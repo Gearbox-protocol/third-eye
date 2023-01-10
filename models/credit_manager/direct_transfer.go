@@ -39,7 +39,8 @@ func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
 }
 
 func (mdl CreditManager) DirecTokenTransferString(tx *schemas.TokenTransfer) string {
-	msg := fmt.Sprintf("DirectTokenTransfer %f %s at %d from %s to %s",
+	msg := fmt.Sprintf("DirectTokenTransfer(%s) %f %s at %d from %s to %s",
+		tx.TxHash,
 		utils.GetFloat64Decimal(tx.Amount.Convert(), mdl.Repo.GetToken(tx.Token).Decimals),
 		mdl.Repo.GetToken(tx.Token).Symbol,
 		tx.BlockNum, tx.From, tx.To,
@@ -86,8 +87,10 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 		currentRewardClaim := newRewardClaimDetails()
 		for _, tx := range txsList {
 			if session.Account == tx.From {
-				// withdrawAmount := new(big.Int).Neg(tx.Amount.Convert())
-				// mdl.Repo.RecentEventMsg(tx.BlockNum, "Withdrawn(%s): %s", sessionID, tx)
+				// USDT in transferFrom emits event even if the amount is zero
+				if tx.Amount.Convert().Cmp(big.NewInt(0)) == 0 {
+					continue
+				}
 				log.Fatalf("Token withdrawn directly from account %v", mdl.DirecTokenTransferString(tx))
 			}
 			if blockNum == mdl.lastEventBlock {
