@@ -11,6 +11,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// multicalls and liquidate/close/openwithmulticalls are separate data points,
+// this function adds multicall to mainFacadeActions
+// if that is the correct structure of operation
 func (mdl *CreditManager) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
 	facadeActions []*ds.FacadeAccountActionv2) (result []*ds.FacadeAccountActionv2) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
@@ -138,7 +141,7 @@ func (mdl *CreditManager) addMulticallToMainEvent(mainEvent *schemas.AccountOper
 				mdl.Repo.AddAccountOperation(event)
 			}
 		case "TokenEnabled(address,address)",
-			"DisableToken(address,address)",
+			"TokenDisabled(address,address)",
 			"IncreaseBorrowedAmount(address,uint256)",
 			"DecreaseBorrowedAmount(address,uint256)":
 			eventsMulticalls = append(eventsMulticalls, event)
