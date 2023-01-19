@@ -1,8 +1,6 @@
 package dc_wrapper
 
 import (
-	"context"
-	"encoding/hex"
 	"fmt"
 	"math/big"
 
@@ -10,7 +8,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -39,44 +36,14 @@ func (repo *MainnetDC) AddCreditManagerToFilter(cmAddr, cfAddr string) {
 	repo.creditManagerToFilter[common.HexToAddress(cmAddr)] = common.HexToAddress(cfAddr)
 }
 
-func CallFuncWithExtraBytes(client core.ClientI, sigStr string, to common.Address, blockNum int64, extra []byte) ([]byte, error) {
-	data, err := hex.DecodeString(sigStr) // enabledTokens
-	log.CheckFatal(err)
-	data = append(data, extra...)
-	//
-	msg := ethereum.CallMsg{
-		To:   &to,
-		Data: data,
-	}
-	return client.CallContract(context.TODO(), msg, big.NewInt(blockNum))
-}
-
+// only called for v1 , doesn't have logic for EnabledTokensMap(Gearboxv2)
 func getMask(client core.ClientI, blockNum int64, cfAddr, accountAddr common.Address) *big.Int {
-	// abi := core.GetAbi("CreditFilter")
-	// data, err := abi.Pack("enabledTokens", accountAddr)
-	// log.CheckFatal(err)
-	// calls := []multicall.Multicall2Call{{
-	// 	Target:   cfAddr,
-	// 	CallData: data,
-	// }}
-	// results := core.MakeMultiCall(client, blockNum, false, calls)
-	// if !results[0].Success {
-	// 	log.Fatalf("Getting mask for addr(%s) on cm(%s) failed", accountAddr, cfAddr)
-	// }
-	// return new(big.Int).SetBytes(results[0].ReturnData)
 	extra := make([]byte, 12)
 	extra = append(extra, accountAddr.Bytes()...)
-	returnData, err := CallFuncWithExtraBytes(client, "b451cecc", cfAddr, blockNum, extra)
+	returnData, err := core.CallFuncWithExtraBytes(client, "b451cecc", cfAddr, blockNum, extra) // enabledTokens
 	log.CheckFatal(err)
 	return new(big.Int).SetBytes(returnData)
 
-	//
-	// case 2:
-	// cm, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(cmAddr), repo.client)
-	// log.CheckFatal(err)
-	// mask, err := cm.EnabledTokensMap(opts, common.HexToAddress(accountAddr))
-	// log.CheckFatal(err)
-	// return mask
 }
 
 func (dc *MainnetDC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (dcv2.PoolData, error) {

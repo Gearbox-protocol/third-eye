@@ -7,7 +7,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -113,8 +112,8 @@ func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.A
 		newPhaseAgg, err = mdl.contractETH.PhaseAggregators(opts, phaseId, false)
 	} else { // goerli and kovan
 		// get priceFeed
-		underlyingBoundedFeed, err3 := dc_wrapper.CallFuncWithExtraBytes(mdl.Client, "741bef1a",
-			mdl.Addr, blockNum, nil) // priceFeed for bounded chainlink oracle
+		underlyingBoundedFeed, err3 := core.CallFuncWithExtraBytes(mdl.Client, "741bef1a",
+			mdl.Addr, blockNum, nil) // priceFeed for [bounded chainlink oracle]
 		if err != nil {
 			log.Fatalf("For bounded oracle(%s) underlying priceFeed not found, err: %s", mdl.Addr, err3)
 		}
@@ -123,7 +122,7 @@ func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.A
 		extras[31] = byte(phaseId)
 		var phaseAggregatorData []byte
 		// phaseAggregator only on goerli
-		phaseAggregatorData, err = dc_wrapper.CallFuncWithExtraBytes(mdl.Client, "d6bcd745",
+		phaseAggregatorData, err = core.CallFuncWithExtraBytes(mdl.Client, "d6bcd745",
 			common.BytesToAddress(underlyingBoundedFeed), blockNum, extras[:])
 		newPhaseAgg = common.BytesToAddress(phaseAggregatorData)
 	}

@@ -12,7 +12,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -48,6 +47,11 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account
 		case ds.YearnPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF, ds.CompositeChainlinkPF:
+			// four types of oracles
+			// - Zero or almost zero price feed: constant price value
+			// - Chainlink price feed: market based price value
+			// - Composite price feed: price calculated from multiple price feeds
+			// - Query price feed: price fetched from curve or yearn
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 				Token:       token,
 				Oracle:      oracle,
@@ -103,7 +107,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 			return ds.YearnPF, false, nil
 		}
 	} else {
-		description, err := dc_wrapper.CallFuncWithExtraBytes(mdl.Client, "7284e416", common.HexToAddress(oracle), discoveredAt, nil)
+		description, err := core.CallFuncWithExtraBytes(mdl.Client, "7284e416", common.HexToAddress(oracle), discoveredAt, nil) // description()
 		return ds.ChainlinkPriceFeed,
 			(err == nil) && strings.Contains(string(description), "Bounded"),
 			nil

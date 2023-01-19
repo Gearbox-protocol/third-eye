@@ -8,7 +8,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -25,7 +24,7 @@ type ChainlinkPriceFeed struct {
 func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16, bounded bool) *ChainlinkPriceFeed {
 	var upperLimit string
 	if bounded {
-		returnData, err := dc_wrapper.CallFuncWithExtraBytes(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound
+		returnData, err := core.CallFuncWithExtraBytes(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound
 		log.CheckFatal(err)
 		upperLimit = new(big.Int).SetBytes(returnData).String()
 	}

@@ -9,7 +9,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	cpf "github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -126,14 +125,14 @@ func getAddrFromRPC(client core.ClientI, targetMethod string, oracle common.Addr
 	chainId, err := client.ChainID(context.TODO())
 	log.CheckFatal(err)
 	sig := getSig(targetMethod, blockNum, chainId.Int64())
-	tokenETHPFData, err := dc_wrapper.CallFuncWithExtraBytes(client, sig, oracle, blockNum, nil)
+	tokenETHPFData, err := core.CallFuncWithExtraBytes(client, sig, oracle, blockNum, nil)
 	if err != nil {
 		log.Fatalf("Oracle(%s) doesn't have valid %s: %s", oracle, targetMethod, err)
 	}
 	return common.BytesToAddress(tokenETHPFData)
 }
 func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 {
-	decimals, err := dc_wrapper.CallFuncWithExtraBytes(client, "313ce567", addr, blockNum, nil)
+	decimals, err := core.CallFuncWithExtraBytes(client, "313ce567", addr, blockNum, nil) // decimals
 	if err != nil {
 		log.Fatalf("Can't get decimals for addr(%s) : %s", addr, err)
 	}

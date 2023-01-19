@@ -91,12 +91,9 @@ func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType stri
 }
 
 func (mdl *AggregatedBlockFeed) addPriceForToken(qpf *QueryPriceFeed, token string, discoveredAt int64) {
-	if qpf.PriceFeedContract == nil {
-		priceFeedContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.Address), qpf.Client)
-		log.CheckFatal(err)
-		qpf.PriceFeedContract = priceFeedContract
-	}
-	data, err := qpf.PriceFeedContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
+	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.Address), qpf.Client)
+	log.CheckFatal(err)
+	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
 	log.CheckFatal(err)
 	var decimals int8 = 8
 	if mdl.GetVersion() == 1 {

@@ -213,7 +213,6 @@ func (mdl *AggregatedBlockFeed) processRoundData(blockNum int64, adapter *QueryP
 	if entry.Success {
 		isPriceInUSD := adapter.GetVersion() > 1
 		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
-		adapter.setNotified(false)
 	} else {
 		switch adapter.GetDetailsByKey("pfType") {
 		case ds.YearnPF:
