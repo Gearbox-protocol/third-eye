@@ -31,19 +31,21 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
 		}
 	}
+	var sendMsgAfterXBlocks int64 = 20
 	// sent the account is liquidable notification after 20 blocks
 	if !core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) &&
 		eng.liquidableBlockTracker[debt.SessionId] != nil &&
-		(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 &&
+		(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= sendMsgAfterXBlocks &&
 		!eng.liquidableBlockTracker[debt.SessionId].NotifiedIfLiquidable {
 		urls := core.NetworkUIUrl(eng.config.ChainId)
 		eng.notifiedIfLiquidable(debt.SessionId, true)
-		eng.repo.RecentEventMsg(debt.BlockNumber, `HealthFactor low:
+		eng.repo.RecentEventMsg(debt.BlockNumber, `[INV-LOW-HF-NOT-LIQUIDATED] After %d blocks:
 				Session: %s
 				HF: %s
 				CreditManager: %s/address/%s
 				Borrower: %s RepayAmount:%f %s
 				web: %s/accounts/history/%s`,
+			sendMsgAfterXBlocks,
 			debt.SessionId, debt.CalHealthFactor,
 			urls.ExplorerUrl, cmAddr,
 			borrower,
