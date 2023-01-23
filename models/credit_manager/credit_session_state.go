@@ -20,6 +20,18 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) {
 	for sessionId, closeDetails := range mdl.ClosedSessions {
 		updates := mdl.UpdatedSessions[sessionId]
 		if updates != 0 {
+			// in this case, affected fields are data that we fetch from datacompressor:
+			//
+			// borrowAmount, for amountToPool calc to add PoolRepay[affected]
+			//
+			// totalValue, [not affected]
+			// BorrowedAmountPlusInterest, [not affected]
+			// CumulativeIndexAtOpen, [not affected]
+			// HealthFactor, [not affected]
+			// balances, [not affected]
+			//
+			// remainingFunds, collateral, won't be affected, dependent
+			// on (close, liquidate adding remainingFunds and collateral)
 			log.Warnf("Session: %s updated %d before close %+v in same block %d\n", sessionId, updates, closeDetails, blockNum)
 		}
 		mdl.closeSession(sessionId, blockNum, closeDetails)
@@ -100,8 +112,6 @@ func (mdl *CreditManager) closeSession(sessionId string, blockNum int64, closeDe
 	if !(closeDetails.Status == schemas.Closed && session.Version == 2) { // neg( closed on v2)
 		session.Balances = css.Balances
 	}
-	// log.Info(utils.ToJson(session.Balances))
-	// log.Info(utils.ToJson(css.Balances))
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())

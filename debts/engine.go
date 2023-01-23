@@ -345,20 +345,22 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 // only for block that the account is liquidated we use isLiquidated set to true so that we can calculate the true amountToPool
 //
 // amountToPool
-// v1 if liquidatecreditaccount is calcClosePayment first return value when isLIquidated= true
-// v2 if liquidatecreditaccount is calcClosePayment first return value when isLIquidated= true
+// for v1,v2 amountToPool is calculated by calc.CalCloseAmount
 //
-// remainingfunds is used for profit calculation
+// remainingfunds => is used for profit calculation, assets that user gets back.
 // - v1 close or liquidated -- remainingfunds is taken from event
 // - v1 repay + open -- remainingfunds is manually calculated with help of calCloseAmount in sdk-go
-// - v2 for closecreditaccount, remainingFunds is calculated from the account transfers
-// - v2 for liquidatecreditaccount, remainingFunds is taken from event
-// - v2 for openedaccounts, totalValue - amountToPool
+// - v2 for closeCreditAccount, remainingFunds is calculated from the account transfers
+// - v2 for liquidateCreditAccount, remainingFunds is taken from event
+// - v2 for openedAccounts, totalValue - amountToPool
 //
-// repayAmount
+// repayAmount => transfer from owner to account needed to close the account
 // v1 - repayAmount = amountToPool, except the blockNum at which account is liquidated
+//    NIT, closeAmount doesn't need repayAmount as all assets are converted to underlying token
+//         so repayAmount is zero, https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L448-L465
 // v2 - close repayAmount is transferred from borrower to account as underlying token
-// v2 - liquidation and opened accounts
+// v2 - for liquidation, repayAmount is zero.
+// v2 - opened accounts
 //      the account might be having some underlying token balance so repayAMount = amountToPool - underlyingToken balance
 //
 func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
@@ -370,7 +372,8 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 		status = session.Status
 	}
 	// amount to pool
-	amountToPool, calRemainingFunds, _, _ = calc.CalCloseAmount(eng.lastParameters[session.CreditManager], session.Version, debt.CalTotalValueBI.Convert(), status,
+	amountToPool, calRemainingFunds, _, _ = calc.CalCloseAmount(eng.lastParameters[session.CreditManager],
+		session.Version, debt.CalTotalValueBI.Convert(), status,
 		debt.CalBorrowedAmountPlusInterestBI.Convert(),
 		sessionSnapshot.BorrowedAmountBI.Convert())
 
@@ -389,20 +392,21 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 				if balance.BI.Convert().Cmp(new(big.Int)) < 0 {
 					// assuming there is only one transfer from borrower to account
 					// this transfer will be in underlyingtoken. execute_parser.go:246 and
-					// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditManager.sol#L286-L291
+					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/credit/CreditManager.sol#L359-L363
 					repayAmount = new(big.Int).Mul(balance.BI.Convert(), big.NewInt(-1))
 				}
 			}
 			// remainingFunds calculation
 			// set price for underlying token
-			prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version), 8)
+			prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(
+				eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version), 8)
 			remainingFunds = session.Balances.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
 		} else if session.ClosedAt == debt.BlockNumber+1 && schemas.IsStatusLiquidated(session.Status) {
 			remainingFunds = session.RemainingFunds.Convert()
 			repayAmount = new(big.Int)
 		} else {
 			// repayamount
-			// for account not closed yet and account liquidated
+			// for account not closed or liquidated yet
 			// get underlying balance
 			underlying := (*session.Balances)[cumIndexAndUToken.Token]
 			underlyingBalance := new(big.Int)
