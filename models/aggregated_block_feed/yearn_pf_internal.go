@@ -29,7 +29,7 @@ func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, 
 		BlockNumber: big.NewInt(blockNum),
 	}
 	//
-	pps, err := core.CallFuncWithExtraBytes(client, "", mdl.yVaultAddr, blockNum, nil) // pps
+	pps, err := core.CallFuncWithExtraBytes(client, "99530b06", mdl.yVaultAddr, blockNum, nil) // pps
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package aggregated_block_feed
 
 import (
+	"fmt"
 	"math/big"
 	"sort"
 	"strings"
@@ -217,7 +218,10 @@ func (mdl *AggregatedBlockFeed) processRoundData(blockNum int64, adapter *QueryP
 		switch adapter.GetDetailsByKey("pfType") {
 		case ds.YearnPF:
 			_priceData, err := adapter.calculateYearnPFInternally(blockNum)
-			log.CheckFatal(err)
+			if err != nil {
+				log.Fatal(fmt.Errorf("Can't calculate yearnfeed(%s)'s price internally: %s",
+					adapter.GetAddress(), err.Error()))
+			}
 			priceData = _priceData
 		}
 	}
