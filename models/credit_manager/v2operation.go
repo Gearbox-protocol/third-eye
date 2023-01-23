@@ -7,6 +7,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
@@ -19,7 +20,12 @@ func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
 	mdl.State.OpenedAccountsCount++
 	mdl.addBorrowAmountForBlock(borrowAmount)
 }
+
+// borroweAmount can't be negative
 func (mdl *CreditManager) addBorrowAmountForBlock(borrowAmount *big.Int) {
+	if borrowAmount.Sign() < 0 {
+		log.Fatal("Borrowed Amount can't be negative. As repaid amount is tracked on pool")
+	}
 	if mdl.borrowedAmountForBlock == nil {
 		mdl.borrowedAmountForBlock = new(big.Int)
 	}
@@ -273,7 +279,9 @@ func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token 
 // amount can be negative, if decrease borrowamount, add pool repay event
 func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int, eventName string) error {
 	// manager state
-	mdl.addBorrowAmountForBlock(amount)
+	if amount.Sign() == 1 {
+		mdl.addBorrowAmountForBlock(amount)
+	}
 	// other operations
 	sessionId := mdl.GetCreditOwnerSession(borrower)
 	blockNum := int64(txLog.BlockNumber)

@@ -22,7 +22,7 @@ type Config struct {
 	Port string `env:"PORT" default:"0" validate:"required"`
 	// amqp url and enable flags
 	AMQPUrl    string `env:"CLOUDAMQP_URL" validate:"required"`
-	AMQPEnable string `env:"AMPQ_ENABLE" validate:"required"`
+	AMQPEnable string `env:"AMQP_ENABLE" validate:"required"`
 
 	// set rollback if we are deleting some data in db and rerunning third-eye for getting that data again, this prevents adding some sync adapter again.
 	Rollback string `env:"ROLLBACK"`

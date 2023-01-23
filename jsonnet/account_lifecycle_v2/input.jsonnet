@@ -248,6 +248,23 @@ local newCollateral = 1;
           txHash: '!#Hash_7',
         },
         {
+          // credit filter on usdc
+          address: '#Pool_1',
+          topics: [
+            'Repay(address,uint256,uint256,uint256)',
+            '#CreditManager_1',
+          ],
+          data: [
+            // borrowedamount
+            utils.bigIntTopic(extraBorrowedAmount / 2, 6),
+            // profit
+            utils.bigIntTopic(0, 0),
+            // loss
+            utils.bigIntTopic(0, 0),
+          ],
+          txHash: '!#Hash_7',
+        },
+        {
           // multicall end
           address: '#CreditFacade_1',
           topics: [
@@ -279,6 +296,17 @@ local newCollateral = 1;
             isEnabled: true,
           }],
           version: 2,
+        }],
+        pools: [{
+          address: '#Pool_1',
+          totalBorrowed: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
+          expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2 + 5500, 6),
+          availableLiquidity: utils.bigInt(5000 + extraBorrowedAmount / 2, 6),
+          depositAPY: utils.bigInt(0),
+          borrowAPY: utils.bigInt(0),
+          dieselRate: utils.bigInt(0),
+          withdrawFee: '0',
+          linearCumulativeIndex: utils.bigInt(1, 27),
         }],
         cms: [{
           address: '#CreditManager_1',
