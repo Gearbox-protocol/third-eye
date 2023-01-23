@@ -1,6 +1,7 @@
 package aggregated_block_feed
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
@@ -64,6 +65,11 @@ func (mdl *yearnPFInternal) setContracts(blockNum int64, client core.ClientI) er
 	underlyingPFAddrBytes, err := core.CallFuncWithExtraBytes(client, "741bef1a", mdl.mainPFAddress, blockNum, nil) // priceFeed
 	if err != nil {
 		return err
+	}
+	// underlying price feed not found
+	if common.BytesToAddress(underlyingPFAddrBytes) == core.NULL_ADDR {
+		return fmt.Errorf("Address for underlying pf for yearn feed(%d) not found at %d",
+			mdl.mainPFAddress, blockNum)
 	}
 	mdl.underlyingPFContract, err = priceFeed.NewPriceFeed(common.BytesToAddress(underlyingPFAddrBytes), client)
 	log.CheckFatal(err)

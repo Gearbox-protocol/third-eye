@@ -217,6 +217,7 @@ func (mdl *AggregatedBlockFeed) processRoundData(blockNum int64, adapter *QueryP
 	} else {
 		switch adapter.GetDetailsByKey("pfType") {
 		case ds.YearnPF:
+			// fail on err, since we only sync for block_num which is more than discovered_at, we can assume that underlying price feed will be set for given block_num
 			_priceData, err := adapter.calculateYearnPFInternally(blockNum)
 			if err != nil {
 				log.Fatal(fmt.Errorf("Can't calculate yearnfeed(%s)'s price internally: %s",

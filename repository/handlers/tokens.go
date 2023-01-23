@@ -17,8 +17,7 @@ type TokensRepo struct {
 	usdcAddr      string
 	gearTokenAddr string
 	// blocks/token
-	tokens     map[string]*schemas.Token
-	symToToken map[string]string
+	tokens map[string]*schemas.Token
 	//
 	dieselTokens map[string]*schemas.UTokenAndPool
 	//
@@ -31,8 +30,7 @@ func NewTokensRepo(client core.ClientI) *TokensRepo {
 		mu:     &sync.Mutex{},
 		client: client,
 		//
-		tokens:     map[string]*schemas.Token{},
-		symToToken: map[string]string{},
+		tokens: map[string]*schemas.Token{},
 		// for getting the diesel tokens
 		dieselTokens: make(map[string]*schemas.UTokenAndPool),
 	}
@@ -81,7 +79,6 @@ func (repo *TokensRepo) addTokenObj(t *schemas.Token) {
 	}
 	if repo.tokens[t.Address] == nil {
 		repo.tokens[t.Address] = t
-		repo.symToToken[t.Symbol] = t.Address
 	}
 }
 

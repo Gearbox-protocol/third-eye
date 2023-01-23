@@ -217,6 +217,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 			if adapter, ok := adapterI.(*QueryPriceFeed); !ok {
 				log.Fatal("Conversion of adapter to queryPriceFeed failed ", details.Feed)
 			} else if adapter.GetDetailsByKey("pfType") == ds.YearnPF {
+				// if underlying price feed address is null, then don't set price
 				if _newPrice, err := adapter.calculateYearnPFInternally(blockNum); err == nil {
 					newPrice = _newPrice
 				}

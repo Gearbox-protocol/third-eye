@@ -79,7 +79,10 @@ func (mdl *AggregatedBlockFeed) GetQueryFeeds() []*QueryPriceFeed {
 
 func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, version int16) {
 	log.Infof("Add new %s for token(%s): %s discovered at %d", pfType, token, oracle, discoveredAt)
-	mdl.queryPFdeps.checkInDepGraph(token, oracle, discoveredAt)
+	// MAINNET: yearn yvUSDC has changed over time, previous token was 0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9(only added in gearbox v1 priceOracle) and 0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE, so we can ignore 0xc1 yvUSDC token dependency
+	if token != "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
+		mdl.queryPFdeps.checkInDepGraph(token, oracle, discoveredAt)
+	}
 	if mdl.QueryFeeds[oracle] != nil {
 		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt)
 	} else {
