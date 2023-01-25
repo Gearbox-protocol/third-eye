@@ -32,6 +32,8 @@ type AggregatedBlockFeed struct {
 	Interval int64
 }
 
+// not present in db , manaully added in syncadapter repository handler
+// last_sync is dependent on min(QueryPriceFeed's last_sync)
 func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval int64) *AggregatedBlockFeed {
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
@@ -87,6 +89,10 @@ func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType stri
 		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt)
 	} else {
 		mdl.QueryFeeds[oracle] = NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, version)
+		// MAINNET: old yvUSDC added on gearbox v1
+		if token == "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
+			mdl.QueryFeeds[oracle].DisableToken(token, 13856183) // new yvUSDC added on gearbox v1
+		}
 	}
 	// when token is added to the queryPricefeed, add price object at discoveredAt
 	// so that  accounts opened just after discoveredAt can get the price from db

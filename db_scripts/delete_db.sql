@@ -1,3 +1,4 @@
+-- drop all tables in db;
 drop table account_operations;
 drop table allowed_protocols;
 drop table allowed_tokens;

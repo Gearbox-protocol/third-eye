@@ -23,7 +23,8 @@ type CompositeChainlinkPF struct {
 	decimalsOfBasePF int8
 }
 
-// compositeChainlink price feed has token eth  oracle and eth usd base oracle for calculating the price of token in usd.
+// compositeChainlink price feed has token base  oracle and base usd oracle for calculating the price of token in usd.
+// address is set as identifier(random), as same oracle can be added for different tokens.
 func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *CompositeChainlinkPF {
 	oracleAddr := common.HexToAddress(oracle)
 	tokenETHPF := getAddrFromRPC(client, "targetETH", oracleAddr, discoveredAt)
@@ -39,51 +40,60 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 	//
 	mainPhaseAgg, _ := mainAgg.GetPriceFeedAddr(discoveredAt)
 	basePhaseAgg, _ := baseTokenMainAgg.GetPriceFeedAddr(discoveredAt)
-	compositeMdl := &CompositeChainlinkPF{
-		BaseTokenMainAgg: baseTokenMainAgg,
-		MainAgg:          mainAgg,
-		Token:            token,
-		SyncAdapter: &ds.SyncAdapter{
-			SyncAdapterSchema: &schemas.SyncAdapterSchema{
-				Contract: &schemas.Contract{
-					Address:      identifier.Hex(),
-					DiscoveredAt: discoveredAt,
-					FirstLogAt:   discoveredAt,
-					ContractName: ds.CompositeChainlinkPF,
-					Client:       client,
-				},
-				Details: map[string]interface{}{
-					"oracle":   oracle,
-					"token":    token,
-					"decimals": decimalsToBasePF,
-					"secAddrs": map[string]interface{}{
-						"target":      tokenETHPF.Hex(),
-						"base":        ethUSDPF.Hex(),
-						"targetPhase": mainPhaseAgg.Hex(),
-						"basePhase":   basePhaseAgg.Hex(),
-					}},
-				LastSync: discoveredAt,
-				V:        version,
+	//
+	adapter := &ds.SyncAdapter{
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				Address:      identifier.Hex(),
+				DiscoveredAt: discoveredAt,
+				FirstLogAt:   discoveredAt,
+				ContractName: ds.CompositeChainlinkPF,
+				Client:       client,
 			},
-			HasOnLogs: true,
-			Repo:      repo,
+			Details: map[string]interface{}{
+				"oracle":   oracle,
+				"token":    token,
+				"decimals": decimalsToBasePF,
+				"secAddrs": map[string]interface{}{
+					"target":      tokenETHPF.Hex(),
+					"base":        ethUSDPF.Hex(),
+					"targetPhase": mainPhaseAgg.Hex(),
+					"basePhase":   basePhaseAgg.Hex(),
+				}},
+			// since last_sync is set to discoveredAt not discoveredAt-1, setPrice will get tokenBase and baseUSD price at discoveredAt
+			// so the db entry that is added at addPriceToDB will have the correct price while creating new compositeChainlinkPF
+			LastSync: discoveredAt,
+			V:        version,
 		},
+		Repo: repo,
 	}
-	compositeMdl.setPrices(discoveredAt)
+	compositeMdl := NewCompositeChainlinkPFFromAdapter(adapter)
 	compositeMdl.addPriceToDB(discoveredAt)
 	return compositeMdl
+}
+
+func toDecimals(decimals interface{}) int8 {
+	switch ans := decimals.(type) {
+	case float64:
+		return int8(ans)
+	case int8:
+		return ans
+	default:
+		log.Fatal("Can't convert decimals interface")
+		return 0
+	}
 }
 
 func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChainlinkPF {
 	compositeMdl := &CompositeChainlinkPF{
 		SyncAdapter:      adapter,
 		Token:            adapter.GetDetailsByKey("token"),
-		decimalsOfBasePF: int8(adapter.GetDetails()["decimals"].(float64)),
+		decimalsOfBasePF: toDecimals(adapter.GetDetails()["decimals"]),
 	}
 	compositeMdl.BaseTokenMainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("base"))
 	compositeMdl.MainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("target"))
-	compositeMdl.setPrices(adapter.LastSync)
 	compositeMdl.HasOnLogs = true
+	compositeMdl.setPrices(adapter.LastSync)
 	return compositeMdl
 }
 

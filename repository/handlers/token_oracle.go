@@ -99,7 +99,7 @@ func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOrac
 			// no adapter is used for zeroPF as the price is always zero.
 			// we can just work with 'adapter==nil' but we want to check if the adapter is null for other pricefeed by mistake. like disabled for chainlink etc.
 		} else if adapter == nil {
-			log.Error("Adapter not found for", oldFeed)
+			log.Error("Adapter not found for", oldFeed, utils.ToJson(oldTokenOracle))
 		} else if adapter.GetName() != ds.QueryPriceFeed {
 			adapter.SetBlockToDisableOn(newTokenOracle.BlockNumber)
 		} else {

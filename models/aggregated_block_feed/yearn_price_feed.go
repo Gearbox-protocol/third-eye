@@ -116,6 +116,7 @@ func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
 	return
 }
 
+// sync till < endBlock number
 func (mdl *QueryPriceFeed) DisableToken(token string, disabledAt int64) {
 	obj := map[string]interface{}{}
 	switch mdl.Details["token"].(type) {
