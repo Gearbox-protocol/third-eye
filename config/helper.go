@@ -37,7 +37,7 @@ func NewConfig() *Config {
 
 		err = godotenv.Load(filename)
 		if err != nil {
-			log.Infof("Cant read .env config file %s: %s\n", filename, err)
+			log.Infof("Cant read .env config file %s: %s", filename, err)
 		} else {
 			log.Info("Getting configuration from " + filename)
 		}
@@ -46,6 +46,7 @@ func NewConfig() *Config {
 	utils.ReadFromEnv(&config)
 	utils.ReadFromEnv(&config.DebtConfig)
 	utils.ReadFromEnv(&config.ReduntantConfig)
+	utils.ReadFromEnv(&config.CommonEnvs)
 
 	interval, err := strconv.Atoi(config.IntervalStr)
 	if err != nil {

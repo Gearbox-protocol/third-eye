@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
 
@@ -90,7 +91,7 @@ type RepositoryI interface {
 	AddDAOOperation(operation *schemas.DAOOperation)
 	CalCurrentTreasuryValue(syncTill int64)
 	AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int, operationTransfer bool)
-	RecentEventMsg(blockNum int64, msg string, args ...interface{})
+	RecentMsgf(headers log.RiskHeader, msg string, args ...interface{})
 	//
 	// oracle and uni
 	AddUniswapPrices(prices *schemas.UniPoolPrices)

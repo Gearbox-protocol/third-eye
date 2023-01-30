@@ -30,12 +30,18 @@ import (
 // 	}()
 // }
 
-func StartServer(lc fx.Lifecycle, engine ds.EngineI, config *config.Config) {
-	log.NewAMQPService(config.AMQPEnable, config.AMQPUrl, log.LoggingConfig{
-		App:      config.AppName,
-		Network:  log.GetNetworkName(config.ChainId),
-		Exchange: "TelegramBot",
-	})
+func StartServer(lc fx.Lifecycle, engine ds.EngineI, cfg *config.Config) {
+	log.NewAMQPService(
+		cfg.AMQPEnable,
+		cfg.AMQPUrl,
+		log.LoggingConfig{
+			Exchange:     "TelegramBot",
+			ChainId:      cfg.ChainId,
+			RiskEndpoint: cfg.RiskEndpoint,
+			RiskSecret:   cfg.RiskSecret,
+		},
+		cfg.AppName,
+	)
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

@@ -149,7 +149,10 @@ func (repo *Repository) AfterSync(syncTill int64) {
 	// for direct token transfer
 	for _, txs := range repo.accountManager.GetNoSessionTxs() {
 		for _, tx := range txs {
-			repo.RecentEventMsg(tx.BlockNum, "No session account token transfer: %v", tx)
+			repo.RecentMsgf(log.RiskHeader{
+				BlockNumber: tx.BlockNum,
+				EventCode:   "AMQP",
+			}, "No session account token transfer: %v", tx)
 			repo.SetAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
 		}
 	}
