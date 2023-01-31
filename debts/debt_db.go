@@ -18,7 +18,10 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			if eng.liquidableBlockTracker[debt.SessionId] != nil &&
 				(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
-				eng.repo.RecentEventMsg(debt.BlockNumber, `HealthFactor safe again: 
+				eng.repo.RecentMsgf(log.RiskHeader{
+					BlockNumber: debt.BlockNumber,
+					EventCode:   "AMQP",
+				}, `HealthFactor safe again: 
 				SessionId:%s
 				HF: %s@(block:%d) -> %s@(block:%d)`,
 					debt.SessionId,
@@ -39,7 +42,10 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 		!eng.liquidableBlockTracker[debt.SessionId].NotifiedIfLiquidable {
 		urls := core.NetworkUIUrl(eng.config.ChainId)
 		eng.notifiedIfLiquidable(debt.SessionId, true)
-		eng.repo.RecentEventMsg(debt.BlockNumber, `[INV-LOW-HF-NOT-LIQUIDATED] After %d blocks:
+		eng.repo.RecentMsgf(log.RiskHeader{
+			BlockNumber: debt.BlockNumber,
+			EventCode:   "INV-LOW-HF-NOT-LIQUIDATED",
+		}, `After %d blocks:
 				Session: %s
 				HF: %s
 				CreditManager: %s/address/%s

@@ -22,10 +22,9 @@ import (
 
 func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, config *config.Config, shutdowner fx.Shutdowner) {
 	log.NewAMQPService(config.AMQPEnable, config.AMQPUrl, log.LoggingConfig{
-		App:      "Debts",
-		Network:  log.GetNetworkName(config.ChainId),
+		ChainId:  config.ChainId,
 		Exchange: "TelegramBot",
-	})
+	}, config.AppName)
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

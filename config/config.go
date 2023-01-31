@@ -1,16 +1,14 @@
 package config
 
+import "github.com/Gearbox-protocol/sdk-go/log"
+
 type Config struct {
-	AppName string `env:"APP_NAME" default:"Third-eye"`
 	// Authentication
 	AddressProviderAddress string `env:"REACT_APP_ADDRESS_PROVIDER" validate:"required"`
 
 	// Database
 	DatabaseUrl string `env:"DATABASE_URL" validate:"required"`
 	Domain      string `env:"DOMAIN"`
-
-	// Environment
-	Env string `env:"ENV" default:"development" validate:"required"`
 
 	// Ethereum
 	EthProvider string `env:"ETH_PROVIDER" validate:"required"`
@@ -20,9 +18,6 @@ type Config struct {
 
 	// port for health service
 	Port string `env:"PORT" default:"0" validate:"required"`
-	// amqp url and enable flags
-	AMQPUrl    string `env:"CLOUDAMQP_URL" validate:"required"`
-	AMQPEnable string `env:"AMQP_ENABLE" validate:"required"`
 
 	// set rollback if we are deleting some data in db and rerunning third-eye for getting that data again, this prevents adding some sync adapter again.
 	Rollback string `env:"ROLLBACK"`
@@ -38,6 +33,7 @@ type Config struct {
 	//
 	DebtConfig
 	ReduntantConfig
+	log.CommonEnvs
 }
 
 type ReduntantConfig struct {

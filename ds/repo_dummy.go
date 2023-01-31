@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
 
@@ -182,7 +183,7 @@ func (DummyRepo) CalCurrentTreasuryValue(syncTill int64) {
 }
 func (DummyRepo) AddTreasuryTransfer(blockNum int64, logID uint, token string, amount *big.Int, operationTransfer bool) {
 }
-func (DummyRepo) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
+func (DummyRepo) RecentMsgf(headers log.RiskHeader, msg string, args ...interface{}) {
 }
 
 //

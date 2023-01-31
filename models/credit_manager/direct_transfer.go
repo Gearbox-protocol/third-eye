@@ -116,7 +116,10 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 				currentRewardClaim.TxHash = tx.TxHash
 				currentRewardClaim.LogID = tx.LogID
 			} else {
-				mdl.Repo.RecentEventMsg(tx.BlockNum, "Deposit: %s", mdl.DirecTokenTransferString(tx))
+				mdl.Repo.RecentMsgf(log.RiskHeader{
+					BlockNumber: tx.BlockNum,
+					EventCode:   "AMQP",
+				}, "Deposit: %s", mdl.DirecTokenTransferString(tx))
 				mdl.Repo.AddAccountOperation(&schemas.AccountOperation{
 					TxHash:      tx.TxHash,
 					BlockNumber: tx.BlockNum,

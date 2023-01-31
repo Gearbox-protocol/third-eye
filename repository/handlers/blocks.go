@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"runtime/debug"
 	"sync"
@@ -217,12 +218,19 @@ func (repo *BlocksRepo) setTokenCurrentPrice(pf *schemas.PriceFeed) {
 	}
 }
 
-func (repo *BlocksRepo) RecentEventMsg(blockNum int64, msg string, args ...interface{}) {
+func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...interface{}) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	ts := repo._setAndGetBlock(blockNum).Timestamp
+	ts := repo._setAndGetBlock(header.BlockNumber).Timestamp
 	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
-		log.Msgf(msg, args...)
+		if header.EventCode == "AMQP" {
+			log.AMQPMsgf(msg, args...)
+		} else {
+			log.SendRiskAlert(log.RiskEvent{
+				Msg:        fmt.Sprintf(msg, args...),
+				RiskHeader: header,
+			})
+		}
 	}
 }
 

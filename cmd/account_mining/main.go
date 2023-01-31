@@ -83,7 +83,7 @@ func (am *AccountMining) Send() {
 	eipBaseFee := utils.GetFloat64Decimal(details.BaseFee, 9)
 	avgAccountMiningPrice := utils.GetFloat64Decimal(details.TotalEthSpentOnAccount, 18)
 	avgAccountMiningPrice = avgAccountMiningPrice / float64(details.Count)
-	log.Msgf("Block[%d]: mined %d, total %d of 5000 accounts, avg price per account: %f ETH, eip 1559 baseFee is %f",
+	log.AMQPMsgf("Block[%d]: mined %d, total %d of 5000 accounts, avg price per account: %f ETH, eip 1559 baseFee is %f",
 		am.CurrentBlockNum, details.Count, am.TotalCount, avgAccountMiningPrice, eipBaseFee)
 	am.canSend = false
 }
@@ -111,7 +111,7 @@ func (am *AccountMining) isMiningStarted(gearToken string) {
 		for _, txLog := range logs {
 			if txLog.Topics[0] == core.Topic("MinerSet(address)") {
 				if common.HexToAddress(txLog.Topics[1].Hex()).Hex() == am.Address {
-					log.Msgf("Mining Started at %d", txLog.BlockNumber)
+					log.AMQPMsgf("Mining Started at %d", txLog.BlockNumber)
 					return
 				}
 			}
@@ -147,7 +147,7 @@ func StartServer(lc fx.Lifecycle, client core.ClientI, config *config.Config) {
 					startNum = latestBlockNum + 1
 					if am.TotalCount == 5000 {
 						am.finished = true
-						log.Msg("Mining finished")
+						log.AMQPMsg("Mining finished")
 					}
 					time.Sleep(time.Second * 30)
 				}
