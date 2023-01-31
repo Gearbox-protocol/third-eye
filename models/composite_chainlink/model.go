@@ -127,7 +127,7 @@ func getPrice(entry multicall.Multicall2Result, feed common.Address) *big.Int {
 		log.CheckFatal(err)
 		return values[1].(*big.Int)
 	}
-	log.Fatal("feed(%s) can't fetch price.", feed)
+	log.Fatalf("feed(%s) can't fetch price.", feed)
 	return nil
 }
 

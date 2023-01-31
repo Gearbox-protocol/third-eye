@@ -63,7 +63,7 @@ func (mdl *QueryPriceFeed) GetTokenAddr() string {
 	defer mdl.mu.Unlock()
 	tokenAddr, ok := mdl.Details["token"].(string)
 	if !ok {
-		log.Fatal("Failing in asserting to string: %s", mdl.Details["token"])
+		log.Fatalf("Failing in asserting to string: %s", mdl.Details["token"])
 	}
 	return tokenAddr
 }

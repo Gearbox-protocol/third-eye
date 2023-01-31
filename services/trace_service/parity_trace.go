@@ -102,7 +102,7 @@ func toTenderlyCall(old RPCTrace, txHash string) (*Call, []int) {
 	if callerOp != "STATICCALL" {
 		value, ok := new(big.Int).SetString(old.Action.Value[2:], 16)
 		if !ok {
-			log.Fatal("For txhash (%s) can't parse ethValue %s", txHash, old.Action.Value)
+			log.Fatalf("For txhash (%s) can't parse ethValue %s", txHash, old.Action.Value)
 		}
 		valueStr = value.String()
 	}

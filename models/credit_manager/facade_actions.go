@@ -127,7 +127,7 @@ func (mdl *CreditManager) addMulticallToMainEvent(mainEvent *schemas.AccountOper
 	eventsMulticalls := make([]*schemas.AccountOperation, 0, len(allMulticalls))
 	for _, event := range allMulticalls {
 		if event.BlockNumber != mainEvent.BlockNumber || event.TxHash != txHash {
-			log.Fatal("%s has different blockNumber or txhash from opencreditaccount(%d, %s)",
+			log.Fatalf("%s has different blockNumber or txhash from opencreditaccount(%d, %s)",
 				utils.ToJson(event), mainEvent.BlockNumber, txHash)
 		}
 

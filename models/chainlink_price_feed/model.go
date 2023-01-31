@@ -57,11 +57,11 @@ func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core
 func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBeforeDiscover bool) *ChainlinkPriceFeed {
 	oracleAddr, ok := adapter.Details["oracle"].(string)
 	if !ok {
-		log.Fatal("Failed asserting oracle address(%s) as string for chainlink pricefeed(%s) ", adapter.Details["oracle"], adapter.GetAddress())
+		log.Fatalf("Failed asserting oracle address(%s) as string for chainlink pricefeed(%s) ", adapter.Details["oracle"], adapter.GetAddress())
 	}
 	token, ok := adapter.Details["token"].(string)
 	if !ok {
-		log.Fatal("Get token addr(%v) for oracle(%s) feed(%s)", adapter.Details["token"], oracleAddr, adapter.GetAddress())
+		log.Fatalf("Get token addr(%v) for oracle(%s) feed(%s)", adapter.Details["token"], oracleAddr, adapter.GetAddress())
 	}
 	obj := &ChainlinkPriceFeed{
 		SyncAdapter: adapter,

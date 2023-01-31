@@ -50,7 +50,7 @@ func (m TxLogger) fetchLogs(blockNum int64) map[string][]Log {
 	//
 	txLogs, err := m.node.GetLogs(blockNum, blockNum, nil, nil)
 	if err != nil {
-		log.Fatal("Err(%s) while getting logs from etherscan for ", err, blockNum)
+		log.Fatalf("Err(%s) while getting logs from etherscan for ", err, blockNum)
 	}
 	logStore := map[string][]Log{}
 	op := operator{}

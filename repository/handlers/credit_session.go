@@ -105,7 +105,7 @@ func (repo *SessionRepo) UpdateCreditSession(sessionId string, values map[string
 			pointer := reflect.ValueOf(val)
 			ref.FieldByName(k).Set(pointer)
 		default:
-			log.Fatal("Not able to set %s %v", k, v)
+			log.Fatalf("Not able to set %s %v", k, v)
 		}
 	}
 	return session

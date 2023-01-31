@@ -57,7 +57,7 @@ func (dcw *DataCompressorWrapper) SetCalls(blockNum int64, calls *test.DCCalls) 
 
 func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string) {
 	if len(dcw.DCBlockNum) > 0 && dcw.DCBlockNum[len(dcw.DCBlockNum)-1] >= blockNum {
-		log.Fatal("Current dc added at :%v, new dc:%s added at %d  ", dcw.DCBlockNum, addr, blockNum)
+		log.Fatalf("Current dc added at :%v, new dc:%s added at %d  ", dcw.DCBlockNum, addr, blockNum)
 	}
 	chainId, err := dcw.client.ChainID(context.TODO())
 	log.CheckFatal(err)

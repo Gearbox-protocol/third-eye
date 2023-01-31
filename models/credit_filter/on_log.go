@@ -11,7 +11,7 @@ import (
 func (mdl *CreditFilter) GetCM() string {
 	creditManager, ok := mdl.Details["creditManager"].(string)
 	if !ok {
-		log.Fatal("Failed in asserting credit manager(%v) for credit filter %s", mdl.Details["creditManager"], mdl.GetAddress())
+		log.Fatalf("Failed in asserting credit manager(%v) for credit filter %s", mdl.Details["creditManager"], mdl.GetAddress())
 	}
 	return creditManager
 }

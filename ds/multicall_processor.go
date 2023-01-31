@@ -84,7 +84,7 @@ func (p *MultiCallProcessor) lastMainAction() *FacadeAccountActionv2 {
 func (p *MultiCallProcessor) Start(txHash string, startEvent *schemas.AccountOperation) {
 	lastMainAction := p.lastMainAction()
 	if p.running {
-		log.Fatal("Previously started multicall(%s) is not ended for txHash(%s)",
+		log.Fatalf("Previously started multicall(%s) is not ended for txHash(%s)",
 			utils.ToJson(lastMainAction), txHash)
 	}
 	if lastMainAction == nil || lastMainAction.ended {
