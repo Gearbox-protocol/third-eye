@@ -25,6 +25,7 @@ func (repo *Repository) Flush() error {
 	repo.TokensRepo.Save(tx)
 
 	repo.SyncAdaptersRepo.Save(tx)
+	repo.saveLMRewardDetails(tx) // save LM reward  and diesel token balances of users
 
 	repo.SessionRepo.Save(tx)
 

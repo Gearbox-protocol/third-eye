@@ -18,6 +18,7 @@ const (
 	AccountManager      = "AccountManager"
 	AggregatedBlockFeed = "AggregatedBlockFeed"
 	CreditConfigurator  = "CreditConfigurator"
+	PoolLMRewards       = "PoolLMRewards"
 )
 
 const (

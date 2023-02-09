@@ -18,7 +18,7 @@ type TokensRepo struct {
 	gearTokenAddr string
 	// blocks/token
 	tokens map[string]*schemas.Token
-	//
+	// diesel tokens to pool and underlying
 	dieselTokens map[string]*schemas.UTokenAndPool
 	//
 	mu     *sync.Mutex

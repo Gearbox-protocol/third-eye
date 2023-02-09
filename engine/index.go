@@ -164,7 +164,7 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 	}
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	addrsForLogs := []common.Address{common.HexToAddress(mdl.GetAddress())}
-	addrsForLogs = append(addrsForLogs, mdl.GetSecondayAddrs()...) // currently being used for composite eth/usd
+	addrsForLogs = append(addrsForLogs, mdl.GetOtherAddrsForLogs()...) // currently being used for composite eth/usd
 	mdl.WillBeSyncedTo(syncTill)
 	//
 	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, [][]common.Hash{})
