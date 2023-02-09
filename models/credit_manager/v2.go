@@ -137,7 +137,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		if oldConfigurator != newConfigurator {
 			mdl.Repo.GetAdapter(oldConfigurator).SetBlockToDisableOn(int64(txLog.BlockNumber))
 			mdl.addCreditConfiguratorAdapter(newConfigurator)
-			mdl.setConfiguratorSyncer(newConfigurator, int64(txLog.BlockNumber))
+			mdl.setConfiguratorSyncer(newConfigurator)
 		}
 	}
 }

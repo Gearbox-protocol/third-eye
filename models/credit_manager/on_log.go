@@ -51,7 +51,7 @@ func (mdl *CreditManager) logHandler(txLog types.Log) {
 		switch txLog.Topics[0] {
 		case core.Topic("CreditFacadeUpgraded(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
-			mdl.setCreditFacadeSyncer(facade, int64(txLog.BlockNumber))
+			mdl.setCreditFacadeSyncer(facade)
 		case core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"):
 			mdl.setParams(&schemas.Parameters{
 				BlockNum:                   int64(txLog.BlockNumber),

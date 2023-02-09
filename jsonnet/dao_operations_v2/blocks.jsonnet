@@ -3,6 +3,7 @@
     allowedTokens: [
       {
         BlockNumber: 3,
+        Configurator: '#CreditConfigurator_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 4,
         LiquidityThreshold: '7500',
@@ -13,8 +14,8 @@
       {
         Args: {
           creditManager: '#CreditManager_1',
-          token: '#Token_1',
           prevLiquidationThreshold: '0',
+          token: '#Token_1',
         },
         BlockNumber: 3,
         Contract: '#CreditConfigurator_1',
@@ -41,6 +42,7 @@
     allowedTokens: [
       {
         BlockNumber: 4,
+        Configurator: '#CreditConfigurator_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 5,
         LiquidityThreshold: '8000',
@@ -67,6 +69,7 @@
     allowedTokens: [
       {
         BlockNumber: 5,
+        Configurator: '#CreditConfigurator_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 0,
         LiquidityThreshold: '8000',
@@ -108,7 +111,7 @@
         Contract: '#CreditConfigurator_1',
         LogID: 1,
         TxHash: '#Hash_5',
-        Type: 27,
+        Type: 22,
       },
       {
         Args: {
@@ -305,6 +308,17 @@
         LogID: 8,
         TxHash: '#Hash_18',
         Type: 35,
+      },
+      {
+        Args: {
+          adapter: '#Adapter_1',
+          creditManager: '#CreditManager_1',
+        },
+        BlockNumber: 6,
+        Contract: '#CreditConfigurator_2',
+        LogID: 9,
+        TxHash: '#Hash_18',
+        Type: 36,
       },
     ],
   },

@@ -37,6 +37,7 @@
       DisableBlock: 0,
       LiquidityThreshold: '9000',
       Token: '#Token_1',
+      Configurator: '#CreditFilter_1',
     },
   ],
   blockNum: 3,

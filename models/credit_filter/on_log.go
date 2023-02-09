@@ -30,6 +30,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			CreditManager: creditManager,
 			Protocol:      contractAllowedEvent.Protocol.Hex(),
 			Adapter:       contractAllowedEvent.Adapter.Hex(),
+			Configurator:  mdl.Address,
 		})
 	case core.Topic("TokenForbidden(address)"):
 		token := common.HexToAddress(txLog.Topics[1].Hex())
@@ -62,6 +63,7 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: (*core.BigInt)(tokenEvent.LiquidityThreshold),
+			Configurator:       mdl.Address,
 		})
 		mdl.Repo.GetToken(tokenEvent.Token.Hex())
 	case core.Topic("PriceOracleUpdated(address)"):

@@ -149,7 +149,8 @@ func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter
 		})
 		return
 	}
-	if atoken.LiquidityThreshold == nil { // c2
+	isAllowTokenEvent := atoken.LiquidityThreshold == nil
+	if isAllowTokenEvent { // c2
 		atoken.LiquidityThreshold = prevLiqThreshold
 	}
 	repo.addAllowedToken(atoken)
@@ -173,7 +174,7 @@ func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter
 	}
 	repo.addAllowedTokenState(atoken, true)
 	var daoEventType uint
-	if atoken.LiquidityThreshold == nil {
+	if isAllowTokenEvent {
 		daoEventType = schemas.TokenAllowedV2
 	} else {
 		daoEventType = schemas.LTUpdated

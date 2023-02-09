@@ -25,6 +25,7 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: nil,
+			Configurator:       mdl.Address,
 		})
 	case core.Topic("TokenLiquidationThresholdUpdated(address,uint16)"):
 		tokenEvent, err := mdl.cfgContract.ParseTokenLiquidationThresholdUpdated(txLog)
@@ -34,6 +35,7 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			CreditManager:      creditManager,
 			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: (*core.BigInt)(big.NewInt(int64(tokenEvent.LiquidityThreshold))),
+			Configurator:       mdl.Address,
 		})
 	case core.Topic("LimitsUpdated(uint256,uint256)"):
 		limitEvent, err := mdl.cfgContract.ParseLimitsUpdated(txLog)
@@ -83,6 +85,19 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			Contract:    txLog.Address.Hex(),
 			Args:        &core.Json{"facade": newFacade, "creditManager": creditManager},
 			Type:        schemas.CreditFacadeUpgraded,
+		})
+	case core.Topic("AdapterForbidden(address)"):
+		adapterForbidden := common.BytesToAddress(txLog.Topics[1][:]).Hex()
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Args: &core.Json{
+				"adapter":       adapterForbidden,
+				"creditManager": creditManager,
+			},
+			Type: schemas.AdapterForbidden,
 		})
 		// new events
 	case core.Topic("PriceOracleUpgraded(address)"):

@@ -226,7 +226,7 @@ func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...in
 		if header.EventCode == "AMQP" {
 			log.AMQPMsgf(msg, args...)
 		} else {
-			log.SendRiskAlert(log.RiskEvent{
+			log.SendRiskAlert(log.RiskAlert{
 				Msg:        fmt.Sprintf(msg, args...),
 				RiskHeader: header,
 			})

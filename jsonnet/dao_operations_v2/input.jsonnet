@@ -299,6 +299,15 @@ local borrowedAmount = 4000;
           ],
           txHash: '!#Hash_18',
         },
+        {
+          // adapter forbidden
+          address: '#CreditConfigurator_2',
+          topics: [
+            'AdapterForbidden(address)',
+            '#Adapter_1',
+          ],
+          txHash: '!#Hash_18',
+        },
       ],
       calls: {
         cms: [{

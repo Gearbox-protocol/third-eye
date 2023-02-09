@@ -125,9 +125,9 @@ func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 		// set facade and configurator in map
 		obj.setv2AddrIfNotPresent()
 		// credit facade syncer
-		obj.setCreditFacadeSyncer(obj.GetDetailsByKey("facade"), 0)
+		obj.setCreditFacadeSyncer(obj.GetDetailsByKey("facade"))
 		// set credit cofigurator syncer
-		obj.setConfiguratorSyncer(obj.GetDetailsByKey("configurator"), 0)
+		obj.setConfiguratorSyncer(obj.GetDetailsByKey("configurator"))
 	}
 	return obj
 }

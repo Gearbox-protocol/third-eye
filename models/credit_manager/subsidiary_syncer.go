@@ -26,12 +26,17 @@ func NewSubsidiarySyncer(client core.ClientI, address string, topics [][]common.
 }
 
 func (mdl *SubsidiarySyncer) FetchLogs(from, to int64) {
+	if to == 0 {
+		return
+	}
 	if mdl.to != 0 {
 		if mdl.to+1 != from {
 			log.Fatal("Not implementated")
 		}
 	}
-	mdl.logs = nil
+	if len(mdl.logs) != 0 {
+		log.Fatal("Previous logs not processed")
+	}
 	logs, err := core.Node{Client: mdl.client}.GetLogs(from, to, []common.Address{mdl.Address}, mdl.topics)
 	log.CheckFatal(err)
 	mdl.logs = append(mdl.logs, logs...)

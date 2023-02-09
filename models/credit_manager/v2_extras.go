@@ -41,7 +41,7 @@ type CMv2Fields struct {
 	facadeContractV2 *creditFacade.CreditFacade
 }
 
-func (mdl *CreditManager) setCreditFacadeSyncer(creditFacadeAddr string, syncFrom int64) {
+func (mdl *CreditManager) setCreditFacadeSyncer(creditFacadeAddr string) {
 	if mdl.Details == nil {
 		mdl.Details = map[string]interface{}{}
 	}
@@ -50,12 +50,10 @@ func (mdl *CreditManager) setCreditFacadeSyncer(creditFacadeAddr string, syncFro
 		return
 	}
 	mdl.facadeSyncer = NewSubsidiarySyncer(mdl.Client, creditFacadeAddr, nil)
-	if syncFrom != 0 {
-		mdl.facadeSyncer.FetchLogs(syncFrom, mdl.WillSyncTill)
-	}
+	mdl.facadeSyncer.FetchLogs(1, mdl.WillSyncTill)
 }
 
-func (mdl *CreditManager) setConfiguratorSyncer(configuratorAddr string, syncFrom int64) {
+func (mdl *CreditManager) setConfiguratorSyncer(configuratorAddr string) {
 	if mdl.Details == nil {
 		mdl.Details = map[string]interface{}{}
 	}
@@ -69,9 +67,7 @@ func (mdl *CreditManager) setConfiguratorSyncer(configuratorAddr string, syncFro
 			core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"),
 		},
 	})
-	if syncFrom != 0 {
-		mdl.configuratorSyncer.FetchLogs(syncFrom, mdl.WillSyncTill)
-	}
+	mdl.configuratorSyncer.FetchLogs(1, mdl.WillSyncTill)
 }
 
 func (mdl *CreditManager) WillBeSyncedTo(blockNum int64) {
