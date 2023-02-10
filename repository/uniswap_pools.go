@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Router"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Factory"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Router"
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -34,8 +35,8 @@ func (repo *Repository) AddUniPoolsForToken(blockNum int64, token string) {
 	log.CheckFatal(err)
 	poolv3Addr, err := v3Factory.GetPool(nil, common.HexToAddress(token), common.HexToAddress(repo.GetWETHAddr()), big.NewInt(3000))
 	log.CheckFatal(err)
-	if poolv2Addr.Hex() == "0x0000000000000000000000000000000000000000" ||
-		poolv3Addr.Hex() == "0x0000000000000000000000000000000000000000" {
+	if poolv2Addr.Hex() == core.NULL_ADDR.Hex() ||
+		poolv3Addr.Hex() == core.NULL_ADDR.Hex() {
 		log.Fatalf("pool not fetched for v2/v3: %s/%s", token, repo.GetWETHAddr())
 	}
 	tokenInfo := repo.GetToken(token)

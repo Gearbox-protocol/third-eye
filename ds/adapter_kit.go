@@ -14,7 +14,7 @@ func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})
 	kit.AddLevel([]string{Pool, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
-	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed})
+	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed, PoolLMRewards})
 	kit.AddLevel([]string{CreditFilter, CreditConfigurator, Treasury})
 	// - we are dropping the uni check, so the dependency is reversed.
 	//		(AggregatedBlockFeed => ChainlinkPriceFeed; so that deviation btw uniswap pool and chainlink can be calculated)
@@ -25,6 +25,7 @@ func (kit *AdapterKit) init() {
 	// - Pool => CreditManager; for getting the session for borrow/repay event on Pool
 	// - Treasury, acl, PriceOracle and geartoken are independent
 	// - creditconfigurator and core.CreditFilter are same
+	// - pool -> dieseltokens -> PoolLMRewards
 }
 
 func (kit *AdapterKit) AddLevel(lvl []string) {

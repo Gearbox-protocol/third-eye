@@ -61,10 +61,10 @@ type SyncAdapterI interface {
 	GetDetailsByKey(key string) string
 	GetDetails() core.Json
 	GetVersion() int16
-	GetSecondayAddrs() []common.Address
+	GetOtherAddrsForLogs() []common.Address
 }
 
-func (s SyncAdapter) GetSecondayAddrs() (addrs []common.Address) {
+func (s SyncAdapter) GetOtherAddrsForLogs() (addrs []common.Address) {
 	if s.Details == nil {
 		return
 	}

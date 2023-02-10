@@ -21,6 +21,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
 	"gorm.io/gorm"
@@ -127,6 +128,8 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 			repo.extras.GetDCWrapper().LoadMultipleDC(ap.Details["dc"])
 		}
 		return ap
+	case ds.PoolLMRewards:
+		return pool_lmrewards.NewPoolLMRewardsFromAdapter(adapter)
 	case ds.AccountFactory:
 		return account_factory.NewAccountFactoryFromAdapter(adapter)
 	case ds.Pool:

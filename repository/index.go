@@ -73,6 +73,8 @@ func (repo *Repository) Init() {
 	repo.TokensRepo.LoadTokens(repo.db)
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
+	// load poolLMrewards
+	repo.loadLMRewardDetails()
 	repo.loadChainlinkPrevState()
 	//
 	repo.loadUniswapPools()
