@@ -11,7 +11,7 @@ import (
 type DieselBalance struct {
 	BalanceBI *core.BigInt `gorm:"column:balance_bi"`
 	Balance   float64      `gorm:"column:balance"`
-	User      string       `gorm:"primaryKey;column:user"`
+	User      string       `gorm:"primaryKey;column:user_address"`
 	Diesel    string       `gorm:"primaryKey;column:diesel_sym"`
 }
 
@@ -44,7 +44,7 @@ func (mdl PoolLMRewards) LoadDieselBalances(dieselBalances []DieselBalance) {
 }
 
 type LMReward struct {
-	User   string       `gorm:"primaryKey;column:user"`
+	User   string       `gorm:"primaryKey;column:user_address"`
 	Pool   string       `gorm:"primaryKey;column:pool"`
 	Reward *core.BigInt `gorm:"column:reward"`
 }

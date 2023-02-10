@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/big"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
 )
@@ -26,21 +28,21 @@ type _PoolAndDecimals struct {
 	pool     string
 }
 
-// func NewPoolLMRewards(addr string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *PoolLMRewards {
-// 	return NewPoolLMRewardsFromAdapter(
-// 		&ds.SyncAdapter{
-// 			SyncAdapterSchema: &schemas.SyncAdapterSchema{
-// 				LastSync: 0,
-// 				Contract: &schemas.Contract{
-// 					ContractName: ds.PoolLMRewards,
-// 					Address:      addr,
-// 					Client:       client,
-// 				},
-// 			},
-// 			Repo: repo,
-// 		},
-// 	)
-// }
+func NewPoolLMRewards(addr string, syncedTill int64, client core.ClientI, repo ds.RepositoryI) *PoolLMRewards {
+	return NewPoolLMRewardsFromAdapter(
+		&ds.SyncAdapter{
+			SyncAdapterSchema: &schemas.SyncAdapterSchema{
+				LastSync: syncedTill,
+				Contract: &schemas.Contract{
+					ContractName: ds.PoolLMRewards,
+					Address:      addr,
+					Client:       client,
+				},
+			},
+			Repo: repo,
+		},
+	)
+}
 
 func NewPoolLMRewardsFromAdapter(adapter *ds.SyncAdapter) *PoolLMRewards {
 	chainId, err := adapter.Client.ChainID(context.Background())

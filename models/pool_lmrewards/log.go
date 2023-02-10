@@ -1,10 +1,10 @@
 package pool_lmrewards
 
 import (
-	"log"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -51,7 +51,7 @@ func (mdl *PoolLMRewards) OnLog(txLog types.Log) {
 				amount,
 			)
 		} else {
-			mdl.addBalance(tokenSym, from, amount.Neg(nil))
+			mdl.addBalance(tokenSym, from, new(big.Int).Neg(amount))
 		}
 	}
 }
