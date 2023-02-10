@@ -5,12 +5,14 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
 type DieselBalance struct {
-	Balance *core.BigInt `gorm:"column:balance"`
-	User    string       `gorm:"primaryKey;column:user"`
-	Diesel  string       `gorm:"primaryKey;column:diesel_sym"`
+	BalanceBI *core.BigInt `gorm:"column:balance_bi"`
+	Balance   float64      `gorm:"column:balance"`
+	User      string       `gorm:"primaryKey;column:user"`
+	Diesel    string       `gorm:"primaryKey;column:diesel_sym"`
 }
 
 func (DieselBalance) TableName() string {
@@ -19,11 +21,13 @@ func (DieselBalance) TableName() string {
 
 func (mdl PoolLMRewards) GetDieselBalances() (dieselBalances []DieselBalance) {
 	for tokenSym, balances := range mdl.dieselBalances {
-		for user, balance := range balances {
+		decimals := mdl.decimalsAndPool[tokenSym].decimals
+		for user, balanceBI := range balances {
 			dieselBalances = append(dieselBalances, DieselBalance{
-				Balance: (*core.BigInt)(balance),
-				User:    user,
-				Diesel:  tokenSym,
+				BalanceBI: (*core.BigInt)(balanceBI),
+				User:      user,
+				Diesel:    tokenSym,
+				Balance:   utils.GetFloat64Decimal(balanceBI, decimals),
 			})
 		}
 	}
@@ -35,7 +39,7 @@ func (mdl PoolLMRewards) LoadDieselBalances(dieselBalances []DieselBalance) {
 		if _, ok := mdl.dieselBalances[dieselBalance.Diesel]; !ok {
 			mdl.dieselBalances[dieselBalance.Diesel] = map[string]*big.Int{}
 		}
-		mdl.dieselBalances[dieselBalance.Diesel][dieselBalance.User] = dieselBalance.Balance.Convert()
+		mdl.dieselBalances[dieselBalance.Diesel][dieselBalance.User] = dieselBalance.BalanceBI.Convert()
 	}
 }
 

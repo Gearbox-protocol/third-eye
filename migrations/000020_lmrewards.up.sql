@@ -6,7 +6,8 @@ insert into sync_adapters(address, type, last_sync) values('0x000000000000000000
 CREATE TABLE diesel_balances (
     user varchar(42) ,
     diesel_sym varchar(42),
-    balance varchar(80),
+    balance_bi varchar(80),
+    balance double precision,
     PRIMARY KEY(diesel_sym, user));
 
 

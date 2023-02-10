@@ -21,9 +21,9 @@ func (mdl *PoolLMRewards) GetAddrsForLogs() (addrs []common.Address) {
 //
 func (mdl *PoolLMRewards) OnLog(txLog types.Log) {
 	currentBlock := int64(txLog.BlockNumber)
-	if currentBlock != mdl.lastBlockNum {
-		mdl.calculateRewards(mdl.lastBlockNum+1, currentBlock)
-		mdl.lastBlockNum = currentBlock
+	if currentBlock != mdl.pendingCalcBlock {
+		mdl.calculateRewards(mdl.pendingCalcBlock, currentBlock-1)
+		mdl.pendingCalcBlock = currentBlock
 	}
 	//
 	switch txLog.Topics[0] {
@@ -75,11 +75,8 @@ func (mdl PoolLMRewards) calculateRewards(from, to int64) {
 	}
 	for snapInd, snapshot := range snapshots {
 		for dieselSym, userAndbalance := range mdl.dieselBalances {
-			curPoolAndDecimals := mdl.decimalsAndPool[dieselSym]
-			rewardPerBlock := utils.GetInt64(
-				snapshot.RewardPerBlock[dieselSym],
-				curPoolAndDecimals.decimals,
-			)
+			pool := mdl.decimalsAndPool[dieselSym].pool
+			rewardPerBlock := snapshot.RewardPerBlock[dieselSym]
 			for user, balance := range userAndbalance {
 				norm := new(big.Int).Mul(balance, rewardPerBlock)
 				userRewardPerBlock := new(big.Int).Quo(norm, mdl.totalSupplies[dieselSym])
@@ -89,10 +86,7 @@ func (mdl PoolLMRewards) calculateRewards(from, to int64) {
 					snapEnd = snapshots[snapInd+1].Block - 1
 				}
 				reward := new(big.Int).Mul(userRewardPerBlock, big.NewInt(snapEnd-snapStart+1))
-				mdl.rewards[curPoolAndDecimals.pool][user] = new(big.Int).Add(
-					utils.NotNilBigInt(mdl.rewards[curPoolAndDecimals.pool][user]),
-					reward,
-				)
+				mdl.addUserReward(pool, user, reward)
 				// update start
 				snapStart = snapEnd + 1
 			}
@@ -100,12 +94,22 @@ func (mdl PoolLMRewards) calculateRewards(from, to int64) {
 	}
 }
 
+func (mdl *PoolLMRewards) addUserReward(pool, user string, reward *big.Int) {
+	if mdl.rewards[pool] == nil {
+		mdl.rewards[pool] = map[string]*big.Int{}
+	}
+	mdl.rewards[pool][user] = new(big.Int).Add(
+		utils.NotNilBigInt(mdl.rewards[pool][user]),
+		reward,
+	)
+}
+
 //
 func (mdl *PoolLMRewards) GetOtherAddrsForLogs() (addrs []common.Address) {
 	for addr, poolAndUToken := range mdl.Repo.GetDieselTokens() {
 		addrs = append(addrs, common.HexToAddress(addr))
 		token := mdl.Repo.GetToken(addr)
-		mdl.decimalsAndPool[token.Symbol] = _PoolAndDecimals{
+		mdl.decimalsAndPool[token.Symbol] = &_PoolAndDecimals{
 			decimals: token.Decimals,
 			pool:     poolAndUToken.Pool,
 		}
