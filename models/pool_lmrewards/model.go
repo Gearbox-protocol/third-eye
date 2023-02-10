@@ -14,12 +14,16 @@ type PoolLMRewards struct {
 	chainId      int64
 	// diesel symbol to user to balance
 	dieselBalances map[string]map[string]*big.Int
-	// user to reward
-	rewards map[string]*big.Int
+	// pool  to user to reward
+	rewards map[string]map[string]*big.Int
 	// diesel symbol to total supply
 	totalSupplies map[string]*big.Int
-	// sym to decimals
-	decimals map[string]int8
+	// sym to decimals and pool
+	decimalsAndPool map[string]_PoolAndDecimals
+}
+type _PoolAndDecimals struct {
+	decimals int8
+	pool     string
 }
 
 // func NewPoolLMRewards(addr string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *PoolLMRewards {
@@ -42,13 +46,13 @@ func NewPoolLMRewardsFromAdapter(adapter *ds.SyncAdapter) *PoolLMRewards {
 	chainId, err := adapter.Client.ChainID(context.Background())
 	log.CheckFatal(err)
 	obj := &PoolLMRewards{
-		SyncAdapter:    adapter,
-		lastBlockNum:   adapter.LastSync,
-		chainId:        chainId.Int64(),
-		dieselBalances: map[string]map[string]*big.Int{}, // to DieselBalances for saving in DB
-		rewards:        map[string]*big.Int{},            // to LMRewards for saving in DB
-		totalSupplies:  map[string]*big.Int{},            // will be converted to details on syncAdapter
-		decimals:       map[string]int8{},                // auxillary data
+		SyncAdapter:     adapter,
+		lastBlockNum:    adapter.LastSync,
+		chainId:         chainId.Int64(),
+		dieselBalances:  map[string]map[string]*big.Int{}, // to DieselBalances for saving in DB
+		rewards:         map[string]map[string]*big.Int{}, // to LMRewards for saving in DB
+		totalSupplies:   map[string]*big.Int{},            // will be converted to details on syncAdapter
+		decimalsAndPool: map[string]_PoolAndDecimals{},    // auxillary data
 	}
 	obj.detailsToTotalSupplies()
 	return obj
@@ -56,6 +60,6 @@ func NewPoolLMRewardsFromAdapter(adapter *ds.SyncAdapter) *PoolLMRewards {
 
 func (mdl *PoolLMRewards) AfterSyncHook(syncedTill int64) {
 	mdl.calculateRewards(mdl.lastBlockNum, syncedTill)
-	mdl.totalSuppliesToDetails()
+	mdl.totalSuppliesToDetails() // convert store the supplies in details
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }

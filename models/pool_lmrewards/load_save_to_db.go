@@ -41,6 +41,7 @@ func (mdl PoolLMRewards) LoadDieselBalances(dieselBalances []DieselBalance) {
 
 type LMReward struct {
 	User   string       `gorm:"primaryKey;column:user"`
+	Pool   string       `gorm:"primaryKey;column:pool"`
 	Reward *core.BigInt `gorm:"column:reward"`
 }
 
@@ -49,18 +50,24 @@ func (LMReward) TableName() string {
 }
 
 func (mdl PoolLMRewards) GetLMRewards() (rewards []LMReward) {
-	for user, reward := range mdl.rewards {
-		rewards = append(rewards, LMReward{
-			User:   user,
-			Reward: (*core.BigInt)(reward),
-		})
+	for pool, rewardForUsers := range mdl.rewards {
+		for user, reward := range rewardForUsers {
+			rewards = append(rewards, LMReward{
+				User:   user,
+				Pool:   pool,
+				Reward: (*core.BigInt)(reward),
+			})
+		}
 	}
 	return rewards
 }
 
 func (mdl PoolLMRewards) LoadLMRewards(rewards []LMReward) {
 	for _, reward := range rewards {
-		mdl.rewards[reward.User] = reward.Reward.Convert()
+		if mdl.rewards[reward.Pool] == nil {
+			mdl.rewards[reward.Pool] = map[string]*big.Int{}
+		}
+		mdl.rewards[reward.Pool][reward.User] = reward.Reward.Convert()
 	}
 }
 

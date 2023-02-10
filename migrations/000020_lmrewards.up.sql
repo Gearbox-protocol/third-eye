@@ -11,5 +11,7 @@ CREATE TABLE diesel_balances (
 
 
 CREATE TABLE lm_rewards (
-    user varchar(42) PRIMARY KEY,
-    reward varchar(80));
+    user varchar(42),
+    pool varchar(42) 
+    reward varchar(80),
+    PRIMARY KEY(pool, user));
