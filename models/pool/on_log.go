@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -17,7 +18,7 @@ func (mdl *Pool) createPoolStat() {
 		mdl.calculatePoolStat(mdl.lastEventBlock)
 		mdl.lastEventBlock = 0
 		// for remove liquidity
-		for _, removeLiqEvent := range mdl.RemoveLiqEvents {
+		for _, removeLiqEvent := range mdl.gatewayHandler.getRemoveLiqEventsAndClear() {
 			// calculate removed liquidity amount in underlying token
 			numerator := new(big.Int).Mul(removeLiqEvent.AmountBI.Convert(), mdl.dieselRate)
 			underlyingRemovedAmount := new(big.Int).Quo(numerator, utils.GetExpInt(27))
@@ -27,7 +28,6 @@ func (mdl *Pool) createPoolStat() {
 			// add poolLedger to repository
 			mdl.Repo.AddPoolLedger(removeLiqEvent)
 		}
-		mdl.RemoveLiqEvents = nil
 	}
 }
 
@@ -58,7 +58,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		mdl.RemoveLiqEvents = append(mdl.RemoveLiqEvents, &schemas.PoolLedger{
+		mdl.gatewayHandler.addRemoveLiqEvent(&schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
@@ -151,5 +151,12 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			},
 		})
 		mdl.State.ExpectedLiquidityLimit = (*core.BigInt)(expectedLiq.NewLimit)
+		// for withdrawETh
+	case core.Topic("WithdrawETH(address,address)"):
+		pool := common.BytesToAddress(txLog.Topics[1][:]).Hex()
+		user := common.BytesToAddress(txLog.Topics[2][:]).Hex()
+		ind := txLog.TxIndex - 2
+		blockNum := int64(txLog.BlockNumber)
+		mdl.gatewayHandler.checkWithdrawETH(blockNum, int64(ind), pool, user)
 	}
 }

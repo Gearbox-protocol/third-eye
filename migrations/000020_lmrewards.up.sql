@@ -17,3 +17,5 @@ CREATE TABLE lm_rewards (
     pool varchar(42),
     reward varchar(80),
     PRIMARY KEY(pool, user_address));
+
+create index pool_ledger_user on pool_ledger using BTREE (user);

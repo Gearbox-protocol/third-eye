@@ -170,7 +170,7 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 	addrsForLogs = append(addrsForLogs, mdl.GetOtherAddrsForLogs()...) // currently being used for composite eth/usd
 	mdl.WillBeSyncedTo(syncTill)
 	//
-	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, [][]common.Hash{})
+	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, mdl.Topics())
 	log.Infof("Sync %s(%s) from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill, len(txLogs))
 	if err != nil {
 		log.Fatal(err)

@@ -62,6 +62,11 @@ type SyncAdapterI interface {
 	GetDetails() core.Json
 	GetVersion() int16
 	GetOtherAddrsForLogs() []common.Address
+	Topics() [][]common.Hash
+}
+
+func (s SyncAdapter) Topics() [][]common.Hash {
+	return nil
 }
 
 func (s SyncAdapter) GetOtherAddrsForLogs() (addrs []common.Address) {

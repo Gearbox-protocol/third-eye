@@ -1,7 +1,9 @@
 package pool
 
 import (
+	"context"
 	"math/big"
+	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolService"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -17,9 +19,8 @@ type Pool struct {
 	contractETH    *poolService.PoolService
 	lastEventBlock int64
 	State          *schemas.PoolState
-	// for calculating the remove liq amount in underlying instead of diesel token amount which is present in the emitted removeLiquidity event
-	RemoveLiqEvents []*schemas.PoolLedger
-	dieselRate      *big.Int
+	dieselRate     *big.Int
+	gatewayHandler GatewayHandler
 }
 
 func (Pool) TableName() string {
@@ -56,14 +57,29 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	return pool
 }
 
-func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
-	cmContract, err := poolService.NewPoolService(common.HexToAddress(adapter.Address), adapter.Client)
-	if err != nil {
-		log.Fatal(err)
+func getPoolGateways(client core.ClientI) map[common.Address]common.Address {
+	_chainId, err := client.ChainID(context.Background())
+	log.CheckFatal(err)
+	chainId := _chainId.Int64()
+	if !(chainId == 1 || chainId == 5) {
+		return map[common.Address]common.Address{}
 	}
+	fileName := log.GetNetworkName(chainId) + ".jsonnet"
+	symToAddrStore := core.GetSymToAddrStore(strings.ToLower(fileName))
+	return map[common.Address]common.Address{
+		symToAddrStore.Exchanges["GEARBOX_WETH_POOL"]:   symToAddrStore.Exchanges["WETH_GATEWAY"],
+		symToAddrStore.Exchanges["GEARBOX_WSTETH_POOL"]: symToAddrStore.Exchanges["WSTETH_GATEWAY"],
+	}
+}
+func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
+	poolAddr := common.HexToAddress(adapter.Address)
+	cmContract, err := poolService.NewPoolService(poolAddr, adapter.Client)
+	log.CheckFatal(err)
+	gateway := getPoolGateways(adapter.Client)[poolAddr]
 	obj := &Pool{
-		SyncAdapter: adapter,
-		contractETH: cmContract,
+		SyncAdapter:    adapter,
+		contractETH:    cmContract,
+		gatewayHandler: NewGatewayHandler(gateway),
 	}
 	return obj
 }
@@ -71,4 +87,30 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
 func (mdl *Pool) AfterSyncHook(syncTill int64) {
 	mdl.createPoolStat()
 	mdl.SyncAdapter.AfterSyncHook(syncTill)
+}
+
+func (mdl Pool) Topics() [][]common.Hash {
+	return [][]common.Hash{
+		{
+			// for pool
+			core.Topic("AddLiquidity(address,address,uint256,uint256)"),
+			core.Topic("RemoveLiquidity(address,address,uint256)"),
+			core.Topic("Borrow(address,address,uint256)"),
+			core.Topic("Repay(address,uint256,uint256,uint256)"),
+			core.Topic("NewInterestRateModel(address)"),
+			core.Topic("NewCreditManagerConnected(address)"),
+			core.Topic("BorrowForbidden(address)"),
+			core.Topic("NewWithdrawFee(uint256)"),
+			core.Topic("NewExpectedLiquidityLimit(uint256)"),
+			// for weth gateway
+			core.Topic("WithdrawETH(address,address)"),
+		},
+	}
+}
+
+func (mdl Pool) GetOtherAddrsForLogs() []common.Address {
+	if mdl.gatewayHandler.gatewayAddr == core.NULL_ADDR {
+		return nil
+	}
+	return []common.Address{mdl.gatewayHandler.gatewayAddr}
 }
