@@ -60,7 +60,7 @@ func (g *GatewayHandler) checkWithdrawETH(blockNum, ind int64, pool, user string
 		g.lastEntry.User == g.Gateway.Hex() && g.lastEntry.Pool == pool {
 		g.lastEntry.User = user
 	} else {
-		log.Warnf(`WithdrawalWETH event on gateway@(%d,%d) 
+		log.Fatalf(`WithdrawalWETH event on gateway@(%d,%d) 
 			but no matching last pool Remove Liquidity %s`,
 			blockNum, ind, utils.ToJson(g.lastEntry))
 	}

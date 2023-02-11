@@ -23,32 +23,38 @@ func main() {
 	cfg := config.Config{DatabaseUrl: utils.GetEnvOrDefault("DATABASE_URL", "")}
 	db := repository.NewDBClient(&cfg)
 	for pool, details := range pool.GetPoolGateways(client) {
-		if details.Sym == "WETH" {
-			continue
-		}
 		log.Info(pool, details.Gateway, details.Sym)
 		processGateway(pool, details, client, db)
 	}
 }
 
 // ind, user, ignore
-func getIndUser(txLog types.Log, details pool.GatewayDetails, pool common.Address) (indToSearch int64, user common.Address, ignore bool) {
+func getIndUser(txLog types.Log, details pool.GatewayDetails, pool common.Address) (indToSearch []int64, user common.Address, ignore bool) {
 	if details.Sym == "WETH" {
-		indToSearch = int64(txLog.Index - 2)
+		indToSearch = []int64{int64(txLog.Index - 2)}
 		user = common.BytesToAddress(txLog.Topics[2][:])
 	}
 	if details.Sym == "WSTETH" {
 		from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 		user = common.BytesToAddress(txLog.Topics[2][:])
 		if !(from == details.Gateway.Hex() && user != details.UserCantBe) {
-			return 0, common.Address{}, true
+			return nil, common.Address{}, true
 		}
-		indToSearch = int64(txLog.Index - 3)
+		indToSearch = []int64{int64(txLog.Index - 3), int64(txLog.Index - 4)}
 	}
 	return indToSearch, user, false
 }
 
 func checkGatewayInDB(poolOriginal common.Address, details pool.GatewayDetails, txLogs []types.Log, db *gorm.DB) {
+	type Allgateway struct {
+		Count int `gorm:"column:count"`
+	}
+	allgatewayEntries := &Allgateway{}
+	if err := db.Raw(`SELECT count(*) FROM pool_ledger WHERE user_address=? and pool=? and event='RemoveLiquidity'`, details.Gateway.Hex(), poolOriginal.Hex()).Find(allgatewayEntries).Error; err != nil {
+		log.Fatal(err)
+	}
+	log.Info("Number of gateway records in pool_ledger: ", allgatewayEntries.Count)
+	//
 	updateCount := 0
 	for _, txLog := range txLogs {
 		pool := common.BytesToAddress(txLog.Topics[1][:])
@@ -59,23 +65,17 @@ func checkGatewayInDB(poolOriginal common.Address, details pool.GatewayDetails, 
 		if ignore {
 			continue
 		}
+		//
 		ans := schemas.PoolLedger{}
-		if obj := db.Model(ans).Where("log_id=? and block_num =? and user_address=? and pool=?", indToSearch, txLog.BlockNumber, details.Gateway.Hex(), poolOriginal.Hex()).First(&ans); obj.Error != nil {
-			log.Fatal(indToSearch, txLog.BlockNumber, txLog.TxHash, details.Gateway.Hex(), pool, obj.Error)
+		if obj := db.Model(ans).Where("log_id in ? and block_num =? and user_address=? and pool=?", indToSearch, txLog.BlockNumber, details.Gateway.Hex(), poolOriginal.Hex()).First(&ans); obj.Error != nil {
+			log.Fatal(indToSearch, txLog.BlockNumber, txLog.TxHash, details.Gateway.Hex(), pool)
 		} else {
 			updateCount += int(obj.RowsAffected)
 		}
 	}
 	log.Infof("Number of records(%s) to update: %d", details.Sym, updateCount)
 	//
-	type Allgateway struct {
-		Count int `gorm:"column:count"`
-	}
-	allgatewayEntries := &Allgateway{}
-	if err := db.Raw(`SELECT count(*) FROM pool_ledger WHERE user_address=? and pool=? and event='RemoveLiquidity'`, details.Gateway.Hex(), poolOriginal.Hex()).Find(allgatewayEntries).Error; err != nil {
-		log.Fatal(err)
-	}
-	log.Info("Number of gateway records in pool_ledger: ", allgatewayEntries.Count)
+
 	if allgatewayEntries.Count != updateCount {
 		log.Fatalf("Number of gateway records in pool_ledger(%d) is not equal to number of records in pool_ledger to update(%d)", allgatewayEntries.Count, updateCount)
 	}
@@ -88,7 +88,7 @@ func updateGatewayInDB(pool common.Address, details pool.GatewayDetails, txLogs 
 		if ignore {
 			continue
 		}
-		if obj := db.Exec("update pool_ledger set user_address=? WHERE log_id=? and block_num =? and user_address=? and pool=?",
+		if obj := db.Exec("update pool_ledger set user_address=? WHERE log_id in ? and block_num =? and user_address=? and pool=?",
 			user.Hex(), indToSearch, txLog.BlockNumber, details.Gateway.Hex(), pool.Hex()); obj.Error != nil {
 			log.Fatal(indToSearch, txLog.BlockNumber, details.Gateway.Hex(), pool, obj.Error)
 		} else {
