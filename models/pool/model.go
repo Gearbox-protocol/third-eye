@@ -1,9 +1,7 @@
 package pool
 
 import (
-	"context"
 	"math/big"
-	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolService"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -57,25 +55,11 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	return pool
 }
 
-func getPoolGateways(client core.ClientI) map[common.Address]common.Address {
-	_chainId, err := client.ChainID(context.Background())
-	log.CheckFatal(err)
-	chainId := _chainId.Int64()
-	if !(chainId == 1 || chainId == 5) {
-		return map[common.Address]common.Address{}
-	}
-	fileName := log.GetNetworkName(chainId) + ".jsonnet"
-	symToAddrStore := core.GetSymToAddrStore(strings.ToLower(fileName))
-	return map[common.Address]common.Address{
-		symToAddrStore.Exchanges["GEARBOX_WETH_POOL"]:   symToAddrStore.Exchanges["WETH_GATEWAY"],
-		symToAddrStore.Exchanges["GEARBOX_WSTETH_POOL"]: symToAddrStore.Exchanges["WSTETH_GATEWAY"],
-	}
-}
 func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
 	poolAddr := common.HexToAddress(adapter.Address)
 	cmContract, err := poolService.NewPoolService(poolAddr, adapter.Client)
 	log.CheckFatal(err)
-	gateway := getPoolGateways(adapter.Client)[poolAddr]
+	gateway := GetPoolGateways(adapter.Client)[poolAddr]
 	obj := &Pool{
 		SyncAdapter:    adapter,
 		contractETH:    cmContract,
@@ -104,13 +88,15 @@ func (mdl Pool) Topics() [][]common.Hash {
 			core.Topic("NewExpectedLiquidityLimit(uint256)"),
 			// for weth gateway
 			core.Topic("WithdrawETH(address,address)"),
+			// for wsteth gateway, this event is on stETH token
+			core.Topic("Transfer(address,address,uint256)"),
 		},
 	}
 }
 
 func (mdl Pool) GetOtherAddrsForLogs() []common.Address {
-	if mdl.gatewayHandler.gatewayAddr == core.NULL_ADDR {
+	if mdl.gatewayHandler.Gateway == core.NULL_ADDR {
 		return nil
 	}
-	return []common.Address{mdl.gatewayHandler.gatewayAddr}
+	return []common.Address{mdl.gatewayHandler.Gateway, mdl.gatewayHandler.Token}
 }

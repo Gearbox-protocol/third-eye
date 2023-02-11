@@ -1,13 +1,12 @@
 package main
 
 import (
-	"context"
-
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -19,60 +18,79 @@ import (
 func main() {
 	err := godotenv.Load(".env")
 	log.CheckFatal(err)
-	client, err := ethclient.Dial(utils.GetEnvOrDefault("REACT_APP_ADDRESS_PROVIDER", ""))
+	client, err := ethclient.Dial(utils.GetEnvOrDefault("ETH_PROVIDER", ""))
 	log.CheckFatal(err)
 	cfg := config.Config{DatabaseUrl: utils.GetEnvOrDefault("DATABASE_URL", "")}
 	db := repository.NewDBClient(&cfg)
-	chainId, err := client.ChainID(context.Background())
-	log.CheckFatal(err)
-
-	store := core.GetSymToAddrStore(log.GetNetworkName(chainId.Int64()) + ".jsonnet")
-	for _, syms := range [][]string{
-		{"GEARBOX_WETH_POOL", "WETH_GATEWAY"},
-		{"GEARBOX_WSTETH_POOL", "WSTETH_GATEWAY"},
-	} {
-		poolSym := syms[0]
-		gatewaySym := syms[1]
-		gateway := store.Exchanges[gatewaySym]
-		pool := store.Exchanges[poolSym]
-		processGateway(gateway, pool, gatewaySym, client, db)
+	for pool, details := range pool.GetPoolGateways(client) {
+		if details.Sym == "WETH" {
+			continue
+		}
+		log.Info(pool, details.Gateway, details.Sym)
+		processGateway(pool, details, client, db)
 	}
 }
 
-func checkGatewayInDB(gateway, poolOriginal common.Address, txLogs []types.Log, db *gorm.DB) (count int) {
+// ind, user, ignore
+func getIndUser(txLog types.Log, details pool.GatewayDetails, pool common.Address) (indToSearch int64, user common.Address, ignore bool) {
+	if details.Sym == "WETH" {
+		indToSearch = int64(txLog.Index - 2)
+		user = common.BytesToAddress(txLog.Topics[2][:])
+	}
+	if details.Sym == "WSTETH" {
+		from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
+		user = common.BytesToAddress(txLog.Topics[2][:])
+		if !(from == details.Gateway.Hex() && user != details.UserCantBe) {
+			return 0, common.Address{}, true
+		}
+		indToSearch = int64(txLog.Index - 3)
+	}
+	return indToSearch, user, false
+}
+
+func checkGatewayInDB(poolOriginal common.Address, details pool.GatewayDetails, txLogs []types.Log, db *gorm.DB) {
+	updateCount := 0
 	for _, txLog := range txLogs {
-		indToSearch := (txLog.Index - 2)
-		pool := common.BytesToAddress(txLog.Topics[1][:]).Hex()
-		// user := common.BytesToAddress(txLog.Topics[2][:]).Hex()
+		pool := common.BytesToAddress(txLog.Topics[1][:])
+		if details.Sym == "WETH" && pool != poolOriginal {
+			log.Fatal("Pool in gateway's WithdrawETH is not equal to pool WETH")
+		}
+		indToSearch, _, ignore := getIndUser(txLog, details, poolOriginal)
+		if ignore {
+			continue
+		}
 		ans := schemas.PoolLedger{}
-		if obj := db.Model(ans).Where("log_id=? and block_num =? and user_address=? and pool=?", indToSearch, txLog.BlockNumber, gateway.Hex(), pool).First(&ans); obj.Error != nil {
-			log.Fatal(indToSearch, txLog.BlockNumber, gateway.Hex(), pool, obj.Error)
+		if obj := db.Model(ans).Where("log_id=? and block_num =? and user_address=? and pool=?", indToSearch, txLog.BlockNumber, details.Gateway.Hex(), poolOriginal.Hex()).First(&ans); obj.Error != nil {
+			log.Fatal(indToSearch, txLog.BlockNumber, txLog.TxHash, details.Gateway.Hex(), pool, obj.Error)
 		} else {
-			count += int(obj.RowsAffected)
+			updateCount += int(obj.RowsAffected)
 		}
 	}
+	log.Infof("Number of records(%s) to update: %d", details.Sym, updateCount)
 	//
 	type Allgateway struct {
-		count int `gorm:"column:count"`
+		Count int `gorm:"column:count"`
 	}
 	allgatewayEntries := &Allgateway{}
-	if err := db.Raw(`SELECT count(*) FROM pool_ledger WHERE gateway=? and pool=? and event='RemoveLiquidity'`, gateway.Hex(), poolOriginal.Hex()).Find(allgatewayEntries).Error; err != nil {
+	if err := db.Raw(`SELECT count(*) FROM pool_ledger WHERE user_address=? and pool=? and event='RemoveLiquidity'`, details.Gateway.Hex(), poolOriginal.Hex()).Find(allgatewayEntries).Error; err != nil {
 		log.Fatal(err)
 	}
-	log.Info("Number of gateway records in pool_ledger: ", allgatewayEntries.count)
-	if allgatewayEntries.count != count {
-		log.Fatal("Number of gateway records in pool_ledger is not equal to number of records in pool_ledger to update")
+	log.Info("Number of gateway records in pool_ledger: ", allgatewayEntries.Count)
+	if allgatewayEntries.Count != updateCount {
+		log.Fatalf("Number of gateway records in pool_ledger(%d) is not equal to number of records in pool_ledger to update(%d)", allgatewayEntries.Count, updateCount)
 	}
 	return
 }
 
-func updateGatewayInDB(gateway, poolOriginal common.Address, txLogs []types.Log, db *gorm.DB) (count int) {
+func updateGatewayInDB(pool common.Address, details pool.GatewayDetails, txLogs []types.Log, db *gorm.DB) (count int) {
 	for _, txLog := range txLogs {
-		indToSearch := (txLog.Index - 2)
-		pool := common.BytesToAddress(txLog.Topics[1][:]).Hex()
-		user := common.BytesToAddress(txLog.Topics[2][:]).Hex()
-		if obj := db.Exec("update pool_ledger set user_address=? WHERE log_id=? and block_num =? and user_address=? and pool=?", user, indToSearch, txLog.BlockNumber, gateway.Hex(), pool); obj.Error != nil {
-			log.Fatal(indToSearch, txLog.BlockNumber, gateway.Hex(), pool, obj.Error)
+		indToSearch, user, ignore := getIndUser(txLog, details, pool)
+		if ignore {
+			continue
+		}
+		if obj := db.Exec("update pool_ledger set user_address=? WHERE log_id=? and block_num =? and user_address=? and pool=?",
+			user.Hex(), indToSearch, txLog.BlockNumber, details.Gateway.Hex(), pool.Hex()); obj.Error != nil {
+			log.Fatal(indToSearch, txLog.BlockNumber, details.Gateway.Hex(), pool, obj.Error)
 		} else {
 			count += int(obj.RowsAffected)
 		}
@@ -80,18 +98,17 @@ func updateGatewayInDB(gateway, poolOriginal common.Address, txLogs []types.Log,
 	return
 }
 
-func processGateway(gateway, pool common.Address, gatewaySym string, client core.ClientI, db *gorm.DB) {
+func processGateway(pool common.Address, details pool.GatewayDetails, client core.ClientI, db *gorm.DB) {
 	maxBlock := schemas.Block{}
 	if err := db.Raw("SELECT max(id) id from blocks").Find(&maxBlock).Error; err != nil {
 		log.Fatal(err)
 	}
-	txLogs, err := core.Node{Client: client}.GetLogs(0, maxBlock.BlockNumber, []common.Address{gateway}, [][]common.Hash{{
+	txLogs, err := core.Node{Client: client}.GetLogs(0, maxBlock.BlockNumber, []common.Address{details.Gateway, details.Token}, [][]common.Hash{{
 		core.Topic("WithdrawETH(address,address)"),
+		core.Topic("Transfer(address,address,uint256)"),
 	}})
 	log.CheckFatal(err)
-
-	countCheck := checkGatewayInDB(gateway, pool, txLogs, db)
-	log.Infof("Number of records(%s) to update: %d", gatewaySym, countCheck)
-	// countUpdate := updateGatewayInDB(gateway, txLogs, db)
-	// log.Info("Numbers of records  updated: ", countUpdate)
+	checkGatewayInDB(pool, details, txLogs, db)
+	countUpdate := updateGatewayInDB(pool, details, txLogs, db)
+	log.Info("Numbers of records  updated: ", countUpdate)
 }

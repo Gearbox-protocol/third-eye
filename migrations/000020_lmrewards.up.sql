@@ -18,4 +18,4 @@ CREATE TABLE lm_rewards (
     reward varchar(80),
     PRIMARY KEY(pool, user_address));
 
-create index pool_ledger_user on pool_ledger using BTREE (user);
+create index pool_ledger_user on pool_ledger using BTREE (user_address);
