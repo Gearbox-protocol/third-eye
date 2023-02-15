@@ -359,7 +359,8 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 //
 // repayAmount => transfer from owner to account needed to close the account
 // v1 - repayAmount = amountToPool, except the blockNum at which account is liquidated
-//    NIT, closeAmount doesn't need repayAmount as all assets are converted to underlying token
+//    - for liquidated account repay amount is amountToPool+ calcRemainginFunds https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L999
+//    - NIT, closeAmount doesn't need repayAmount as all assets are converted to underlying token
 //         so repayAmount is zero, https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L448-L465
 // v2 - close repayAmount is transferred from borrower to account as underlying token
 // v2 - for liquidation, repayAmount is zero.
@@ -433,6 +434,8 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 			remainingFunds = calRemainingFunds
 		}
 		if session.Status == schemas.Liquidated && session.ClosedAt == debt.BlockNumber+1 {
+			debt.RepayAmountBI = (*core.BigInt)(new(big.Int).Add(amountToPool, remainingFunds))
+		} else if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
 			debt.RepayAmountBI = (*core.BigInt)(new(big.Int))
 		} else {
 			// https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L487-L490

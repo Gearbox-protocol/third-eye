@@ -12,7 +12,7 @@
       profitUSD: -2000,
       profitUnderlying: -2000,
       sessionId: '#Account_1_3_3',
-      repayAmount: 5000,
+      repayAmount: 0,
     },
   ],
   debts: [

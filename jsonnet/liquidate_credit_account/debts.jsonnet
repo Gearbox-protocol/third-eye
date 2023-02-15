@@ -12,7 +12,7 @@
       profitUSD: 5750 - (5109.25 + 6500),  // (total value  amountToPool , - collateral)
       profitUnderlying: 5750 - (5109.25 + 6500),
       sessionId: '#Account_1_3_3',
-      repayAmount: 0,
+      repayAmount: 5750,
     },
   ],
   debts: [{
