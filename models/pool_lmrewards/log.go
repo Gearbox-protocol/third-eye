@@ -80,10 +80,13 @@ func (mdl PoolLMRewards) calculateRewards(from, to int64) {
 		}
 		for dieselSym, userAndbalance := range mdl.dieselBalances {
 			pool := mdl.decimalsAndPool[dieselSym].pool
-			rewardPerBlock := snapshot.RewardPerBlock[dieselSym]
+			rewardPerBlock := utils.NotNilBigInt(snapshot.RewardPerBlock[dieselSym])
 			for user, balance := range userAndbalance {
 				norm := new(big.Int).Mul(balance, rewardPerBlock)
-				userRewardPerBlock := new(big.Int).Quo(norm, mdl.totalSupplies[dieselSym])
+				userRewardPerBlock := new(big.Int)
+				if mdl.totalSupplies[dieselSym] == nil {
+					userRewardPerBlock = new(big.Int).Quo(norm, mdl.totalSupplies[dieselSym])
+				}
 				reward := new(big.Int).Mul(userRewardPerBlock, big.NewInt(snapEnd-snapStart+1))
 				mdl.addUserReward(pool, user, reward)
 				// update start

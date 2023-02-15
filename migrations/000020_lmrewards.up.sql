@@ -1,5 +1,3 @@
-
-
 insert into sync_adapters(address, type, last_sync, disabled) values('0x000000000000000000000000000000000000beef','PoolLMRewards',(select discovered_at from sync_Adapters where type='AddressProvider') , 'f');
 
 
