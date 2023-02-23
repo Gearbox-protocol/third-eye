@@ -102,8 +102,6 @@ type RepositoryI interface {
 	Clear()
 	// multicall
 	ChainlinkPriceUpdatedAt(token string, blockNums []int64)
-	AddUniPoolsForToken(blockNum int64, token string)
-	AddUniPriceAndChainlinkRelation(relation *schemas.UniPriceAndChainlink)
 	// for testing
 	AddTokenObj(token *schemas.Token)
 	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI

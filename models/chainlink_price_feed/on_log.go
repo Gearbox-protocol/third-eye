@@ -4,8 +4,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"math"
-
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -70,65 +68,4 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 		mdl.Repo.ChainlinkPriceUpdatedAt(mdl.Token, blockNums)
 	}
 
-}
-
-func (mdl *ChainlinkPriceFeed) compareDiff(pf *schemas.PriceFeed, uniPoolPrices *schemas.UniPoolPrices) {
-	// previous pricefeed can be nil
-	if pf == nil {
-		return
-	}
-	mdl.Repo.AddUniPriceAndChainlinkRelation(&schemas.UniPriceAndChainlink{
-		UniBlockNum:          uniPoolPrices.BlockNum,
-		ChainlinkBlockNumber: pf.BlockNumber,
-		Token:                pf.Token,
-		Feed:                 pf.Feed,
-	})
-	// For usd
-	if mdl.GetVersion() <= 1 && (uniPoolPrices.PriceV2Success && greaterFluctuation(uniPoolPrices.PriceV2, pf.Price)) ||
-		(uniPoolPrices.PriceV3Success && greaterFluctuation(uniPoolPrices.PriceV3, pf.Price)) ||
-		(uniPoolPrices.TwapV3Success && greaterFluctuation(uniPoolPrices.TwapV3, pf.Price)) {
-		if !mdl.isNotified() {
-			mdl.uniPriceVariationNotify(pf, uniPoolPrices)
-			mdl.Details["notified"] = true
-		}
-	} else {
-		mdl.Details["notified"] = false
-	}
-}
-
-func greaterFluctuation(a, b float64) bool {
-	return math.Abs((a-b)/a) > 0.03
-}
-
-func (mdl *ChainlinkPriceFeed) uniPriceVariationNotify(pf *schemas.PriceFeed, uniPrices *schemas.UniPoolPrices) {
-	symbol := mdl.Repo.GetToken(mdl.Token).Symbol
-	log.Infof(`Token:%s(%s) =>
-	Chainlink BlockNum:%d %f
-	Uni pool prices are at block: %d
-	Uniswapv2 Price: %f
-	Uniswapv3 Price: %f
-	Uniswapv3 Twap: %f\n`, symbol, mdl.Token,
-		pf.BlockNumber, pf.Price,
-		uniPrices.BlockNum, uniPrices.PriceV2, uniPrices.PriceV3, uniPrices.TwapV3)
-}
-
-func (mdl *ChainlinkPriceFeed) isNotified() bool {
-	if mdl.Details == nil || mdl.Details["notified"] == nil {
-		return false
-	}
-	value, ok := mdl.Details["notified"].(bool)
-	if !ok {
-		log.Fatal("Notified not parsed")
-	}
-	return value
-}
-
-func (mdl *ChainlinkPriceFeed) SetUnderlyingState(obj interface{}) {
-	switch obj.(type) {
-	case (*schemas.PriceFeed):
-		state := obj.(*schemas.PriceFeed)
-		mdl.prevPriceFeed = state
-	default:
-		log.Fatal("Type assertion for chainlink state failed")
-	}
 }

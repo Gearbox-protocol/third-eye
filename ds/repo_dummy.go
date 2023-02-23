@@ -214,10 +214,6 @@ func (DummyRepo) Clear() {
 // multicall
 func (DummyRepo) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
 }
-func (DummyRepo) AddUniPoolsForToken(blockNum int64, token string) {
-}
-func (DummyRepo) AddUniPriceAndChainlinkRelation(relation *schemas.UniPriceAndChainlink) {
-}
 
 // for testing
 func (DummyRepo) AddTokenObj(token *schemas.Token) {

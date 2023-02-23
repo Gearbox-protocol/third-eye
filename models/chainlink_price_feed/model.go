@@ -13,9 +13,8 @@ import (
 
 type ChainlinkPriceFeed struct {
 	*ds.SyncAdapter
-	Token         string
-	MainAgg       *ChainlinkMainAgg
-	prevPriceFeed *schemas.PriceFeed
+	Token   string
+	MainAgg *ChainlinkMainAgg
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
@@ -50,7 +49,6 @@ func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core
 		syncAdapter,
 		true,
 	)
-	// repo.AddUniPoolsForToken(adapter.DiscoveredAt, token)
 	return adapter
 }
 

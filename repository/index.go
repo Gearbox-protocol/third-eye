@@ -35,7 +35,6 @@ type Repository struct {
 	client         core.ClientI
 	config         *config.Config
 	accountManager *ds.DirectTransferManager
-	relations      []*schemas.UniPriceAndChainlink
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
@@ -75,9 +74,7 @@ func (repo *Repository) Init() {
 	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
 	// load poolLMrewards
 	repo.loadLMRewardDetails()
-	repo.loadChainlinkPrevState()
 	//
-	repo.loadUniswapPools()
 	// for disabling previous token oracle if new oracle is set
 	repo.LoadCurrentTokenOracle(repo.db)
 	// load state for sync_adapters
@@ -162,4 +159,8 @@ func (repo *Repository) AfterSync(syncTill int64) {
 	repo.accountManager.Clear()
 	// chainlink and uniswap prices
 	repo.AggregatedFeed.Clear()
+}
+
+func (repo *Repository) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
+	repo.AggregatedFeed.GetDepFetcher().ChainlinkPriceUpdatedAt(token, blockNums)
 }

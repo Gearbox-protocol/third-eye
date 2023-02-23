@@ -1,7 +1,6 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
@@ -30,12 +29,6 @@ func (repo *Repository) Flush() error {
 	repo.SessionRepo.Save(tx)
 
 	repo.BlocksRepo.Save(tx)
-
-	if len(repo.relations) > 0 {
-		err := tx.CreateInBatches(repo.relations, 3000).Error
-		log.CheckFatal(err)
-		repo.relations = []*schemas.UniPriceAndChainlink{}
-	}
 
 	repo.AllowedTokenRepo.Save(tx)
 

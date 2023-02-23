@@ -22,8 +22,6 @@ type AggregatedBlockFeed struct {
 	// yearn feed
 	QueryFeeds map[string]*QueryPriceFeed
 
-	// for getting uni price on v2, v3 and uni oracle
-	priceOnUNIFetcher *PriceOnUNIFetcher
 	// for dependency based fetching price
 	queryPFdeps *QueryPFDependencies
 	//
@@ -51,12 +49,11 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 		OnlyQuery: true,
 	}
 	return &AggregatedBlockFeed{
-		SyncAdapter:       syncAdapter,
-		Interval:          interval,
-		mu:                &sync.Mutex{},
-		QueryFeeds:        map[string]*QueryPriceFeed{},
-		priceOnUNIFetcher: NewPriceOnUNIFetcher(),
-		queryPFdeps:       NewQueryPFDepenencies(repo, client),
+		SyncAdapter: syncAdapter,
+		Interval:    interval,
+		mu:          &sync.Mutex{},
+		QueryFeeds:  map[string]*QueryPriceFeed{},
+		queryPFdeps: NewQueryPFDepenencies(repo, client),
 	}
 }
 
@@ -123,9 +120,6 @@ func (mdl *AggregatedBlockFeed) DisableYearnFeed(token, oracle string, disabledA
 	mdl.QueryFeeds[oracle].DisableToken(token, disabledAt)
 }
 
-func (mdl AggregatedBlockFeed) UNIFetcher() *PriceOnUNIFetcher {
-	return mdl.priceOnUNIFetcher
-}
 func (mdl AggregatedBlockFeed) GetDepFetcher() *QueryPFDependencies {
 	return mdl.queryPFdeps
 }
@@ -134,5 +128,4 @@ func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
 }
 
 func (mdl AggregatedBlockFeed) Clear() {
-	mdl.priceOnUNIFetcher.Clear()
 }
