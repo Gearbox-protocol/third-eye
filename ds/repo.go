@@ -94,7 +94,6 @@ type RepositoryI interface {
 	RecentMsgf(headers log.RiskHeader, msg string, args ...interface{})
 	//
 	// oracle and uni
-	AddUniswapPrices(prices *schemas.UniPoolPrices)
 	GetYearnFeedAddrs() []string
 	//
 	LoadLastDebtSync() int64

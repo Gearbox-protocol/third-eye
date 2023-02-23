@@ -187,9 +187,7 @@ func (DummyRepo) RecentMsgf(headers log.RiskHeader, msg string, args ...interfac
 }
 
 //
-// oracle and uni
-func (DummyRepo) AddUniswapPrices(prices *schemas.UniPoolPrices) {
-}
+// oracle
 func (DummyRepo) GetYearnFeedAddrs() []string {
 	return nil
 }

@@ -247,10 +247,6 @@ func (repo *BlocksRepo) AddCreditManagerStats(cms *schemas.CreditManagerStat) {
 	repo.SetAndGetBlock(cms.BlockNum).AddCreditManagerStats(cms)
 }
 
-func (repo *BlocksRepo) AddUniswapPrices(prices *schemas.UniPoolPrices) {
-	repo.SetAndGetBlock(prices.BlockNum).AddUniswapPrices(prices)
-}
-
 func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 	repo.SetAndGetBlock(ps.BlockNum).AddPoolStat(ps)
 }
