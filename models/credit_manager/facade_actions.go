@@ -2,6 +2,7 @@ package credit_manager
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -58,8 +59,12 @@ func (mdl *CreditManager) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*
 // check name
 // check multicall for facade action vs tenderly response
 // add to db
-func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string, facadeActions []*ds.FacadeAccountActionv2, mainCalls []*ds.FacadeCallNameWithMulticall) {
-	executeParams := []ds.ExecuteParams{}
+func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string,
+	facadeActions []*ds.FacadeAccountActionv2,
+	mainCalls []*ds.FacadeCallNameWithMulticall,
+	nonMultiCallExecuteEvents []ds.ExecuteParams) {
+
+	executeParams := []ds.ExecuteParams{} // non multicall and multicall execute orders for a tx to be compared with call trace
 	for ind, mainAction := range facadeActions {
 		mainEvent := mainAction.Data
 
@@ -103,15 +108,36 @@ func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string, facadeActi
 			}
 		}
 	}
-	tenderlyExecuteEvents := mdl.getExecuteOrderAccountOperationFromParams(txHash, executeParams)
+
+	executeParams = append(executeParams, nonMultiCallExecuteEvents...)
+	sort.Slice(executeParams, func(i, j int) bool { return executeParams[i].Index < executeParams[j].Index })
+	tenderlyExecOperations := mdl.getExecuteOrderAccountOperationFromParams(txHash, executeParams)
+
+	// process non multicall execute order operations
+	remainingExecOperations := []*schemas.AccountOperation{}
+	var nonMulticallInd int
+	for _, accountOperation := range tenderlyExecOperations {
+		if nonMulticallInd < len(nonMultiCallExecuteEvents) &&
+			accountOperation.LogId == nonMultiCallExecuteEvents[nonMulticallInd].Index { // add non multicall execute order to db
+			mdl.Repo.AddAccountOperation(accountOperation)
+			nonMulticallInd++
+		} else {
+			remainingExecOperations = append(remainingExecOperations, accountOperation)
+		}
+	}
+
 	// called for  open_with_multicall, multicall, liquidate, close
-	var ind int
+	var indTenderlyCall int
 	for _, mainAction := range facadeActions {
 		multicalls := mainAction.GetMulticallsFromFA()
 		for multicallInd, innerEvent := range multicalls {
 			if innerEvent.Action == "ExecuteOrder" {
-				multicalls[multicallInd] = tenderlyExecuteEvents[ind]
-				ind++
+				if innerEvent.LogId == remainingExecOperations[indTenderlyCall].LogId { // add multicall execute order to main event
+					multicalls[multicallInd] = remainingExecOperations[indTenderlyCall]
+				} else {
+					log.Fatalf("execute order index mismatch: events: %s, calls: %s", utils.ToJson(innerEvent), utils.ToJson(remainingExecOperations[indTenderlyCall]))
+				}
+				indTenderlyCall++
 			}
 		}
 		mainEvent := mainAction.Data

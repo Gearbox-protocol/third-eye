@@ -10,9 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// v1 method
 func (mdl *CreditManager) processExecuteEvents() {
 	if len(mdl.executeParams) > 0 {
-		mdl.handleExecuteEvents(mdl.executeParams)
+		mdl.saveExecuteEvents(mdl.executeParams)
 		mdl.executeParams = []ds.ExecuteParams{}
 	}
 }

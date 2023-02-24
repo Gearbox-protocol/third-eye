@@ -282,13 +282,13 @@ func (mdl *CreditManager) AddExecuteParams(txLog *types.Log,
 	return nil
 }
 
-func (mdl *CreditManager) handleExecuteEvents(executeParams []ds.ExecuteParams) {
+func (mdl *CreditManager) saveExecuteEvents(executeParams []ds.ExecuteParams) {
 	// credit manager has the execute event
 	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(mdl.LastTxHash, mdl.Address, executeParams)
 
 	for i, call := range calls {
 		params := executeParams[i]
-		// add account operation
+
 		accountOperation := &schemas.AccountOperation{
 			BlockNumber: params.BlockNumber,
 			TxHash:      mdl.LastTxHash,

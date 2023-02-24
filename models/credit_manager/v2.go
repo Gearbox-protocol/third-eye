@@ -143,8 +143,8 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 }
 
 func (mdl *CreditManager) onNewTxHashV2() {
-	mdl.processRemainingMultiCalls()
-	mdl.processNonMultiCalls()
+	nonMulticallExecuteEvents := mdl.processNonMultiCalls()
+	mdl.processRemainingMultiCalls(nonMulticallExecuteEvents)
 }
 
 // opencreditaccount
@@ -159,7 +159,7 @@ func (mdl *CreditManager) onNewTxHashV2() {
 // openwithmulticall => other calls
 // multicallstarted => other calls
 // other calls => closed/liquidated
-func (mdl *CreditManager) processRemainingMultiCalls() {
+func (mdl *CreditManager) processRemainingMultiCalls(nonMultiCallExecuteEvents []ds.ExecuteParams) {
 
 	facadeActions, openEventWithoutMulticall := mdl.multicall.PopMainActionsv2()
 
@@ -173,7 +173,9 @@ func (mdl *CreditManager) processRemainingMultiCalls() {
 	if len(facadeActions) > 0 { // account operation will only exist if there are one or more facade actions
 		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(mdl.LastTxHash, mdl.GetCreditFacadeAddr())
 		fixedFacadeActions := mdl.fixFacadeActionStructureViaTenderlyCalls(mainCalls, facadeActions)
-		mdl.validateAndSaveFacadeActions(mdl.LastTxHash, fixedFacadeActions, mainCalls)
+		mdl.validateAndSaveFacadeActions(mdl.LastTxHash, fixedFacadeActions, mainCalls, nonMultiCallExecuteEvents)
+	} else if len(nonMultiCallExecuteEvents) > 0 {
+		mdl.saveExecuteEvents(nonMultiCallExecuteEvents)
 	}
 }
 
@@ -182,9 +184,9 @@ func (mdl *CreditManager) setUpdateSession(sessionId string) {
 	mdl.UpdatedSessions[sessionId]++
 }
 
-func (mdl *CreditManager) processNonMultiCalls() {
+func (mdl *CreditManager) processNonMultiCalls() (executeEvents []ds.ExecuteParams) {
 	events := mdl.multicall.PopNonMulticallEventsV2()
-	executeEvents := []ds.ExecuteParams{}
+
 	for _, event := range events {
 		switch event.Action {
 		case "AddCollateral(address,address,uint256)",
@@ -209,9 +211,7 @@ func (mdl *CreditManager) processNonMultiCalls() {
 			log.Fatal(event.Action)
 		}
 	}
-	if len(executeEvents) > 0 {
-		mdl.handleExecuteEvents(executeEvents)
-	}
+	return
 }
 
 // TO CHECK
