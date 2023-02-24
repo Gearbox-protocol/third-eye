@@ -205,6 +205,29 @@
   '6': {
     accountOperations: [
       {
+        action: 'AddCollateral(address,address,uint256)',
+        adapterCall: false,
+        args: {
+          _order: [
+            'onBehalfOf',
+            'token',
+            'value',
+          ],
+          onBehalfOf: '#User_2',
+          token: '#Token_1',
+          value: 1000000000,
+        },
+        blockNum: 6,
+        borrower: '#User_2',
+        dapp: '#CreditFacade_1',
+        logId: 7,
+        sessionId: '#Account_2_6_4',
+        transfers: {
+          '#Token_1': 1000000000,
+        },
+        txHash: '#Hash_2',
+      },
+      {
         action: 'OpenCreditAccount(address,address,uint256,uint16)',
         adapterCall: false,
         args: {
@@ -299,29 +322,6 @@
         sessionId: '#Account_1_4_0',
         transfers: {
           '#Token_1': 3000000000,
-        },
-        txHash: '#Hash_2',
-      },
-      {
-        action: 'AddCollateral(address,address,uint256)',
-        adapterCall: false,
-        args: {
-          _order: [
-            'onBehalfOf',
-            'token',
-            'value',
-          ],
-          onBehalfOf: '#User_2',
-          token: '#Token_1',
-          value: 1000000000,
-        },
-        blockNum: 6,
-        borrower: '#User_2',
-        dapp: '#CreditFacade_1',
-        logId: 7,
-        sessionId: '#Account_2_6_4',
-        transfers: {
-          '#Token_1': 1000000000,
         },
         txHash: '#Hash_2',
       },

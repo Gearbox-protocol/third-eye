@@ -76,6 +76,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			SessionId:   sessionId,
 			Borrower:    borrower,
 			Dapp:        txLog.Address.Hex(),
+			LogId:       txLog.TxIndex,
 			Action:      "MultiCallStarted(address)",
 		})
 	case core.Topic("MultiCallFinished()"):
