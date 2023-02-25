@@ -64,7 +64,7 @@ func (e *Engine) getLastSyncedTill() int64 {
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
 		obj := address_provider.NewAddressProvider(addr, e.Client, e.repo)
 		e.repo.AddSyncAdapter(obj)
-		poolLMRewardObj := pool_lmrewards.NewPoolLMRewards(addr, obj.LastSync, e.Client, e.repo)
+		poolLMRewardObj := pool_lmrewards.NewPoolLMRewards("0x000000000000000000000000000000000000beef", obj.LastSync, e.Client, e.repo)
 		e.repo.AddSyncAdapter(poolLMRewardObj)
 		return obj.GetLastSync()
 	} else {

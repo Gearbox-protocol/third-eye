@@ -22,9 +22,10 @@ func (kit *AdapterKit) init() {
 	// - CreditManager => CreditFilter/CreditConfigurator for creation only.
 	// - AccountFactory => AccountManager => CreditManager; factory gets the accounts address to accountmanager for getting
 	//   all token transfers, in CreditManager filter transfer related to events on creditmanager
-	// - Pool => CreditManager; for getting the session for borrow/repay event on Pool
-	// - Treasury, acl, PriceOracle and geartoken are independent
-	// - creditconfigurator and core.CreditFilter are same
+	// - Pool -> CreditManager; for getting the session for borrow/repay event on Pool
+	// - Treasury dependent on pools, so it is last
+	// - acl, PriceOracle and geartoken are independent
+	// - creditconfigurator and core.CreditFilter are same dependent on creditmanager
 	// - pool -> dieseltokens -> PoolLMRewards
 }
 

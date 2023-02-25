@@ -11,8 +11,12 @@ import (
 
 func (repo *Repository) loadLMRewardDetails() {
 	defer utils.Elapsed("loadLMRewardDetails")()
+	adapterAddrs := repo.GetAdapterAddressByName(ds.PoolLMRewards)
+	if len(adapterAddrs) == 0 {
+		return
+	}
 	// load poolLMRewardadapter
-	adapterAddr := repo.GetAdapterAddressByName(ds.PoolLMRewards)[0]
+	adapterAddr := adapterAddrs[0]
 	adapter := repo.GetAdapter(adapterAddr).(*pool_lmrewards.PoolLMRewards)
 	// lm rewards
 	rewardData := []pool_lmrewards.LMReward{}
