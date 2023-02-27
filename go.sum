@@ -55,6 +55,8 @@ github.com/Gearbox-protocol/sdk-go v0.0.0-20230223123121-db0d34581194 h1:NiLwNst
 github.com/Gearbox-protocol/sdk-go v0.0.0-20230223123121-db0d34581194/go.mod h1:oDw6n9AoTea9+nzVLCJcIqTUlcP12JYCZCG5hFkPNos=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20230223124558-9fc7f23ffe38 h1:a7B3qGWgxR8uFfowa9e/B8+MVw+4Pnatggr2CyLRM+U=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20230223124558-9fc7f23ffe38/go.mod h1:oDw6n9AoTea9+nzVLCJcIqTUlcP12JYCZCG5hFkPNos=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20230227130140-fe45140973c9 h1:0pIxZ2t27Uv76PC+M0MwUWgxiuVaKwQJ39OVA8qgTMo=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20230227130140-fe45140973c9/go.mod h1:oDw6n9AoTea9+nzVLCJcIqTUlcP12JYCZCG5hFkPNos=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
