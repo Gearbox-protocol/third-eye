@@ -58,6 +58,8 @@ func NewQueryPFDepenencies(repo ds.RepositoryI, client core.ClientI) *QueryPFDep
 func (q *QueryPFDependencies) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
 	q.updateIfTest(q.repo)
 	chainlinkSym := q.getTokenSym(token)
+	q.mu.Lock()
+	defer q.mu.Unlock()
 	q.ChainlinkSymToUpdatedBlocks[chainlinkSym] = blockNums
 }
 

@@ -20,6 +20,9 @@ func (DieselBalance) TableName() string {
 }
 
 func (mdl PoolLMRewards) GetDieselBalances() (dieselBalances []DieselBalance) {
+	if !mdl.hasDataToSave {
+		return
+	}
 	for tokenSym, balances := range mdl.dieselBalances {
 		decimals := mdl.decimalsAndPool[tokenSym].decimals
 		for user, balanceBI := range balances {
@@ -54,6 +57,9 @@ func (LMReward) TableName() string {
 }
 
 func (mdl PoolLMRewards) GetLMRewards() (rewards []LMReward) {
+	if !mdl.hasDataToSave {
+		return
+	}
 	for pool, rewardForUsers := range mdl.rewards {
 		for user, reward := range rewardForUsers {
 			rewards = append(rewards, LMReward{
@@ -64,6 +70,10 @@ func (mdl PoolLMRewards) GetLMRewards() (rewards []LMReward) {
 		}
 	}
 	return rewards
+}
+
+func (mdl *PoolLMRewards) SyncComplete() {
+	mdl.hasDataToSave = false
 }
 
 func (mdl PoolLMRewards) LoadLMRewards(rewards []LMReward) {

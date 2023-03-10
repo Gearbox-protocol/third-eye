@@ -38,17 +38,22 @@ func (repo Repository) saveLMRewardDetails(tx *gorm.DB) {
 	adapterAddr := repo.GetAdapterAddressByName(ds.PoolLMRewards)[0]
 	adapter := repo.GetAdapter(adapterAddr).(*pool_lmrewards.PoolLMRewards)
 	//
-	rewards := adapter.GetLMRewards()
-	err := tx.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).CreateInBatches(rewards, 500).Error
-	log.CheckFatal(err)
+
+	if rewards := adapter.GetLMRewards(); len(rewards) != 0 {
+		err := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(rewards, 500).Error
+		log.CheckFatal(err)
+	}
 
 	//
-	balances := adapter.GetDieselBalances()
-	err = tx.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).CreateInBatches(balances, 500).Error
-	log.CheckFatal(err)
 
+	if balances := adapter.GetDieselBalances(); len(balances) != 0 {
+		err := tx.Clauses(clause.OnConflict{
+			UpdateAll: true,
+		}).CreateInBatches(balances, 500).Error
+		log.CheckFatal(err)
+	}
+
+	adapter.SyncComplete()
 }

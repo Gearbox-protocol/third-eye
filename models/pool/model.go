@@ -14,7 +14,8 @@ import (
 
 type Pool struct {
 	*ds.SyncAdapter
-	contractETH    *poolService.PoolService
+	contractETH *poolService.PoolService
+	// used for when to take a snapshot of pool state, these can only be taken for 5 events, new interest rate, add/remove liquidity and borrow/repay pool owed amount
 	lastEventBlock int64
 	State          *schemas.PoolState
 	dieselRate     *big.Int

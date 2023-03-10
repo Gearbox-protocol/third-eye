@@ -93,6 +93,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Type:        schemas.NewInterestRateModel,
 			Args:        &core.Json{"newInterestRateModel": interestModel.NewInterestRateModel.Hex()},
 		})
+		mdl.lastEventBlock = blockNum
 	case core.Topic("NewCreditManagerConnected(address)"):
 		newCreditManager, err := mdl.contractETH.ParseNewCreditManagerConnected(txLog)
 		log.CheckFatal(err)

@@ -22,6 +22,7 @@ type PoolLMRewards struct {
 	totalSupplies map[string]*big.Int
 	// sym to decimals and pool
 	decimalsAndPool map[string]*_PoolAndDecimals
+	hasDataToSave   bool
 }
 type _PoolAndDecimals struct {
 	decimals int8
@@ -55,6 +56,7 @@ func NewPoolLMRewardsFromAdapter(adapter *ds.SyncAdapter) *PoolLMRewards {
 		rewards:          map[string]map[string]*big.Int{}, // to LMRewards for saving in DB
 		totalSupplies:    map[string]*big.Int{},            // will be converted to details on syncAdapter
 		decimalsAndPool:  map[string]*_PoolAndDecimals{},   // auxillary data
+
 	}
 	obj.detailsToTotalSupplies()
 	return obj
@@ -64,4 +66,7 @@ func (mdl *PoolLMRewards) AfterSyncHook(syncedTill int64) {
 	mdl.calculateRewards(mdl.pendingCalcBlock, syncedTill)
 	mdl.totalSuppliesToDetails() // convert store the supplies in details
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
+	// sync pool_lm_rewards and diesel_balances if PoolLMrewards has data to save,
+	// i.e. it synced over the given range of blocks in the sync engine
+	mdl.hasDataToSave = true
 }
