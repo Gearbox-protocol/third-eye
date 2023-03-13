@@ -85,6 +85,9 @@ func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
 		TotalValueInUSD: debt.TotalValueInUSD,
 		TFIndex:         debt.FarmingValUSD / debt.TotalValueInUSD,
 	}
+	if curDebt.TFIndex >= 1 {
+		curDebt.TFIndex = 1
+	}
 	eng.currentDebts = append(eng.currentDebts, &curDebt)
 }
 

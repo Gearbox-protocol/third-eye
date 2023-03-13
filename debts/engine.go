@@ -333,8 +333,8 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			notMatched = true
 		}
 	}
-	eng.farmingCalc.addFarmingVal(debt, session, eng.lastCSS[session.ID], storeForCalc{inner: eng})
 	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken)
+	eng.farmingCalc.addFarmingVal(debt, session, eng.lastCSS[session.ID], storeForCalc{inner: eng})
 	if notMatched {
 		profile.CumIndexAndUToken = cumIndexAndUToken
 		profile.Debt = debt

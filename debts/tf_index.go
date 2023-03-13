@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
@@ -14,12 +15,14 @@ type FarmingCalculator struct {
 }
 
 func NewFarmingCalculator(chainId int64, testing bool) *FarmingCalculator {
-	tradingTokens := []string{"WETH", "stETH", "DAI", "sUSD", "FRAX", "gUSD", "LUSD", "WBTC", "USDC", "USDT", "LOTY", "LDO", "CVX", "FXS", "CRV", "SNX"}
+	tradingTokens := []string{"WETH", "stETH", "DAI", "SUSD", "FRAX", "GUSD", "LUSD", "WBTC", "USDC", "USDT", "LQTY", "LDO", "CVX", "FXS", "CRV", "SNX"}
 	tradingTokensMap := map[string]bool{}
 	syms := core.GetSymToAddrByChainId(chainId)
 	for _, tradingSym := range tradingTokens {
-		if addr, ok := syms.Tokens[tradingSym]; !ok {
+		if addr, ok := syms.Tokens[tradingSym]; ok {
 			tradingTokensMap[addr.Hex()] = true
+		} else {
+			log.Fatalf("Trading token(%s) for tf_index missing from sdk config:", tradingSym, addr)
 		}
 	}
 	return &FarmingCalculator{
