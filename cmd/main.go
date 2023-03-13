@@ -11,6 +11,7 @@ import (
 	_ "net/http/pprof"
 	"time"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/debts"
@@ -30,13 +31,13 @@ import (
 // 	}()
 // }
 
-func StartServer(lc fx.Lifecycle, engine ds.EngineI, cfg *config.Config) {
+func StartServer(lc fx.Lifecycle, engine ds.EngineI, cfg *config.Config, client core.ClientI) {
 	log.NewAMQPService(
 		cfg.AMQPEnable,
 		cfg.AMQPUrl,
 		log.LoggingConfig{
 			Exchange:     "TelegramBot",
-			ChainId:      cfg.ChainId,
+			ChainId:      core.GetChainId(client),
 			RiskEndpoint: cfg.RiskEndpoint,
 			RiskSecret:   cfg.RiskSecret,
 		},

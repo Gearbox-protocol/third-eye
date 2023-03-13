@@ -10,6 +10,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/debts"
@@ -20,9 +21,9 @@ import (
 	"go.uber.org/fx"
 )
 
-func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, config *config.Config, shutdowner fx.Shutdowner) {
+func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, config *config.Config, shutdowner fx.Shutdowner, client core.ClientI) {
 	log.NewAMQPService(config.AMQPEnable, config.AMQPUrl, log.LoggingConfig{
-		ChainId:  config.ChainId,
+		ChainId:  core.GetChainId(client),
 		Exchange: "TelegramBot",
 	}, config.AppName)
 	// Starting server

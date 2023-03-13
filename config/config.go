@@ -13,9 +13,6 @@ type Config struct {
 	// Ethereum
 	EthProvider string `env:"ETH_PROVIDER" validate:"required"`
 
-	// chainid is set in ethclient module while creating rpc client
-	ChainId int64
-
 	// port for health service
 	Port string `env:"PORT" default:"0" validate:"required"`
 

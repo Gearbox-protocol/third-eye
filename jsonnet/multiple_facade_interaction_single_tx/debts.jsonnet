@@ -13,6 +13,7 @@
       profitUnderlying: 0,
       repayAmount: 0,
       sessionId: '#Account_1_4_0',
+      totalValueInUSD: 7000,
     },
     {
       amountToPool: 4000,
@@ -27,6 +28,7 @@
       profitUnderlying: 0,
       repayAmount: 0,
       sessionId: '#Account_2_6_4',
+      totalValueInUSD: 6000,
     },
   ],
   debts: [

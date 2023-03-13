@@ -161,7 +161,7 @@ func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt in
 		} else {
 			log.Warnf("Session(%s) liquidated at block:%d, but liquidable since block not stored", sessionId, closedAt)
 		}
-		urls := core.NetworkUIUrl(eng.config.ChainId)
+		urls := core.NetworkUIUrl(core.GetChainId(eng.client))
 		eng.repo.RecentMsgf(log.RiskHeader{
 			BlockNumber: closedAt - 1,
 			EventCode:   "AMQP",
@@ -333,6 +333,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			notMatched = true
 		}
 	}
+	eng.farmingCalc.addFarmingVal(debt, session, eng.lastCSS[session.ID], storeForCalc{inner: eng})
 	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken)
 	if notMatched {
 		profile.CumIndexAndUToken = cumIndexAndUToken
@@ -412,7 +413,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 			// repayamount
 			// for account not closed or liquidated yet
 			// get underlying balance
-			underlying := (*session.Balances)[cumIndexAndUToken.Token]
+			underlying := (*eng.lastCSS[session.ID].Balances)[cumIndexAndUToken.Token]
 			underlyingBalance := new(big.Int)
 			if underlying.BI != nil {
 				underlyingBalance = underlying.BI.Convert()

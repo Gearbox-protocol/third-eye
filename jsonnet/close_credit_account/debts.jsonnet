@@ -13,6 +13,7 @@
       profitUnderlying: -2000,
       sessionId: '#Account_1_3_3',
       repayAmount: 0,
+      totalValueInUSD: 9500,
     },
   ],
   debts: [

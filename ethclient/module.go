@@ -1,8 +1,6 @@
 package ethclient
 
 import (
-	"context"
-
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/ethclient"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -15,9 +13,6 @@ func NewEthClient(config *config.Config) core.ClientI {
 	if err != nil {
 		log.Fatal(err)
 	}
-	chainId, err := client.ChainID(context.TODO())
-	log.CheckFatal(err)
-	config.ChainId = chainId.Int64()
 	return client
 }
 

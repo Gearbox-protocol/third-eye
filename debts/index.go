@@ -28,6 +28,7 @@ type DebtEngine struct {
 	// cm to paramters
 	lastParameters map[string]*schemas.Parameters
 	isTesting      bool
+	farmingCalc    *FarmingCalculator
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -45,6 +46,7 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),
 		lastParameters:         make(map[string]*schemas.Parameters),
 		isTesting:              testing,
+		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
 	}
 }
 

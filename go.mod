@@ -3,7 +3,7 @@ module github.com/Gearbox-protocol/third-eye
 go 1.18
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20230313094923-c483c95a0036
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20230313115442-9338e1a391b0
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.5.8
@@ -60,7 +60,6 @@ require (
 	go.uber.org/dig v1.10.0 // indirect
 	go.uber.org/multierr v1.5.0 // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
-	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/term v0.0.0-20210927222741-03fcf44c2211 // indirect
 	golang.org/x/text v0.3.7 // indirect
@@ -74,4 +73,4 @@ require (
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20230223124558-9fc7f23ffe38 => ../sdk-go
+// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20230313111537-4827b8d4ca3a => ../sdk-go
