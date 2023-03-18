@@ -40,3 +40,8 @@ drop materialized view ranking_30d;
 drop materialized view ranking_7d;
 drop table credit_managers;
 drop table blocks;
+
+--
+drop table diesel_balances; 
+drop table diesel_transfers;
+drop table lm_rewards; 

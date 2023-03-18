@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -44,7 +45,15 @@ func (mdl *PoolLMRewards) OnLog(txLog types.Log) {
 		} else {
 			mdl.addBalance(tokenSym, to, amount)
 		}
-
+		//
+		mdl.addDieselTransfer(&schemas.DieselTransfer{
+			From:        from,
+			To:          to,
+			LogId:       int64(txLog.Index),
+			TokenSymbol: tokenSym,
+			Amount:      utils.GetFloat64Decimal(amount, token.Decimals),
+			BlockNum:    int64(txLog.BlockNumber),
+		})
 		if from == core.NULL_ADDR.Hex() {
 			mdl.totalSupplies[tokenSym] = new(big.Int).Add(
 				utils.NotNilBigInt(mdl.totalSupplies[tokenSym]),
@@ -54,6 +63,10 @@ func (mdl *PoolLMRewards) OnLog(txLog types.Log) {
 			mdl.addBalance(tokenSym, from, new(big.Int).Neg(amount))
 		}
 	}
+}
+
+func (mdl PoolLMRewards) addDieselTransfer(dt *schemas.DieselTransfer) {
+	mdl.Repo.AddDieselTransfer(dt)
 }
 
 func (mdl PoolLMRewards) addBalance(tokenSym, user string, amount *big.Int) {

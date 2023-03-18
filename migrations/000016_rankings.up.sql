@@ -7,6 +7,7 @@ returns table (
 		old_total DOUBLE PRECISION,
 		old_collateral_underlying DOUBLE PRECISION,
 		old_profit_underlying DOUBLE PRECISION,
+		old_hf varchar(80),
         sid varchar(100),
 		new_total DOUBLE PRECISION,
 		new_collateral_underlying DOUBLE PRECISION,
@@ -44,7 +45,7 @@ BEGIN
 
         (SELECT distinct on (d.session_id) d.total_value_usd old_total,
 			d.collateral_underlying old_collateral_underlying, d.profit_underlying as old_profit_underlying,
-            d.session_id sid
+			cal_health_factor old_hf, d.session_id sid
 			FROM debts d WHERE block_num >= (SELECT min(id) FROM blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
             order by d.session_id, block_num) t1
         JOIN (SELECT distinct on (d.session_id) d.total_value_usd new_total,

@@ -250,6 +250,9 @@ func (repo *BlocksRepo) AddCreditManagerStats(cms *schemas.CreditManagerStat) {
 func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 	repo.SetAndGetBlock(ps.BlockNum).AddPoolStat(ps)
 }
+func (repo *BlocksRepo) AddDieselTransfer(transfer *schemas.DieselTransfer) {
+	repo.SetAndGetBlock(transfer.BlockNum).AddDieselTransfer(transfer)
+}
 
 func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)

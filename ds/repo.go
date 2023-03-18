@@ -70,6 +70,7 @@ type RepositoryI interface {
 	GetDCWrapper() *dc_wrapper.DataCompressorWrapper
 	// pools
 	AddPoolStat(ps *schemas.PoolStat)
+	AddDieselTransfer(dt *schemas.DieselTransfer)
 	AddPoolLedger(pl *schemas.PoolLedger)
 	GetPoolUniqueUserLen(pool string) int
 	IsDieselToken(token string) bool

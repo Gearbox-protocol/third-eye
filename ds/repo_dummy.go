@@ -133,6 +133,9 @@ func (DummyRepo) GetDCWrapper() *dc_wrapper.DataCompressorWrapper {
 // pools
 func (DummyRepo) AddPoolStat(ps *schemas.PoolStat) {
 }
+func (DummyRepo) AddDieselTransfer(dt *schemas.DieselTransfer) {
+
+}
 func (DummyRepo) AddPoolLedger(pl *schemas.PoolLedger) {
 }
 func (DummyRepo) GetPoolUniqueUserLen(pool string) int {
