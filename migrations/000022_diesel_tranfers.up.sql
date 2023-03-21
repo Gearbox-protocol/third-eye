@@ -7,3 +7,5 @@ create table diesel_transfers (
     log_id integer,
     PRIMARY KEY (block_num, log_id)
 );
+
+ALTER TABLE pools add deposit_apy_bi varchar(80);
