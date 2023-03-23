@@ -163,6 +163,9 @@ func (eng *DebtEngine) CalculateDebt() {
 }
 
 func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD float64) {
+	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
+		return
+	}
 	var totalAvailableLiquidityInUSD float64 = 0
 	for _, entry := range eng.poolLastInterestData {
 		adapter := eng.repo.GetAdapter(entry.Address)
@@ -183,11 +186,14 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 				underlyingToken,
 				entry.AvailableLiquidityBI.Convert(), version), 8)
 	}
-	eng.tvlSnapshots = append(eng.tvlSnapshots, &schemas.TvlSnapshots{
+	// save as last tvl snapshot and add to db
+	tvls := &schemas.TvlSnapshots{
 		BlockNum:           blockNum,
 		AvailableLiquidity: totalAvailableLiquidityInUSD,
 		CATotalValue:       caTotalValueInUSD,
-	})
+	}
+	eng.tvlSnapshots = append(eng.tvlSnapshots, tvls)
+	eng.lastTvlSnapshot = tvls
 }
 
 func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt int64, status int) {

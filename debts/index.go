@@ -27,9 +27,10 @@ type DebtEngine struct {
 	currentDebts           []*schemas.CurrentDebt
 	liquidableBlockTracker map[string]*schemas.LiquidableAccount
 	// cm to paramters
-	lastParameters map[string]*schemas.Parameters
-	isTesting      bool
-	farmingCalc    *FarmingCalculator
+	lastParameters  map[string]*schemas.Parameters
+	isTesting       bool
+	farmingCalc     *FarmingCalculator
+	lastTvlSnapshot *schemas.TvlSnapshots
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -68,6 +69,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	log.Info("Starting Debt engine")
 	// synced till
 	lastDebtSynced := eng.repo.LoadLastDebtSync()
+	eng.loadLastTvlSnapshot()
 	eng.loadLastCSS(lastDebtSynced)
 	eng.loadTokenLastPrice(lastDebtSynced)
 	eng.loadAllowedTokenThreshold(lastDebtSynced)
@@ -82,6 +84,13 @@ func (eng *DebtEngine) ProcessBackLogs() {
 		eng.processBlocksInBatch(lastDebtSynced, lastDebtSynced+batchSize)
 	}
 	eng.processBlocksInBatch(lastDebtSynced, adaptersSyncedTill)
+}
+func (eng *DebtEngine) loadLastTvlSnapshot() {
+	lastTvlSnapshot := &schemas.TvlSnapshots{}
+	if err := eng.db.Raw(`SELECT * FROM tvl_snapshots ORDER BY block_num DESC LIMIT 1`).Find(lastTvlSnapshot).Error; err != nil {
+		log.Fatal(err)
+	}
+	eng.lastTvlSnapshot = lastTvlSnapshot
 }
 
 // load blocks from > and to <=
