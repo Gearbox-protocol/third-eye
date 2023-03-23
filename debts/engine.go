@@ -52,11 +52,12 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 		poolsUpdated = append(poolsUpdated, ps.Address)
 		// L2
 		eng.AddPoolLastInterestData(&schemas.PoolInterestData{
-			Address:            ps.Address,
-			BlockNum:           ps.BlockNum,
-			CumulativeIndexRAY: ps.CumulativeIndexRAY,
-			BorrowAPYBI:        ps.BorrowAPYBI,
-			Timestamp:          block.Timestamp,
+			Address:              ps.Address,
+			BlockNum:             ps.BlockNum,
+			CumulativeIndexRAY:   ps.CumulativeIndexRAY,
+			AvailableLiquidityBI: ps.AvailableLiquidityBI,
+			BorrowAPYBI:          ps.BorrowAPYBI,
+			Timestamp:            block.Timestamp,
 		})
 	}
 
@@ -105,6 +106,8 @@ func (eng *DebtEngine) CalculateDebt() {
 		// get pool cumulative interest rate
 		cmToPoolDetails := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
 
+		//
+		var caTotalValueInUSD float64 = 0
 		// check if session's debt needs to be recalculated
 		for _, session := range sessions {
 			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
@@ -116,6 +119,12 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 			// #C3
 			sessionSnapshot := eng.lastCSS[session.ID]
+			caTotalValueInUSD += utils.GetFloat64Decimal(
+				eng.GetAmountInUSD(
+					cmToPoolDetails[session.CreditManager].Token,
+					sessionSnapshot.TotalValueBI.Convert(), session.Version,
+				), 8)
+
 			for token, tokenBalance := range *sessionSnapshot.Balances {
 				if tokenBalance.IsEnabled && tokenBalance.HasBalanceMoreThanOne() {
 					if tokensUpdated[token] {
@@ -145,10 +154,40 @@ func (eng *DebtEngine) CalculateDebt() {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
 		}
+		//
+		eng.createTvlSnapshots(blockNum, caTotalValueInUSD)
 		// if len(sessionsUpdated) > 0 {
 		// log.Verbosef("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
 		// }
 	}
+}
+
+func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD float64) {
+	var totalAvailableLiquidityInUSD float64 = 0
+	for _, entry := range eng.poolLastInterestData {
+		adapter := eng.repo.GetAdapter(entry.Address)
+		state := adapter.GetUnderlyingState()
+		if state == nil {
+			log.Fatal("State for pool not found for address: ", entry.Address)
+		}
+		//
+		underlyingToken := state.(*schemas.PoolState).UnderlyingToken
+		//
+		var version int16 = 1
+		if eng.tokenLastPriceV2[underlyingToken] != nil {
+			version = 2
+		}
+		//
+		totalAvailableLiquidityInUSD += utils.GetFloat64Decimal(
+			eng.GetAmountInUSD(
+				underlyingToken,
+				entry.AvailableLiquidityBI.Convert(), version), 8)
+	}
+	eng.tvlSnapshots = append(eng.tvlSnapshots, &schemas.TvlSnapshots{
+		BlockNum:           blockNum,
+		AvailableLiquidity: totalAvailableLiquidityInUSD,
+		CATotalValue:       caTotalValueInUSD,
+	})
 }
 
 func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt int64, status int) {

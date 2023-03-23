@@ -22,6 +22,7 @@ type DebtEngine struct {
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*schemas.PoolInterestData
 	debts                  []*schemas.Debt
+	tvlSnapshots           []*schemas.TvlSnapshots
 	lastDebts              map[string]*schemas.Debt
 	currentDebts           []*schemas.CurrentDebt
 	liquidableBlockTracker map[string]*schemas.LiquidableAccount

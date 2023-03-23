@@ -163,9 +163,12 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	}
 	err = tx.CreateInBatches(eng.debts, 50).Error
 	log.CheckFatal(err)
+	err = tx.CreateInBatches(eng.tvlSnapshots, 50).Error
+	log.CheckFatal(err)
 	info := tx.Commit()
 	if info.Error != nil {
 		log.Fatal(info.Error)
 	}
 	eng.debts = []*schemas.Debt{}
+	eng.tvlSnapshots = []*schemas.TvlSnapshots{}
 }
