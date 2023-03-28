@@ -20,48 +20,58 @@ func (mdl *PoolLMRewards) GetAddrsForLogs() (addrs []common.Address) {
 //
 
 //
+
+func (mdl *PoolLMRewards) Topics() [][]common.Hash {
+	return [][]common.Hash{{core.Topic("Transfer(address,address,uint256)")}}
+}
+
+// onlog for transfer token events only, which is provided by Topics() func
 func (mdl *PoolLMRewards) OnLog(txLog types.Log) {
+	// conditions to return
+	amount, ok := new(big.Int).SetString(common.BytesToHash(txLog.Data).Hex()[2:], 16)
+	if !ok {
+		log.Fatal("Failed parsing value")
+	}
+	if amount.Cmp(new(big.Int)) == 0 {
+		return
+	}
+	// calculate rewards
 	currentBlock := int64(txLog.BlockNumber)
 	if currentBlock != mdl.pendingCalcBlock {
 		mdl.calculateRewards(mdl.pendingCalcBlock, currentBlock-1)
 		mdl.pendingCalcBlock = currentBlock
 	}
 	//
-	switch txLog.Topics[0] {
-	case core.Topic("Transfer(address,address,uint256)"):
-		token := mdl.Repo.GetToken(txLog.Address.Hex())
-		tokenSym := token.Symbol
-		from := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
-		to := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
-		amount, ok := new(big.Int).SetString(common.BytesToHash(txLog.Data).Hex()[2:], 16)
-		if !ok {
-			log.Fatal("Failed parsing value")
-		}
-		if to == core.NULL_ADDR.Hex() {
-			mdl.totalSupplies[tokenSym] = new(big.Int).Sub(
-				utils.NotNilBigInt(mdl.totalSupplies[tokenSym]),
-				amount,
-			)
-		} else {
-			mdl.addBalance(tokenSym, to, amount)
-		}
-		//
-		mdl.addDieselTransfer(&schemas.DieselTransfer{
-			From:        from,
-			To:          to,
-			LogId:       int64(txLog.Index),
-			TokenSymbol: tokenSym,
-			Amount:      utils.GetFloat64Decimal(amount, token.Decimals),
-			BlockNum:    int64(txLog.BlockNumber),
-		})
-		if from == core.NULL_ADDR.Hex() {
-			mdl.totalSupplies[tokenSym] = new(big.Int).Add(
-				utils.NotNilBigInt(mdl.totalSupplies[tokenSym]),
-				amount,
-			)
-		} else {
-			mdl.addBalance(tokenSym, from, new(big.Int).Neg(amount))
-		}
+	//
+	token := mdl.Repo.GetToken(txLog.Address.Hex())
+	tokenSym := token.Symbol
+	from := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
+	to := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
+	//
+	if to == core.NULL_ADDR.Hex() {
+		mdl.totalSupplies[tokenSym] = new(big.Int).Sub(
+			utils.NotNilBigInt(mdl.totalSupplies[tokenSym]),
+			amount,
+		)
+	} else {
+		mdl.addBalance(tokenSym, to, amount)
+	}
+	//
+	mdl.addDieselTransfer(&schemas.DieselTransfer{
+		From:        from,
+		To:          to,
+		LogId:       int64(txLog.Index),
+		TokenSymbol: tokenSym,
+		Amount:      utils.GetFloat64Decimal(amount, token.Decimals),
+		BlockNum:    int64(txLog.BlockNumber),
+	})
+	if from == core.NULL_ADDR.Hex() {
+		mdl.totalSupplies[tokenSym] = new(big.Int).Add(
+			utils.NotNilBigInt(mdl.totalSupplies[tokenSym]),
+			amount,
+		)
+	} else {
+		mdl.addBalance(tokenSym, from, new(big.Int).Neg(amount))
 	}
 }
 
@@ -79,6 +89,7 @@ func (mdl PoolLMRewards) addBalance(tokenSym, user string, amount *big.Int) {
 	)
 }
 
+// inclusive of from and to
 func (mdl PoolLMRewards) calculateRewards(from, to int64) {
 	snapshots := core.GetRewardPerToken(mdl.chainId, from, to)
 
@@ -96,12 +107,13 @@ func (mdl PoolLMRewards) calculateRewards(from, to int64) {
 			rewardPerBlock := utils.NotNilBigInt(snapshot.RewardPerBlock[dieselSym])
 			for user, balance := range userAndbalance {
 				norm := new(big.Int).Mul(balance, rewardPerBlock)
-				userRewardPerBlock := new(big.Int)
+				reward := new(big.Int)
 				if mdl.totalSupplies[dieselSym] != nil {
-					userRewardPerBlock = new(big.Int).Quo(norm, mdl.totalSupplies[dieselSym])
+					userRewardNorm := new(big.Int).Mul(norm, big.NewInt(snapEnd-snapStart+1))
+					reward = new(big.Int).Quo(userRewardNorm, mdl.totalSupplies[dieselSym])
 				}
-				reward := new(big.Int).Mul(userRewardPerBlock, big.NewInt(snapEnd-snapStart+1))
 				mdl.addUserReward(pool, user, reward)
+				// log.Info(snapStart, snapEnd+1, balance, rewardPerBlock, mdl.totalSupplies[dieselSym], mdl.rewards[pool][user])
 				// update start
 			}
 		}

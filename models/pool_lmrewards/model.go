@@ -64,6 +64,8 @@ func NewPoolLMRewardsFromAdapter(adapter *ds.SyncAdapter) *PoolLMRewards {
 
 func (mdl *PoolLMRewards) AfterSyncHook(syncedTill int64) {
 	mdl.calculateRewards(mdl.pendingCalcBlock, syncedTill)
+	mdl.pendingCalcBlock = syncedTill + 1
+	//
 	mdl.totalSuppliesToDetails() // convert store the supplies in details
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 	// sync pool_lm_rewards and diesel_balances if PoolLMrewards has data to save,
