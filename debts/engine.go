@@ -333,9 +333,10 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	// set debt fields
 	debt := &schemas.Debt{
 		CommonDebtFields: schemas.CommonDebtFields{
-			BlockNumber:                     blockNum,
-			CalHealthFactor:                 (*core.BigInt)(calHF),
-			CalTotalValueBI:                 (*core.BigInt)(calTotalValue),
+			BlockNumber:     blockNum,
+			CalHealthFactor: (*core.BigInt)(calHF),
+			CalTotalValueBI: (*core.BigInt)(calTotalValue),
+			// it has fees too for v2
 			CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
 			CalThresholdValueBI:             (*core.BigInt)(calThresholdValue),
 			CollateralInUnderlying:          sessionSnapshot.CollateralInUnderlying,

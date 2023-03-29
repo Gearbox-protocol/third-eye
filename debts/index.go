@@ -79,7 +79,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.loadLiquidableAccounts(lastDebtSynced)
 	// process blocks for calculating debts
 	adaptersSyncedTill := eng.repo.LoadLastAdapterSync()
-	var batchSize int64 = 5000
+	batchSize := eng.config.BatchSizeForHistory
 	for ; lastDebtSynced+batchSize < adaptersSyncedTill; lastDebtSynced += batchSize {
 		eng.processBlocksInBatch(lastDebtSynced, lastDebtSynced+batchSize)
 	}

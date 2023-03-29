@@ -65,9 +65,10 @@ func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
 	curDebt := schemas.CurrentDebt{
 		SessionId: debt.SessionId,
 		CommonDebtFields: schemas.CommonDebtFields{
-			BlockNumber:                     debt.BlockNumber,
-			CalHealthFactor:                 debt.CalHealthFactor,
-			CalTotalValueBI:                 core.NewBigInt(debt.CalTotalValueBI),
+			BlockNumber:     debt.BlockNumber,
+			CalHealthFactor: debt.CalHealthFactor,
+			CalTotalValueBI: core.NewBigInt(debt.CalTotalValueBI),
+			// it has fees for v2
 			CalBorrowedAmountPlusInterestBI: core.NewBigInt(debt.CalBorrowedAmountPlusInterestBI),
 			CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
 			ProfitInUSD:                     debt.ProfitInUSD,
