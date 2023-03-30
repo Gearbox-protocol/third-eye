@@ -3,7 +3,7 @@ module github.com/Gearbox-protocol/third-eye
 go 1.18
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20230329090832-a1c80831dbef
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20230330145142-ebd8ac18ea29
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.5.8
