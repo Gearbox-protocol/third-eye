@@ -113,7 +113,7 @@ func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 
 func (e *Engine) SyncAndFlush(syncTill int64) {
 	e.Sync(syncTill)
-	e.repo.Flush()
+	e.repo.Flush(syncTill)
 	e.debtEng.CalculateDebtAndClear(syncTill)
 	e.syncedBlock.Store(syncTill)
 }

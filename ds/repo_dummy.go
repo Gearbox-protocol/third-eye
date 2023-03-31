@@ -32,7 +32,7 @@ func (DummyRepo) GetChainId() uint {
 }
 
 // saving to the db
-func (DummyRepo) Flush() error {
+func (DummyRepo) Flush(syncTill int64) error {
 	return nil
 }
 

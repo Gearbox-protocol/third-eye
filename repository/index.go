@@ -38,8 +38,8 @@ type Repository struct {
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
-	blocksRepo := handlers.NewBlocksRepo(db, client, cfg)
 	tokensRepo := handlers.NewTokensRepo(client)
+	blocksRepo := handlers.NewBlocksRepo(db, client, cfg, tokensRepo)
 	repo := &Repository{
 		SessionRepo:      handlers.NewSessionRepo(),
 		AllowedTokenRepo: handlers.NewAllowedTokenRepo(blocksRepo, tokensRepo),

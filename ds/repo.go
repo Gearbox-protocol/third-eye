@@ -23,7 +23,7 @@ type RepositoryI interface {
 	GetAdapterAddressByName(name string) []string
 	AddSyncAdapter(adapterI SyncAdapterI)
 	// saving to the db
-	Flush() error
+	Flush(syncTill int64) error
 	// adding block/timestamp
 	SetBlock(blockNum int64)
 	SetAndGetBlock(blockNum int64) *schemas.Block

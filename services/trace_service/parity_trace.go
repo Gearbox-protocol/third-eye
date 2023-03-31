@@ -57,6 +57,9 @@ func (app ParityFetcher) getData(txHash string) ([]RPCTrace, error) {
 	if traceObj.Error.Code != 0 {
 		return nil, fmt.Errorf(traceObj.Error.Message)
 	}
+	if len(traceObj.Result) == 0 {
+		fmt.Println(string(data))
+	}
 	return traceObj.Result, nil
 }
 

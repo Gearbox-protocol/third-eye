@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -29,10 +31,11 @@ type BlocksRepo struct {
 	mu             *sync.Mutex
 	client         core.ClientI
 	db             *gorm.DB
+	spotPrices     *priceFetcher.OneInchOracle
 }
 
-func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config) *BlocksRepo {
-	return &BlocksRepo{
+func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config, tokensRepo *TokensRepo) *BlocksRepo {
+	blocksRepo := &BlocksRepo{
 		blocks:         make(map[int64]*schemas.Block),
 		blockDatePairs: map[int64]*schemas.BlockDate{},
 		prevPriceFeeds: map[bool]map[string]map[string]*schemas.PriceFeed{},
@@ -42,6 +45,14 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config) *Blocks
 		client: client,
 		db:     db,
 	}
+	chainId, err := client.ChainID(context.TODO())
+	log.CheckFatal(err)
+	if chainId.Int64() == 1 {
+		blocksRepo.spotPrices = priceFetcher.New1InchOracle(client, chainId.Int64(),
+			common.HexToAddress("0x07D91f5fb9Bf7798734C3f606dB065549F6893bb"), tokensRepo)
+
+	}
+	return blocksRepo
 }
 
 func (repo *BlocksRepo) LoadBlocks(from, to int64) {
@@ -58,7 +69,7 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	}
 }
 
-func (repo *BlocksRepo) Save(tx *gorm.DB) {
+func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
 	for _, block := range repo.GetBlocks() {
@@ -70,13 +81,37 @@ func (repo *BlocksRepo) Save(tx *gorm.DB) {
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
 
-	// current prices to updated
+	repo.saveCurrentPrices(tx, blockNum)
+}
+
+func (repo *BlocksRepo) saveCurrentPrices(tx *gorm.DB, blockNum int64) {
+	if len(repo.currentPrices) == 0 { // currentPrice is only valid from v2
+		// so if it's empty, we don't need to store currentPrice and nor fetch 1inch prices in usdc
+		return
+	}
+	// chainlink current prices to updated
 	var currentPricesToSync []*schemas.TokenCurrentPrice
 	for _, tokenPrice := range repo.currentPrices {
 		tokenPrice.Updated = false
+		tokenPrice.PriceSrc = string(core.SOURCE_CHAINLINK)
 		currentPricesToSync = append(currentPricesToSync, tokenPrice)
 	}
-	err = tx.Clauses(clause.OnConflict{
+	// spot prices to updated
+	if repo.spotPrices != nil {
+		calls := repo.spotPrices.GetCalls()
+		results := core.MakeMultiCall(repo.client, blockNum, false, calls)
+		for token, priceBI := range repo.spotPrices.GetPrices(results, blockNum) {
+			currentPricesToSync = append(currentPricesToSync, &schemas.TokenCurrentPrice{
+				PriceBI:  priceBI,
+				Price:    utils.GetFloat64Decimal(priceBI.Convert(), 8),
+				BlockNum: blockNum,
+				Token:    token,
+				Updated:  true,
+				PriceSrc: string(core.SOURCE_SPOT),
+			})
+		}
+	}
+	err := tx.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(currentPricesToSync, 100).Error
 	log.CheckFatal(err)

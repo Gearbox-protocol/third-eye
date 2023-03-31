@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -111,6 +112,10 @@ func (repo *TokensRepo) GetToken(addr string) *schemas.Token {
 		panic(err)
 	}
 	return token
+}
+
+func (repo *TokensRepo) GetDecimals(addr common.Address) int8 {
+	return repo.GetToken(addr.Hex()).Decimals
 }
 
 func (repo *TokensRepo) GetTokens() []string {

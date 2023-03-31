@@ -5,7 +5,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-func (repo *Repository) Flush() error {
+func (repo *Repository) Flush(syncTill int64) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// preferred order (adapter | token) => pools => cm => credit session => blocks => allowedTokens
@@ -28,7 +28,7 @@ func (repo *Repository) Flush() error {
 
 	repo.SessionRepo.Save(tx)
 
-	repo.BlocksRepo.Save(tx)
+	repo.BlocksRepo.Save(tx, syncTill)
 
 	repo.AllowedTokenRepo.Save(tx)
 
