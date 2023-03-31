@@ -10,17 +10,18 @@ import (
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
 // https://docs.alchemy.com/reference/trace-api
 type ParityFetcher struct {
-	rpc    string
+	rpc    []string
 	client http.Client
 }
 
 func NewParityFetcher(rpc string) *ParityFetcher {
 	return &ParityFetcher{
-		rpc:    rpc,
+		rpc:    strings.Split(rpc, ","),
 		client: http.Client{},
 	}
 }
@@ -34,13 +35,13 @@ type traceResp struct {
 }
 
 // https://docs.alchemy.com/reference/trace-transaction
-func (app ParityFetcher) getData(txHash string) ([]RPCTrace, error) {
+func (app ParityFetcher) getDataOnRPC(rpc, txHash string) ([]RPCTrace, error) {
 	format := `{"id":1,"jsonrpc":"2.0","params":["%s"],"method":"trace_transaction"}`
 	params := fmt.Sprintf(format, txHash)
 	//
 	buf := &bytes.Buffer{}
 	buf.WriteString(params)
-	req, _ := http.NewRequest(http.MethodPost, app.rpc, buf)
+	req, _ := http.NewRequest(http.MethodPost, rpc, buf)
 	resp, err := app.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("While making request %s", err)
@@ -61,6 +62,18 @@ func (app ParityFetcher) getData(txHash string) ([]RPCTrace, error) {
 		fmt.Println(string(data))
 	}
 	return traceObj.Result, nil
+}
+
+func (app ParityFetcher) getData(txhash string) ([]RPCTrace, error) {
+	var errs utils.Errors
+	for _, rpc := range app.rpc {
+		data, err := app.getDataOnRPC(rpc, txhash)
+		if err == nil {
+			return data, nil
+		}
+		errs = append(errs, err)
+	}
+	return nil, errs
 }
 
 func (app ParityFetcher) getTxTrace(txHash string) *TenderlyTrace {

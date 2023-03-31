@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -129,8 +130,7 @@ func NewInternalFetcher(cfg *config.Config, client core.ClientI) InternalFetcher
 func (ep InternalFetcher) check() {
 	if !ep.useTenderlyTrace {
 		_, err := ep.parityFetcher.getData("")
-		if err != nil && err.Error() !=
-			"invalid argument 0: hex string has length 0, want 64 for common.Hash" {
+		if err != nil && !strings.Contains(err.Error(), "invalid argument 0: hex string has length 0, want 64 for common.Hash") {
 			log.CheckFatal(err)
 		}
 	}
