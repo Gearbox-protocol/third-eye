@@ -5,3 +5,5 @@ create table tvl_snapshots (
 
 alter table token_current_price add column price_source varchar(10);
 update token_current_price set price_source='chainlink';
+alter table token_current_price drop  constraint  token_current_price_pkey;
+alter table token_current_price add PRIMARY KEY (price_source, token);

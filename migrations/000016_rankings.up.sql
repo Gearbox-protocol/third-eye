@@ -32,7 +32,7 @@ DECLARE
 BEGIN
     RETURN QUERY 
 	WITH cm_prices AS (SELECT cm.address credit_manager, price FROM 
-		token_current_price tcp JOIN credit_managers cm ON cm.underlying_token = tcp.token)
+		token_current_price tcp JOIN credit_managers cm ON cm.underlying_token = tcp.token WHERE price_source='chainlink')
 	SELECT t1.*, t2.*, 
 
 		price * t1.old_collateral_underlying old_collateral, price * t1.old_profit_underlying old_profit,
