@@ -51,7 +51,7 @@ func TestTxLogger(t *testing.T) {
 		return
 	}
 	client := ethclient.NewEthClient(&config.Config{EthProvider: url})
-	fetcher := NewInternalFetcher(&config.Config{BatchSizeForHistory: 10, UseTenderlyTrace: "1"}, client)
+	fetcher := NewInternalFetcher(&config.Config{BatchSizeForHistory: 10, UseTenderlyTrace: true}, client)
 	// create other variables
 	input := TenderlySampleTestInput{}
 	utils.ReadJsonAndSetInterface("../../inputs/execute_parser_transfers/get_transfers.json", &input)

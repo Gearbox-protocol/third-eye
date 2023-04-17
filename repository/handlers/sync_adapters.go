@@ -29,23 +29,23 @@ import (
 )
 
 type SyncAdaptersRepo struct {
-	kit            *ds.AdapterKit
-	AggregatedFeed *aggregated_block_feed.AggregatedBlockFeed
-	r              ds.RepositoryI
-	client         core.ClientI
-	extras         *ExtrasRepo
-	rollback       string
-	mu             *sync.Mutex
+	kit             *ds.AdapterKit
+	AggregatedFeed  *aggregated_block_feed.AggregatedBlockFeed
+	r               ds.RepositoryI
+	client          core.ClientI
+	extras          *ExtrasRepo
+	rollbackAllowed bool
+	mu              *sync.Mutex
 }
 
 func NewSyncAdaptersRepo(client core.ClientI, repo ds.RepositoryI, cfg *config.Config, extras *ExtrasRepo) *SyncAdaptersRepo {
 	obj := &SyncAdaptersRepo{
-		kit:      ds.NewAdapterKit(),
-		client:   client,
-		r:        repo,
-		extras:   extras,
-		rollback: cfg.Rollback,
-		mu:       &sync.Mutex{},
+		kit:             ds.NewAdapterKit(),
+		client:          client,
+		r:               repo,
+		extras:          extras,
+		rollbackAllowed: cfg.Rollback,
+		mu:              &sync.Mutex{},
 	}
 	// aggregated block feed
 	obj.AggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, repo, cfg.Interval)
@@ -163,7 +163,7 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if repo.rollback == "1" {
+	if repo.rollbackAllowed {
 		return
 	}
 	if newAdapterI.GetName() == ds.PriceOracle {

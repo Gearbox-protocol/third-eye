@@ -121,7 +121,7 @@ func NewInternalFetcher(cfg *config.Config, client core.ClientI) InternalFetcher
 		txLogger:         NewTxLogger(client, cfg.BatchSizeForHistory),
 		parityFetcher:    NewParityFetcher(cfg.EthProvider),
 		tenderlyFetcher:  NewTenderlyFetcher(core.GetChainId(client)),
-		useTenderlyTrace: cfg.UseTenderlyTrace == "1",
+		useTenderlyTrace: cfg.UseTenderlyTrace,
 	}
 	fetcher.check()
 	return fetcher

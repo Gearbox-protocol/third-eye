@@ -17,16 +17,14 @@ type Config struct {
 	Port string `env:"PORT" default:"0" validate:"required"`
 
 	// set rollback if we are deleting some data in db and rerunning third-eye for getting that data again, this prevents adding some sync adapter again.
-	Rollback string `env:"ROLLBACK"`
+	Rollback bool `env:"ROLLBACK" default:"false"`
 
 	// for aggregated block feed , at interval x it should have the prices again
-	Interval    int64
-	IntervalStr string `env:"INTERVAL" default:"25"`
+	Interval int64 `env:"INTERVAL" default:"25"`
 	// the batch size for filter logs, if third-eye is far behind the latest block in blockchain
-	BatchSizeForHistoryStr string `env:"BATCH_SIZE_FOR_HISTORY" default:"5000"`
-	BatchSizeForHistory    int64
+	BatchSizeForHistory int64 `env:"BATCH_SIZE_FOR_HISTORY" default:"5000"`
 	//
-	UseTenderlyTrace string `env:"TENDERLY_TRACE" default:"1"`
+	UseTenderlyTrace bool `env:"TENDERLY_TRACE" default:"1"`
 	//
 	DebtConfig
 	ReduntantConfig
@@ -41,12 +39,8 @@ type ReduntantConfig struct {
 	Uniswapv3Router string `env:"UNISWAPV3_ROUTER"`
 }
 type DebtConfig struct {
-	DebtDCMatchingStr    string `env:"DEBT_DC_MATCHING" validate:"required"`
-	DebtDCMatching       bool
-	DisableDebtEngineStr string `env:"DISABLE_DEBT_ENGINE" validate:"required"`
-	DisableDebtEngine    bool
-	ThrottleDebtCalStr   string `env:"THROTTLE_DEBT_CAL" validate:"required"`
-	ThrottleDebtCal      bool
-	ThrottleByHrsStr     string `env:"THROTTLE_HRS"`
-	ThrottleByHrs        int64
+	DebtDCMatching    bool  `env:"DEBT_DC_MATCHING" default:"false"`
+	DisableDebtEngine bool  `env:"DISABLE_DEBT_ENGINE"  default:"false"`
+	ThrottleDebtCal   bool  `env:"THROTTLE_DEBT_CAL" default:"false"`
+	ThrottleByHrs     int64 `env:"THROTTLE_HRS" default:"1"`
 }

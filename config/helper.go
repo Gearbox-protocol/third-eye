@@ -8,7 +8,6 @@ package config
 
 import (
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -47,42 +46,6 @@ func NewConfig() *Config {
 	utils.ReadFromEnv(&config.DebtConfig)
 	utils.ReadFromEnv(&config.ReduntantConfig)
 	utils.ReadFromEnv(&config.CommonEnvs)
-
-	interval, err := strconv.Atoi(config.IntervalStr)
-	if err != nil {
-		log.Fatal("Cant get interval")
-	}
-	config.Interval = int64(interval)
-	//
-	batchSizeForHistory, err := strconv.Atoi(config.BatchSizeForHistoryStr)
-	if err != nil {
-		log.Fatal("Cant get batchSizeForHistory", config.BatchSizeForHistoryStr)
-	}
-	config.BatchSizeForHistory = int64(batchSizeForHistory)
-
-	if config.DebtDCMatchingStr == "1" {
-		config.DebtDCMatching = true
-	} else {
-		config.DebtDCMatching = false
-	}
-
-	if config.DisableDebtEngineStr == "1" {
-		config.DisableDebtEngine = true
-	} else {
-		config.DisableDebtEngine = false
-	}
-
-	if config.ThrottleDebtCalStr == "1" {
-		config.ThrottleDebtCal = true
-	} else {
-		config.ThrottleDebtCal = false
-	}
-	throttleHr, err := strconv.Atoi(config.ThrottleByHrsStr)
-	if err != nil {
-		config.ThrottleByHrs = 1
-	} else {
-		config.ThrottleByHrs = int64(throttleHr)
-	}
 
 	validate(&config)
 	return &config
