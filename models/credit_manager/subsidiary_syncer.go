@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -37,7 +38,7 @@ func (mdl *SubsidiarySyncer) FetchLogs(from, to int64) {
 	if len(mdl.logs) != 0 {
 		log.Fatal("Previous logs not processed")
 	}
-	logs, err := core.Node{Client: mdl.client}.GetLogs(from, to, []common.Address{mdl.Address}, mdl.topics)
+	logs, err := pkg.Node{Client: mdl.client}.GetLogs(from, to, []common.Address{mdl.Address}, mdl.topics)
 	log.CheckFatal(err)
 	mdl.logs = append(mdl.logs, logs...)
 	mdl.to = to

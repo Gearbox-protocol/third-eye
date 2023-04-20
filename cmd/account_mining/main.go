@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/addressProvider"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
@@ -26,7 +27,7 @@ type BlockMiningDetails struct {
 
 type AccountMining struct {
 	Address string
-	*core.Node
+	*pkg.Node
 	TotalCount      int64
 	finished        bool
 	CurrentBlockNum int64
@@ -132,7 +133,7 @@ func StartServer(lc fx.Lifecycle, client core.ClientI, config *config.Config) {
 				log.CheckFatal(err)
 				am := AccountMining{
 					Address: config.MiningAddr,
-					Node: &core.Node{
+					Node: &pkg.Node{
 						Client: client,
 					},
 					blockDetails: make(map[int64]*BlockMiningDetails),

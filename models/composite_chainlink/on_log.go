@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	cpf "github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/ethereum/go-ethereum/common"
@@ -86,7 +87,7 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 		mdl.setPrices(breakPoint)
 		mdl.addPriceToDB(breakPoint) // H1
 		//
-		txLogs, err := core.Node{Client: mdl.Client}.GetLogs(
+		txLogs, err := pkg.Node{Client: mdl.Client}.GetLogs(
 			breakPoint+1, // bcz price for breakPoint already added at H1
 			mdl.WillSyncTill,
 			[]common.Address{newMainPhaseAgg, newBasePhaseAgg},

@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
@@ -79,7 +80,7 @@ func TestRewardCalc(t *testing.T) {
 		if batchStart+batch >= till {
 			batchEnd = till
 		}
-		txLogs, err := core.Node{Client: client}.GetLogs(batchStart+1, batchEnd, addrs, [][]common.Hash{{core.Topic("Transfer(address,address,uint256)")}})
+		txLogs, err := pkg.Node{Client: client}.GetLogs(batchStart+1, batchEnd, addrs, [][]common.Hash{{core.Topic("Transfer(address,address,uint256)")}})
 		log.CheckFatal(err)
 		for _, txLog := range txLogs {
 			obj.OnLog(txLog)

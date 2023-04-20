@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 
@@ -16,7 +17,7 @@ import (
 
 type AccountManager struct {
 	*ds.SyncAdapter
-	node          *core.Node
+	node          *pkg.Node
 	AccountHashes []common.Hash
 	isAccount     map[string]bool
 }
@@ -46,7 +47,7 @@ func NewAccountManagerFromAdapter(adapter *ds.SyncAdapter) *AccountManager {
 		isAccount:   map[string]bool{},
 	}
 	obj.OnlyQuery = true
-	obj.node = &core.Node{
+	obj.node = &pkg.Node{
 		Client: adapter.Client,
 	}
 	obj.populateInternalData()

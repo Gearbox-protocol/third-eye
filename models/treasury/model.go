@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/third-eye/ds"
 
 	//
@@ -15,7 +16,7 @@ import (
 
 type Treasury struct {
 	*ds.SyncAdapter
-	node    *core.Node
+	node    *pkg.Node
 	HexAddr common.Address
 }
 
@@ -43,7 +44,7 @@ func NewTreasuryFromAdapter(adapter *ds.SyncAdapter) *Treasury {
 		SyncAdapter: adapter,
 	}
 	obj.OnlyQuery = true
-	obj.node = &core.Node{
+	obj.node = &pkg.Node{
 		Client: adapter.Client,
 	}
 	obj.HexAddr = common.HexToAddress(obj.Address)

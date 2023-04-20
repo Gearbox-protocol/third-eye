@@ -7,10 +7,11 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 )
 
 type TxLogger struct {
-	node     core.Node
+	node     pkg.Node
 	store    map[int]map[string][]Log
 	nums     []int
 	storeLen int
@@ -18,7 +19,7 @@ type TxLogger struct {
 
 func NewTxLogger(client core.ClientI, storeLen int64) TxLogger {
 	return TxLogger{
-		node:     core.Node{Client: client},
+		node:     pkg.Node{Client: client},
 		store:    map[int]map[string][]Log{},
 		storeLen: int(storeLen),
 		nums:     make([]int, 0, storeLen/2),

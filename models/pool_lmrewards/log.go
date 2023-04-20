@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -91,7 +92,7 @@ func (mdl PoolLMRewards) addBalance(tokenSym, user string, amount *big.Int) {
 
 // inclusive of from and to
 func (mdl PoolLMRewards) calculateRewards(from, to int64) {
-	snapshots := core.GetRewardPerToken(mdl.chainId, from, to)
+	snapshots := pkg.GetRewardPerToken(mdl.chainId, from, to)
 
 	snapStart := from
 	if len(snapshots) > 0 && from < snapshots[0].Block {
