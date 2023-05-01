@@ -23,7 +23,7 @@ jobs:
       with:
         path: ./inputs/  # what we cache: the folder
         key: ${{ runner.os }}-${{ hashFiles('./jsonnet/**') }}
-    - run: go get github.com/google/go-jsonnet/cmd/jsonnet && ./generate-test.sh
+    - run: go install github.com/google/go-jsonnet/cmd/...@latest && ./generate-test.sh
       if: steps.cache-packages.outputs.cache-hit != 'true'
     - name: Run Test
       run: go test ./tests && go test ./services && go test ./ds && go test ./models/...
