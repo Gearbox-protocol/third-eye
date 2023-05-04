@@ -131,6 +131,7 @@ local borrowedAmount = 4000;
               balance: utils.bigInt(5000, 6),
               isAllowed: true,
             }],
+            version: 1,
           }],
           cms: [{
             address: '#CreditManager_1',

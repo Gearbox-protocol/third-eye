@@ -120,7 +120,7 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 	if entry.Success {
-		isPriceInUSD := adapter.GetVersion() > 1
+		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
 		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
 	} else {
 		switch adapter.GetDetailsByKey("pfType") {

@@ -37,6 +37,7 @@ local newCollateral = 1;
             balance: utils.bigInt(0.1, 18),
             isAllowed: true,
           }],
+          version: 1,
         }],
       },
     },

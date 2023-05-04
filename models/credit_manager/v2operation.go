@@ -108,7 +108,7 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 		Since:          blockNum,
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		IsDirty:        true,
-		Version:        2,
+		Version:        core.NewVersion(2),
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
 	return nil

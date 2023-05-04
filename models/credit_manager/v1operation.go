@@ -56,7 +56,7 @@ func (mdl *CreditManager) onOpenCreditAccount(txLog *types.Log, onBehalfOf, acco
 		InitialAmount:  (*core.BigInt)(collateral),
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		IsDirty:        true,
-		Version:        1,
+		Version:        core.NewVersion(1),
 	}
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)
 	mdl.setUpdateSession(sessionId)

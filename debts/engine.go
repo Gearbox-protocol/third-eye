@@ -177,9 +177,9 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 		//
 		underlyingToken := state.(*schemas.PoolState).UnderlyingToken
 		//
-		var version int16 = 1
+		version := core.NewVersion(1)
 		if eng.tokenLastPriceV2[underlyingToken] != nil {
-			version = 2
+			version = core.NewVersion(2)
 		}
 		//
 		totalAvailableLiquidityInUSD += utils.GetFloat64Decimal(
@@ -266,15 +266,14 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return cmToCumIndex
 }
 
-func (eng *DebtEngine) getTokenPriceFeed(token string, version int16) *schemas.PriceFeed {
-	switch version {
-	case 1:
+func (eng *DebtEngine) getTokenPriceFeed(token string, version core.VersionType) *schemas.PriceFeed {
+	if version.IsGBv1() {
 		return eng.tokenLastPrice[token]
-	case 2:
+	} else { // v2 and above
 		return eng.tokenLastPriceV2[token]
 	}
-	return nil
 }
+
 func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
 	sessionId := session.ID
 	sessionSnapshot := eng.lastCSS[sessionId]
@@ -506,7 +505,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 }
 
 // helper methods
-func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version int16) *big.Int {
+func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
 	usdcAddr := eng.repo.GetUSDCAddr()
 	tokenPrice := eng.GetTokenLastPrice(tokenAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
@@ -522,7 +521,7 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version
 	return new(big.Int).Mul(value, big.NewInt(100))
 }
 
-func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ...bool) *big.Int {
+func (eng *DebtEngine) GetTokenLastPrice(addr string, version core.VersionType, dontFail ...bool) *big.Int {
 	switch version {
 	case 1:
 		if eng.tokenLastPrice[addr] != nil {

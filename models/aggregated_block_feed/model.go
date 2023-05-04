@@ -76,7 +76,7 @@ func (mdl *AQFWrapper) GetQueryFeeds() []*QueryPriceFeed {
 	return feeds
 }
 
-func (mdl *AQFWrapper) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, version int16) {
+func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, version core.VersionType) {
 	log.Infof("Add new %s for token(%s): %s discovered at %d", pfType, token, oracle, discoveredAt)
 	// MAINNET: yearn yvUSDC has changed over time, previous token was 0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9(only added in gearbox v1 priceOracle) and 0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE, so we can ignore 0xc1 yvUSDC token dependency
 	if token != "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
@@ -101,18 +101,14 @@ func createPriceFeedOnInit(qpf *QueryPriceFeed, token string, discoveredAt int64
 	log.CheckFatal(err)
 	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
 	log.CheckFatal(err)
-	var decimals int8 = 8
-	if qpf.GetVersion() == 1 {
-		decimals = 18
-	}
 	return []*schemas.PriceFeed{{
 		BlockNumber:  discoveredAt,
 		Feed:         qpf.Address,
 		Token:        token,
 		RoundId:      data.RoundId.Int64(),
-		IsPriceInUSD: qpf.GetVersion() > 1, // for version more than 1
+		IsPriceInUSD: qpf.GetVersion().IsPriceInUSD(), // for version more than 1
 		PriceBI:      (*core.BigInt)(data.Answer),
-		Price:        utils.GetFloat64Decimal(data.Answer, decimals),
+		Price:        utils.GetFloat64Decimal(data.Answer, qpf.GetVersion().Decimals()),
 	}}
 }
 

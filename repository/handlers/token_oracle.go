@@ -16,7 +16,7 @@ import (
 
 type TokenOracleRepo struct {
 	// version  to token to oracle
-	tokensCurrentOracle map[int16]map[string]*schemas.TokenOracle // done
+	tokensCurrentOracle map[core.VersionType]map[string]*schemas.TokenOracle // done
 	mu                  *sync.Mutex
 	adapters            *SyncAdaptersRepo
 	blocks              *BlocksRepo
@@ -27,7 +27,7 @@ type TokenOracleRepo struct {
 
 func NewTokenOracleRepo(adapters *SyncAdaptersRepo, blocks *BlocksRepo, repo ds.RepositoryI, client core.ClientI) *TokenOracleRepo {
 	return &TokenOracleRepo{
-		tokensCurrentOracle: make(map[int16]map[string]*schemas.TokenOracle),
+		tokensCurrentOracle: make(map[core.VersionType]map[string]*schemas.TokenOracle),
 		mu:                  &sync.Mutex{},
 		adapters:            adapters,
 		blocks:              blocks,
@@ -144,19 +144,14 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 			if ds.AlmostZeroPF == newTokenOracle.FeedType {
 				priceBI = big.NewInt(100)
 			}
-			var decimals int8 = 18 // for eth
-			if newTokenOracle.Version == 2 {
-				decimals = 8 // for usd
-			}
-			//
 			repo.blocks.AddPriceFeed(&schemas.PriceFeed{
 				BlockNumber:  newTokenOracle.BlockNumber,
 				Token:        newTokenOracle.Token,
 				Feed:         newTokenOracle.Oracle,
 				RoundId:      0,
 				PriceBI:      (*core.BigInt)(priceBI),
-				Price:        utils.GetFloat64Decimal(priceBI, decimals),
-				IsPriceInUSD: newTokenOracle.Version == 2,
+				Price:        utils.GetFloat64Decimal(priceBI, newTokenOracle.Version.Decimals()),
+				IsPriceInUSD: newTokenOracle.Version.IsPriceInUSD(),
 			})
 			repo.zeroPFs[newTokenOracle.Oracle] = true // oracle and feed are same for non-chainlink price feed
 		} else {
@@ -212,12 +207,12 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 	}
 }
 
-func (repo *TokenOracleRepo) GetTokenOracles() map[int16]map[string]*schemas.TokenOracle {
+func (repo *TokenOracleRepo) GetTokenOracles() map[core.VersionType]map[string]*schemas.TokenOracle {
 	return repo.tokensCurrentOracle
 }
 
 // if returned value is nil, it means that token oracle hasn't been added yet.
 func (repo *TokenOracleRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
-	obj := repo.tokensCurrentOracle[2][token]
+	obj := repo.tokensCurrentOracle[core.NewVersion(2)][token]
 	return obj
 }

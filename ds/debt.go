@@ -21,9 +21,9 @@ type DebtEngineI interface {
 type TokenDetails struct {
 	Price             *big.Int
 	Decimals          int8
-	TokenLiqThreshold *core.BigInt `json:"tokenLiqThreshold"`
-	Symbol            string       `json:"symbol"`
-	Version           int16        `json:"version"`
+	TokenLiqThreshold *core.BigInt     `json:"tokenLiqThreshold"`
+	Symbol            string           `json:"symbol"`
+	Version           core.VersionType `json:"version"`
 }
 type DebtProfile struct {
 	DCData                         *dcv2.CreditAccountData

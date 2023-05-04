@@ -45,11 +45,6 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			if upperLimit.Cmp(new(big.Int)) != 0 && answerBI.Cmp(upperLimit) > 0 {
 				answerBI = upperLimit
 			}
-			isPriceInUSD := mdl.GetVersion() > 1
-			var decimals int8 = 18 // for eth
-			if isPriceInUSD {
-				decimals = 8 // for usd
-			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
 			priceFeed = &schemas.PriceFeed{
 				BlockNumber:  blockNum,
@@ -57,14 +52,15 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				Feed:         mdl.Address,
 				RoundId:      roundId,
 				PriceBI:      (*core.BigInt)(answerBI),
-				Price:        utils.GetFloat64Decimal(answerBI, decimals),
-				IsPriceInUSD: isPriceInUSD,
+				Price:        utils.GetFloat64Decimal(answerBI, mdl.GetVersion().Decimals()),
+				IsPriceInUSD: mdl.GetVersion().IsPriceInUSD(),
 			}
 			mdl.Repo.AddPriceFeed(priceFeed)
 			blockNums = append(blockNums, blockNum)
 		}
 	}
-	if mdl.GetVersion() != 1 && blockNums != nil {
+	// not supported for v1
+	if !mdl.GetVersion().IsGBv1() && blockNums != nil {
 		mdl.Repo.ChainlinkPriceUpdatedAt(mdl.Token, blockNums)
 	}
 

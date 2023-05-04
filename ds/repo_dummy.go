@@ -45,7 +45,7 @@ func (DummyRepo) SetAndGetBlock(blockNum int64) *schemas.Block {
 func (DummyRepo) GetBlocks() map[int64]*schemas.Block {
 	return nil
 }
-func (DummyRepo) GetTokenOracles() map[int16]map[string]*schemas.TokenOracle {
+func (DummyRepo) GetTokenOracles() map[core.VersionType]map[string]*schemas.TokenOracle {
 	return nil
 }
 func (DummyRepo) GetDisabledTokens() []*schemas.AllowedToken {
@@ -92,7 +92,6 @@ func (DummyRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFl
 	return nil
 }
 
-//
 func (DummyRepo) GetToken(addr string) *schemas.Token {
 	return nil
 }
@@ -112,7 +111,7 @@ func (DummyRepo) UpdateCreditSession(sessionId string, values map[string]interfa
 func (DummyRepo) GetSessions() map[string]*schemas.CreditSession {
 	return nil
 }
-func (DummyRepo) GetValueInCurrency(blockNum int64, version int16, token, currency string, amount *big.Int) *big.Int {
+func (DummyRepo) GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int {
 	return nil
 }
 func (DummyRepo) AddDieselToken(dieselToken, underlyingToken, pool string) {
@@ -189,7 +188,6 @@ func (DummyRepo) AddTreasuryTransfer(blockNum int64, logID uint, token string, a
 func (DummyRepo) RecentMsgf(headers log.RiskHeader, msg string, args ...interface{}) {
 }
 
-//
 // oracle
 func (DummyRepo) GetYearnFeedAddrs() []string {
 	return nil
@@ -202,7 +200,6 @@ func (DummyRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
 	return nil
 }
 
-//
 func (DummyRepo) LoadLastDebtSync() int64 {
 	return 0
 }

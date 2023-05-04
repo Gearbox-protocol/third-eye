@@ -26,12 +26,13 @@ func (SyncAdapter) TableName() string {
 	return "sync_adapters"
 }
 
-func (s *SyncAdapter) GetVersion() int16 {
+func (s *SyncAdapter) GetVersion() core.VersionType {
 	return s.V
 }
-func (s *SyncAdapter) SetVersion(version int16) {
-	s.V = version
-}
+
+// func (s *SyncAdapter) SetVersion(version int16) {
+// 	s.V = core.NewVersion(version)
+// }
 
 const (
 	ViaLog = iota
@@ -55,13 +56,13 @@ type SyncAdapterI interface {
 	WillBeSyncedTo(blockNum int64) //
 	IsDisabled() bool              //
 	SetBlockToDisableOn(blockNum int64)
-	GetBlockToDisableOn() int64           //
-	GetDiscoveredAt() int64               //
-	GetDetailsByKey(key string) string    //
-	GetDetails() core.Json                //
-	GetVersion() int16                    //
-	GetAllAddrsForLogs() []common.Address //
-	Topics() [][]common.Hash              //
+	GetBlockToDisableOn() int64
+	GetDiscoveredAt() int64
+	GetDetailsByKey(key string) string
+	GetDetails() core.Json
+	GetVersion() core.VersionType
+	GetOtherAddrsForLogs() []common.Address
+	Topics() [][]common.Hash
 }
 
 func (s SyncAdapter) Topics() [][]common.Hash {
