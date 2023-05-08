@@ -63,7 +63,7 @@ func (q *QueryPFDependencies) ChainlinkPriceUpdatedAt(token string, blockNums []
 	q.ChainlinkSymToUpdatedBlocks[chainlinkSym] = blockNums
 }
 
-func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[string]bool {
+func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int64) map[int64]map[string]bool {
 	//  blockNum to QueryPFToken
 	updates := map[int64]map[string]bool{}
 	var updatedChainlinkSym []string
@@ -73,6 +73,12 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[stri
 		for _, dependentSym := range q.ChainlinkSymToQueryPFSyms[chainlinkSym] {
 			depAddr := q.getTokenAddr(dependentSym)
 			for _, blockNum := range blockNums {
+				// if a new chainlink price oracle is added it will create initial pf entry for lower block number
+				// and queryPFDependency will try to fetch dependent query token's pf for this lower block number.
+				// but the last pf fetched for query token saved in db can have higher block number than this lower block number.
+				if blockNum <= clearExtraBefore {
+					continue
+				}
 				if updates[blockNum] == nil {
 					updates[blockNum] = map[string]bool{}
 				}
@@ -87,6 +93,7 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates() map[int64]map[stri
 	return updates
 }
 
+// token to its dependencies
 func getDepGraph() map[string][]string {
 	depGraph := map[string][]string{
 		// frax and curve
@@ -138,6 +145,7 @@ func getDepGraph() map[string][]string {
 	return depGraph
 }
 
+// token to token dependent on it
 func getInvertDependencyGraph(depGraph map[string][]string) map[string][]string {
 	invertedGraph := map[string][]string{}
 	for token, deps := range depGraph {
@@ -161,8 +169,8 @@ func (q *QueryPFDependencies) updateQueryPrices(pfs []*schemas.PriceFeed) {
 	q.depBasedExtraPrices = append(q.depBasedExtraPrices, pfs...)
 }
 
-func (q *QueryPFDependencies) extraPriceForQueryFeed() []*schemas.PriceFeed {
-	updates := q.getChainlinkBasedQueryUpdates()
+func (q *QueryPFDependencies) extraPriceForQueryFeed(clearExtraBefore int64) []*schemas.PriceFeed {
+	updates := q.getChainlinkBasedQueryUpdates(clearExtraBefore)
 	for _, blockToDelete := range q.aggregatedFetchedBlocks {
 		delete(updates, blockToDelete)
 	}

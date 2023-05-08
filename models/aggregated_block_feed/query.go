@@ -56,11 +56,11 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 		}
 		adapter.AfterSyncHook(queryTill)
 	}
-	mdl.addQueryPrices()
+	mdl.addQueryPrices(queryFrom)
 }
 
-func (mdl *AggregatedBlockFeed) addQueryPrices() {
-	mdl.updateQueryPrices(mdl.queryPFdeps.extraPriceForQueryFeed())
+func (mdl *AggregatedBlockFeed) addQueryPrices(clearExtraBefore int64) {
+	mdl.updateQueryPrices(mdl.queryPFdeps.extraPriceForQueryFeed(clearExtraBefore))
 	// query feed prices
 	sort.SliceStable(mdl.queryFeedPrices, func(i, j int) bool {
 		return mdl.queryFeedPrices[i].BlockNumber < mdl.queryFeedPrices[j].BlockNumber

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"runtime/debug"
 	"sync"
 	"time"
 
@@ -222,7 +221,7 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed] != nil {
 		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed]
 		if prevPF.BlockNumber >= pf.BlockNumber {
-			debug.PrintStack()
+
 			log.Fatalf("oldPF %s.\n NewPF %s.", prevPF, pf)
 		}
 		if prevPF.PriceBI.Cmp(pf.PriceBI) == 0 {
