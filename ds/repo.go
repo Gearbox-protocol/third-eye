@@ -50,6 +50,7 @@ type RepositoryI interface {
 	// v2
 	AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken)
 	UpdateLimits(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
+	UpdateEmergencyLiqPremium(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	TransferAccountAllowed(*schemas.TransferAccountAllowed)
 	GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap

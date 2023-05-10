@@ -86,6 +86,8 @@ func (DummyRepo) UpdateLimits(logID uint, txHash, creditConfigurator string, par
 }
 func (DummyRepo) UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
 }
+func (DummyRepo) UpdateEmergencyLiqPremium(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
+}
 func (DummyRepo) TransferAccountAllowed(*schemas.TransferAccountAllowed) {
 }
 func (DummyRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
