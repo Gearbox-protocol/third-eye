@@ -105,10 +105,16 @@ func (repo *ParamsRepo) paramsDAOV2(logID uint, txHash, creditConfigurator strin
 		oldCMParams = schemas.NewParameters()
 	}
 	args := oldCMParams.Diffv2(params)
+
+	// check if misspelled field name is not entered
 	for _, field := range fieldsToKeep {
-		if (*args)[field] == nil { // check if misspelled field name is not entered
+		if (*args)[field] == nil {
 			log.Fatal("Wrong parameter field name", field)
 		}
+	}
+
+	// check if there are any extra fields
+	for field := range *args {
 		if !utils.Contains(fieldsToKeep, field) {
 			delete(*args, field)
 		}
@@ -145,7 +151,7 @@ func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator stri
 	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)
 }
 
-func (repo *ParamsRepo) UpdateEmergencyLiqPremium(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
+func (repo *ParamsRepo) UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// cal dao action
@@ -155,7 +161,7 @@ func (repo *ParamsRepo) UpdateEmergencyLiqPremium(logID uint, txHash, creditConf
 	}
 	//
 	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
-		[]string{"emergencyLiqDiscount"}, schemas.NewEmergencyLiquidationPremium)
+		[]string{"emergencyLiqDiscount"}, schemas.NewEmergencyLiquidationDiscount)
 	newParams := oldCMParams
 	newParams.EmergencyLiqDiscount = params.EmergencyLiqDiscount
 	newParams.BlockNum = params.BlockNum
@@ -176,7 +182,7 @@ func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string
 	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{
 			"feeInterest",
-			"feeInterest",
+			"feeLiquidation",
 			"liquidationDiscount",
 			"liquidationDiscountExpired",
 			"feeLiquidationExpired",

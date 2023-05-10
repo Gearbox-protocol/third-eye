@@ -165,6 +165,7 @@
         BlockNum: 3,
         CreditManager: '#CreditManager_1',
         FeeInterest: 1000,
+        EmergencyLiqDiscount: 0,
         FeeLiquidation: 200,
         LiquidationDiscount: 9500,
         FeeLiquidationExpired: 0,
