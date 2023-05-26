@@ -14,22 +14,31 @@ import (
 )
 
 type OrderedMap[T any] struct {
-	m map[string]T
-	a []T
+	m    map[string]T
+	allM map[string]T
+	a    []T
 }
 
 func NewOrderedMap[T any]() OrderedMap[T] {
 	return OrderedMap[T]{
-		m: make(map[string]T),
-		a: make([]T, 0),
+		m:    make(map[string]T),
+		allM: make(map[string]T),
+		a:    make([]T, 0),
 	}
 }
 
 func (x OrderedMap[T]) Get(name string) T {
 	return x.m[name]
 }
-func (x *OrderedMap[T]) Add(name string, val T) {
-	x.m[name] = val
+func (x OrderedMap[T]) getFromLogAddr(name string) T {
+	return x.allM[name]
+}
+func (x *OrderedMap[T]) Add(addr string, allAddrsForAdapter []common.Address, val T) {
+	// for
+	x.m[addr] = val
+	for _, addr := range allAddrsForAdapter {
+		x.allM[addr.String()] = val
+	}
 	x.a = append(x.a, val)
 }
 
@@ -66,7 +75,7 @@ func (w *SyncWrapper) AddSyncAdapter(adapter ds.SyncAdapterI) {
 	if w.ViaDataProcess == -1 {
 		log.Fatal("SyncWrapper: ViaDataProcess not set")
 	}
-	w.Adapters.Add(adapter.GetAddress(), adapter)
+	w.Adapters.Add(adapter.GetAddress(), adapter.GetAllAddrsForLogs(), adapter)
 	w.lastSync = utils.Min(adapter.GetLastSync(), w.lastSync)
 }
 
@@ -82,7 +91,11 @@ func (w *SyncWrapper) GetUnderlyingAdapterAddrs() (addrs []string) {
 // //////////
 // //////////
 func (s SyncWrapper) Topics() [][]common.Hash {
-	return nil
+	adapters := s.Adapters.GetAll()
+	if len(adapters) == 0 {
+		return nil
+	}
+	return adapters[0].Topics()
 }
 
 func (w *SyncWrapper) GetDataProcessType() int {
@@ -193,7 +206,7 @@ func (s SyncWrapper) onBlockChange(lastBlockNum int64) {
 }
 
 func (s SyncWrapper) OnLog(txLog types.Log) {
-	adapter := s.Adapters.Get(txLog.Address.Hex())
+	adapter := s.Adapters.getFromLogAddr(txLog.Address.Hex())
 	if adapter.GetLastSync() < int64(txLog.BlockNumber) {
 		adapter.OnLog(txLog)
 	}
@@ -216,7 +229,8 @@ func (w *SyncWrapper) GetAllAddrsForLogs() (addrs []common.Address) {
 	addrs = make([]common.Address, 0, len(adapters))
 	for _, cf := range adapters {
 		if !cf.IsDisabled() {
-			addrs = append(addrs, common.HexToAddress(cf.GetAddress()))
+
+			addrs = append(addrs, cf.GetAllAddrsForLogs()...)
 		}
 	}
 	return
