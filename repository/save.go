@@ -48,7 +48,7 @@ func check(err error) {
 func (repo *Repository) Clear() {
 	var maxBlockNum int64
 	for num := range repo.GetBlocks() {
-		maxBlockNum = utils.Max(maxBlockNum, num)
+		maxBlockNum = utils.Max[int64](maxBlockNum, num)
 	}
 	repo.SessionRepo.Clear(maxBlockNum)
 	repo.BlocksRepo.Clear()

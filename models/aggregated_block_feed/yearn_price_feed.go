@@ -84,7 +84,7 @@ func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 			ints := ConvertToListOfInt64(obj[token])
 			// token is already in enabled state, we are trying to add again
 			if obj[token] != nil && len(ints) == 1 {
-				log.Verbosef("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, ints[0], discoveredAt)
+				log.Debugf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, ints[0], discoveredAt)
 				return
 				// token is disabled so reenable and add to logs
 			} else if len(ints) == 2 {

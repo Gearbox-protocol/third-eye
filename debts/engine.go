@@ -157,7 +157,7 @@ func (eng *DebtEngine) CalculateDebt() {
 		//
 		eng.createTvlSnapshots(blockNum, caTotalValueInUSD)
 		// if len(sessionsUpdated) > 0 {
-		// log.Verbosef("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
+		// log.Debugf("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
 		// }
 	}
 }
@@ -406,14 +406,15 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 //
 // repayAmount => transfer from owner to account needed to close the account
 // v1 - repayAmount = amountToPool, except the blockNum at which account is liquidated
-//    - for liquidated account repay amount is amountToPool+ calcRemainginFunds https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L999
-//    - NIT, closeAmount doesn't need repayAmount as all assets are converted to underlying token
-//         so repayAmount is zero, https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L448-L465
+//   - for liquidated account repay amount is amountToPool+ calcRemainginFunds https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L999
+//   - NIT, closeAmount doesn't need repayAmount as all assets are converted to underlying token
+//     so repayAmount is zero, https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L448-L465
+//
 // v2 - close repayAmount is transferred from borrower to account as underlying token
 // v2 - for liquidation, repayAmount is zero.
 // v2 - opened accounts
-//      the account might be having some underlying token balance so repayAMount = amountToPool - underlyingToken balance
 //
+//	the account might be having some underlying token balance so repayAMount = amountToPool - underlyingToken balance
 func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
 	var amountToPool, calRemainingFunds *big.Int
 	sessionSnapshot := eng.lastCSS[session.ID]

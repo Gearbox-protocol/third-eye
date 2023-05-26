@@ -113,6 +113,8 @@ func (repo *TokensRepo) GetToken(addr string) *schemas.Token {
 	}
 	return token
 }
+func (repo *TokensRepo) GetDecimalsForList([]common.Address) {
+}
 
 func (repo *TokensRepo) GetDecimals(addr common.Address) int8 {
 	return repo.GetToken(addr.Hex()).Decimals
