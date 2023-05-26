@@ -183,11 +183,6 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 		mdl.OnLogs(txLogs)
 	} else {
 		for _, txLog := range txLogs {
-			blockNum := int64(txLog.BlockNumber)
-			// if mdl.GetBlockToDisableOn() < blockNum {
-			// 	break
-			// }
-			e.repo.SetBlock(blockNum)
 			// parse and unpause events
 			e.isEventPausedOrUnParsed(txLog)
 			// pass the event to the onlog handler

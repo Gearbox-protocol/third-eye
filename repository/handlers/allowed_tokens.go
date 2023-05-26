@@ -170,6 +170,7 @@ func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter
 		// previous allowed token enabled
 		prevToken := repo.allowedTokens[atoken.CreditManager][atoken.Token]
 		prevToken.DisableBlock = atoken.BlockNumber
+		repo.blocks.SetAndGetBlock(prevToken.DisableBlock)
 		repo.disabledTokens = append(repo.disabledTokens, prevToken)
 	}
 	repo.addAllowedTokenState(atoken, true)

@@ -36,7 +36,6 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{
-				// Address:      oracle,
 				// DiscoveredAt: discoveredAt,
 				// FirstLogAt:   discoveredAt,
 				ContractName: ds.AggregatedBlockFeed,
