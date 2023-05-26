@@ -82,7 +82,6 @@ func (m *MockRepo) processInputTestFile(inputFile *TestInput3Eye) {
 		m.executeParser.setCalls(executeLogs.ExecuteOnCM)
 		m.executeParser.setMainEvents(executeLogs.MainEventLogs)
 		m.executeParser.setTransfers(executeLogs.ExecuteTransfers)
-
 	}
 
 	m.processDCCalls(inputFile)

@@ -11,7 +11,7 @@ type AdapterKit struct {
 func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})
-	kit.AddLevel([]string{Pool, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
+	kit.AddLevel([]string{PoolWrapper, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
 	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed, PoolLMRewards})
 	kit.AddLevel([]string{CFWrapper, CreditConfigurator, Treasury})
 	// - we are dropping the uni check, so the dependency is reversed.

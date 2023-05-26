@@ -20,6 +20,7 @@ const (
 	PoolLMRewards      = "PoolLMRewards"
 	// Wrapper
 	CFWrapper           = "CFWrapper"
+	PoolWrapper         = "PoolWrapper"
 	AggregatedBlockFeed = "AggregatedBlockFeed"
 )
 

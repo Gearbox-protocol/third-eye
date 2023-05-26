@@ -6,12 +6,14 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/cf_wrapper"
+	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_wrapper"
 )
 
 type AdapterKitHandler struct {
 	kit                 *ds.AdapterKit
 	aggregatedBlockFeed *aggregated_block_feed.AggregatedBlockFeed
 	cfWrapper           *cf_wrapper.CFWrapper
+	poolWrapper         *pool_wrapper.PoolWrapper
 }
 
 func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.Config) *AdapterKitHandler {
@@ -19,10 +21,12 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 		kit:                 ds.NewAdapterKit(),
 		aggregatedBlockFeed: aggregated_block_feed.NewAggregatedBlockFeed(client, repo, cfg.Interval),
 		cfWrapper:           cf_wrapper.NewCFWrapper(),
+		poolWrapper:         pool_wrapper.NewPoolWrapper(client),
 	}
 	//
 	obj.kit.Add(obj.aggregatedBlockFeed)
 	obj.kit.Add(obj.cfWrapper)
+	obj.kit.Add(obj.poolWrapper)
 	//
 	return obj
 }
@@ -36,6 +40,8 @@ func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 		handler.aggregatedBlockFeed.AddYearnFeed(adapterI)
 	} else if adapterI.GetName() == ds.CreditFilter || adapterI.GetName() == ds.CreditConfigurator {
 		handler.cfWrapper.AddSyncAdapter(adapterI)
+	} else if adapterI.GetName() == ds.Pool {
+		handler.poolWrapper.AddSyncAdapter(adapterI)
 	} else {
 		handler.kit.Add(adapterI)
 	}
@@ -48,6 +54,9 @@ func (repo *AdapterKitHandler) GetAdapter(addr string) ds.SyncAdapterI {
 		if adapter := repo.cfWrapper.GetAdapter(addr); adapter != nil {
 			return adapter
 		}
+		if adapter := repo.poolWrapper.GetAdapter(addr); adapter != nil {
+			return adapter
+		}
 		// check if adapter is under aggregated block feed
 		feeds := repo.aggregatedBlockFeed.GetQueryFeeds()
 		for _, feed := range feeds {
@@ -57,6 +66,15 @@ func (repo *AdapterKitHandler) GetAdapter(addr string) ds.SyncAdapterI {
 		}
 	}
 	return adapter
+}
+
+func (repo AdapterKitHandler) getAdapterState() (adapters []*ds.SyncAdapter) {
+	for _, adapter := range repo.aggregatedBlockFeed.GetQueryFeeds() {
+		adapters = append(adapters, adapter.GetAdapterState()...)
+	}
+	adapters = append(adapters, repo.cfWrapper.GetAdapterState()...)
+	adapters = append(adapters, repo.poolWrapper.GetAdapterState()...)
+	return
 }
 
 func (repo AdapterKitHandler) GetYearnFeedAddrs() (addrs []string) {
@@ -74,14 +92,6 @@ func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string {
 	// 	return repo.cmWrapper.GetUnderlyingAdapterAddrs()
 	// }
 	return repo.kit.GetAdapterAddressByName(name)
-}
-
-func (repo AdapterKitHandler) getAdapterState() (adapters []*ds.SyncAdapter) {
-	for _, adapter := range repo.aggregatedBlockFeed.GetQueryFeeds() {
-		adapters = append(adapters, adapter.GetAdapterState()...)
-	}
-	adapters = append(adapters, repo.cfWrapper.GetAdapterState()...)
-	return
 }
 
 func (repo AdapterKitHandler) GetAggregatedFeed() *aggregated_block_feed.AggregatedBlockFeed {

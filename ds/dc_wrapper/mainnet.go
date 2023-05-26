@@ -46,10 +46,8 @@ func getMask(client core.ClientI, blockNum int64, cfAddr, accountAddr common.Add
 
 }
 
-func (dc *MainnetDC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (dcv2.PoolData, error) {
-	data, err := dc.dc.GetPoolData(opts, _pool)
-	log.CheckFatal(err)
-	latestFormat := dcv2.PoolData{
+func getPoolDataV1(data mainnet.DataTypesPoolData) dcv2.PoolData {
+	return dcv2.PoolData{
 		Addr:                   data.Addr,
 		IsWETH:                 data.IsWETH,
 		Underlying:             data.UnderlyingToken,
@@ -67,7 +65,6 @@ func (dc *MainnetDC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (dcv
 		TimestampLU:            data.TimestampLU,
 		Version:                1,
 	}
-	return latestFormat, nil
 }
 
 func (mainnetDC *MainnetDC) GetCreditManagerData(opts *bind.CallOpts,

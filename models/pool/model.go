@@ -50,8 +50,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		UnderlyingToken: underlyingToken.Hex(),
 	})
 	// create a pool stat snapshot at first log of the pool
-	pool.lastEventBlock = pool.DiscoveredAt
-	pool.createPoolStat()
+	pool.onBlockChangeInternally(pool.DiscoveredAt)
 
 	return pool
 }
@@ -67,11 +66,6 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
 		gatewayHandler: NewGatewayHandler(gateway),
 	}
 	return obj
-}
-
-func (mdl *Pool) AfterSyncHook(syncTill int64) {
-	mdl.createPoolStat()
-	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }
 
 func (mdl Pool) Topics() [][]common.Hash {

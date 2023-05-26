@@ -3,10 +3,12 @@ package wrappers
 import (
 	"math"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -39,17 +41,19 @@ func (x OrderedMap[T]) GetAll() []T {
 // only for HasOnLog = true
 type SyncWrapper struct {
 	Adapters       OrderedMap[ds.SyncAdapterI]
-	viaDataProcess int
+	ViaDataProcess int
 	name           string
 	lastSync       int64
+	client         core.ClientI
 }
 
-func NewSyncWrapper(name string) *SyncWrapper {
+func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
 	return &SyncWrapper{
 		Adapters:       NewOrderedMap[ds.SyncAdapterI](),
-		viaDataProcess: -1,
+		ViaDataProcess: -1,
 		name:           name,
 		lastSync:       math.MaxInt64 - 10,
+		client:         client,
 	}
 }
 
@@ -59,11 +63,8 @@ func (w SyncWrapper) GetAdapter(addr string) ds.SyncAdapterI {
 }
 
 func (w *SyncWrapper) AddSyncAdapter(adapter ds.SyncAdapterI) {
-	if w.viaDataProcess == -1 {
-		w.viaDataProcess = adapter.GetDataProcessType()
-	}
-	if adapter.GetDataProcessType() != w.viaDataProcess {
-		log.Fatalf("adapter(%s) have different input data process(%d) than %d", adapter.GetAddress(), adapter.GetDataProcessType(), w.viaDataProcess)
+	if w.ViaDataProcess == -1 {
+		log.Fatal("SyncWrapper: ViaDataProcess not set")
 	}
 	w.Adapters.Add(adapter.GetAddress(), adapter)
 	w.lastSync = utils.Min(adapter.GetLastSync(), w.lastSync)
@@ -85,10 +86,10 @@ func (s SyncWrapper) Topics() [][]common.Hash {
 }
 
 func (w *SyncWrapper) GetDataProcessType() int {
-	if w.viaDataProcess == -1 {
+	if w.ViaDataProcess == -1 {
 		return ds.ViaLog
 	}
-	return w.viaDataProcess
+	return w.ViaDataProcess
 }
 
 func (s SyncWrapper) GetName() string {
@@ -96,8 +97,6 @@ func (s SyncWrapper) GetName() string {
 }
 func (s SyncWrapper) GetAddress() string {
 	return s.name
-}
-func (s SyncWrapper) OnLogs(txLog []types.Log) {
 }
 
 func (SyncWrapper) HasUnderlyingState() bool {
@@ -141,6 +140,56 @@ func (SyncWrapper) GetVersion() int16 {
 }
 func (w SyncWrapper) GetLastSync() int64 {
 	return w.lastSync
+}
+
+func (s SyncWrapper) OnLogs(txLog []types.Log) {
+	var lastBlockNum int64 = 0
+	for _, txLog := range txLog {
+		//
+		newBlockNum := int64(txLog.BlockNumber)
+		if lastBlockNum == 0 {
+			lastBlockNum = newBlockNum
+		}
+		if lastBlockNum != newBlockNum {
+			s.onBlockChange(lastBlockNum)
+			lastBlockNum = newBlockNum
+		}
+		//
+		s.OnLog(txLog)
+	}
+	if lastBlockNum != 0 {
+		s.onBlockChange(lastBlockNum)
+	}
+}
+
+func (s SyncWrapper) onBlockChange(lastBlockNum int64) {
+	adapters := s.Adapters.GetAll()
+	//
+	calls := make([]multicall.Multicall2Call, 0, len(adapters))
+	processFns := make([]func([]byte), 0, len(adapters))
+	//
+	for _, adapter := range adapters {
+		if adapter.GetLastSync() >= lastBlockNum {
+			continue
+		}
+		switch v := adapter.(type) {
+		case *pool.Pool:
+			call, processFn := v.OnBlockChange(lastBlockNum)
+			// if process fn is not null
+			if processFn != nil {
+				processFns = append(processFns, processFn)
+				calls = append(calls, call)
+			}
+		}
+	}
+	results := core.MakeMultiCall(s.client, lastBlockNum, false, calls)
+	for ind, result := range results {
+		if result.Success {
+			processFns[ind](result.ReturnData)
+		} else {
+			log.Fatalf("Failed to get data for %s", adapters[ind].GetAddress())
+		}
+	}
 }
 
 func (s SyncWrapper) OnLog(txLog types.Log) {

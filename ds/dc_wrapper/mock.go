@@ -15,8 +15,8 @@ type DCTesting struct {
 	client core.ClientI
 }
 
-func (t *DCTesting) getPoolData(blockNum int64, key string) (dcv2.PoolData, error) {
-	obj := t.calls[blockNum].Pools[key]
+func (t DCTesting) getPoolData(blockNum int64, addr string) (dcv2.PoolData, error) {
+	obj := t.calls[blockNum].Pools[addr]
 	return dcv2.PoolData{
 		Addr:                   common.HexToAddress(obj.Addr),
 		IsWETH:                 obj.IsWETH,

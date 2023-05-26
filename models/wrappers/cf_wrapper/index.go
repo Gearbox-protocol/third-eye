@@ -10,9 +10,11 @@ type CFWrapper struct {
 }
 
 func NewCFWrapper() *CFWrapper {
-	return &CFWrapper{
-		SyncWrapper: wrappers.NewSyncWrapper(ds.CFWrapper),
+	w := &CFWrapper{
+		SyncWrapper: wrappers.NewSyncWrapper(ds.CFWrapper, nil),
 	}
+	w.ViaDataProcess = ds.ViaLog
+	return w
 }
 
 func (CFWrapper) SetUnderlyingState(obj interface{}) {
