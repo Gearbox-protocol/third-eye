@@ -85,7 +85,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 			}
 		}
 	}
-	obj.HasOnLogs = true
+	obj.DataProcessType = ds.ViaMultipleLogs
 	return obj
 }
 

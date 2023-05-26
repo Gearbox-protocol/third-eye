@@ -156,9 +156,9 @@ func (eng *DebtEngine) CalculateDebt() {
 		}
 		//
 		eng.createTvlSnapshots(blockNum, caTotalValueInUSD)
-		// if len(sessionsUpdated) > 0 {
-		// log.Debugf("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
-		// }
+		if len(sessionsUpdated) > 0 {
+			log.Debugf("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
+		}
 	}
 }
 

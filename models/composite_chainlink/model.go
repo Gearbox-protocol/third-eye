@@ -92,7 +92,7 @@ func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChain
 	}
 	compositeMdl.BaseTokenMainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("base"))
 	compositeMdl.MainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("target"))
-	compositeMdl.HasOnLogs = true
+	compositeMdl.DataProcessType = ds.ViaMultipleLogs
 	compositeMdl.setPrices(adapter.LastSync)
 	return compositeMdl
 }

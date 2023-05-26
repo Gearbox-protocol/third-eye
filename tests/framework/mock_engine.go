@@ -11,7 +11,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/stretchr/testify/require"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -95,7 +94,6 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 	if obj == nil {
 		return
 	}
-	kit := m.Repo.(*repository.Repository).GetKit()
 	for _, adapter := range obj.Adapters {
 		if adapter.DiscoveredAt == 0 {
 			adapter.DiscoveredAt = adapter.LastSync
@@ -128,7 +126,7 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 				}
 			}
 		}
-		kit.Add(actualAdapter)
+		m.Repo.AddSyncAdapter(actualAdapter)
 	}
 }
 

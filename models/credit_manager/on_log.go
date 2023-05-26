@@ -19,7 +19,6 @@ func (mdl *CreditManager) processExecuteEvents() {
 }
 
 // works for newBlockNum > mdl.lastEventBlock
-//
 func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
 	// on each new block
 	mdl.ProcessAccountEvents(newBlockNum)

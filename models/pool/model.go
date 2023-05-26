@@ -95,9 +95,11 @@ func (mdl Pool) Topics() [][]common.Hash {
 	}
 }
 
-func (mdl Pool) GetOtherAddrsForLogs() []common.Address {
+func (mdl Pool) GetAllAddrsForLogs() (addrs []common.Address) {
+	addrs = append(addrs, mdl.SyncAdapter.GetAllAddrsForLogs()...)
 	if mdl.gatewayHandler.Gateway == core.NULL_ADDR {
-		return nil
+		return
 	}
-	return []common.Address{mdl.gatewayHandler.Gateway, mdl.gatewayHandler.Token}
+	addrs = append(addrs, mdl.gatewayHandler.Gateway, mdl.gatewayHandler.Token)
+	return
 }

@@ -47,7 +47,7 @@ func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) *QueryPriceFeed {
 		mu:              &sync.Mutex{},
 		yearnPFInternal: yearnPFInternal{mainPFAddress: common.HexToAddress(adapter.Address)}, // main price feed
 	}
-	obj.OnlyQuery = true
+	obj.DataProcessType = ds.ViaQuery
 	return obj
 }
 

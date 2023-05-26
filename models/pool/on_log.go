@@ -16,6 +16,7 @@ func (mdl *Pool) createPoolStat() {
 	// i.e. discoveredAt
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
 		mdl.calculatePoolStat(mdl.lastEventBlock)
+		// set to zero, we only create poolstat snapshot when there is a event with changed pool cumulative interest rate
 		mdl.lastEventBlock = 0
 		// for remove liquidity
 		for _, removeLiqEvent := range mdl.gatewayHandler.getRemoveLiqEventsAndClear() {

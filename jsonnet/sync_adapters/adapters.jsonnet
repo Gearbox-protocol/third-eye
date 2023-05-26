@@ -144,7 +144,7 @@
       version: 2,
     },
     {
-      address: '',
+      address: 'AggregatedBlockFeed',
       disabled: false,
       disabled_at: 0,
       discoveredAt: 0,

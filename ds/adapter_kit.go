@@ -1,21 +1,19 @@
 package ds
 
 type AdapterKit struct {
+	// address or type to adapter
 	addressMap         map[string]SyncAdapterI
 	levels             []Level
 	adapterNameToLevel map[string]int
 	len                int
 }
 
-func (x AdapterKit) GetAddrsMap() map[string]SyncAdapterI {
-	return x.addressMap
-}
 func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
 	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})
 	kit.AddLevel([]string{Pool, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
 	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed, PoolLMRewards})
-	kit.AddLevel([]string{CreditFilter, CreditConfigurator, Treasury})
+	kit.AddLevel([]string{CFWrapper, CreditConfigurator, Treasury})
 	// - we are dropping the uni check, so the dependency is reversed.
 	//		(AggregatedBlockFeed => ChainlinkPriceFeed; so that deviation btw uniswap pool and chainlink can be calculated)
 	//   Another reason being to get all the yearnPriceFeed in single go.
@@ -83,13 +81,6 @@ func (kit *AdapterKit) First(lvl int) SyncAdapterI {
 
 func (kit *AdapterKit) GetAdapter(addr string) SyncAdapterI {
 	return kit.addressMap[addr]
-}
-
-func (kit *AdapterKit) DisableSyncAdapter(addr string) {
-	adapter := kit.addressMap[addr]
-	if adapter != nil {
-		adapter.Disable()
-	}
 }
 
 func (kit *AdapterKit) GetAdapterAddressByName(name string) []string {

@@ -69,7 +69,7 @@ func TestRewardCalc(t *testing.T) {
 	}
 	//
 	obj := NewPoolLMRewards(core.NULL_ADDR.Hex(), 13810899, client, repo)
-	obj.GetOtherAddrsForLogs()
+	obj.GetAllAddrsForLogs()
 	//
 	var till int64 = 16925064
 	var batch int64 = 50_000
