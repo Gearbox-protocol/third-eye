@@ -13,6 +13,11 @@ import (
 
 func (mdl *Pool) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
+	// REVERT_POOL_WRAPPER
+	// if mdl.lastEventBlock != 0 && blockNum != mdl.lastEventBlock && mdl.lastEventBlock >= mdl.DiscoveredAt {
+	// 	mdl.onBlockChangeInternally(mdl.lastEventBlock)
+	// 	mdl.lastEventBlock = 0
+	// }
 	switch txLog.Topics[0] {
 	case core.Topic("AddLiquidity(address,address,uint256,uint256)"):
 		addLiquidityEvent, err := mdl.contractETH.ParseAddLiquidity(txLog)

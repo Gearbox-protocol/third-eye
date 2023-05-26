@@ -66,6 +66,7 @@ func (mdl *Pool) onBlockChangeInternally(inputB int64) {
 	if result[0].Success {
 		processFn(result[0].ReturnData)
 	}
+	mdl.fixPoolLedgerAddrForGateway()
 }
 
 func (p *Pool) createSnapshot(blockNum int64, state dcv2.PoolData) {

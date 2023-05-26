@@ -55,6 +55,15 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	return pool
 }
 
+// REVERT_POOL_WRAPPER
+// func (p *Pool) AfterSyncHook(syncedTill int64) {
+// 	if p.lastEventBlock != 0 {
+// 		p.onBlockChangeInternally(p.lastEventBlock)
+// 		p.lastEventBlock = 0
+// 	}
+// 	p.SyncAdapter.AfterSyncHook(syncedTill)
+// }
+
 func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
 	poolAddr := common.HexToAddress(adapter.Address)
 	cmContract, err := poolService.NewPoolService(poolAddr, adapter.Client)

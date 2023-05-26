@@ -38,8 +38,10 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 	if adapterI.GetName() == ds.QueryPriceFeed {
 		handler.aggregatedBlockFeed.AddYearnFeed(adapterI)
+		// REVERT_CF_WRAPPER
 	} else if adapterI.GetName() == ds.CreditFilter || adapterI.GetName() == ds.CreditConfigurator {
 		handler.cfWrapper.AddSyncAdapter(adapterI)
+		// REVERT_POOL_WRAPPER
 	} else if adapterI.GetName() == ds.Pool {
 		handler.poolWrapper.AddSyncAdapter(adapterI)
 	} else {
@@ -50,10 +52,11 @@ func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 func (repo *AdapterKitHandler) GetAdapter(addr string) ds.SyncAdapterI {
 	adapter := repo.kit.GetAdapter(addr)
 	if adapter == nil {
-		// check if the adapter is under credit filter wrapper
+		// REVERT_CF_WRAPPER
 		if adapter := repo.cfWrapper.GetAdapter(addr); adapter != nil {
 			return adapter
 		}
+		// REVERT_POOL_WRAPPER
 		if adapter := repo.poolWrapper.GetAdapter(addr); adapter != nil {
 			return adapter
 		}
@@ -72,7 +75,9 @@ func (repo AdapterKitHandler) getAdapterState() (adapters []*ds.SyncAdapter) {
 	for _, adapter := range repo.aggregatedBlockFeed.GetQueryFeeds() {
 		adapters = append(adapters, adapter.GetAdapterState()...)
 	}
+	// REVERT_CF_WRAPPER
 	adapters = append(adapters, repo.cfWrapper.GetAdapterState()...)
+	// REVERT_POOL_WRAPPER
 	adapters = append(adapters, repo.poolWrapper.GetAdapterState()...)
 	return
 }
