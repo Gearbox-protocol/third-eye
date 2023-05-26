@@ -27,18 +27,20 @@ func (mdl *Pool) fixPoolLedgerAddrForGateway() {
 }
 
 func (mdl *Pool) OnBlockChange(inputB int64) (call multicall.Multicall2Call, processFn func([]byte)) {
+	// if no addLiquidity/removeLiquidity events are emitted then lastEventBlock is zero.Thus,  fixPoolLedgerAddrForGateway will not be called and pool snapshot is not created
+	if mdl.lastEventBlock == 0 ||
+		// datacompressor works for pool address only after the address is registered with contractregister
+		// i.e. discoveredAt
+		mdl.lastEventBlock < mdl.DiscoveredAt {
+		return multicall.Multicall2Call{}, nil
+	}
 	if inputB != mdl.lastEventBlock {
 		log.Fatal("[PoolServiceModel]: OnBlockChange called with wrong block number")
 	}
-	// datacompressor works for pool address only after the address is registered with contractregister
-	// i.e. discoveredAt
-	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
-		// set to zero, we only create poolstat snapshot when there is a event with changed pool cumulative interest rate
-		mdl.lastEventBlock = 0
-		//
-		return mdl.getCallAndProcessFn(inputB)
-	}
-	return multicall.Multicall2Call{}, nil
+
+	// set to zero, we only create poolstat snapshot when there is a event with changed pool cumulative interest rate
+	mdl.lastEventBlock = 0
+	return mdl.getCallAndProcessFn(inputB)
 }
 
 func (mdl *Pool) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, func([]byte)) {

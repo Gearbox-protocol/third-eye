@@ -14,6 +14,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -194,16 +195,19 @@ func (dcw *DataCompressorWrapper) GetPoolData(blockNum int64, _pool common.Addre
 	resultFn = func(bytes []byte) (dcv2.PoolData, error) {
 		switch key {
 		case DCV2:
-			poolData := dcv2.PoolData{}
-			err := core.GetAbi("DataCompressorV2").UnpackIntoInterface(poolData, "getPoolData", bytes)
-			return poolData, err
-		case DCV1:
-			poolData := mainnet.DataTypesPoolData{}
-			err := core.GetAbi("DataCompressorMainnet").UnpackIntoInterface(poolData, "getPoolData", bytes)
+			out, err := core.GetAbi("DataCompressorV2").Unpack("getPoolData", bytes)
 			if err != nil {
 				return dcv2.PoolData{}, err
 			}
-			return getPoolDataV1(poolData), err
+			poolData := *abi.ConvertType(out[0], new(dcv2.PoolData)).(*dcv2.PoolData)
+			return poolData, nil
+		case DCV1:
+			out, err := core.GetAbi("DataCompressorMainnet").Unpack("getPoolData", bytes)
+			if err != nil {
+				return dcv2.PoolData{}, err
+			}
+			poolData := *abi.ConvertType(out[0], new(mainnet.DataTypesPoolData)).(*mainnet.DataTypesPoolData)
+			return getPoolDataV1(poolData), nil
 		case TESTING:
 			return dcw.testing.getPoolData(blockNum, _pool.Hex())
 		}
