@@ -19,10 +19,11 @@ const (
 	CreditConfigurator = "CreditConfigurator"
 	PoolLMRewards      = "PoolLMRewards"
 	// Wrapper
-	CFWrapper           = "CFWrapper"
-	PoolWrapper         = "PoolWrapper"
 	AggregatedBlockFeed = "AggregatedBlockFeed"
 	AdminWrapper        = "AdminWrapper"
+	CFWrapper           = "CFWrapper"
+	CMWrapper           = "CMWrapper"
+	PoolWrapper         = "PoolWrapper"
 )
 
 func IsWrapperAdapter(name string) bool {

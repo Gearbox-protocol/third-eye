@@ -92,7 +92,6 @@ func TestRewardClaimed(t *testing.T) {
 	r.mgr.AddTokenTransfer(transfer3)
 
 	cmModel := CreditManager{
-		lastEventBlock: 11,
 		SyncAdapter: &ds.SyncAdapter{
 			Repo: r,
 			SyncAdapterSchema: &schemas.SyncAdapterSchema{
@@ -108,7 +107,7 @@ func TestRewardClaimed(t *testing.T) {
 		},
 		dontGetSessionFromDC: true,
 	}
-	cmModel.ProcessAccountEvents(20)
+	cmModel.updateSessionWithDirectTokenTransferBefore(20)
 	if len(r.accountOperations) != 2 {
 		t.Fatal("Improper account operations", utils.ToJson(r.accountOperations))
 	}

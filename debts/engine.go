@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -541,13 +542,18 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version int16, dontFail ..
 }
 
 func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) dataCompressorv2.CreditAccountData {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-	data, err := eng.repo.GetDCWrapper().GetCreditAccountData(opts,
+	call, resultFn, err := eng.repo.GetDCWrapper().GetCreditAccountData(blockNum,
 		common.HexToAddress(cmAddr),
 		common.HexToAddress(borrower),
 	)
+	if err != nil {
+		log.Fatalf("Prepaing failed. cm:%s borrower:%s blocknum:%d err:%s", cmAddr, borrower, blockNum, err)
+	}
+	results := core.MakeMultiCall(eng.client, blockNum, false, []multicall.Multicall2Call{call})
+	if !results[0].Success {
+		log.Fatalf("Failed multicall. cm:%s borrower:%s blocknum:%d ", cmAddr, borrower, blockNum)
+	}
+	data, err := resultFn(results[0].ReturnData)
 	if err != nil {
 		log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, borrower, blockNum, err)
 	}

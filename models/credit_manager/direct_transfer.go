@@ -12,28 +12,20 @@ import (
 )
 
 // range is [from, to)  or just before newBlockNum
-//
 // - gets all the directokentransfer by block
-// - if no transfer or first directokentransfer is after lastEventBlock, fetch account details from datacompressor
-// - if mdl.lastEventBlock== first directtokentransfer block
-func (mdl *CreditManager) ProcessAccountEvents(newBlockNum int64) {
-	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), mdl.lastEventBlock, newBlockNum)
+func (mdl *CreditManager) updateSessionWithDirectTokenTransferBefore(newBlockNum int64) {
+	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), 0, newBlockNum)
 	blockNums := []int64{}
-	for blockNum, _ := range data {
+	for blockNum := range data {
 		blockNums = append(blockNums, blockNum)
 	}
 	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
-	// no direct token transfer or the first token transfer is after the mdl.lastEventBlock
-	// or start block of range for check token tranafer
-	if len(blockNums) == 0 || blockNums[0] > mdl.lastEventBlock {
-		mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
-	}
 	for _, blockNum := range blockNums {
-		mdl.ProcessDirectTransfersOnBlock(blockNum, data[blockNum])
-		// if there are direct token tranfer on the start block of range then
-		// use changed sessions
-		if blockNum == mdl.lastEventBlock {
-			mdl.FetchFromDCForChangedSessions(mdl.lastEventBlock)
+		mdl.processDirectTransfersOnBlock(blockNum, data[blockNum])
+		calls, processFn := mdl.FetchFromDCForChangedSessions(blockNum)
+		results := core.MakeMultiCall(mdl.Client, 0, false, calls)
+		for i, result := range results {
+			processFn[i](result)
 		}
 	}
 }
@@ -79,7 +71,7 @@ func newRewardClaimDetails() RewardClaimDetails {
 
 // if blockNum is lasteventblock then set session is Updated
 // if blockNum is not equal to lasteventblock then fetch details for that session
-func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
+func (mdl *CreditManager) processDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
 	for sessionID, txs := range sessionIDToTxs {
 		session := mdl.Repo.GetCreditSession(sessionID)
 		txsList := schemas.TokenTransferList(txs)
@@ -93,9 +85,9 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 				}
 				log.Fatalf("Token withdrawn directly from account %v", mdl.DirecTokenTransferString(tx))
 			}
-			if blockNum == mdl.lastEventBlock {
-				mdl.setUpdateSession(sessionID)
-			}
+			//
+			mdl.setUpdateSession(sessionID)
+			//
 			var amount *big.Int
 			if tx.To == session.Account {
 				amount = tx.Amount.Convert()
@@ -136,11 +128,6 @@ func (mdl *CreditManager) ProcessDirectTransfersOnBlock(blockNum int64, sessionI
 		}
 		if currentRewardClaim.TxHash != "" {
 			mdl.addRewardClaimAccountOperation(blockNum, sessionID, session.Borrower, currentRewardClaim)
-		}
-		// for blocks without credit manager events, update session
-		if blockNum != mdl.lastEventBlock {
-			//  works similar to FetchFromDCForChangedSessions, only for single session
-			mdl.updateSession(sessionID, blockNum)
 		}
 	}
 }

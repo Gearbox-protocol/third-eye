@@ -26,7 +26,7 @@ func (mdl *Pool) fixPoolLedgerAddrForGateway() {
 	}
 }
 
-func (mdl *Pool) OnBlockChange(inputB int64) (call multicall.Multicall2Call, processFn func([]byte)) {
+func (mdl *Pool) OnBlockChange(inputB int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	// if no addLiquidity/removeLiquidity events are emitted then lastEventBlock is zero.Thus,  fixPoolLedgerAddrForGateway will not be called and pool snapshot is not created
 	if mdl.lastEventBlock == 0 ||
 		// datacompressor works for pool address only after the address is registered with contractregister
@@ -42,13 +42,16 @@ func (mdl *Pool) OnBlockChange(inputB int64) (call multicall.Multicall2Call, pro
 	return mdl.getCallAndProcessFn(inputB)
 }
 
-func (mdl *Pool) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, func([]byte)) {
+func (mdl *Pool) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, func(multicall.Multicall2Result)) {
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetPoolData(inputB, common.HexToAddress(mdl.Address))
 	if err != nil {
 		log.Fatal("[PoolService] Cant create call for data compressor", err)
 	}
-	return call, func(result []byte) {
-		poolState, err := resultFn(result)
+	return call, func(result multicall.Multicall2Result) {
+		if !result.Success {
+			log.Fatal("[PoolService] Cant process result for data compressor", err)
+		}
+		poolState, err := resultFn(result.ReturnData)
 		if err != nil {
 			log.Fatal("[PoolService] Cant process result for data compressor", err)
 		}
@@ -62,9 +65,7 @@ func (mdl *Pool) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, fu
 func (mdl *Pool) onBlockChangeInternally(inputB int64) {
 	call, processFn := mdl.getCallAndProcessFn(inputB)
 	result := core.MakeMultiCall(mdl.Client, inputB, false, []multicall.Multicall2Call{call})
-	if result[0].Success {
-		processFn(result[0].ReturnData)
-	}
+	processFn(result[0])
 	mdl.fixPoolLedgerAddrForGateway()
 }
 

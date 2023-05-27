@@ -3,6 +3,7 @@ package credit_manager
 import (
 	"math/big"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -18,31 +19,77 @@ func (mdl *CreditManager) processExecuteEvents() {
 	}
 }
 
+// x,i event
+// fetch events x,i+1 to x,i+1000
+//
 // works for newBlockNum > mdl.lastEventBlock
-func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
-	// on each new block
-	mdl.ProcessAccountEvents(newBlockNum)
+func (mdl *CreditManager) OnBlockChange(lastBlockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
-	// only after each event block.
-	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
-		mdl.calculateCMStat(mdl.lastEventBlock)
+	if mdl.lastEventBlock != 0 && mdl.lastEventBlock == lastBlockNum && lastBlockNum >= mdl.DiscoveredAt {
+		// process remaining v2 events for lastBlockNum only
+		for _, txLog := range mdl.getv2ExtraLogs(types.Log{BlockNumber: uint64(lastBlockNum), Index: 10_000_000}) {
+			mdl.logHandler(txLog)
+		}
+		//// ON NEW TXHASH
+		mdl.onTxHash("")
+		// ON NEW BLOCK
+		data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), lastBlockNum, lastBlockNum+1)
+		mdl.processDirectTransfersOnBlock(lastBlockNum, data[lastBlockNum])
+		calls, processFns = mdl.FetchFromDCForChangedSessions(lastBlockNum)
+		call, processFn := mdl.getCMCallAndProcessFn(lastBlockNum)
+		if processFn != nil {
+			calls = append(calls, call)
+			processFns = append(processFns, processFn)
+		}
 		mdl.lastEventBlock = 0
-		// set dc data for credit manager to nil
 	}
+	return
 }
 
 func bytesToUInt16(data []byte) uint16 {
 	return uint16(new(big.Int).SetBytes(data).Int64())
 }
 
+func (mdl *CreditManager) onBlockChangeLocally(lastBlockNum int64) {
+	calls, processFns := mdl.OnBlockChange(lastBlockNum)
+	if len(calls) == 0 {
+		return
+	}
+	results := core.MakeMultiCall(mdl.Client, lastBlockNum, false, calls)
+	for ind, result := range results {
+		processFns[ind](result)
+	}
+}
 func (mdl *CreditManager) OnLog(txLog types.Log) {
+	if ignoreDetails := mdl.ignoreLogsForOldAddr[txLog.Address.Hex()]; ignoreDetails != nil {
+		if txLog.BlockNumber > ignoreDetails.block || (txLog.BlockNumber == ignoreDetails.block &&
+			txLog.Index >= ignoreDetails.logId) {
+			return
+		}
+	}
 	extraLogs := mdl.getv2ExtraLogs(txLog)
 	for _, extraLog := range extraLogs {
+		// on block change internally
+		if mdl.lastEventBlock != 0 && mdl.lastEventBlock != int64(extraLog.BlockNumber) {
+			mdl.onBlockChangeLocally(mdl.lastEventBlock)
+		}
+		if mdl.lastEventBlock != int64(extraLog.BlockNumber) {
+			mdl.updateSessionWithDirectTokenTransferBefore(int64(extraLog.BlockNumber))
+		}
 		mdl.logHandler(extraLog)
 	}
-	mdl.logHandler(txLog)
+	if mdl.lastEventBlock != 0 && mdl.lastEventBlock != int64(txLog.BlockNumber) {
+		mdl.onBlockChangeLocally(mdl.lastEventBlock)
+	}
+	if mdl.lastEventBlock != int64(txLog.BlockNumber) {
+		mdl.updateSessionWithDirectTokenTransferBefore(int64(txLog.BlockNumber))
+	}
+	if len(txLog.Topics) > 0 { // if txLog is valid, invalid is passed in aftersynchook
+		mdl.logHandler(txLog)
+	}
 }
+
 func (mdl *CreditManager) logHandler(txLog types.Log) {
 	// creditConfigurator events for test
 	// CreditFacadeUpgraded is emitted when creditconfigurator is initialized, so we will receive it on init
@@ -51,7 +98,11 @@ func (mdl *CreditManager) logHandler(txLog types.Log) {
 		switch txLog.Topics[0] {
 		case core.Topic("CreditFacadeUpgraded(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
-			mdl.setCreditFacadeSyncer(facade)
+			mdl.setCreditFacadeSyncer(facade, &OldAddrDetails{
+				Address: mdl.GetCreditFacadeAddr(),
+				block:   txLog.BlockNumber,
+				logId:   txLog.Index,
+			})
 		case core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"):
 			mdl.setParams(&schemas.Parameters{
 				BlockNum:                   int64(txLog.BlockNumber),
@@ -66,17 +117,11 @@ func (mdl *CreditManager) logHandler(txLog types.Log) {
 		return
 	}
 
-	//
+	// if facade or cm , not configurator
 	mdl.onTxHash(txLog.TxHash.Hex())
-	// on new block
-	// for credit manager stats
-	blockNum := int64(txLog.BlockNumber)
-	if mdl.lastEventBlock != blockNum {
-		mdl.onBlockChange(blockNum)
-	}
-	mdl.lastEventBlock = blockNum
+	mdl.lastEventBlock = int64(txLog.BlockNumber)
 	//
-	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
+	mdl.Repo.GetAccountManager().DeleteTxHash(int64(txLog.BlockNumber), txLog.TxHash.Hex())
 	switch mdl.GetVersion() {
 	case 1:
 		mdl.checkLogV1(txLog)

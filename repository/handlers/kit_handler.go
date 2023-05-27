@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/admin_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/cf_wrapper"
+	"github.com/Gearbox-protocol/third-eye/models/wrappers/cm_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_wrapper"
 )
 
@@ -16,6 +17,7 @@ type AdapterKitHandler struct {
 	aggregatedBlockFeed *aggregated_block_feed.AggregatedBlockFeed
 	adminWrapper        *admin_wrapper.AdminWrapper
 	cfWrapper           *cf_wrapper.CFWrapper
+	cmWrapper           *cm_wrapper.CMWrapper
 	poolWrapper         *pool_wrapper.PoolWrapper
 }
 
@@ -23,14 +25,16 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 	obj := &AdapterKitHandler{
 		kit:                 ds.NewAdapterKit(),
 		aggregatedBlockFeed: aggregated_block_feed.NewAggregatedBlockFeed(client, repo, cfg.Interval),
+		adminWrapper:        admin_wrapper.NewAdminWrapper(),
 		cfWrapper:           cf_wrapper.NewCFWrapper(),
 		poolWrapper:         pool_wrapper.NewPoolWrapper(client),
-		adminWrapper:        admin_wrapper.NewAdminWrapper(client),
+		cmWrapper:           cm_wrapper.NewCMWrapper(client),
 	}
 	//
 	obj.kit.Add(obj.aggregatedBlockFeed)
 	obj.kit.Add(obj.adminWrapper)
 	obj.kit.Add(obj.cfWrapper)
+	obj.kit.Add(obj.cmWrapper)
 	obj.kit.Add(obj.poolWrapper)
 	//
 	return obj
@@ -52,6 +56,9 @@ func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 		// REVERT_CF_WRAPPER
 	} else if adapterI.GetName() == ds.CreditFilter || adapterI.GetName() == ds.CreditConfigurator {
 		handler.cfWrapper.AddSyncAdapter(adapterI)
+		// REVERT_CM_WRAPPER
+	} else if adapterI.GetName() == ds.CreditManager {
+		handler.cmWrapper.AddSyncAdapter(adapterI)
 		// REVERT_POOL_WRAPPER
 	} else if adapterI.GetName() == ds.Pool {
 		handler.poolWrapper.AddSyncAdapter(adapterI)
@@ -69,6 +76,10 @@ func (repo *AdapterKitHandler) GetAdapter(addr string) ds.SyncAdapterI {
 		}
 		// REVERT_CF_WRAPPER
 		if adapter := repo.cfWrapper.GetAdapter(addr); adapter != nil {
+			return adapter
+		}
+		// REVERT_CM_WRAPPER
+		if adapter := repo.cmWrapper.GetAdapter(addr); adapter != nil {
 			return adapter
 		}
 		// REVERT_POOL_WRAPPER
@@ -94,6 +105,8 @@ func (repo AdapterKitHandler) getAdapterState() (adapters []*ds.SyncAdapter) {
 	adapters = append(adapters, repo.adminWrapper.GetAdapterState()...)
 	// REVERT_CF_WRAPPER
 	adapters = append(adapters, repo.cfWrapper.GetAdapterState()...)
+	// REVERT_CM_WRAPPER
+	adapters = append(adapters, repo.cmWrapper.GetAdapterState()...)
 	// REVERT_POOL_WRAPPER
 	adapters = append(adapters, repo.poolWrapper.GetAdapterState()...)
 	return
@@ -111,11 +124,11 @@ func (repo AdapterKitHandler) GetYearnFeedAddrs() (addrs []string) {
 // TODO: find eng.repo.GetAdapterAddressByName(ds.CreditManager)
 func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string {
 	// REVERT_CM_WRAPPER
-	// if name == ds.CreditManager {
-	// 	return repo.cmWrapper.GetUnderlyingAdapterAddrs()
-	// }
+	if name == ds.CreditManager {
+		return repo.cmWrapper.GetUnderlyingAdapterAddrs()
+	}
 	// REVERT_ADMIN_WRAPPER
-	if name == ds.GearToken {
+	if utils.Contains([]string{ds.ContractRegister, ds.ACL, ds.AccountFactory, ds.GearToken}, name) {
 		return repo.adminWrapper.GetAdapterAddrByName(name)
 	}
 	return repo.kit.GetAdapterAddressByName(name)

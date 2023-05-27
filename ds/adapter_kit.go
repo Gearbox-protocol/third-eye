@@ -14,7 +14,8 @@ func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{PriceOracle, AdminWrapper})
 	// REVERT_POOL_WRAPPER
 	kit.AddLevel([]string{PoolWrapper, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
-	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed, PoolLMRewards})
+	// REVERT_CM_WRAPPER
+	kit.AddLevel([]string{CMWrapper, AggregatedBlockFeed, PoolLMRewards})
 	// REVERT_CF_WRAPPER
 	kit.AddLevel([]string{CFWrapper, CreditConfigurator, Treasury})
 	// - we are dropping the uni check, so the dependency is reversed.

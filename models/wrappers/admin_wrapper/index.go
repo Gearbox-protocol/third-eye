@@ -1,7 +1,6 @@
 package admin_wrapper
 
 import (
-	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers"
 )
@@ -11,9 +10,9 @@ type AdminWrapper struct {
 	nameToAddr map[string]string
 }
 
-func NewAdminWrapper(client core.ClientI) *AdminWrapper {
+func NewAdminWrapper() *AdminWrapper {
 	w := &AdminWrapper{
-		SyncWrapper: wrappers.NewSyncWrapper(ds.AdminWrapper, client),
+		SyncWrapper: wrappers.NewSyncWrapper(ds.AdminWrapper, nil),
 		nameToAddr:  make(map[string]string),
 	}
 	w.ViaDataProcess = ds.ViaLog

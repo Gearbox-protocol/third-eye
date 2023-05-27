@@ -54,7 +54,7 @@ func (repo *SyncAdaptersRepo) LoadSyncAdapters(db *gorm.DB) {
 	defer utils.Elapsed("loadSyncAdapters")()
 	//
 	data := []*ds.SyncAdapter{}
-	err := db.Find(&data, "disabled = ? OR type = 'PriceOracle'", false).Error
+	err := db.Find(&data, "disabled = ? OR type = 'PriceOracle' ORDER BY type", false).Error
 	if err != nil {
 		log.Fatal(err)
 	}

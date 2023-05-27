@@ -66,9 +66,9 @@ func (mdl *CreditManager) getExecuteOrderAccountOperationFromParams(txHash strin
 	return
 }
 
-///////////////////////
+// /////////////////////
 // Main actions
-///////////////////////
+// /////////////////////
 func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, account string,
 	borrowAmount *big.Int,
 	referralCode uint16) error {
@@ -250,9 +250,9 @@ func (mdl *CreditManager) setLiquidateStatus(sessionId string, isExpired bool) {
 	mdl.ClosedSessions[sessionId].Status = status
 }
 
-///////////////////////
+// /////////////////////
 // Side actions that can also be used as multicall events
-///////////////////////
+// /////////////////////
 func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token string, value *big.Int) {
 	sessionId := mdl.GetCreditOwnerSession(onBehalfOf)
 	blockNum := int64(txLog.BlockNumber)
