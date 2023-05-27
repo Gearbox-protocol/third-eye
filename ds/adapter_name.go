@@ -22,6 +22,7 @@ const (
 	CFWrapper           = "CFWrapper"
 	PoolWrapper         = "PoolWrapper"
 	AggregatedBlockFeed = "AggregatedBlockFeed"
+	AdminWrapper        = "AdminWrapper"
 )
 
 func IsWrapperAdapter(name string) bool {

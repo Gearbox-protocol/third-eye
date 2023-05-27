@@ -12,6 +12,17 @@
   },
   {
     Args: {
+      creditAccount: '#Account_10',
+      to: '#To_1',
+    },
+    BlockNumber: 3,
+    Contract: '#AccountFactory_1',
+    LogID: 13,
+    TxHash: '#Hash_14',
+    Type: 13,  // TakeForever
+  },
+  {
+    Args: {
       admin: '#Admin_1',
     },
     BlockNumber: 3,
@@ -80,17 +91,6 @@
     Args: {
       account: '#ACLTrait_1',
     },
-  },
-  {
-    Args: {
-      creditAccount: '#Account_10',
-      to: '#To_1',
-    },
-    BlockNumber: 3,
-    Contract: '#AccountFactory_1',
-    LogID: 13,
-    TxHash: '#Hash_14',
-    Type: 13,  // TakeForever
   },
   {
     Args: {

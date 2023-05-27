@@ -17,11 +17,11 @@ type GearToken struct {
 }
 
 func NewGearToken(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *GearToken {
-	pool := NewGearTokenFromAdapter(
+	gearTokenAdapter := NewGearTokenFromAdapter(
 		ds.NewSyncAdapter(addr, ds.GearToken, discoveredAt, client, repo),
 	)
-	pool.SetUnderlyingState([]*schemas.GearBalance{})
-	return pool
+	gearTokenAdapter.SetUnderlyingState([]*schemas.GearBalance{})
+	return gearTokenAdapter
 }
 
 func NewGearTokenFromAdapter(adapter *ds.SyncAdapter) *GearToken {

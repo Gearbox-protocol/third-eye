@@ -37,7 +37,6 @@ func (mdl *Pool) OnBlockChange(inputB int64) (call multicall.Multicall2Call, pro
 	if inputB != mdl.lastEventBlock {
 		log.Fatal("[PoolServiceModel]: OnBlockChange called with wrong block number")
 	}
-
 	// set to zero, we only create poolstat snapshot when there is a event with changed pool cumulative interest rate
 	mdl.lastEventBlock = 0
 	return mdl.getCallAndProcessFn(inputB)

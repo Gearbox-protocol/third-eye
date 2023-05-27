@@ -10,8 +10,9 @@ type AdapterKit struct {
 
 func (kit *AdapterKit) init() {
 	kit.AddLevel([]string{AddressProvider})
-	kit.AddLevel([]string{ContractRegister, PriceOracle, ACL, AccountFactory, GearToken})
-	//REVERT_POOL_WRAPPER
+	// REVERT_ADMIN_WRAPPER: ACL, AccountFactory, GearToken, ContractRegister
+	kit.AddLevel([]string{PriceOracle, AdminWrapper})
+	// REVERT_POOL_WRAPPER
 	kit.AddLevel([]string{PoolWrapper, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
 	kit.AddLevel([]string{CreditManager, AggregatedBlockFeed, PoolLMRewards})
 	// REVERT_CF_WRAPPER

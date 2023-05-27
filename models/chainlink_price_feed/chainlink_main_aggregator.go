@@ -31,6 +31,7 @@ func NewMainAgg(client core.ClientI, mainAgg common.Address, bounded ...bool) *C
 	}
 }
 
+// get blockNum at which the phaseId was changed.
 func (mdl *ChainlinkMainAgg) GetFeedUpdateBlockUsingPhaseId(newPhaseId uint16, from, to int64) int64 {
 	if from == to {
 		return from
@@ -45,6 +46,7 @@ func (mdl *ChainlinkMainAgg) GetFeedUpdateBlockUsingPhaseId(newPhaseId uint16, f
 	}
 }
 
+// get blockNum at which the aggregator in the oracle was changed.
 func (mdl *ChainlinkMainAgg) GetFeedUpdateBlockAggregator(newAggAddr common.Address, from, to int64) int64 {
 	if from == to {
 		return from
@@ -59,6 +61,8 @@ func (mdl *ChainlinkMainAgg) GetFeedUpdateBlockAggregator(newAggAddr common.Addr
 	}
 }
 
+// chainlink oracle has priceFeed(phaseAggregator)
+// get priceFeed at provided blockNum using PhaseId and phaseAggregator/phaseAggregators
 func (mdl *ChainlinkMainAgg) GetPriceFeedAddr(blockNum int64) (common.Address, int16) {
 	if mdl.bounded {
 		return mdl.getPriceFeedAddrOnBounded(blockNum)
@@ -75,7 +79,7 @@ func (mdl *ChainlinkMainAgg) GetPriceFeedAddr(blockNum int64) (common.Address, i
 	if err != nil {
 		chainId, err2 := mdl.Client.ChainID(context.TODO())
 		log.CheckFatal(err2)
-		if chainId.Int64() == 42 || chainId.Int64() == 5 { // for goerli and kovan test the phaseaggregator method is without 's'
+		if chainId.Int64() == 42 || chainId.Int64() == 5 { // for goerli and kovan test the phaseAggregators method is without 's'
 			// try with method name phaseAggregator instead of phaseAggregators
 			// true is sets typo=true so that phaseAggregator method is used.
 			newPhaseAgg, err = mdl.contractETH.PhaseAggregators(opts, phaseId, true)
@@ -87,6 +91,10 @@ func (mdl *ChainlinkMainAgg) GetPriceFeedAddr(blockNum int64) (common.Address, i
 	return newPhaseAgg, int16(phaseId)
 }
 
+// - if oracle is 0xE2, phaseAggregator(priceFeed) is 0xd6
+// - if phaseId method is missing on boundedOracle, check for Aggregator if method is missing, fail Fatal
+// - if mainnet(chainId=1), check phaseAggregators on boundedOracle
+// - if goerli/kovan, call priceFeed for getting underlying aggregator, then on that aggregator call phaseAggregator(without s)
 func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.Address, int16) {
 	if mdl.Addr == common.HexToAddress("0xE26FB07da646138553f635c94E2a345270240e30") { // goerli specific case, where bounded MainAgg uses kovan-playground chainlink implementation that doesn't have aggregator method
 		return common.HexToAddress("0xd6852347062aB885B6Fb9F7220BedCc5A39CE862"), -1
@@ -106,10 +114,11 @@ func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.A
 	//
 	chainId, err2 := mdl.Client.ChainID(context.TODO())
 	log.CheckFatal(err2)
-	var newPhaseAgg common.Address
 	if chainId.Int64() == 1 {
 		// get phaseAggregator on the boundedFeed
-		newPhaseAgg, err = mdl.contractETH.PhaseAggregators(opts, phaseId, false)
+		newPhaseAgg, err := mdl.contractETH.PhaseAggregators(opts, phaseId, false)
+		log.CheckFatal(err)
+		return newPhaseAgg, int16(phaseId)
 	} else { // goerli and kovan
 		// get priceFeed
 		underlyingBoundedFeed, err3 := core.CallFuncWithExtraBytes(mdl.Client, "741bef1a",
@@ -122,9 +131,10 @@ func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.A
 		extras[31] = byte(phaseId)
 		var phaseAggregatorData []byte
 		// phaseAggregator only on goerli
-		phaseAggregatorData, err = core.CallFuncWithExtraBytes(mdl.Client, "d6bcd745",
+		phaseAggregatorData, err := core.CallFuncWithExtraBytes(mdl.Client, "d6bcd745",
 			common.BytesToAddress(underlyingBoundedFeed), blockNum, extras[:])
-		newPhaseAgg = common.BytesToAddress(phaseAggregatorData)
+		log.CheckFatal(err)
+		newPhaseAgg := common.BytesToAddress(phaseAggregatorData)
+		return newPhaseAgg, int16(phaseId)
 	}
-	return newPhaseAgg, int16(phaseId)
 }
