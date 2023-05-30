@@ -205,6 +205,15 @@ func (mdl *CreditManager) onAddCollateral(txLog *types.Log, onBehalfOf, token st
 func (mdl *CreditManager) AddCollateralToSession(blockNum int64, sessionId, token string, amount *big.Int) {
 	if !mdl.Repo.IsDieselToken(token) && mdl.Repo.GetGearTokenAddr() != token {
 		session := mdl.Repo.GetCreditSession(sessionId)
+		//
+		if session.Collateral == nil {
+			session.Collateral = &core.JsonBigIntMap{}
+		}
+		(*session.Collateral)[token] = (*core.BigInt)(new(big.Int).Add(
+			core.NewBigInt((*session.Collateral)[token]).Convert(),
+			amount,
+		))
+		//
 		valueInUSD := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, "USDC", amount)
 		session.CollateralInUSD = session.CollateralInUSD + utils.GetFloat64Decimal(valueInUSD, 6)
 		valueInUnderlyingAsset := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, mdl.GetUnderlyingToken(), amount)
