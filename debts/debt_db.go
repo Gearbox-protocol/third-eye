@@ -49,13 +49,13 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 				Session: %s
 				HF: %s
 				CreditManager: %s/address/%s
-				Borrower: %s RepayAmount:%f %s
+				Borrower: %s Debt:%f %s
 				web: %s/accounts/history/%s`,
 			sendMsgAfterXBlocks,
 			debt.SessionId, debt.CalHealthFactor,
 			urls.ExplorerUrl, cmAddr,
 			borrower,
-			utils.GetFloat64Decimal(debt.CalBorrowedAmountPlusInterestBI.Convert(), token.Decimals), token.Symbol,
+			utils.GetFloat64Decimal(debt.CalDebtBI.Convert(), token.Decimals), token.Symbol,
 			urls.ChartUrl, debt.SessionId,
 		)
 	}
@@ -69,19 +69,19 @@ func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
 			CalHealthFactor: debt.CalHealthFactor,
 			CalTotalValueBI: core.NewBigInt(debt.CalTotalValueBI),
 			// it has fees for v2
-			CalBorrowedAmountPlusInterestBI: core.NewBigInt(debt.CalBorrowedAmountPlusInterestBI),
-			CalThresholdValueBI:             core.NewBigInt(debt.CalThresholdValueBI),
-			ProfitInUSD:                     debt.ProfitInUSD,
-			ProfitInUnderlying:              debt.ProfitInUnderlying,
-			CollateralInUnderlying:          debt.CollateralInUnderlying,
-			CollateralInUSD:                 debt.CollateralInUSD,
+			CalDebtBI:              core.NewBigInt(debt.CalDebtBI),
+			CalThresholdValueBI:    core.NewBigInt(debt.CalThresholdValueBI),
+			ProfitInUSD:            debt.ProfitInUSD,
+			ProfitInUnderlying:     debt.ProfitInUnderlying,
+			CollateralInUnderlying: debt.CollateralInUnderlying,
+			CollateralInUSD:        debt.CollateralInUSD,
 		},
-		CalTotalValue:                 utils.GetFloat64Decimal(debt.CalTotalValueBI.Convert(), decimals),
-		CalBorrowedAmountPlusInterest: utils.GetFloat64Decimal((debt.CalBorrowedAmountPlusInterestBI).Convert(), decimals),
-		CalThresholdValue:             utils.GetFloat64Decimal((debt.CalThresholdValueBI).Convert(), decimals),
-		RepayAmountBI:                 debt.RepayAmountBI,
-		AmountToPool:                  utils.GetFloat64Decimal(debt.AmountToPoolBI.Convert(), decimals),
-		RepayAmount:                   utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
+		CalTotalValue:     utils.GetFloat64Decimal(debt.CalTotalValueBI.Convert(), decimals),
+		CalDebt:           utils.GetFloat64Decimal((debt.CalDebtBI).Convert(), decimals),
+		CalThresholdValue: utils.GetFloat64Decimal((debt.CalThresholdValueBI).Convert(), decimals),
+		RepayAmountBI:     debt.RepayAmountBI,
+		AmountToPool:      utils.GetFloat64Decimal(debt.AmountToPoolBI.Convert(), decimals),
+		RepayAmount:       utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
 		//
 		TotalValueInUSD: debt.TotalValueInUSD,
 		TFIndex:         debt.FarmingValUSD / debt.TotalValueInUSD,
@@ -100,7 +100,7 @@ func (eng *DebtEngine) AddDebt(debt *schemas.Debt, forceAdd bool) {
 			eng.addDebt(debt)
 		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr*eng.config.ThrottleByHrs ||
 			core.DiffMoreThanFraction(lastDebt.CalTotalValueBI, debt.CalTotalValueBI, big.NewFloat(0.05)) ||
-			core.DiffMoreThanFraction(lastDebt.CalBorrowedAmountPlusInterestBI, debt.CalBorrowedAmountPlusInterestBI, big.NewFloat(0.05)) ||
+			core.DiffMoreThanFraction(lastDebt.CalDebtBI, debt.CalDebtBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, lastDebt.CalHealthFactor) {
 			eng.addDebt(debt)

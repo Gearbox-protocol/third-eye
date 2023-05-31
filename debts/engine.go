@@ -320,7 +320,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	//
 	// calculating account fields
 	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
-	calHF, calBorrowWithInterest, calTotalValue, calThresholdValue := calculator.CalcAccountFields(
+	calHF, calDebt, calTotalValue, calThresholdValue, _calBorowedWithInterst := calculator.CalcAccountFields(
 		session.Version,
 		blockNum,
 		sessionDetailsForCalc{CreditSessionSnapshot: sessionSnapshot, CM: session.CreditManager},
@@ -337,9 +337,11 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			CalHealthFactor: (*core.BigInt)(calHF),
 			CalTotalValueBI: (*core.BigInt)(calTotalValue),
 			// it has fees too for v2
-			CalBorrowedAmountPlusInterestBI: (*core.BigInt)(calBorrowWithInterest),
-			CalThresholdValueBI:             (*core.BigInt)(calThresholdValue),
-			CollateralInUnderlying:          sessionSnapshot.CollateralInUnderlying,
+			CalDebtBI: (*core.BigInt)(calDebt),
+			// used for calculating the close amount and for comparing with data compressor results as v2 doesn't have borrowedAmountWithInterest
+			CalBorrowedWithInterestBI: (*core.BigInt)(_calBorowedWithInterst),
+			CalThresholdValueBI:       (*core.BigInt)(calThresholdValue),
+			CollateralInUnderlying:    sessionSnapshot.CollateralInUnderlying,
 		},
 		SessionId: sessionId,
 	}
@@ -362,7 +364,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		// set debt data fetched from dc
 		// if healthfactor on diff
 		if !CompareBalance(debt.CalTotalValueBI, (*core.BigInt)(data.TotalValue), cumIndexAndUToken) ||
-			!CompareBalance(debt.CalBorrowedAmountPlusInterestBI, (*core.BigInt)(data.BorrowedAmountPlusInterest), cumIndexAndUToken) ||
+			!CompareBalance(debt.CalBorrowedWithInterestBI, (*core.BigInt)(data.BorrowedAmountPlusInterest), cumIndexAndUToken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, (*core.BigInt)(data.HealthFactor)) {
 			profile.DCData = &data
 			notMatched = true
@@ -426,7 +428,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 	// amount to pool
 	amountToPool, calRemainingFunds, _, _ = calc.CalCloseAmount(eng.lastParameters[session.CreditManager],
 		session.Version, debt.CalTotalValueBI.Convert(), status,
-		debt.CalBorrowedAmountPlusInterestBI.Convert(),
+		debt.CalBorrowedWithInterestBI.Convert(),
 		sessionSnapshot.BorrowedAmountBI.Convert())
 
 	// calculate profit
