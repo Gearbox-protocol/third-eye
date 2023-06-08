@@ -10,7 +10,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -79,7 +78,8 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 	}
 	_, err = pfContract.PhaseId(opts)
 	if err != nil {
-		if utils.Contains([]string{"VM execution error.", "execution reverted"}, err.Error()) {
+		if strings.Contains(err.Error(), "VM execution error.") ||
+			strings.Contains(err.Error(), "execution reverted") {
 			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 			if err != nil {
 				return ds.UnknownPF, false, err
