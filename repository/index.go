@@ -87,8 +87,9 @@ func (repo *Repository) Init() {
 	repo.LoadAllowedTokensState(repo.db)
 	// fastcheck and new parameters
 	repo.ParamsRepo.LoadAllParams(repo.db)
-	// treasury funcs
+	// blocks load block ts to date.
 	repo.BlocksRepo.LoadBlockDatePair()
+	// treasury funcs
 	repo.LoadLastTreasuryTs(repo.db)
 	repo.TreasuryRepo.LoadTreasurySnapshot(repo.db)
 	// for direct token transfer

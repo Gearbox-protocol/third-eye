@@ -25,8 +25,7 @@ type BlocksRepo struct {
 	blockDatePairs map[int64]*schemas.BlockDate
 	// for prevently duplicate query price feed already with same price for a token
 	// token to feed
-	prevPriceFeeds map[bool]map[string]map[string]*schemas.PriceFeed
-	currentPrices  map[string]*schemas.TokenCurrentPrice
+	prevPriceFeeds map[bool]map[string]*schemas.PriceFeed
 	mu             *sync.Mutex
 	client         core.ClientI
 	db             *gorm.DB
@@ -37,8 +36,7 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config, tokensR
 	blocksRepo := &BlocksRepo{
 		blocks:         make(map[int64]*schemas.Block),
 		blockDatePairs: map[int64]*schemas.BlockDate{},
-		prevPriceFeeds: map[bool]map[string]map[string]*schemas.PriceFeed{},
-		currentPrices:  map[string]*schemas.TokenCurrentPrice{},
+		prevPriceFeeds: map[bool]map[string]*schemas.PriceFeed{},
 		//
 		mu:     &sync.Mutex{},
 		client: client,
@@ -84,16 +82,23 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 }
 
 func (repo *BlocksRepo) saveCurrentPrices(tx *gorm.DB, blockNum int64) {
-	if len(repo.currentPrices) == 0 { // currentPrice is only valid from v2
-		// so if it's empty, we don't need to store currentPrice and nor fetch 1inch prices in usdc
-		return
-	}
 	// chainlink current prices to updated
 	var currentPricesToSync []*schemas.TokenCurrentPrice
-	for _, tokenPrice := range repo.currentPrices {
-		tokenPrice.Updated = false
-		tokenPrice.PriceSrc = string(core.SOURCE_CHAINLINK)
-		currentPricesToSync = append(currentPricesToSync, tokenPrice)
+	for _, tokenPrice := range repo.prevPriceFeeds[true] {
+		if tokenPrice.SaveCurrentPrice {
+			tokenPrice.SaveCurrentPrice = false
+			currentPricesToSync = append(currentPricesToSync, &schemas.TokenCurrentPrice{
+				PriceBI:  tokenPrice.PriceBI,
+				Price:    tokenPrice.Price,
+				BlockNum: tokenPrice.BlockNumber,
+				Token:    tokenPrice.Token,
+				PriceSrc: string(core.SOURCE_CHAINLINK),
+			})
+		}
+	}
+	if len(currentPricesToSync) == 0 { // usd prices are set? only valid from v2
+		// so if it's empty, we don't need to store currentPrice and nor fetch 1inch prices in usdc
+		return
 	}
 	// spot prices to updated
 	if repo.spotPrices != nil {
@@ -105,7 +110,6 @@ func (repo *BlocksRepo) saveCurrentPrices(tx *gorm.DB, blockNum int64) {
 				Price:    utils.GetFloat64Decimal(priceBI.Convert(), 8),
 				BlockNum: blockNum,
 				Token:    token,
-				Updated:  true,
 				PriceSrc: string(core.SOURCE_SPOT),
 			})
 		}
@@ -200,17 +204,15 @@ func (repo *BlocksRepo) loadPrevPriceFeed() {
 // isUSD -> token -> feed -> price feed object
 func (repo *BlocksRepo) addPrevPriceFeed(pf *schemas.PriceFeed) {
 	if repo.prevPriceFeeds[pf.IsPriceInUSD] == nil {
-		repo.prevPriceFeeds[pf.IsPriceInUSD] = map[string]map[string]*schemas.PriceFeed{}
+		repo.prevPriceFeeds[pf.IsPriceInUSD] = map[string]*schemas.PriceFeed{}
 	}
-	if repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] == nil {
-		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] = map[string]*schemas.PriceFeed{}
-	}
-	oldPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed]
+	oldPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
 	price := pf.PriceBI.Convert().Int64()
 	if oldPF != nil && oldPF.BlockNumber >= pf.BlockNumber && !(price == 0 || price == 100) {
 		log.Fatalf("oldPF %s.\n NewPF %s.", oldPF, pf)
 	}
-	repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed] = pf
+	//
+	repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] = pf
 }
 
 func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
@@ -218,10 +220,9 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	defer repo.mu.Unlock()
 	if repo.prevPriceFeeds[pf.IsPriceInUSD] != nil &&
 		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] != nil &&
-		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed] != nil {
-		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token][pf.Feed]
+		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token].Feed == pf.Feed {
+		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
 		if prevPF.BlockNumber >= pf.BlockNumber {
-
 			log.Fatalf("oldPF %s.\n NewPF %s.", prevPF, pf)
 		}
 		if prevPF.PriceBI.Cmp(pf.PriceBI) == 0 {
@@ -229,34 +230,16 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 			return
 		}
 	}
+	pf.SaveCurrentPrice = true
 	repo.addPrevPriceFeed(pf)
-	repo.setTokenCurrentPrice(pf)
 	repo._setAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
-}
-
-func (repo *BlocksRepo) setTokenCurrentPrice(pf *schemas.PriceFeed) {
-	if pf.IsPriceInUSD {
-		var lastBlockNum int64
-		if repo.currentPrices[pf.Token] != nil {
-			lastBlockNum = repo.currentPrices[pf.Token].BlockNum
-		}
-		if lastBlockNum < pf.BlockNumber {
-			repo.currentPrices[pf.Token] = &schemas.TokenCurrentPrice{
-				PriceBI:  pf.PriceBI,
-				Price:    pf.Price,
-				BlockNum: pf.BlockNumber,
-				Token:    pf.Token,
-				Updated:  true,
-			}
-		}
-	}
 }
 
 func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...interface{}) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	ts := repo._setAndGetBlock(header.BlockNumber).Timestamp
-	if time.Now().Sub(time.Unix(int64(ts), 0)) < time.Hour {
+	if time.Since(time.Unix(int64(ts), 0)) < time.Hour {
 		if header.EventCode == "AMQP" {
 			log.AMQPMsgf(msg, args...)
 		} else {
