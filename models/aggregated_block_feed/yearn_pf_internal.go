@@ -68,7 +68,7 @@ func (mdl *yearnPFInternal) setContracts(blockNum int64, client core.ClientI) er
 	}
 	// underlying price feed not found
 	if common.BytesToAddress(underlyingPFAddrBytes) == core.NULL_ADDR {
-		return fmt.Errorf("Address for underlying pf for yearn feed(%d) not found at %d",
+		return fmt.Errorf("address for underlying pf for yearn feed(%d) not found at %d",
 			mdl.mainPFAddress, blockNum)
 	}
 	mdl.underlyingPFContract, err = priceFeed.NewPriceFeed(common.BytesToAddress(underlyingPFAddrBytes), client)

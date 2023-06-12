@@ -84,7 +84,7 @@ func (mdl *AggregatedBlockFeed) AddFeedOrToken(token, oracle string, pfType stri
 	if mdl.QueryFeeds[oracle] != nil {
 		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt)
 	} else {
-		mdl.QueryFeeds[oracle] = NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, version)
+		mdl.AddYearnFeed(NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, version))
 		// MAINNET: old yvUSDC added on gearbox v1
 		if token == "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
 			mdl.QueryFeeds[oracle].DisableToken(token, 13856183) // new yvUSDC added on gearbox v1
@@ -106,7 +106,7 @@ func (mdl *AggregatedBlockFeed) addPriceForToken(qpf *QueryPriceFeed, token stri
 	}
 	mdl.updateQueryPrices([]*schemas.PriceFeed{{
 		BlockNumber:  discoveredAt,
-		Feed:         mdl.Address,
+		Feed:         qpf.Address,
 		Token:        token,
 		RoundId:      data.RoundId.Int64(),
 		IsPriceInUSD: mdl.GetVersion() > 1, // for version more than 1

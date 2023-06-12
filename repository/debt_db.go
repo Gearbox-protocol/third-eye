@@ -7,7 +7,10 @@ import (
 
 func (repo *Repository) LoadLastDebtSync() int64 {
 	data := schemas.DebtSync{}
-	query := "SELECT max(last_calculated_at) as last_calculated_at FROM debt_sync"
+	query := `SELECT max(b) as last_calculated_at from 
+		(select min(firstlog_at) as b from sync_Adapters where type!='PoolLMRewards' 
+		union 
+		select max(last_calculated_at) as b FROM debt_sync) tmp`
 	err := repo.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)

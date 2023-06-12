@@ -169,6 +169,7 @@ func (q *QueryPFDependencies) updateQueryPrices(pfs []*schemas.PriceFeed) {
 	q.depBasedExtraPrices = append(q.depBasedExtraPrices, pfs...)
 }
 
+// clearExtraBefore is used to remove price feed before the lastSync of aggregatedBlockFeed
 func (q *QueryPFDependencies) extraPriceForQueryFeed(clearExtraBefore int64) []*schemas.PriceFeed {
 	updates := q.getChainlinkBasedQueryUpdates(clearExtraBefore)
 	for _, blockToDelete := range q.aggregatedFetchedBlocks {

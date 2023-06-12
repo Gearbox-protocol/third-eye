@@ -30,7 +30,7 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 				Client:       client,
 			},
 			Details:  map[string]interface{}{"token": map[string]interface{}{token: []int64{discoveredAt}}, "pfType": pfType},
-			LastSync: discoveredAt - 1,
+			LastSync: discoveredAt,
 			V:        version,
 		},
 		Repo: repo,
@@ -154,16 +154,15 @@ func (mdl *QueryPriceFeed) TokensValidAtBlock(blockNum int64) []string {
 func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
 	switch ints := list.(type) {
 	case []interface{}:
-		for _, int_ := range ints {
+		for _, _int := range ints {
 			var parsedInt int64
-			switch int_.(type) {
+			switch parsedV := _int.(type) {
 			case int64:
-				parsedInt = int_.(int64)
+				parsedInt = parsedV
 			case float64:
-				parsedFloat := int_.(float64)
-				parsedInt = int64(parsedFloat)
+				parsedInt = int64(parsedV)
 			default:
-				log.Fatalf("QueryPriceFeed token start/end block_num not in int format %v", int_)
+				log.Fatalf("QueryPriceFeed token start/end block_num not in int format %v", _int)
 			}
 			parsedInts = append(parsedInts, parsedInt)
 		}
