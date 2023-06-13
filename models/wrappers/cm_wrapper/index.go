@@ -75,19 +75,25 @@ func (s CMWrapper) onBlockChange(lastBlockNum, newBlockNum int64) {
 		if adapter.GetLastSync() >= lastBlockNum {
 			continue
 		}
-		switch v := adapter.(type) {
-		case *credit_manager.CreditManager:
-			call, processFn := v.OnBlockChange(lastBlockNum, newBlockNum)
-			// if process fn is not null
-			if processFn != nil {
-				processFns = append(processFns, processFn...)
-				calls = append(calls, call...)
-			}
+		cm := adapter.(*credit_manager.CreditManager)
+		call, processFn := cm.OnBlockChange(lastBlockNum)
+		// if process fn is not null
+		if processFn != nil {
+			processFns = append(processFns, processFn...)
+			calls = append(calls, call...)
 		}
 	}
 	results := core.MakeMultiCall(s.Client, lastBlockNum, false, calls)
 	for ind, result := range results {
 		processFns[ind](result)
+	}
+	// update for direct token transfer
+	for _, adapter := range adapters {
+		if adapter.GetLastSync() >= lastBlockNum {
+			continue
+		}
+		cm := adapter.(*credit_manager.CreditManager)
+		cm.UpdateSessionWithDirectTokenTransferBefore(newBlockNum)
 	}
 }
 

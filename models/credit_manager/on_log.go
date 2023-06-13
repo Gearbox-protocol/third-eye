@@ -1,7 +1,6 @@
 package credit_manager
 
 import (
-	"encoding/hex"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
@@ -24,7 +23,7 @@ func (mdl *CreditManager) processExecuteEvents() {
 // fetch events x,i+1 to x,i+1000
 //
 // works for newBlockNum > mdl.lastEventBlock
-func (mdl *CreditManager) OnBlockChange(lastBlockNum, newBlockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
+func (mdl *CreditManager) OnBlockChange(lastBlockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock == lastBlockNum && lastBlockNum >= mdl.DiscoveredAt {
@@ -41,11 +40,6 @@ func (mdl *CreditManager) OnBlockChange(lastBlockNum, newBlockNum int64) (calls 
 		}
 		mdl.lastEventBlock = 0
 	}
-	bytes, _ := hex.DecodeString("95d89b41")
-	calls = append(calls, multicall.Multicall2Call{Target: core.NULL_ADDR, CallData: bytes})
-	processFns = append(processFns, func(multicall.Multicall2Result) {
-		mdl.updateSessionWithDirectTokenTransferBefore(newBlockNum)
-	})
 	return
 }
 

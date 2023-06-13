@@ -13,8 +13,8 @@ import (
 
 // range is [from, to)  or just before newBlockNum
 // - gets all the directokentransfer by block
-func (mdl *CreditManager) updateSessionWithDirectTokenTransferBefore(newBlockNum int64) {
-	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), 0, newBlockNum)
+func (mdl *CreditManager) UpdateSessionWithDirectTokenTransferBefore(tillBlock int64) {
+	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), 0, tillBlock)
 	blockNums := []int64{}
 	for blockNum := range data {
 		blockNums = append(blockNums, blockNum)
@@ -23,7 +23,7 @@ func (mdl *CreditManager) updateSessionWithDirectTokenTransferBefore(newBlockNum
 	for _, blockNum := range blockNums {
 		mdl.processDirectTransfersOnBlock(blockNum, data[blockNum])
 		calls, processFn := mdl.FetchFromDCForChangedSessions(blockNum)
-		results := core.MakeMultiCall(mdl.Client, 0, false, calls)
+		results := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
 		for i, result := range results {
 			processFn[i](result)
 		}
