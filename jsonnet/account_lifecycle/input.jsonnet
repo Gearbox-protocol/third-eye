@@ -351,7 +351,7 @@ local newCollateral = 1;
           txHash: '!#Hash_10',
         },
         {
-          // direc token transfer for YFI
+          // direc token transfer for YFI, price 20000
           address: '#Token_2',
           topics: [
             'Transfer(address,address,uint256)',

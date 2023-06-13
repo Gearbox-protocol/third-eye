@@ -15,8 +15,8 @@ type AccountFactory struct {
 }
 
 func NewAccountFactory(addr string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *AccountFactory {
-	adapter := account_manager.NewAccountManager(common.Address{}.Hex(), discoveredAt, client, repo)
-	repo.AddSyncAdapter(adapter)
+	amAdapter := account_manager.NewAccountManager(common.Address{}.Hex(), discoveredAt, client, repo)
+	repo.AddSyncAdapter(amAdapter)
 	return NewAccountFactoryFromAdapter(
 		ds.NewSyncAdapter(addr, ds.AccountFactory, discoveredAt, client, repo),
 	)

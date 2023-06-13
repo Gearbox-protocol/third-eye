@@ -11,31 +11,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *Pool) createPoolStat() {
-	// datacompressor works for pool address only after the address is registered with contractregister
-	// i.e. discoveredAt
-	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
-		mdl.calculatePoolStat(mdl.lastEventBlock)
-		mdl.lastEventBlock = 0
-		// for remove liquidity
-		for _, removeLiqEvent := range mdl.gatewayHandler.getRemoveLiqEventsAndClear() {
-			// calculate removed liquidity amount in underlying token
-			numerator := new(big.Int).Mul(removeLiqEvent.AmountBI.Convert(), mdl.dieselRate)
-			underlyingRemovedAmount := new(big.Int).Quo(numerator, utils.GetExpInt(27))
-			// set removed  amount fields in poolLedger
-			removeLiqEvent.AmountBI = (*core.BigInt)(underlyingRemovedAmount)
-			removeLiqEvent.Amount = utils.GetFloat64Decimal(underlyingRemovedAmount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals)
-			// add poolLedger to repository
-			mdl.Repo.AddPoolLedger(removeLiqEvent)
-		}
-	}
-}
-
 func (mdl *Pool) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
-	if mdl.lastEventBlock != blockNum {
-		mdl.createPoolStat()
-	}
+	// REVERT_POOL_WRAPPER
+	// if mdl.lastEventBlock != 0 && blockNum != mdl.lastEventBlock && mdl.lastEventBlock >= mdl.DiscoveredAt {
+	// 	mdl.onBlockChangeInternally(mdl.lastEventBlock)
+	// 	mdl.lastEventBlock = 0
+	// }
 	switch txLog.Topics[0] {
 	case core.Topic("AddLiquidity(address,address,uint256,uint256)"):
 		addLiquidityEvent, err := mdl.contractETH.ParseAddLiquidity(txLog)

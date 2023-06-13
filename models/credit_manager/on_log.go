@@ -1,8 +1,10 @@
 package credit_manager
 
 import (
+	"encoding/hex"
 	"math/big"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -18,19 +20,33 @@ func (mdl *CreditManager) processExecuteEvents() {
 	}
 }
 
-// works for newBlockNum > mdl.lastEventBlock
+// x,i event
+// fetch events x,i+1 to x,i+1000
 //
-func (mdl *CreditManager) onBlockChange(newBlockNum int64) {
-	// on each new block
-	mdl.ProcessAccountEvents(newBlockNum)
+// works for newBlockNum > mdl.lastEventBlock
+func (mdl *CreditManager) OnBlockChange(lastBlockNum, newBlockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
-	// only after each event block.
-	if mdl.lastEventBlock != 0 && mdl.lastEventBlock >= mdl.DiscoveredAt {
-		mdl.calculateCMStat(mdl.lastEventBlock)
+	if mdl.lastEventBlock != 0 && mdl.lastEventBlock == lastBlockNum && lastBlockNum >= mdl.DiscoveredAt {
+		//// ON NEW TXHASH
+		mdl.onTxHash("")
+		// ON NEW BLOCK
+		data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), lastBlockNum, lastBlockNum+1)
+		mdl.processDirectTransfersOnBlock(lastBlockNum, data[lastBlockNum])
+		calls, processFns = mdl.FetchFromDCForChangedSessions(lastBlockNum)
+		call, processFn := mdl.getCMCallAndProcessFn(lastBlockNum)
+		if processFn != nil {
+			calls = append(calls, call)
+			processFns = append(processFns, processFn)
+		}
 		mdl.lastEventBlock = 0
-		// set dc data for credit manager to nil
 	}
+	bytes, _ := hex.DecodeString("95d89b41")
+	calls = append(calls, multicall.Multicall2Call{Target: core.NULL_ADDR, CallData: bytes})
+	processFns = append(processFns, func(multicall.Multicall2Result) {
+		mdl.updateSessionWithDirectTokenTransferBefore(newBlockNum)
+	})
+	return
 }
 
 func bytesToUInt16(data []byte) uint16 {
@@ -38,13 +54,6 @@ func bytesToUInt16(data []byte) uint16 {
 }
 
 func (mdl *CreditManager) OnLog(txLog types.Log) {
-	extraLogs := mdl.getv2ExtraLogs(txLog)
-	for _, extraLog := range extraLogs {
-		mdl.logHandler(extraLog)
-	}
-	mdl.logHandler(txLog)
-}
-func (mdl *CreditManager) logHandler(txLog types.Log) {
 	// creditConfigurator events for test
 	// CreditFacadeUpgraded is emitted when creditconfigurator is initialized, so we will receive it on init
 	// although we have already set creditfacadeUpgra
@@ -67,17 +76,11 @@ func (mdl *CreditManager) logHandler(txLog types.Log) {
 		return
 	}
 
-	//
+	// if facade or cm , not configurator
 	mdl.onTxHash(txLog.TxHash.Hex())
-	// on new block
-	// for credit manager stats
-	blockNum := int64(txLog.BlockNumber)
-	if mdl.lastEventBlock != blockNum {
-		mdl.onBlockChange(blockNum)
-	}
-	mdl.lastEventBlock = blockNum
+	mdl.lastEventBlock = int64(txLog.BlockNumber)
 	//
-	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
+	mdl.Repo.GetAccountManager().DeleteTxHash(int64(txLog.BlockNumber), txLog.TxHash.Hex())
 	switch mdl.GetVersion() {
 	case 1:
 		mdl.checkLogV1(txLog)

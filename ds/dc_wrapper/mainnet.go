@@ -8,7 +8,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -46,10 +45,8 @@ func getMask(client core.ClientI, blockNum int64, cfAddr, accountAddr common.Add
 
 }
 
-func (dc *MainnetDC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (dcv2.PoolData, error) {
-	data, err := dc.dc.GetPoolData(opts, _pool)
-	log.CheckFatal(err)
-	latestFormat := dcv2.PoolData{
+func getPoolDataV1(data mainnet.DataTypesPoolData) dcv2.PoolData {
+	return dcv2.PoolData{
 		Addr:                   data.Addr,
 		IsWETH:                 data.IsWETH,
 		Underlying:             data.UnderlyingToken,
@@ -67,17 +64,10 @@ func (dc *MainnetDC) GetPoolData(opts *bind.CallOpts, _pool common.Address) (dcv
 		TimestampLU:            data.TimestampLU,
 		Version:                1,
 	}
-	return latestFormat, nil
 }
 
-func (mainnetDC *MainnetDC) GetCreditManagerData(opts *bind.CallOpts,
-	_creditManager common.Address, borrower common.Address) (dcv2.CreditManagerData, error) {
-	data, err := mainnetDC.dc.GetCreditManagerData(opts, _creditManager, borrower)
-	if err != nil {
-		log.Fatalf("(%s) for cm(%s), borrower(%s) for block %d ", err, _creditManager, borrower, opts.BlockNumber)
-	}
-
-	latestFormat := dcv2.CreditManagerData{
+func getCMDataV1(data mainnet.DataTypesCreditManagerData) dcv2.CreditManagerData {
+	return dcv2.CreditManagerData{
 		Addr:               data.Addr,
 		Underlying:         data.UnderlyingToken,
 		IsWETH:             data.IsWETH,
@@ -89,19 +79,9 @@ func (mainnetDC *MainnetDC) GetCreditManagerData(opts *bind.CallOpts,
 		AvailableLiquidity: data.AvailableLiquidity,
 		CollateralTokens:   data.AllowedTokens,
 	}
-	// for _, adapter := range data.Adapters {
-	// 	latestFormat.Adapters = append(latestFormat.Adapters, dcv2.ContractAdapter{
-	// 		Adapter:         adapter.Adapter,
-	// 		AllowedContract: adapter.AllowedContract,
-	// 	})
-	// }
-	return latestFormat, nil
 }
 
-func (obj *MainnetDC) GetCreditAccountData(opts *bind.CallOpts,
-	creditManager common.Address, borrower common.Address) (dcv2.CreditAccountData, error) {
-	data, err := obj.dc.GetCreditAccountDataExtended(opts, creditManager, borrower)
-	log.CheckFatal(err)
+func (obj *MainnetDC) getCreditAccountData(blockNum int64, data mainnet.DataTypesCreditAccountDataExtended) (dcv2.CreditAccountData, error) {
 	latestFormat := dcv2.CreditAccountData{
 		Addr:                       data.Addr,
 		Borrower:                   data.Borrower,
@@ -121,10 +101,6 @@ func (obj *MainnetDC) GetCreditAccountData(opts *bind.CallOpts,
 		Since:                 data.Since,
 	}
 	//
-	var blockNum int64
-	if opts != nil {
-		blockNum = opts.BlockNumber.Int64()
-	}
 	cfAddr := obj.creditManagerToFilter[latestFormat.CreditManager]
 	mask := getMask(obj.client, blockNum, cfAddr, latestFormat.Addr)
 	latestFormat.Balances = convertTodcv2Balance(data.Balances, mask)

@@ -88,16 +88,23 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 			if err != nil {
 				description, err := yearnContract.Description(opts)
 				if strings.Contains(description, "USD Composite") {
+					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/CompositePriceFeed.sol
 					return ds.CompositeChainlinkPF, false, nil
 				} else if strings.Contains(description, "CurveLP pricefeed") {
+					// https://github.com/Gearbox-protocol/integrations-v2/tree/main/contracts/oracles/curve
 					return ds.CurvePF, false, nil
 				} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
+					//https://github.com/Gearbox-protocol/integrations-v2/blob/main/contracts/oracles/lido/WstETHPriceFeed.sol
 					return ds.YearnPF, false, nil
 				} else if strings.Contains(description, "Bounded") {
+					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/BoundedPriceFeed.sol
 					return ds.ChainlinkPriceFeed, true, nil
 				} else if strings.Contains(description, "Zero pricefeed") {
+					// zero for G-OBS
+					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/ZeroPriceFeed.sol
 					return ds.ZeroPF, false, nil
 				} else if strings.Contains(description, "ZERO (one) priceFeed") {
+					// deprecated not used.
 					return ds.AlmostZeroPF, false, nil
 				} else {
 					log.Info(description, oracle)

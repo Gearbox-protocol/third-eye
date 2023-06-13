@@ -38,14 +38,15 @@ func NewAggregatedBlockFeed(client core.ClientI, repo ds.RepositoryI, interval i
 			Contract: &schemas.Contract{
 				// DiscoveredAt: discoveredAt,
 				// FirstLogAt:   discoveredAt,
+				Address:      ds.AggregatedBlockFeed,
 				ContractName: ds.AggregatedBlockFeed,
 				Client:       client,
 			},
 			// if no yearn feed is added , then lastSync = math.MaxInt64 can overflow.
 			LastSync: math.MaxInt64 - 1,
 		},
-		Repo:      repo,
-		OnlyQuery: true,
+		Repo:            repo,
+		DataProcessType: ds.ViaQuery,
 	}
 	return &AggregatedBlockFeed{
 		SyncAdapter: syncAdapter,
@@ -68,7 +69,7 @@ func (mdl *AggregatedBlockFeed) AddYearnFeed(adapter ds.SyncAdapterI) {
 }
 
 func (mdl *AggregatedBlockFeed) GetQueryFeeds() []*QueryPriceFeed {
-	feeds := []*QueryPriceFeed{}
+	feeds := make([]*QueryPriceFeed, 0, len(mdl.QueryFeeds))
 	for _, feed := range mdl.QueryFeeds {
 		feeds = append(feeds, feed)
 	}
@@ -124,7 +125,4 @@ func (mdl AggregatedBlockFeed) GetDepFetcher() *QueryPFDependencies {
 }
 
 func (mdl *AggregatedBlockFeed) OnLog(txLog types.Log) {
-}
-
-func (mdl AggregatedBlockFeed) Clear() {
 }

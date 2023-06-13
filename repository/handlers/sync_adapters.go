@@ -29,39 +29,24 @@ import (
 )
 
 type SyncAdaptersRepo struct {
-	kit             *ds.AdapterKit
-	AggregatedFeed  *aggregated_block_feed.AggregatedBlockFeed
 	r               ds.RepositoryI
 	client          core.ClientI
 	extras          *ExtrasRepo
 	rollbackAllowed bool
 	mu              *sync.Mutex
+	*AdapterKitHandler
 }
 
 func NewSyncAdaptersRepo(client core.ClientI, repo ds.RepositoryI, cfg *config.Config, extras *ExtrasRepo) *SyncAdaptersRepo {
 	obj := &SyncAdaptersRepo{
-		kit:             ds.NewAdapterKit(),
-		client:          client,
-		r:               repo,
-		extras:          extras,
-		rollbackAllowed: cfg.Rollback,
-		mu:              &sync.Mutex{},
+		client:            client,
+		r:                 repo,
+		extras:            extras,
+		rollbackAllowed:   cfg.Rollback,
+		mu:                &sync.Mutex{},
+		AdapterKitHandler: NewAdpterKitHandler(client, repo, cfg),
 	}
-	// aggregated block feed
-	obj.AggregatedFeed = aggregated_block_feed.NewAggregatedBlockFeed(client, repo, cfg.Interval)
-	obj.kit.Add(obj.AggregatedFeed)
 	return obj
-}
-
-func (repo *SyncAdaptersRepo) addSyncAdapter(adapterI ds.SyncAdapterI) {
-	// if ds.GearToken == adapterI.GetName() {
-	// 	repo.GearTokenAddr = adapterI.GetAddress()
-	// }
-	if adapterI.GetName() == ds.QueryPriceFeed {
-		repo.AggregatedFeed.AddYearnFeed(adapterI)
-	} else {
-		repo.kit.Add(adapterI)
-	}
 }
 
 // load/save
@@ -69,7 +54,7 @@ func (repo *SyncAdaptersRepo) LoadSyncAdapters(db *gorm.DB) {
 	defer utils.Elapsed("loadSyncAdapters")()
 	//
 	data := []*ds.SyncAdapter{}
-	err := db.Find(&data, "disabled = ? OR type = 'PriceOracle'", false).Error
+	err := db.Find(&data, "disabled = ? OR type = 'PriceOracle' ORDER BY type", false).Error
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -85,9 +70,10 @@ func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
 	for lvlIndex := 0; lvlIndex < repo.kit.Len(); lvlIndex++ {
 		for repo.kit.Next(lvlIndex) {
 			adapter := repo.kit.Get(lvlIndex)
-			if adapter.GetName() != ds.AggregatedBlockFeed {
-				adapters = append(adapters, adapter.GetAdapterState())
+			if ds.IsWrapperAdapter(adapter.GetName()) {
+				continue
 			}
+			adapters = append(adapters, adapter.GetAdapterState()...)
 			if adapter.HasUnderlyingState() {
 				err := tx.Clauses(clause.OnConflict{
 					UpdateAll: true,
@@ -97,10 +83,9 @@ func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
 		}
 		repo.kit.Reset(lvlIndex)
 	}
-	// save qyery feeds from AggregatedFeed
-	for _, adapter := range repo.AggregatedFeed.GetQueryFeeds() {
-		adapters = append(adapters, adapter.GetAdapterState())
-	}
+	// save wrapper underlying states
+	adapters = append(adapters, repo.AdapterKitHandler.getAdapterState()...)
+	//
 	err := tx.Clauses(clause.OnConflict{
 		UpdateAll: true,
 	}).CreateInBatches(adapters, 50).Error
@@ -182,31 +167,6 @@ func (repo *SyncAdaptersRepo) GetKit() *ds.AdapterKit {
 	return repo.kit
 }
 
-func (repo *SyncAdaptersRepo) GetAdapter(addr string) ds.SyncAdapterI {
-	adapter := repo.kit.GetAdapter(addr)
-	if adapter == nil {
-		feeds := repo.AggregatedFeed.GetQueryFeeds()
-		for _, feed := range feeds {
-			if feed.GetAddress() == addr {
-				return feed
-			}
-		}
-	}
-	return adapter
-}
-
-func (repo SyncAdaptersRepo) GetAdapterAddressByName(name string) []string {
-	return repo.kit.GetAdapterAddressByName(name)
-}
-
-func (repo *SyncAdaptersRepo) GetYearnFeedAddrs() (addrs []string) {
-	feeds := repo.AggregatedFeed.GetQueryFeeds()
-	for _, adapter := range feeds {
-		addrs = append(addrs, adapter.GetAddress())
-	}
-	return
-}
-
 ////////////////////
 // for price oracle
 ////////////////////
@@ -241,7 +201,7 @@ func (repo *SyncAdaptersRepo) GetPriceOracleByDiscoveredAt(blockNum int64) (stri
 	addrProvider := repo.GetAdapter(addrProviderAddr[0])
 	priceOracle := addrProvider.GetDetailsByKey(fmt.Sprintf("%d", blockNum))
 	if priceOracle == "" {
-		return "", fmt.Errorf("Not Found")
+		return "", fmt.Errorf("not Found")
 	}
 	return priceOracle, nil
 }

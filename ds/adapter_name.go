@@ -3,23 +3,32 @@ package ds
 import "log"
 
 const (
-	AddressProvider     = "AddressProvider"
-	ContractRegister    = "ContractRegister"
-	PriceOracle         = "PriceOracle"
-	AccountFactory      = "AccountFactory"
-	ACL                 = "ACL"
-	CreditManager       = "CreditManager"
-	Pool                = "Pool"
-	ChainlinkPriceFeed  = "ChainlinkPriceFeed"
-	QueryPriceFeed      = "QueryPriceFeed"
-	CreditFilter        = "CreditFilter"
-	GearToken           = "GearToken"
-	Treasury            = "Treasury"
-	AccountManager      = "AccountManager"
+	AddressProvider    = "AddressProvider"
+	ContractRegister   = "ContractRegister"
+	PriceOracle        = "PriceOracle"
+	AccountFactory     = "AccountFactory"
+	ACL                = "ACL"
+	CreditManager      = "CreditManager"
+	Pool               = "Pool"
+	ChainlinkPriceFeed = "ChainlinkPriceFeed"
+	QueryPriceFeed     = "QueryPriceFeed"
+	CreditFilter       = "CreditFilter"
+	GearToken          = "GearToken"
+	Treasury           = "Treasury"
+	AccountManager     = "AccountManager"
+	CreditConfigurator = "CreditConfigurator"
+	PoolLMRewards      = "PoolLMRewards"
+	// Wrapper
 	AggregatedBlockFeed = "AggregatedBlockFeed"
-	CreditConfigurator  = "CreditConfigurator"
-	PoolLMRewards       = "PoolLMRewards"
+	AdminWrapper        = "AdminWrapper"
+	CFWrapper           = "CFWrapper"
+	CMWrapper           = "CMWrapper"
+	PoolWrapper         = "PoolWrapper"
 )
+
+func IsWrapperAdapter(name string) bool {
+	return name == CFWrapper || name == AggregatedBlockFeed
+}
 
 const (
 	UnknownPF            = "UnknownPF"

@@ -148,7 +148,6 @@ func (ad *AccountData) GetNoSessionTxs() (noSessionTxs []string) {
 	return
 }
 
-//
 type DirectTransferManager struct {
 	// account => blockNum => txhash => transfers
 	accountToData map[string]*AccountData

@@ -43,7 +43,7 @@ func NewTreasuryFromAdapter(adapter *ds.SyncAdapter) *Treasury {
 	obj := &Treasury{
 		SyncAdapter: adapter,
 	}
-	obj.OnlyQuery = true
+	obj.DataProcessType = ds.ViaQuery
 	obj.node = &pkg.Node{
 		Client: adapter.Client,
 	}

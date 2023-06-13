@@ -2,14 +2,13 @@ package credit_manager
 
 import (
 	"fmt"
-	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
+	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -59,9 +58,22 @@ func (mdl *CreditManager) GetUnderlyingToken() string {
 	return mdl.State.UnderlyingToken
 }
 
-func (mdl *CreditManager) calculateCMStat(blockNum int64) {
+func (mdl *CreditManager) getCMCallAndProcessFn(blockNum int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(blockNum, common.HexToAddress(mdl.Address))
+	if err != nil {
+		log.Fatalf("[CM:%s] Failed preparing get Cm call %v", mdl.Address, err)
+	}
+	return call, func(result multicall.Multicall2Result) {
+		state, err := resultFn(result.ReturnData)
+		if err != nil {
+			log.Fatalf("[CM:%s] Cant get data from data compressor", mdl.Address, err)
+		}
+		mdl.calculateCMStat(blockNum, state)
+	}
+}
+func (mdl *CreditManager) calculateCMStat(blockNum int64, state dcv2.CreditManagerData) {
 	// for checking if the rewardClaimed by user on convex, is from allowed protocols
-	state := mdl.addAdaptersAndReturnDCData(blockNum)
+	mdl.addProtocolAdapters(state)
 	//
 	mdl.State.IsWETH = state.IsWETH
 	//
@@ -111,23 +123,22 @@ func (mdl *CreditManager) calculateCMStat(blockNum int64) {
 	mdl.Repo.AddCreditManagerStats(stats)
 }
 
-func (mdl *CreditManager) addAdaptersAndReturnDCData(blockNum int64) (state dataCompressorv2.CreditManagerData) {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	}
-
-	state, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(
-		opts,
-		common.HexToAddress(mdl.GetAddress()),
-		common.HexToAddress(mdl.GetAddress()),
-	)
-	if err != nil {
-		log.Fatal("[CreditManagerModel] Cant get data from data compressor", err)
-	}
+func (mdl *CreditManager) addProtocolAdapters(state dcv2.CreditManagerData) {
 	newProtocols := map[string]bool{}
 	for _, entry := range state.Adapters {
 		newProtocols[entry.AllowedContract.Hex()] = true
 	}
 	mdl.allowedProtocols = newProtocols
-	return state
+}
+func (mdl *CreditManager) addProtocolAdaptersLocally(blockNum int64) {
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(blockNum, common.HexToAddress(mdl.GetAddress()))
+	if err != nil {
+		log.Fatal("Failed preparing credit manager data", err)
+	}
+	results := core.MakeMultiCall(mdl.Client, blockNum, false, []multicall.Multicall2Call{call})
+	state, err := resultFn(results[0].ReturnData)
+	if err != nil {
+		log.Fatal("Failed call", err)
+	}
+	mdl.addProtocolAdapters(state)
 }

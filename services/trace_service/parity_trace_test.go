@@ -1,7 +1,6 @@
 package trace_service
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -11,7 +10,6 @@ import (
 // doesn't work
 func _TestParityFetcher(t *testing.T) {
 	rpc := utils.GetEnvOrDefault("GOERLI_ETH_PROVIDER", "")
-	fmt.Println(rpc)
 	if rpc == "" {
 		return
 	}

@@ -159,9 +159,8 @@ func (repo *Repository) AfterSync(syncTill int64) {
 	// for direct token transfer
 	repo.accountManager.Clear()
 	// chainlink and uniswap prices
-	repo.AggregatedFeed.Clear()
 }
 
 func (repo *Repository) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
-	repo.AggregatedFeed.GetDepFetcher().ChainlinkPriceUpdatedAt(token, blockNums)
+	repo.GetAggregatedFeed().GetDepFetcher().ChainlinkPriceUpdatedAt(token, blockNums)
 }

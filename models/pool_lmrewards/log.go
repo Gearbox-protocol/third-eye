@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-//
 func (mdl *PoolLMRewards) GetAddrsForLogs() (addrs []common.Address) {
 	addrs = append(addrs, common.HexToAddress(mdl.Address))
 	return addrs
@@ -132,8 +131,8 @@ func (mdl *PoolLMRewards) addUserReward(pool, user string, reward *big.Int) {
 	)
 }
 
-//
-func (mdl *PoolLMRewards) GetOtherAddrsForLogs() (addrs []common.Address) {
+// PoolLMRewards has fake address so no need for adding .Address value to addrs
+func (mdl *PoolLMRewards) GetAllAddrsForLogs() (addrs []common.Address) {
 	for addr, poolAndUToken := range mdl.Repo.GetDieselTokens() {
 		addrs = append(addrs, common.HexToAddress(addr))
 		token := mdl.Repo.GetToken(addr)

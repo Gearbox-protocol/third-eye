@@ -46,7 +46,7 @@ func NewAccountManagerFromAdapter(adapter *ds.SyncAdapter) *AccountManager {
 		SyncAdapter: adapter,
 		isAccount:   map[string]bool{},
 	}
-	obj.OnlyQuery = true
+	obj.DataProcessType = ds.ViaQuery
 	obj.node = &pkg.Node{
 		Client: adapter.Client,
 	}
@@ -123,12 +123,4 @@ func (mdl *AccountManager) getAccountAddrs() []string {
 func (mdl *AccountManager) AfterSyncHook(syncedTill int64) {
 	mdl.Repo.GetAccountManager().Init()
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
-}
-
-func (mdl *AccountManager) SetDetails(obj interface{}) {
-	account, ok := obj.(string)
-	if !ok {
-		log.Fatal("Parsing account for setdetails failed")
-	}
-	mdl.AddAccount(account)
 }

@@ -19,7 +19,7 @@ func TestSyncAdapters(t *testing.T) {
 func getAdapters(kit *ds.AdapterKit) (array []*ds.SyncAdapter) {
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
 		for kit.Next(lvlIndex) {
-			array = append(array, kit.Get(lvlIndex).GetAdapterState())
+			array = append(array, kit.Get(lvlIndex).GetAdapterState()...)
 		}
 		kit.Reset(lvlIndex)
 	}

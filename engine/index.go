@@ -130,6 +130,7 @@ func (e *Engine) LastSyncedBlock() int64 {
 func (e *Engine) Sync(syncTill int64) {
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
+	// log.Info("No of calls before syncing: ", e.Client.(*ethclient.Client).GetNoOfCalls())
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
 		wg := &sync.WaitGroup{}
 		for kit.Next(lvlIndex) {
@@ -139,7 +140,7 @@ func (e *Engine) Sync(syncTill int64) {
 			// }
 			if !adapter.IsDisabled() {
 				wg.Add(1)
-				if adapter.OnlyQueryAllowed() {
+				if adapter.GetDataProcessType() == ds.ViaQuery {
 					if e.UsingThreads {
 						go e.QueryModel(adapter, syncTill, wg)
 					} else {
@@ -153,6 +154,7 @@ func (e *Engine) Sync(syncTill int64) {
 					}
 				}
 			}
+			// log.Infof("No of ethclient's calls for %s from lvl %d: %d", adapter.GetAddress(), lvlIndex, e.Client.(*ethclient.Client).GetNoOfCalls())
 		}
 		kit.Reset(lvlIndex)
 		wg.Wait()
@@ -167,16 +169,14 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 		return
 	}
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
-	addrsForLogs := []common.Address{common.HexToAddress(mdl.GetAddress())}
-	addrsForLogs = append(addrsForLogs, mdl.GetOtherAddrsForLogs()...) // currently being used for composite eth/usd
 	mdl.WillBeSyncedTo(syncTill)
 	//
-	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsForLogs, mdl.Topics())
-	log.Infof("Sync %s(%s) from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), syncFrom, syncTill, len(txLogs))
+	txLogs, err := e.GetLogs(syncFrom, syncTill, mdl.GetAllAddrsForLogs(), mdl.Topics())
+	log.Infof("Sync %s(%s)[addrs: %d] from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), len(mdl.GetAllAddrsForLogs()), syncFrom, syncTill, len(txLogs))
 	if err != nil {
 		log.Fatal(err)
 	}
-	if mdl.GetHasOnLogs() {
+	if mdl.GetDataProcessType() == ds.ViaMultipleLogs {
 		for _, txLog := range txLogs {
 			e.isEventPausedOrUnParsed(txLog)
 		}

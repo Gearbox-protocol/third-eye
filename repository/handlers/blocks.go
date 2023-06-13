@@ -66,6 +66,8 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	}
 }
 
+var lastSaveBlockForTCP int64 = 0
+
 func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
@@ -78,7 +80,10 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
 
-	repo.saveCurrentPrices(tx, blockNum)
+	if blockNum-lastSaveBlockForTCP > core.NoOfBlocksPerMin*5 {
+		repo.saveCurrentPrices(tx, blockNum)
+		lastSaveBlockForTCP = blockNum
+	}
 }
 
 func (repo *BlocksRepo) saveCurrentPrices(tx *gorm.DB, blockNum int64) {

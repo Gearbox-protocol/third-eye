@@ -18,8 +18,7 @@ type SyncAdapter struct {
 	*schemas.SyncAdapterSchema
 	UnderlyingStatePresent bool        `gorm:"-" json:"-"`
 	Repo                   RepositoryI `gorm:"-" json:"-"`
-	OnlyQuery              bool        `gorm:"-" json:"-"`
-	HasOnLogs              bool        `gorm:"-" json:"-"`
+	DataProcessType        int         `gorm:"-" json:"-"`
 	WillSyncTill           int64       `gorm:"-" json:"-"`
 }
 
@@ -34,42 +33,45 @@ func (s *SyncAdapter) SetVersion(version int16) {
 	s.V = version
 }
 
+const (
+	ViaLog = iota
+	ViaMultipleLogs
+	ViaQuery
+)
+
 type SyncAdapterI interface {
-	OnLog(txLog types.Log)
-	OnLogs(txLog []types.Log)
-	GetHasOnLogs() bool
-	GetLastSync() int64
-	SetLastSync(int64)
-	GetAddress() string
-	GetName() string
-	AfterSyncHook(syncTill int64)
-	IsDisabled() bool
-	Disable()
-	GetFirstLog() int64
-	HasUnderlyingState() bool
-	GetUnderlyingState() interface{}
+	OnLog(txLog types.Log)           //
+	OnLogs(txLog []types.Log)        //
+	GetDataProcessType() int         //
+	GetLastSync() int64              //
+	GetAddress() string              //
+	GetName() string                 //
+	AfterSyncHook(syncTill int64)    //
+	HasUnderlyingState() bool        //
+	GetUnderlyingState() interface{} //
 	SetUnderlyingState(obj interface{})
-	SetDetails(obj interface{})
-	GetAdapterState() *SyncAdapter
-	OnlyQueryAllowed() bool
-	Query(queryTill int64)
-	WillBeSyncedTo(blockNum int64)
-	disableOnBlock(currentBlock int64)
+	GetAdapterState() []*SyncAdapter //
+	Query(queryTill int64)           //
+	WillBeSyncedTo(blockNum int64)   //
+	IsDisabled() bool                //
 	SetBlockToDisableOn(blockNum int64)
-	GetBlockToDisableOn() int64
-	GetDiscoveredAt() int64
-	GetDetailsByKey(key string) string
-	GetDetails() core.Json
-	GetVersion() int16
-	GetOtherAddrsForLogs() []common.Address
-	Topics() [][]common.Hash
+	GetBlockToDisableOn() int64           //
+	GetDiscoveredAt() int64               //
+	GetDetailsByKey(key string) string    //
+	GetDetails() core.Json                //
+	GetVersion() int16                    //
+	GetAllAddrsForLogs() []common.Address //
+	Topics() [][]common.Hash              //
 }
 
 func (s SyncAdapter) Topics() [][]common.Hash {
 	return nil
 }
 
-func (s SyncAdapter) GetOtherAddrsForLogs() (addrs []common.Address) {
+func (s SyncAdapter) GetAllAddrsForLogs() (addrs []common.Address) {
+	if s.GetAddress() != "" {
+		addrs = append(addrs, common.HexToAddress(s.GetAddress()))
+	}
 	if s.Details == nil {
 		return
 	}
@@ -93,8 +95,6 @@ func InterfaceToAddr(v interface{}) common.Address {
 	}
 	panic("")
 }
-func (s *SyncAdapter) SetDetails(obj interface{}) {
-}
 func (s *SyncAdapter) WillBeSyncedTo(blockNum int64) {
 	s.WillSyncTill = blockNum
 }
@@ -112,25 +112,25 @@ func (s *SyncAdapter) GetDetailsByKey(key string) string {
 func (s *SyncAdapter) GetDetails() core.Json {
 	return s.Details
 }
-func (s *SyncAdapter) GetHasOnLogs() bool {
-	return s.HasOnLogs
-}
 
+func (s *SyncAdapter) GetDataProcessType() int {
+	return s.DataProcessType
+}
 func (s *SyncAdapter) OnLogs(txLog []types.Log) {
 
 }
 
+// disable if this block is disable block or above
 func (s *SyncAdapter) disableOnBlock(currentBlock int64) {
 	if s.BlockToDisableOn != 0 && currentBlock >= s.BlockToDisableOn {
-		// log.Warnf("DisableOnBlock called at currentBlock(%d) and s.BlockToDisableOn(%d) for %s(%s)",
-		// 	currentBlock, s.BlockToDisableOn, s.ContractName, s.Address)
-		s.Disable()
+		s.Disabled = true
 	}
 }
 
+// will sync till this block.
+// used in CreditFilter, priceOracle and priceFeed
 func (s *SyncAdapter) SetBlockToDisableOn(blockNum int64) {
 	s.BlockToDisableOn = blockNum
-	// log.Warnf("Block to disable on set for %s(%s) at %d", s.GetName(), s.GetAddress(), blockNum)
 }
 
 func (s *SyncAdapter) GetBlockToDisableOn() int64 {
@@ -140,11 +140,7 @@ func (s *SyncAdapter) GetBlockToDisableOn() int64 {
 	return s.BlockToDisableOn
 }
 
-func (s *SyncAdapter) OnlyQueryAllowed() bool {
-	return s.OnlyQuery
-}
-
-func (s *SyncAdapter) SetLastSync(lastSync int64) {
+func (s *SyncAdapter) setLastSync(lastSync int64) {
 	s.LastSync = lastSync
 }
 
@@ -159,7 +155,7 @@ func (s *SyncAdapter) SetError(err error) {
 }
 
 func (s *SyncAdapter) AfterSyncHook(syncTill int64) {
-	s.SetLastSync(syncTill)
+	s.setLastSync(syncTill)
 	s.disableOnBlock(syncTill)
 }
 func (s *SyncAdapter) Query(queryTill int64) {
@@ -192,8 +188,8 @@ func (s *SyncAdapter) HasUnderlyingState() bool {
 	return s.UnderlyingStatePresent
 }
 
-func (s *SyncAdapter) GetAdapterState() *SyncAdapter {
-	return s
+func (s *SyncAdapter) GetAdapterState() []*SyncAdapter {
+	return []*SyncAdapter{s}
 }
 
 // func (mdl *SyncAdapter) OnLog(txLog types.Log) {

@@ -5,6 +5,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/account_manager"
 )
 
 func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string, logID uint) {
@@ -52,8 +53,8 @@ func (repo *Repository) GetAccountManager() *ds.DirectTransferManager {
 func (repo *Repository) AddAccountAddr(account string) {
 	addrs := repo.GetAdapterAddressByName(ds.AccountManager)
 	if len(addrs) == 1 {
-		adapter := repo.GetAdapter(addrs[0])
-		adapter.SetDetails(account)
+		acntManager := repo.GetAdapter(addrs[0])
+		acntManager.(*account_manager.AccountManager).AddAccount(account)
 	} else {
 		log.Fatalf("%d account manager model available in adapter kit", len(addrs))
 	}

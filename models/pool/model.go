@@ -50,11 +50,19 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		UnderlyingToken: underlyingToken.Hex(),
 	})
 	// create a pool stat snapshot at first log of the pool
-	pool.lastEventBlock = pool.DiscoveredAt
-	pool.createPoolStat()
+	pool.onBlockChangeInternally(pool.DiscoveredAt)
 
 	return pool
 }
+
+// REVERT_POOL_WRAPPER
+// func (p *Pool) AfterSyncHook(syncedTill int64) {
+// 	if p.lastEventBlock != 0 {
+// 		p.onBlockChangeInternally(p.lastEventBlock)
+// 		p.lastEventBlock = 0
+// 	}
+// 	p.SyncAdapter.AfterSyncHook(syncedTill)
+// }
 
 func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
 	poolAddr := common.HexToAddress(adapter.Address)
@@ -67,11 +75,6 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
 		gatewayHandler: NewGatewayHandler(gateway),
 	}
 	return obj
-}
-
-func (mdl *Pool) AfterSyncHook(syncTill int64) {
-	mdl.createPoolStat()
-	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }
 
 func (mdl Pool) Topics() [][]common.Hash {
@@ -95,9 +98,11 @@ func (mdl Pool) Topics() [][]common.Hash {
 	}
 }
 
-func (mdl Pool) GetOtherAddrsForLogs() []common.Address {
+func (mdl Pool) GetAllAddrsForLogs() (addrs []common.Address) {
+	addrs = append(addrs, mdl.SyncAdapter.GetAllAddrsForLogs()...)
 	if mdl.gatewayHandler.Gateway == core.NULL_ADDR {
-		return nil
+		return
 	}
-	return []common.Address{mdl.gatewayHandler.Gateway, mdl.gatewayHandler.Token}
+	addrs = append(addrs, mdl.gatewayHandler.Gateway, mdl.gatewayHandler.Token)
+	return
 }

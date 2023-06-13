@@ -103,7 +103,7 @@ func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOrac
 		} else if adapter.GetName() != ds.QueryPriceFeed {
 			adapter.SetBlockToDisableOn(newTokenOracle.BlockNumber)
 		} else {
-			repo.adapters.AggregatedFeed.DisableYearnFeed(newTokenOracle.Token, oldFeed, newTokenOracle.BlockNumber)
+			repo.adapters.GetAggregatedFeed().DisableYearnFeed(newTokenOracle.Token, oldFeed, newTokenOracle.BlockNumber)
 		}
 	}
 	// set current state of oracle for token.
@@ -160,7 +160,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 			})
 			repo.zeroPFs[newTokenOracle.Oracle] = true // oracle and feed are same for non-chainlink price feed
 		} else {
-			repo.adapters.AggregatedFeed.AddFeedOrToken(
+			repo.adapters.GetAggregatedFeed().AddFeedOrToken(
 				newTokenOracle.Token,
 				newTokenOracle.Oracle,
 				newTokenOracle.FeedType,
