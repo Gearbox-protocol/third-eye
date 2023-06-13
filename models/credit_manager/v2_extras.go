@@ -2,7 +2,6 @@ package credit_manager
 
 import (
 	"math/big"
-	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
@@ -12,7 +11,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 func (mdl *CreditManager) setv2AddrIfNotPresent() {
@@ -31,86 +29,47 @@ func (mdl *CreditManager) setv2AddrIfNotPresent() {
 	mdl.Details["configurator"] = configuratorAddr.Hex()
 }
 
-type OldAddrDetails struct {
-	block   uint64
-	logId   uint
-	Address string
-}
 type CMv2Fields struct {
-	configuratorSyncer *SubsidiarySyncer
-	facadeSyncer       *SubsidiarySyncer
+	multicall   ds.MultiCallProcessor
+	addrChanged bool
 	//
-	multicall ds.MultiCallProcessor
-	//
-	contractETHV2        *creditManagerv2.CreditManagerv2
-	facadeContractV2     *creditFacade.CreditFacade
-	ignoreLogsForOldAddr map[string]*OldAddrDetails
+	contractETHV2    *creditManagerv2.CreditManagerv2
+	facadeContractV2 *creditFacade.CreditFacade
 }
 
-func (mdl *CreditManager) setCreditFacadeSyncer(creditFacadeAddr string, oldAddrDetails *OldAddrDetails) {
+func (mdl *CreditManager) setCreditFacadeSyncer(creditFacadeAddr string) {
 	if mdl.Details == nil {
 		mdl.Details = map[string]interface{}{}
+	}
+
+	oldFacade := mdl.GetDetailsByKey("facade")
+	if oldFacade != "" && oldFacade == creditFacadeAddr {
+		return
 	}
 	mdl.Details["facade"] = creditFacadeAddr
-
-	if oldAddrDetails != nil && oldAddrDetails.Address == creditFacadeAddr {
-		return
-	}
-	if oldAddrDetails != nil {
-		mdl.ignoreLogsForOldAddr[oldAddrDetails.Address] = oldAddrDetails
-		//
-		mdl.facadeSyncer = NewSubsidiarySyncer(mdl.Client, creditFacadeAddr, nil)
-		mdl.facadeSyncer.FetchLogs(1, mdl.WillSyncTill)
-	}
+	mdl.addrChanged = true
 }
 
-func (mdl *CreditManager) setConfiguratorSyncer(configuratorAddr string, oldAddrDetails *OldAddrDetails) {
+func (mdl *CreditManager) setConfiguratorSyncer(configuratorAddr string) {
 	if mdl.Details == nil {
 		mdl.Details = map[string]interface{}{}
 	}
-	mdl.Details["configurator"] = configuratorAddr
-	if oldAddrDetails != nil && oldAddrDetails.Address == configuratorAddr {
+	oldconfigurator := mdl.GetDetailsByKey("configurator")
+	if oldconfigurator != "" && oldconfigurator == configuratorAddr {
 		return
 	}
-	if oldAddrDetails != nil {
-		mdl.ignoreLogsForOldAddr[oldAddrDetails.Address] = oldAddrDetails
-		//
-		mdl.configuratorSyncer = NewSubsidiarySyncer(mdl.Client, configuratorAddr, [][]common.Hash{
-			{
-				core.Topic("CreditFacadeUpgraded(address)"),
-				core.Topic("FeesUpdated(uint16,uint16,uint16,uint16,uint16)"),
-			},
-		})
-		mdl.configuratorSyncer.FetchLogs(1, mdl.WillSyncTill)
-	}
+	mdl.Details["configurator"] = configuratorAddr
+	mdl.addrChanged = true
+}
+
+func (mdl *CreditManager) IsAddrChanged() bool {
+	defer func() { mdl.addrChanged = false }()
+	return mdl.addrChanged
 }
 
 func (mdl *CreditManager) WillBeSyncedTo(blockNum int64) {
-	// if mdl.configuratorSyncer != nil {
-	// 	mdl.configuratorSyncer.FetchLogs(mdl.LastSync+1, blockNum)
-	// }
-	// if mdl.facadeSyncer != nil {
-	// 	mdl.facadeSyncer.FetchLogs(mdl.LastSync+1, blockNum)
-	// }
 	mdl.SyncAdapter.WillBeSyncedTo(blockNum)
 }
-
-func (mdl CreditManager) getv2ExtraLogs(txLog types.Log) (ans []types.Log) {
-	if mdl.configuratorSyncer != nil {
-		ans = append(ans, mdl.configuratorSyncer.GetLogsBefore(txLog)...)
-	}
-	if mdl.facadeSyncer != nil {
-		ans = append(ans, mdl.facadeSyncer.GetLogsBefore(txLog)...)
-	}
-	sort.SliceStable(ans, func(i, j int) bool {
-		return ans[i].BlockNumber < ans[j].BlockNumber ||
-			(ans[i].BlockNumber == ans[j].BlockNumber && ans[i].Index < ans[j].Index)
-	})
-	return
-}
-
-//
-//
 
 func (mdl *CreditManager) GetCreditFacadeAddr() string {
 	return mdl.GetDetailsByKey("facade")

@@ -12,7 +12,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type Collateral struct {
@@ -88,8 +87,9 @@ func (mdl *CreditManager) GetAbi() {
 }
 
 func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
+	//
 	obj := &CreditManager{
-		CMv2Fields:      CMv2Fields{ignoreLogsForOldAddr: make(map[string]*OldAddrDetails)},
+		CMv2Fields:      CMv2Fields{},
 		SyncAdapter:     adapter,
 		UpdatedSessions: make(map[string]int),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
@@ -123,9 +123,9 @@ func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 		// set facade and configurator in map
 		obj.setv2AddrIfNotPresent()
 		// credit facade syncer
-		obj.setCreditFacadeSyncer(obj.GetDetailsByKey("facade"), nil)
+		obj.setCreditFacadeSyncer(obj.GetDetailsByKey("facade"))
 		// set credit cofigurator syncer
-		obj.setConfiguratorSyncer(obj.GetDetailsByKey("configurator"), nil)
+		obj.setConfiguratorSyncer(obj.GetDetailsByKey("configurator"))
 	}
 	return obj
 }
@@ -136,13 +136,5 @@ func (mdl *CreditManager) GetUnderlyingDecimal() int8 {
 }
 
 func (mdl *CreditManager) AfterSyncHook(syncTill int64) {
-	// process remaining v2 events, if facade or configurator was updated.
-	mdl.OnLog(types.Log{BlockNumber: uint64(syncTill), Index: 10_000_000})
-	// ON NEW BLOCKNUM
-	// try with blocknum greater than syncTill
-	// so that if there is direct transfer and some credit manager event
-	// at synctill == mdl.LasteventBlock it is processed
-	mdl.OnBlockChange(mdl.lastEventBlock)
-	mdl.updateSessionWithDirectTokenTransferBefore(syncTill + 1)
 	mdl.SyncAdapter.AfterSyncHook(syncTill)
 }

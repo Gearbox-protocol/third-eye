@@ -8,7 +8,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -22,16 +21,16 @@ type OrderedMap[T any] struct {
 
 func NewOrderedMap[T any]() OrderedMap[T] {
 	return OrderedMap[T]{
-		m:    make(map[string]T),
+		m:    make(map[string]T), // adapter by its actual addr, like creditmanager uses cf , cc but it can be fetched only with creditmanager addr from outside
 		allM: make(map[string]T),
 		a:    make([]T, 0),
 	}
 }
 
-func (x OrderedMap[T]) Get(name string) T {
-	return x.m[name]
+func (x OrderedMap[T]) Get(addr string) T {
+	return x.m[addr]
 }
-func (x OrderedMap[T]) getFromLogAddr(name string) T {
+func (x OrderedMap[T]) GetFromLogAddr(name string) T {
 	return x.allM[name]
 }
 func (x *OrderedMap[T]) Add(addr string, allAddrsForAdapter []common.Address, val T) {
@@ -54,7 +53,8 @@ type SyncWrapper struct {
 	ViaDataProcess int
 	name           string
 	lastSync       int64
-	client         core.ClientI
+	Client         core.ClientI
+	WillSyncTill   int64
 }
 
 func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
@@ -63,7 +63,7 @@ func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
 		ViaDataProcess: -1,
 		name:           name,
 		lastSync:       math.MaxInt64 - 10,
-		client:         client,
+		Client:         client,
 	}
 }
 
@@ -194,23 +194,16 @@ func (s SyncWrapper) onBlockChange(lastBlockNum int64) {
 				processFns = append(processFns, processFn)
 				calls = append(calls, call)
 			}
-		case *credit_manager.CreditManager:
-			call, processFn := v.OnBlockChange(lastBlockNum)
-			// if process fn is not null
-			if processFn != nil {
-				processFns = append(processFns, processFn...)
-				calls = append(calls, call...)
-			}
 		}
-	}
-	results := core.MakeMultiCall(s.client, lastBlockNum, false, calls)
-	for ind, result := range results {
-		processFns[ind](result)
+		results := core.MakeMultiCall(s.Client, lastBlockNum, false, calls)
+		for ind, result := range results {
+			processFns[ind](result)
+		}
 	}
 }
 
 func (s SyncWrapper) OnLog(txLog types.Log) {
-	adapter := s.Adapters.getFromLogAddr(txLog.Address.Hex())
+	adapter := s.Adapters.GetFromLogAddr(txLog.Address.Hex())
 	if adapter.GetLastSync() < int64(txLog.BlockNumber) {
 		adapter.OnLog(txLog)
 	}
@@ -233,7 +226,6 @@ func (w *SyncWrapper) GetAllAddrsForLogs() (addrs []common.Address) {
 	addrs = make([]common.Address, 0, len(adapters))
 	for _, cf := range adapters {
 		if !cf.IsDisabled() {
-
 			addrs = append(addrs, cf.GetAllAddrsForLogs()...)
 		}
 	}
@@ -249,7 +241,8 @@ func (s SyncWrapper) AfterSyncHook(syncTill int64) {
 	}
 }
 
-func (s SyncWrapper) WillBeSyncedTo(blockNum int64) {
+func (s *SyncWrapper) WillBeSyncedTo(blockNum int64) {
+	s.WillSyncTill = blockNum
 	adapters := s.Adapters.GetAll()
 	for _, adapter := range adapters {
 		// if last sync is smaller then new sync till
