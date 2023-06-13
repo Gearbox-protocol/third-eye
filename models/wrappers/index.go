@@ -211,13 +211,8 @@ func (s SyncWrapper) OnLog(txLog types.Log) {
 	}
 }
 
-func (s SyncWrapper) GetAdapterState() (states []*ds.SyncAdapter) {
-	adapters := s.Adapters.GetAll()
-	states = make([]*ds.SyncAdapter, 0, len(adapters))
-	for _, adapter := range adapters {
-		states = append(states, adapter.GetAdapterState()...)
-	}
-	return
+func (s SyncWrapper) GetAdapters() (states []ds.SyncAdapterI) {
+	return s.Adapters.GetAll()
 }
 
 // ///////
@@ -252,4 +247,12 @@ func (s *SyncWrapper) WillBeSyncedTo(blockNum int64) {
 			adapter.WillBeSyncedTo(blockNum)
 		}
 	}
+}
+
+func (SyncWrapper) GetAdapterState() *ds.SyncAdapter {
+	return nil
+}
+
+func (SyncWrapper) SetUnderlyingState(interface{}) {
+
 }

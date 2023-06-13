@@ -73,7 +73,7 @@ func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
 			if ds.IsWrapperAdapter(adapter.GetName()) {
 				continue
 			}
-			adapters = append(adapters, adapter.GetAdapterState()...)
+			adapters = append(adapters, adapter.GetAdapterState())
 			if adapter.HasUnderlyingState() {
 				err := tx.Clauses(clause.OnConflict{
 					UpdateAll: true,
@@ -84,7 +84,15 @@ func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
 		repo.kit.Reset(lvlIndex)
 	}
 	// save wrapper underlying states
-	adapters = append(adapters, repo.AdapterKitHandler.getAdapterState()...)
+	for _, adapter := range repo.AdapterKitHandler.GetAdaptersFromWrapper() {
+		if adapter.HasUnderlyingState() {
+			err := tx.Clauses(clause.OnConflict{
+				UpdateAll: true,
+			}).Create(adapter.GetUnderlyingState()).Error
+			log.CheckFatal(err)
+		}
+		adapters = append(adapters, adapter.GetAdapterState())
+	}
 	//
 	err := tx.Clauses(clause.OnConflict{
 		UpdateAll: true,

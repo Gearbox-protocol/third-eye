@@ -95,18 +95,18 @@ func (repo *AdapterKitHandler) GetAdapter(addr string) ds.SyncAdapterI {
 	return adapter
 }
 
-func (repo AdapterKitHandler) getAdapterState() (adapters []*ds.SyncAdapter) {
+func (repo AdapterKitHandler) GetAdaptersFromWrapper() (adapters []ds.SyncAdapterI) {
 	for _, adapter := range repo.aggregatedBlockFeed.GetQueryFeeds() {
-		adapters = append(adapters, adapter.GetAdapterState()...)
+		adapters = append(adapters, adapter)
 	}
 	// REVERT_ADMIN_WRAPPER
-	adapters = append(adapters, repo.adminWrapper.GetAdapterState()...)
+	adapters = append(adapters, repo.adminWrapper.GetAdapters()...)
 	// REVERT_CF_WRAPPER
-	adapters = append(adapters, repo.cfWrapper.GetAdapterState()...)
+	adapters = append(adapters, repo.cfWrapper.GetAdapters()...)
 	// REVERT_CM_WRAPPER
-	adapters = append(adapters, repo.cmWrapper.GetAdapterState()...)
+	adapters = append(adapters, repo.cmWrapper.GetAdapters()...)
 	// REVERT_POOL_WRAPPER
-	adapters = append(adapters, repo.poolWrapper.GetAdapterState()...)
+	adapters = append(adapters, repo.poolWrapper.GetAdapters()...)
 	return
 }
 

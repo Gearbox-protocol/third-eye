@@ -50,10 +50,10 @@ type SyncAdapterI interface {
 	HasUnderlyingState() bool        //
 	GetUnderlyingState() interface{} //
 	SetUnderlyingState(obj interface{})
-	GetAdapterState() []*SyncAdapter //
-	Query(queryTill int64)           //
-	WillBeSyncedTo(blockNum int64)   //
-	IsDisabled() bool                //
+	GetAdapterState() *SyncAdapter //
+	Query(queryTill int64)         //
+	WillBeSyncedTo(blockNum int64) //
+	IsDisabled() bool              //
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64           //
 	GetDiscoveredAt() int64               //
@@ -188,8 +188,8 @@ func (s *SyncAdapter) HasUnderlyingState() bool {
 	return s.UnderlyingStatePresent
 }
 
-func (s *SyncAdapter) GetAdapterState() []*SyncAdapter {
-	return []*SyncAdapter{s}
+func (s *SyncAdapter) GetAdapterState() *SyncAdapter {
+	return s
 }
 
 // func (mdl *SyncAdapter) OnLog(txLog types.Log) {
