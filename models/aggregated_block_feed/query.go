@@ -18,7 +18,7 @@ import (
 	// "fmt"
 )
 
-func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
+func (mdl *AQFWrapper) Query(queryTill int64) {
 	if len(mdl.QueryFeeds) == 0 {
 		return
 	}
@@ -59,7 +59,7 @@ func (mdl *AggregatedBlockFeed) Query(queryTill int64) {
 	mdl.addQueryPrices(queryFrom)
 }
 
-func (mdl *AggregatedBlockFeed) addQueryPrices(clearExtraBefore int64) {
+func (mdl *AQFWrapper) addQueryPrices(clearExtraBefore int64) {
 	mdl.updateQueryPrices(mdl.queryPFdeps.extraPriceForQueryFeed(clearExtraBefore))
 	// query feed prices
 	sort.SliceStable(mdl.queryFeedPrices, func(i, j int) bool {
@@ -71,20 +71,20 @@ func (mdl *AggregatedBlockFeed) addQueryPrices(clearExtraBefore int64) {
 	mdl.queryFeedPrices = nil
 }
 
-func (mdl *AggregatedBlockFeed) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGroup) {
+func (mdl *AQFWrapper) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGroup) {
 	pfs := mdl.QueryData(blockNum)
 	mdl.updateQueryPrices(pfs)
 	<-ch
 	wg.Done()
 }
 
-func (mdl *AggregatedBlockFeed) updateQueryPrices(pfs []*schemas.PriceFeed) {
+func (mdl *AQFWrapper) updateQueryPrices(pfs []*schemas.PriceFeed) {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	mdl.queryFeedPrices = append(mdl.queryFeedPrices, pfs...)
 }
 
-func (mdl *AggregatedBlockFeed) QueryData(blockNum int64) []*schemas.PriceFeed {
+func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
 	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
 	result := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
 	//
@@ -98,7 +98,7 @@ func (mdl *AggregatedBlockFeed) QueryData(blockNum int64) []*schemas.PriceFeed {
 	return queryFeedPrices
 }
 
-func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*QueryPriceFeed) {
+func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*QueryPriceFeed) {
 	priceFeedABI := core.GetAbi("PriceFeed")
 	//
 	for _, adapter := range mdl.QueryFeeds {
@@ -117,7 +117,7 @@ func (mdl *AggregatedBlockFeed) getRoundDataCalls(blockNum int64) (calls []multi
 	return
 }
 
-func (mdl *AggregatedBlockFeed) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
+func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 	if entry.Success {
 		isPriceInUSD := adapter.GetVersion() > 1

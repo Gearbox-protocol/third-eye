@@ -87,8 +87,8 @@ func (repo *Repository) Init() {
 	repo.LoadAllowedTokensState(repo.db)
 	// fastcheck and new parameters
 	repo.ParamsRepo.LoadAllParams(repo.db)
-	// blocks load block ts to date.
-	repo.BlocksRepo.LoadBlockDatePair()
+	// blocks load block ts to date and prevPrice by (token/feed)and currentPrice by(token)
+	repo.BlocksRepo.Load()
 	// treasury funcs
 	repo.LoadLastTreasuryTs(repo.db)
 	repo.TreasuryRepo.LoadTreasurySnapshot(repo.db)

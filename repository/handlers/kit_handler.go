@@ -14,7 +14,7 @@ import (
 
 type AdapterKitHandler struct {
 	kit                 *ds.AdapterKit
-	aggregatedBlockFeed *aggregated_block_feed.AggregatedBlockFeed
+	aggregatedBlockFeed *aggregated_block_feed.AQFWrapper
 	adminWrapper        *admin_wrapper.AdminWrapper
 	cfWrapper           *cf_wrapper.CFWrapper
 	cmWrapper           *cm_wrapper.CMWrapper
@@ -24,7 +24,7 @@ type AdapterKitHandler struct {
 func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.Config) *AdapterKitHandler {
 	obj := &AdapterKitHandler{
 		kit:                 ds.NewAdapterKit(),
-		aggregatedBlockFeed: aggregated_block_feed.NewAggregatedBlockFeed(client, repo, cfg.Interval),
+		aggregatedBlockFeed: aggregated_block_feed.NewAQFWrapper(client, repo, cfg.Interval),
 		adminWrapper:        admin_wrapper.NewAdminWrapper(),
 		cfWrapper:           cf_wrapper.NewCFWrapper(),
 		poolWrapper:         pool_wrapper.NewPoolWrapper(client),
@@ -45,24 +45,22 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 //
 // whereas adapter with fake address are AccountManager, and PoolLMRewards and CompositeChainlinkPF
 func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
-	if adapterI.GetName() == ds.QueryPriceFeed {
+	switch adapterI.GetName() {
+	case ds.QueryPriceFeed:
 		handler.aggregatedBlockFeed.AddYearnFeed(adapterI)
 		// REVERT ADMIN_WRAPPER
-	} else if utils.Contains([]string{
-		ds.ContractRegister, ds.ACL,
-		ds.AccountFactory, ds.GearToken,
-	}, adapterI.GetName()) {
+	case ds.ContractRegister, ds.ACL, ds.AccountFactory, ds.GearToken:
 		handler.adminWrapper.AddSyncAdapter(adapterI)
 		// REVERT_CF_WRAPPER
-	} else if adapterI.GetName() == ds.CreditFilter || adapterI.GetName() == ds.CreditConfigurator {
+	case ds.CreditFilter, ds.CreditConfigurator:
 		handler.cfWrapper.AddSyncAdapter(adapterI)
 		// REVERT_CM_WRAPPER
-	} else if adapterI.GetName() == ds.CreditManager {
+	case ds.CreditManager:
 		handler.cmWrapper.AddSyncAdapter(adapterI)
 		// REVERT_POOL_WRAPPER
-	} else if adapterI.GetName() == ds.Pool {
+	case ds.Pool:
 		handler.poolWrapper.AddSyncAdapter(adapterI)
-	} else {
+	default:
 		handler.kit.Add(adapterI)
 	}
 }
@@ -134,6 +132,6 @@ func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string {
 	return repo.kit.GetAdapterAddressByName(name)
 }
 
-func (repo AdapterKitHandler) GetAggregatedFeed() *aggregated_block_feed.AggregatedBlockFeed {
+func (repo AdapterKitHandler) GetAggregatedFeed() *aggregated_block_feed.AQFWrapper {
 	return repo.aggregatedBlockFeed
 }

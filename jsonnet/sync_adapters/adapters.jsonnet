@@ -144,14 +144,14 @@
       version: 2,
     },
     {
-      address: 'AggregatedBlockFeed',
+      address: 'AggregatedQueryFeedWrapper',
       disabled: false,
       disabled_at: 0,
       discoveredAt: 0,
       'error': '',
       firstLogAt: 0,
       lastSync: 9223372036854776000,
-      type: 'AggregatedBlockFeed',
+      type: 'AggregatedQueryFeedWrapper',
       version: 0,
     },
     {

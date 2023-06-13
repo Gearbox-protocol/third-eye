@@ -15,11 +15,11 @@ func (kit *AdapterKit) init() {
 	// REVERT_POOL_WRAPPER
 	kit.AddLevel([]string{PoolWrapper, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
 	// REVERT_CM_WRAPPER
-	kit.AddLevel([]string{CMWrapper, AggregatedBlockFeed, PoolLMRewards})
+	kit.AddLevel([]string{CMWrapper, AggregatedQueryFeedWrapper, PoolLMRewards})
 	// REVERT_CF_WRAPPER
 	kit.AddLevel([]string{CFWrapper, CreditConfigurator, Treasury})
 	// - we are dropping the uni check, so the dependency is reversed.
-	//		(AggregatedBlockFeed => ChainlinkPriceFeed; so that deviation btw uniswap pool and chainlink can be calculated)
+	//		(AggregatedQueryFeedWrapper => ChainlinkPriceFeed; so that deviation btw uniswap pool and chainlink can be calculated)
 	//   Another reason being to get all the yearnPriceFeed in single go.
 	// - CreditManager => CreditFilter/CreditConfigurator for creation only.
 	// - AccountFactory => AccountManager => CreditManager; factory gets the accounts address to accountmanager for getting
