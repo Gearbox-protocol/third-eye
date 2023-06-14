@@ -50,6 +50,15 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 			gt := gear_token.NewGearToken(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
 			mdl.Repo.AddSyncAdapter(gt)
 		case "TREASURY_CONTRACT":
+			// NOTE:don't disable the prev treasury as treasury addr is fixed for pool on pool creation
+			//
+			// addrs := mdl.Repo.GetAdapterAddressByName(ds.Treasury)
+			// for _, addr := range addrs {
+			// 	adapter := mdl.Repo.GetAdapter(addr)
+			// 	if adapter.GetBlockToDisableOn() == math.MaxInt64 { // only disable the treasury adapters that aren't disabled before
+			// 		adapter.SetBlockToDisableOn(blockNum)
+			// 	}
+			// }
 			ttf := treasury.NewTreasury(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(ttf)
 		case "DATA_COMPRESSOR":

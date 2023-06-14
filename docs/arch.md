@@ -41,9 +41,9 @@ Adapters are of two types: `Event` and `Query` based.
     * CreditManager is internally divided in v1 and v2 modules.  
 
 #### Query Based
-- `AggregatedBlockFeed`: Maintains list of yearn and curve price feeds, and uniswap v2/v3 pools for token/eth pairs. It uses multicall for getting involving prices after a set interval:
+- `AggregatedQueryFeedWrapper`: Maintains list of yearn and curve price feeds, and uniswap v2/v3 pools for token/eth pairs. It uses multicall for getting involving prices after a set interval:
     * prices from yearn, curve feeds.
-    * yearn and curve feeds internally uses chainlink price feed. If any major change occurs in the chainlink feed, yearn/curve token's price will also be affected. To account for this, aggregatedBlockFeed maintains a dependency graph of chainlink-based tokens and dependent yearn/curve tokens. Since chainlink price feed syncs before aggregatedBlockFeed, aggregatedblockFeed can get a list of block numbers where the chainlink-based token's price changed. If aggregatedBlockFeed missed getting the price for any of the chainlink feeds' updated blocks, it would fetch the price for dependent tokens for these remaining block numbers.
+    * yearn and curve feeds internally uses chainlink price feed. If any major change occurs in the chainlink feed, yearn/curve token's price will also be affected. To account for this, AQFWrapper maintains a dependency graph of chainlink-based tokens and dependent yearn/curve tokens. Since chainlink price feed syncs before AQFWrapper, AQFWrapper can get a list of block numbers where the chainlink-based token's price changed. If AQFWrapper missed getting the price for any of the chainlink feeds' updated blocks, it would fetch the price for dependent tokens for these remaining block numbers.
 
 ## Repo
 Repo is used by both sync and debt engines to get data from DB and store fetched data to DB. It acts as an intermediate between different adapters. Repo syncs all this data to DB using a single transaction in `save.go`, this provides the atomic guarantee that either all data is saved or nothing. On crash, the sync engine will restart with the previous state fetched from DB.

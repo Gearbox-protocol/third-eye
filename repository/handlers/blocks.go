@@ -10,44 +10,32 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
 type BlocksRepo struct {
+	mu     *sync.RWMutex
 	blocks map[int64]*schemas.Block
 	// for treasury to get the date
 	blockDatePairs map[int64]*schemas.BlockDate
-	// for prevently duplicate query price feed already with same price for a token
-	// token to feed
-	prevPriceFeeds map[bool]map[string]*schemas.PriceFeed
-	mu             *sync.Mutex
 	client         core.ClientI
 	db             *gorm.DB
-	spotPrices     *priceFetcher.OneInchOracle
+	prevStore      *PrevPriceStore
 }
 
 func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config, tokensRepo *TokensRepo) *BlocksRepo {
 	blocksRepo := &BlocksRepo{
 		blocks:         make(map[int64]*schemas.Block),
 		blockDatePairs: map[int64]*schemas.BlockDate{},
-		prevPriceFeeds: map[bool]map[string]*schemas.PriceFeed{},
+		mu:             &sync.RWMutex{},
 		//
-		mu:     &sync.Mutex{},
-		client: client,
-		db:     db,
-	}
-	chainId, err := client.ChainID(context.TODO())
-	log.CheckFatal(err)
-	if chainId.Int64() == 1 {
-		blocksRepo.spotPrices = priceFetcher.New1InchOracle(client, chainId.Int64(),
-			common.HexToAddress("0x07D91f5fb9Bf7798734C3f606dB065549F6893bb"), tokensRepo)
-
+		client:    client,
+		db:        db,
+		prevStore: NewPrevPriceStore(client, tokensRepo),
 	}
 	return blocksRepo
 }
@@ -66,8 +54,6 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	}
 }
 
-var lastSaveBlockForTCP int64 = 0
-
 func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
@@ -80,61 +66,19 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
 
-	if blockNum-lastSaveBlockForTCP > core.NoOfBlocksPerMin*5 {
-		repo.saveCurrentPrices(tx, blockNum)
-		lastSaveBlockForTCP = blockNum
-	}
-}
-
-func (repo *BlocksRepo) saveCurrentPrices(tx *gorm.DB, blockNum int64) {
-	// chainlink current prices to updated
-	var currentPricesToSync []*schemas.TokenCurrentPrice
-	for _, tokenPrice := range repo.prevPriceFeeds[true] {
-		if tokenPrice.SaveCurrentPrice {
-			tokenPrice.SaveCurrentPrice = false
-			currentPricesToSync = append(currentPricesToSync, &schemas.TokenCurrentPrice{
-				PriceBI:  tokenPrice.PriceBI,
-				Price:    tokenPrice.Price,
-				BlockNum: tokenPrice.BlockNumber,
-				Token:    tokenPrice.Token,
-				PriceSrc: string(core.SOURCE_CHAINLINK),
-			})
-		}
-	}
-	if len(currentPricesToSync) == 0 { // usd prices are set? only valid from v2
-		// so if it's empty, we don't need to store currentPrice and nor fetch 1inch prices in usdc
-		return
-	}
-	// spot prices to updated
-	if repo.spotPrices != nil {
-		calls := repo.spotPrices.GetCalls()
-		results := core.MakeMultiCall(repo.client, blockNum, false, calls)
-		for token, priceBI := range repo.spotPrices.GetPrices(results, blockNum) {
-			currentPricesToSync = append(currentPricesToSync, &schemas.TokenCurrentPrice{
-				PriceBI:  priceBI,
-				Price:    utils.GetFloat64Decimal(priceBI.Convert(), 8),
-				BlockNum: blockNum,
-				Token:    token,
-				PriceSrc: string(core.SOURCE_SPOT),
-			})
-		}
-	}
-	err := tx.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).CreateInBatches(currentPricesToSync, 100).Error
-	log.CheckFatal(err)
+	repo.prevStore.saveCurrentPrices(repo.client, tx, blockNum)
 }
 
 // external funcs
 func (repo *BlocksRepo) GetBlocks() map[int64]*schemas.Block {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
 	return repo.blocks
 }
 
 func (repo *BlocksRepo) GetBlockDatePairs(ts int64) *schemas.BlockDate {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
+	repo.mu.RLock()
+	defer repo.mu.RUnlock()
 	return repo.blockDatePairs[ts]
 }
 
@@ -181,7 +125,7 @@ func (repo *BlocksRepo) addBlockDate(entry *schemas.BlockDate) {
 	}
 }
 
-func (repo *BlocksRepo) LoadBlockDatePair() {
+func (repo *BlocksRepo) loadBlockDatePair() {
 	defer utils.Elapsed("loadBlockDatePair")()
 	data := []*schemas.BlockDate{}
 	sql := `select b.*, a.timestamp from blocks a 
@@ -193,51 +137,11 @@ func (repo *BlocksRepo) LoadBlockDatePair() {
 	for _, entry := range data {
 		repo.addBlockDate(entry)
 	}
-	repo.loadPrevPriceFeed()
 }
 
-func (repo *BlocksRepo) loadPrevPriceFeed() {
-	defer utils.Elapsed("loadPrevPriceFeed")()
-	data := []*schemas.PriceFeed{}
-	err := repo.db.Raw("SELECT distinct on(token)* FROM price_feeds ORDER BY token, block_num DESC").Find(&data).Error
-	log.CheckFatal(err)
-	for _, pf := range data {
-		repo.addPrevPriceFeed(pf)
-	}
-}
-
-// isUSD -> token -> feed -> price feed object
-func (repo *BlocksRepo) addPrevPriceFeed(pf *schemas.PriceFeed) {
-	if repo.prevPriceFeeds[pf.IsPriceInUSD] == nil {
-		repo.prevPriceFeeds[pf.IsPriceInUSD] = map[string]*schemas.PriceFeed{}
-	}
-	oldPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
-	price := pf.PriceBI.Convert().Int64()
-	if oldPF != nil && oldPF.BlockNumber >= pf.BlockNumber && !(price == 0 || price == 100) {
-		log.Fatalf("oldPF %s.\n NewPF %s.", oldPF, pf)
-	}
-	//
-	repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] = pf
-}
-
-func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
-	if repo.prevPriceFeeds[pf.IsPriceInUSD] != nil &&
-		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token] != nil &&
-		repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token].Feed == pf.Feed {
-		prevPF := repo.prevPriceFeeds[pf.IsPriceInUSD][pf.Token]
-		if prevPF.BlockNumber >= pf.BlockNumber {
-			log.Fatalf("oldPF %s.\n NewPF %s.", prevPF, pf)
-		}
-		if prevPF.PriceBI.Cmp(pf.PriceBI) == 0 {
-			repo.addPrevPriceFeed(pf)
-			return
-		}
-	}
-	pf.SaveCurrentPrice = true
-	repo.addPrevPriceFeed(pf)
-	repo._setAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
+func (repo *BlocksRepo) Load() {
+	repo.loadBlockDatePair()
+	repo.prevStore.loadPrevPriceFeed(repo.db)
 }
 
 func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...interface{}) {
@@ -261,6 +165,12 @@ func (repo *BlocksRepo) Clear() {
 }
 
 // setter
+func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
+	if repo.prevStore.canAddPF(pf) {
+		repo.SetAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
+	}
+}
+
 func (repo *BlocksRepo) AddDAOOperation(operation *schemas.DAOOperation) {
 	repo.SetAndGetBlock(operation.BlockNumber).AddDAOOperation(operation)
 }

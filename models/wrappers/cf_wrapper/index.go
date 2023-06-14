@@ -16,7 +16,3 @@ func NewCFWrapper() *CFWrapper {
 	w.ViaDataProcess = ds.ViaLog
 	return w
 }
-
-func (CFWrapper) SetUnderlyingState(obj interface{}) {
-
-}

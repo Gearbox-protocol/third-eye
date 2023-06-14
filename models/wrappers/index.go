@@ -13,43 +13,45 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-type OrderedMap[T any] struct {
-	m    map[string]T
-	allM map[string]T
-	a    []T
+type OrderedMap struct {
+	m    map[string]ds.SyncAdapterI
+	allM map[string]ds.SyncAdapterI
+	a    []ds.SyncAdapterI
 }
 
-func NewOrderedMap[T any]() OrderedMap[T] {
-	return OrderedMap[T]{
-		m:    make(map[string]T), // adapter by its actual addr, like creditmanager uses cf , cc but it can be fetched only with creditmanager addr from outside
-		allM: make(map[string]T),
-		a:    make([]T, 0),
+func NewOrderedMap() OrderedMap {
+	return OrderedMap{
+		m:    make(map[string]ds.SyncAdapterI), // adapter by its actual addr, like creditmanager uses cf , cc but it can be fetched only with creditmanager addr from outside
+		allM: make(map[string]ds.SyncAdapterI),
+		a:    make([]ds.SyncAdapterI, 0),
 	}
 }
 
-func (x OrderedMap[T]) Get(addr string) T {
+func (x OrderedMap) Get(addr string) ds.SyncAdapterI {
 	return x.m[addr]
 }
-func (x OrderedMap[T]) GetFromLogAddr(name string) T {
+func (x OrderedMap) GetFromLogAddr(name string) ds.SyncAdapterI {
 	return x.allM[name]
 }
-func (x *OrderedMap[T]) Add(addr string, allAddrsForAdapter []common.Address, val T) {
+func (x *OrderedMap) Add(addr string, allAddrsForAdapter []common.Address, val ds.SyncAdapterI) {
 	// for
-	x.m[addr] = val
+	if x.m[addr] == nil {
+		x.a = append(x.a, val)
+	}
 	for _, addr := range allAddrsForAdapter {
 		x.allM[addr.String()] = val
 	}
-	x.a = append(x.a, val)
+	x.m[addr] = val
 }
 
-func (x OrderedMap[T]) GetAll() []T {
+func (x OrderedMap) GetAll() []ds.SyncAdapterI {
 	return x.a
 }
 
 // we are creating sync wrappers to wrap , chainlink, creditfilter, credit manager and pools to reduce the number of rpc calls
 // only for HasOnLog = true
 type SyncWrapper struct {
-	Adapters       OrderedMap[ds.SyncAdapterI]
+	Adapters       OrderedMap
 	ViaDataProcess int
 	name           string
 	lastSync       int64
@@ -59,7 +61,7 @@ type SyncWrapper struct {
 
 func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
 	return &SyncWrapper{
-		Adapters:       NewOrderedMap[ds.SyncAdapterI](),
+		Adapters:       NewOrderedMap(),
 		ViaDataProcess: -1,
 		name:           name,
 		lastSync:       math.MaxInt64 - 10,
@@ -195,10 +197,10 @@ func (s SyncWrapper) onBlockChange(lastBlockNum int64) {
 				calls = append(calls, call)
 			}
 		}
-		results := core.MakeMultiCall(s.Client, lastBlockNum, false, calls)
-		for ind, result := range results {
-			processFns[ind](result)
-		}
+	}
+	results := core.MakeMultiCall(s.Client, lastBlockNum, false, calls)
+	for ind, result := range results {
+		processFns[ind](result)
 	}
 }
 
@@ -209,13 +211,8 @@ func (s SyncWrapper) OnLog(txLog types.Log) {
 	}
 }
 
-func (s SyncWrapper) GetAdapterState() (states []*ds.SyncAdapter) {
-	adapters := s.Adapters.GetAll()
-	states = make([]*ds.SyncAdapter, 0, len(adapters))
-	for _, adapter := range adapters {
-		states = append(states, adapter.GetAdapterState()...)
-	}
-	return
+func (s SyncWrapper) GetAdapters() (states []ds.SyncAdapterI) {
+	return s.Adapters.GetAll()
 }
 
 // ///////
@@ -250,4 +247,12 @@ func (s *SyncWrapper) WillBeSyncedTo(blockNum int64) {
 			adapter.WillBeSyncedTo(blockNum)
 		}
 	}
+}
+
+func (SyncWrapper) GetAdapterState() *ds.SyncAdapter {
+	return nil
+}
+
+func (SyncWrapper) SetUnderlyingState(interface{}) {
+
 }

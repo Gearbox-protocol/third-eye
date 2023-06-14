@@ -17,8 +17,8 @@ type Config struct {
 	Port string `env:"PORT" default:"0" validate:"required"`
 
 	// set rollback if we are deleting some data in db and rerunning third-eye for getting that data again, this prevents adding some sync adapter again.
-	Rollback bool `env:"ROLLBACK" default:"false"`
-
+	Rollback     bool   `env:"ROLLBACK" default:"false"`
+	EtherscanAPI string `env:"ETHERSCAN_API_KEY"`
 	// for aggregated block feed , at interval x it should have the prices again
 	Interval int64 `env:"INTERVAL" default:"25"`
 	// the batch size for filter logs, if third-eye is far behind the latest block in blockchain

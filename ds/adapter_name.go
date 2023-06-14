@@ -1,6 +1,9 @@
 package ds
 
-import "log"
+import (
+	"log"
+	"strings"
+)
 
 const (
 	AddressProvider    = "AddressProvider"
@@ -19,15 +22,15 @@ const (
 	CreditConfigurator = "CreditConfigurator"
 	PoolLMRewards      = "PoolLMRewards"
 	// Wrapper
-	AggregatedBlockFeed = "AggregatedBlockFeed"
-	AdminWrapper        = "AdminWrapper"
-	CFWrapper           = "CFWrapper"
-	CMWrapper           = "CMWrapper"
-	PoolWrapper         = "PoolWrapper"
+	AggregatedQueryFeedWrapper = "AggregatedQueryFeedWrapper"
+	AdminWrapper               = "AdminWrapper"
+	CFWrapper                  = "CFWrapper"
+	CMWrapper                  = "CMWrapper"
+	PoolWrapper                = "PoolWrapper"
 )
 
 func IsWrapperAdapter(name string) bool {
-	return name == CFWrapper || name == AggregatedBlockFeed
+	return strings.HasSuffix(name, "Wrapper")
 }
 
 const (

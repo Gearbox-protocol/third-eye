@@ -56,7 +56,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 	}
 	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
-	repo.TreasuryRepo = treasury.NewTreasuryRepo(tokensRepo, blocksRepo, repo.SyncAdaptersRepo, client)
+	repo.TreasuryRepo = treasury.NewTreasuryRepo(tokensRepo, blocksRepo, repo.SyncAdaptersRepo, client, cfg)
 	return repo
 }
 
@@ -87,8 +87,8 @@ func (repo *Repository) Init() {
 	repo.LoadAllowedTokensState(repo.db)
 	// fastcheck and new parameters
 	repo.ParamsRepo.LoadAllParams(repo.db)
-	// blocks load block ts to date.
-	repo.BlocksRepo.LoadBlockDatePair()
+	// blocks load block ts to date and prevPrice by (token/feed)and currentPrice by(token)
+	repo.BlocksRepo.Load()
 	// treasury funcs
 	repo.LoadLastTreasuryTs(repo.db)
 	repo.TreasuryRepo.LoadTreasurySnapshot(repo.db)

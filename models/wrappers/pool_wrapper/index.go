@@ -17,7 +17,3 @@ func NewPoolWrapper(client core.ClientI) *PoolWrapper {
 	w.ViaDataProcess = ds.ViaMultipleLogs
 	return w
 }
-
-func (PoolWrapper) SetUnderlyingState(obj interface{}) {
-
-}

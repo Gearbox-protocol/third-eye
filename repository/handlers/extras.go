@@ -9,8 +9,7 @@ import (
 )
 
 type ExtrasRepo struct {
-	dcWrapper *dc_wrapper.DataCompressorWrapper
-	// AggregatedFeed        *aggregated_block_feed.AggregatedBlockFeed
+	dcWrapper     *dc_wrapper.DataCompressorWrapper
 	mu            *sync.Mutex
 	executeParser ds.ExecuteParserI
 }
