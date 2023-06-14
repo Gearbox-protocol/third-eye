@@ -81,9 +81,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 		if strings.Contains(err.Error(), "VM execution error.") ||
 			strings.Contains(err.Error(), "execution reverted") {
 			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
-			if err != nil {
-				return ds.UnknownPF, false, err
-			}
+			log.CheckFatal(err)
 			_, err = yearnContract.YVault(opts)
 			if err != nil {
 				description, err := yearnContract.Description(opts)
@@ -114,7 +112,9 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 			return ds.YearnPF, false, nil
 		}
 	} else {
-		description, err := core.CallFuncWithExtraBytes(mdl.Client, "7284e416", common.HexToAddress(oracle), discoveredAt, nil) // description()
+		yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
+		log.CheckFatal(err)
+		description, err := yearnContract.Description(opts)
 		return ds.ChainlinkPriceFeed,
 			(err == nil) && strings.Contains(string(description), "Bounded"),
 			nil

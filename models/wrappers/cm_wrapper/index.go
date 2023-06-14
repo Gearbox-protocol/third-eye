@@ -25,10 +25,6 @@ func NewCMWrapper(client core.ClientI) *CMWrapper {
 	return w
 }
 
-func (CMWrapper) SetUnderlyingState(obj interface{}) {
-
-}
-
 func (s CMWrapper) OnLogs(txLogs []types.Log) {
 	ind := 0
 	var lastBlockNum int64 = 0

@@ -123,6 +123,9 @@ func (repo *TreasuryRepo) AddTreasuryTransfer(blockNum int64, logID uint,
 func (repo *TreasuryRepo) saveTreasurySnapshot() {
 	ts := repo.lastTreasureTime.Unix()
 	blockDate := repo.blocks.GetBlockDatePairs(ts)
+	if blockDate == nil {
+		log.Info(ts, time.Unix(ts, 0))
+	}
 
 	tss := &schemas.TreasurySnapshot{
 		Date:                utils.TimeToDate(repo.lastTreasureTime),
