@@ -56,7 +56,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 	}
 	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
-	repo.TreasuryRepo = treasury.NewTreasuryRepo(tokensRepo, blocksRepo, repo.SyncAdaptersRepo, client)
+	repo.TreasuryRepo = treasury.NewTreasuryRepo(tokensRepo, blocksRepo, repo.SyncAdaptersRepo, client, cfg)
 	return repo
 }
 

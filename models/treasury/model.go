@@ -90,6 +90,9 @@ func (mdl *Treasury) getAddrs() (tokens []common.Address, pools map[common.Addre
 
 func (mdl *Treasury) Query(queryTill int64) {
 	queryFrom := mdl.GetLastSync() + 1
+	if queryTill < queryFrom {
+		return
+	}
 	tokenAddrs, pools := mdl.getAddrs()
 	// bug found at lower batchhistoysize
 	if len(tokenAddrs) == 0 {

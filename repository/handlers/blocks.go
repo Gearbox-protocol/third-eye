@@ -102,9 +102,6 @@ func (repo *BlocksRepo) setBlock(blockNum int64) {
 func (repo *BlocksRepo) SetBlock(blockNum int64) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if 7954375 <= blockNum {
-		log.Fatal("")
-	}
 	repo.setBlock(blockNum)
 }
 

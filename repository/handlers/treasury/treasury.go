@@ -8,7 +8,9 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -22,14 +24,17 @@ type TreasuryRepo struct {
 	client           core.ClientI
 	adapters         *handlers.SyncAdaptersRepo
 	blocks           *handlers.BlocksRepo
+	// for getting the block num from ts when it is missing from db
+	EtherscanAPI string
 }
 
-func NewTreasuryRepo(tokens *handlers.TokensRepo, blocks *handlers.BlocksRepo, adapters *handlers.SyncAdaptersRepo, client core.ClientI) *TreasuryRepo {
+func NewTreasuryRepo(tokens *handlers.TokensRepo, blocks *handlers.BlocksRepo, adapters *handlers.SyncAdaptersRepo, client core.ClientI, cfg *config.Config) *TreasuryRepo {
 	return &TreasuryRepo{
-		tokens:   tokens,
-		client:   client,
-		adapters: adapters,
-		blocks:   blocks,
+		tokens:       tokens,
+		client:       client,
+		adapters:     adapters,
+		blocks:       blocks,
+		EtherscanAPI: cfg.EtherscanAPI,
 	}
 }
 
@@ -124,7 +129,19 @@ func (repo *TreasuryRepo) saveTreasurySnapshot() {
 	ts := repo.lastTreasureTime.Unix()
 	blockDate := repo.blocks.GetBlockDatePairs(ts)
 	if blockDate == nil {
-		log.Info(ts, time.Unix(ts, 0))
+		if repo.EtherscanAPI != "" {
+			if blockNum, err := pkg.GetBlockNumForTs(repo.EtherscanAPI, core.GetChainId(repo.client), ts); err == nil {
+				repo.blocks.SetBlock(blockNum)
+				blockDate = &schemas.BlockDate{
+					BlockNum:  blockNum,
+					Timestamp: ts,
+				}
+			} else {
+				log.Fatal("Etherscan err", err)
+			}
+		} else {
+			log.Fatalf("can't find the blocknum for ts(%d) and etherscan api key is also missing", ts)
+		}
 	}
 
 	tss := &schemas.TreasurySnapshot{
