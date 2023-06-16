@@ -42,7 +42,7 @@ func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo) *PrevPriceSt
 func (repo *PrevPriceStore) loadPrevPriceFeed(db *gorm.DB) {
 	defer utils.Elapsed("loadPrevPriceFeed")()
 	data := []*schemas.PriceFeed{}
-	err := db.Raw("SELECT distinct on(token)* FROM price_feeds ORDER BY token, block_num DESC").Find(&data).Error
+	err := db.Raw("SELECT distinct on(token, price_in_usd)* FROM price_feeds ORDER BY token, price_in_usd, block_num DESC").Find(&data).Error
 	log.CheckFatal(err)
 	for _, pf := range data {
 		repo.addPrevPriceFeed(pf)
@@ -88,6 +88,9 @@ func (repo *PrevPriceStore) canAddPF(pf *schemas.PriceFeed) bool {
 }
 
 func (repo PrevPriceStore) addCurrentPrice(pf *schemas.PriceFeed, save bool) {
+	if !pf.IsPriceInUSD {
+		return
+	}
 	repo.currentPrices[pf.Token] = &schemas.TokenCurrentPrice{
 		Save:     save,
 		PriceBI:  pf.PriceBI,
