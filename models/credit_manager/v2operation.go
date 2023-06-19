@@ -125,21 +125,20 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 
 	//////////
 	// get token transfer when account was closed
-	transfers := mdl.Repo.GetExecuteParser().GetTransfers(txLog.TxHash.Hex(), account, mdl.GetUnderlyingToken(), ds.BorrowerAndTo{
+	txTransfers := mdl.Repo.GetExecuteParser().GetTransfersAtClosev2(txLog.TxHash.Hex(), account, mdl.GetUnderlyingToken(), ds.BorrowerAndTo{
 		Borrower: common.HexToAddress(owner),
 		To:       common.HexToAddress(to),
 	})
-	balances := mdl.toJsonBalance(transfers)
-
+	userTransfers := mdl.toJsonBalance(txTransfers)
 	//////////
 	// calculate remainingFunds
 	var tokens []string
-	for token := range *balances {
+	for token := range userTransfers {
 		tokens = append(tokens, token)
 	}
 	tokens = append(tokens, mdl.GetUnderlyingToken())
 	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
-	remainingFunds := (balances.ValueInUnderlying(
+	remainingFunds := (userTransfers.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
 	//////////
 	// use remainingFunds
@@ -154,7 +153,7 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 		AdapterCall: false,
 		Action:      action,
 		Args:        args,
-		Transfers:   &transfers,
+		Transfers:   &txTransfers,
 		Dapp:        cmAddr,
 	}
 
@@ -163,7 +162,7 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	////////////////////
 
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil) // update session
-	session.Balances = balances
+	session.CloseTransfers = &userTransfers
 
 	mdl.multicall.AddCloseOrLiquidateEvent(accountOperation) // add event to multicall processor
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
@@ -181,17 +180,12 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	return nil
 }
 
-func (mdl *CreditManager) toJsonBalance(z core.Transfers) *core.DBBalanceFormat {
-	dbFormat := core.DBBalanceFormat{}
+func (mdl *CreditManager) toJsonBalance(z core.Transfers) core.JsonFloatMap {
+	dbFormat := core.JsonFloatMap{}
 	for token, amt := range z {
-		dbFormat[token] = core.CoreIntBalance{
-			BI:        (*core.BigInt)(amt),
-			F:         utils.GetFloat64Decimal(amt, mdl.Repo.GetToken(token).Decimals),
-			IsAllowed: true,
-			IsEnabled: true,
-		}
+		dbFormat[token] = utils.GetFloat64Decimal(amt, mdl.Repo.GetToken(token).Decimals)
 	}
-	return &dbFormat
+	return dbFormat
 }
 
 func (mdl *CreditManager) getRemainingFundsOnClose(blockNum int64, txHash, borrower string) *core.Transfers {

@@ -56,6 +56,6 @@ func (m *MockExecuteParser) GetMainCalls(txHash, creditFacade string) (mainCalls
 
 	return mainCalls
 }
-func (m *MockExecuteParser) GetTransfers(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+func (m *MockExecuteParser) GetTransfersAtClosev2(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	return m.executeTransfers[txHash]
 }

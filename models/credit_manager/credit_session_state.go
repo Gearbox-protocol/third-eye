@@ -149,9 +149,7 @@ func (mdl *CreditManager) closeSession(blockNum int64, session *schemas.CreditSe
 	// this can decrease the gas used by credit manager and saving money for borrower
 	// as a result, balances fetched from datacompressor on closeBlock-1 will not be valid for remainingFunds
 	// calculation.
-	if !(closeDetails.Status == schemas.Closed && session.Version == 2) { // neg( closed on v2)
-		session.Balances = css.Balances
-	}
+	session.Balances = css.Balances
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())

@@ -440,22 +440,23 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 		// while close account on v2 we calculate remainingFunds from all the token transfer from the user
 		if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
 			prices := core.JsonFloatMap{}
-			for token, balance := range *session.Balances {
+			for token, transferAmt := range *session.CloseTransfers {
 				tokenPrice := eng.GetTokenLastPrice(token, session.Version)
 				price := utils.GetFloat64Decimal(tokenPrice, 8)
 				prices[token] = price
-				if balance.BI.Convert().Cmp(new(big.Int)) < 0 {
+				if transferAmt < 0 {
 					// assuming there is only one transfer from borrower to account
 					// this transfer will be in underlyingtoken. execute_parser.go:246 and
 					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/credit/CreditManager.sol#L359-L363
-					repayAmount = new(big.Int).Mul(balance.BI.Convert(), big.NewInt(-1))
+					amt := new(big.Float).Mul(big.NewFloat(transferAmt*-1), utils.GetExpFloat(eng.repo.GetToken(token).Decimals))
+					repayAmount, _ = amt.Int(nil)
 				}
 			}
 			// remainingFunds calculation
 			// set price for underlying token
 			prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(
 				eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version), 8)
-			remainingFunds = session.Balances.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
+			remainingFunds = session.CloseTransfers.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
 		} else if session.ClosedAt == debt.BlockNumber+1 && schemas.IsStatusLiquidated(session.Status) {
 			remainingFunds = session.RemainingFunds.Convert()
 			repayAmount = new(big.Int)

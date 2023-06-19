@@ -131,7 +131,7 @@ type ExecuteParserI interface {
 	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
 	// ignores revertIfLessThan
 	GetMainCalls(txHash, creditFacade string) []*FacadeCallNameWithMulticall
-	GetTransfers(txHash string, account, underlyingToken string, users BorrowerAndTo) core.Transfers
+	GetTransfersAtClosev2(txHash string, account, underlyingToken string, users BorrowerAndTo) core.Transfers
 }
 
 type KnownCall struct {

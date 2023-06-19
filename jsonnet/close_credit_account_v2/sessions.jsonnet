@@ -1,25 +1,18 @@
 {
   Balances: {  // it is specific for close credit account v2
     '#Token_1': {
-      BI: '1000000000',
-      F: 1000,
-      isEnabled: true,
-      isAllowed: true,
-      ind: 0,
-    },
-    '#Token_2': {
-      BI: '100000000000000000',
-      F: 0.1,
+      BI: '1500000000',
+      F: 1500,
       isEnabled: true,
       isAllowed: true,
       ind: 0,
     },
     '#Token_3': {
-      BI: '1000000000000000000',
-      F: 1,
+      BI: '3000000000000000000',
+      F: 3,
       isEnabled: true,
       isAllowed: true,
-      ind: 0,
+      ind: 1,
     },
   },
   CollateralInUSD: 6500,

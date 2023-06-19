@@ -38,3 +38,10 @@ func TestGetTransfers(t *testing.T) {
 		t.Fatal(utils.ToJson(transfers))
 	}
 }
+
+func TestEmptyMulticall(t *testing.T) {
+	t.Skip()
+	ep := NewExecuteParser(&config.Config{EthProvider: ""}, &TestClient{chainId: 42})
+	actionWithMulticall := ep.GetMainCalls("0xbac6102b402ce8d3afc6565308312bc0ca0bf626bb66d15bfeff9e3abf680452", "0xf6f4F24ae50206A07B8B32629AeB6cb1837d854F")
+	t.Fatal(utils.ToJson(actionWithMulticall))
+}

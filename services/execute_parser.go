@@ -83,9 +83,9 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	return calls
 }
 
-//////////////////////////
+// ////////////////////////
 // parser functions for v2
-//////////////////////////
+// ////////////////////////
 // GetMainCalls
 func (ep *ExecuteParser) GetMainCalls(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
 	trace := ep.GetTxTrace(txHash, false)
@@ -165,9 +165,9 @@ func getCreditFacadeMainEvent(input string) (*ds.FacadeCallNameWithMulticall, er
 	), nil
 }
 
-// GetTransfers
+// GetTransfersAtClosev2
 // currently only valid for closeCreditAccount v2
-func (ep *ExecuteParser) GetTransfers(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
+func (ep *ExecuteParser) GetTransfersAtClosev2(txHash, account, underlyingToken string, users ds.BorrowerAndTo) core.Transfers {
 	trace := ep.GetTxTrace(txHash, true)
 	return getCloseAccountv2Transfers(trace, account, underlyingToken, users)
 }
