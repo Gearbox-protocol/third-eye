@@ -35,6 +35,7 @@ func TestOnLogs(t *testing.T) {
 			Contract: &schemas.Contract{
 				Address: validPf.Feed,
 			},
+			V:       core.NewVersion(1),
 			Details: core.Json{"token": validPf.Token},
 		},
 	}}

@@ -35,7 +35,7 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	GetTokenOracles() map[int16]map[string]*schemas.TokenOracle
+	GetTokenOracles() map[core.VersionType]map[string]*schemas.TokenOracle
 	// if returned value is nil, it means that token oracle hasn't been added yet.
 	GetOracleForV2Token(token string) *schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
@@ -50,6 +50,7 @@ type RepositoryI interface {
 	// v2
 	AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken)
 	UpdateLimits(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
+	UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	TransferAccountAllowed(*schemas.TransferAccountAllowed)
 	GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap
@@ -61,7 +62,7 @@ type RepositoryI interface {
 	GetCreditSession(sessionId string) *schemas.CreditSession
 	UpdateCreditSession(sessionId string, values map[string]interface{}) *schemas.CreditSession
 	GetSessions() map[string]*schemas.CreditSession
-	GetValueInCurrency(blockNum int64, version int16, token, currency string, amount *big.Int) *big.Int
+	GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int
 	AddDieselToken(dieselToken, underlyingToken, pool string)
 	GetDieselTokens() map[string]*schemas.UTokenAndPool
 	// credit session snapshots funcs

@@ -19,7 +19,7 @@ type QueryPriceFeed struct {
 
 // single querypricefeed can be valid for multiple tokens so we have to maintain tokens within the details
 // details->token is token map to start and end block
-func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16) *QueryPriceFeed {
+func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *QueryPriceFeed {
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{

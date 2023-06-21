@@ -55,7 +55,7 @@ func (t *DCTesting) getAccountData(blockNum int64, key string) (dcv2.CreditAccou
 	obj := t.calls[blockNum].Accounts[key]
 	//
 	var maskInBits string
-	if obj.Version != 2 {
+	if obj.Version.IsGBv1() {
 		mask := getMask(t.client, blockNum, core.NULL_ADDR, common.HexToAddress(obj.Addr))
 		maskInBits = fmt.Sprintf("%b", mask)
 	}

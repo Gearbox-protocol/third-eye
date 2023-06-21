@@ -66,10 +66,9 @@ func NewCreditManager(addr string, client core.ClientI, repo ds.RepositoryI, dis
 		ds.NewSyncAdapter(addr, ds.CreditManager, discoveredAt, client, repo),
 	)
 	mdl.CommonInit(mdl.GetVersion())
-	switch mdl.GetVersion() {
-	case 1:
+	if mdl.GetVersion().IsGBv1() {
 		mdl.addCreditFilterAdapter(discoveredAt)
-	case 2:
+	} else {
 		mdl.addCreditConfiguratorAdapter(mdl.GetDetailsByKey("configurator"))
 		// if params was updated before credit manager was added to addressprovider
 		// sync credit configurator to get params
@@ -78,10 +77,9 @@ func NewCreditManager(addr string, client core.ClientI, repo ds.RepositoryI, dis
 	return mdl
 }
 func (mdl *CreditManager) GetAbi() {
-	switch mdl.GetVersion() {
-	case 1:
+	if mdl.GetVersion().IsGBv1() {
 		mdl.ABI = core.GetAbi(mdl.ContractName)
-	case 2:
+	} else {
 		mdl.ABI = core.GetAbi("CreditFacade")
 	}
 }
@@ -102,14 +100,13 @@ func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 	}
 	obj.addProtocolAdaptersLocally(blockToFetchCMData)
 	obj.GetAbi()
-	switch obj.GetVersion() {
-	case 1:
+	if obj.GetVersion().IsGBv1() {
 		cmContract, err := creditManager.NewCreditManager(common.HexToAddress(adapter.Address), adapter.Client)
 		if err != nil {
 			log.Fatal(err)
 		}
 		obj.contractETHV1 = cmContract
-	case 2:
+	} else {
 		// set credit manager
 		cmContract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(adapter.Address), adapter.Client)
 		if err != nil {

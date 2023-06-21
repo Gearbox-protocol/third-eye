@@ -193,5 +193,33 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			Args:        &core.Json{"creditManager": creditManager, "emergencyLiquidator": emergencyLiquidator},
 			Type:        schemas.EmergencyLiquidatorRemoved,
 		})
+		// version 2_10
+		// https://github.com/Gearbox-protocol/core-v2/commit/e5db57f447773d992b2505c344aa004a25b9e74e#diff-9a469bfc5a4690f063eb1df38a153a2764e81322e3ceed74815bfe3e121fcde1R795
+	case core.Topic("NewMaxCumulativeLoss(uint256)"):
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Args:        &core.Json{"maxLoss": new(big.Int).SetBytes(txLog.Data[:]).String()},
+			Type:        schemas.NewMaxCumulativeLoss,
+		})
+	case core.Topic("CumulativeLossReset()"):
+		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
+			BlockNumber: int64(txLog.BlockNumber),
+			LogID:       txLog.Index,
+			TxHash:      txLog.TxHash.Hex(),
+			Contract:    txLog.Address.Hex(),
+			Args:        &core.Json{},
+			Type:        schemas.CumulativeLossReset,
+		})
+	// https://github.com/Gearbox-protocol/core-v2/commit/6e22f2e66e50e42355aece9bca8dca25b8fc47cc#diff-9a469bfc5a4690f063eb1df38a153a2764e81322e3ceed74815bfe3e121fcde1R829
+	case core.Topic("NewEmergencyLiquidationDiscount(uint16)"):
+		liqDiscount := new(big.Int).SetBytes(txLog.Data).Int64()
+		mdl.Repo.UpdateEmergencyLiqDiscount(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &schemas.Parameters{
+			BlockNum:             int64(txLog.BlockNumber),
+			CreditManager:        creditManager,
+			EmergencyLiqDiscount: uint16(liqDiscount),
+		})
 	}
 }

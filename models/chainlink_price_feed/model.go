@@ -20,7 +20,7 @@ type ChainlinkPriceFeed struct {
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on 'vm execution error' or 'execution reverted'.
 // if oracle and adress are same we try to get the pricefeed.
-func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version int16, bounded bool) *ChainlinkPriceFeed {
+func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, bounded bool) *ChainlinkPriceFeed {
 	var upperLimit string
 	if bounded {
 		returnData, err := core.CallFuncWithExtraBytes(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound

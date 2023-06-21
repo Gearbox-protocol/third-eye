@@ -52,6 +52,7 @@ local extraBorrowedAmount = 1000;
               balance: utils.bigInt(0.1, 18),
               isAllowed: true,
             }],
+            version: 1,
           }],
         },
     },

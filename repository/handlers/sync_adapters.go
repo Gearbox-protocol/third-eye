@@ -181,7 +181,7 @@ func (repo *SyncAdaptersRepo) GetKit() *ds.AdapterKit {
 
 // return the active first oracle under blockNum
 // if all disabled return the last one
-func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle string, version int16, err error) {
+func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle string, version core.VersionType, err error) {
 	var latestBlock int64 = 0
 	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 	for _, addr := range oracles {
@@ -191,7 +191,7 @@ func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (la
 			// if the oracle is discoverdat later
 			if latestBlock < oracleAdapter.GetDiscoveredAt() ||
 				// if the oracles are discoveredat at same time but the version of oracle is more
-				(latestBlock == oracleAdapter.GetDiscoveredAt() && oracleAdapter.GetVersion() > version) {
+				(latestBlock == oracleAdapter.GetDiscoveredAt() && oracleAdapter.GetVersion().MoreThan(version)) {
 				latestBlock = oracleAdapter.GetDiscoveredAt()
 				latestOracle = addr
 				version = oracleAdapter.GetVersion()

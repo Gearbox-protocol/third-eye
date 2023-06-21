@@ -43,7 +43,7 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 
 // multicall for getting price in batch
 // For only getting the prices for calculating the treasury value
-func (repo *TreasuryRepo) getPricesInBatch(oracle string, version int16, blockNum int64, successRequired bool, tokenAddrs, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
+func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionType, blockNum int64, successRequired bool, tokenAddrs, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	// base case
 	if oracle == "" {
 		for _ = range tokenAddrs {

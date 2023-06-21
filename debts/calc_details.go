@@ -32,7 +32,7 @@ type storeForCalc struct {
 func (s storeForCalc) GetToken(token string) *schemas.Token {
 	return s.inner.repo.GetToken(token)
 }
-func (s storeForCalc) GetPrices(token string, version int16, blockNums ...int64) *big.Int {
+func (s storeForCalc) GetPrices(token string, version core.VersionType, blockNums ...int64) *big.Int {
 	return s.inner.GetTokenLastPrice(token, version)
 }
 

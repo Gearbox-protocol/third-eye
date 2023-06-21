@@ -17,7 +17,7 @@ import (
 
 // sets underlying state on init
 // pool, and underlying token address
-func (mdl *CreditManager) CommonInit(version int16) {
+func (mdl *CreditManager) CommonInit(version core.VersionType) {
 	// do state changes
 	// create underlying token
 	opts := &bind.CallOpts{
@@ -28,11 +28,10 @@ func (mdl *CreditManager) CommonInit(version int16) {
 	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)
 	log.CheckFatal(err)
 
-	switch version {
-	case 1:
+	if version.IsGBv1() {
 		underlyingToken, err = cmContract.UnderlyingToken(opts)
 		log.CheckFatal(err)
-	case 2:
+	} else {
 		contract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(mdl.Address), mdl.Client)
 		log.CheckFatal(err)
 		underlyingToken, err = contract.Underlying(opts)

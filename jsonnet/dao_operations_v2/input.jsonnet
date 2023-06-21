@@ -37,7 +37,7 @@ local borrowedAmount = 4000;
   },
   blocks: {
     '2': {
-      calls: {
+      calls: {  // any of the below call from blocknumber 2 will return listed response
         others: {
           '2f7a1881': { '#CreditManager_1': '#CreditFacade_1' },
           f9aa028a: { '#CreditManager_1': '#CreditConfigurator_1' },

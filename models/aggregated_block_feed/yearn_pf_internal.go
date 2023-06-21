@@ -20,7 +20,7 @@ type yearnPFInternal struct {
 	decimalDivider       *big.Int
 }
 
-func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, version int16) (*schemas.PriceFeed, error) {
+func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, version core.VersionType) (*schemas.PriceFeed, error) {
 	if mdl.underlyingPFContract == nil {
 		if err := mdl.setContracts(blockNum, client); err != nil {
 			return nil, err
@@ -46,17 +46,11 @@ func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, 
 		new(big.Int).Mul(pricePerShare, roundData.Answer),
 		mdl.decimalDivider,
 	)
-	// if the feed is usd it is 8 else 18.
-	isPriceInUSD := version > 1
-	var decimals int8 = 18 // for eth
-	if isPriceInUSD {
-		decimals = 8 // for usd
-	}
 	return &schemas.PriceFeed{
 		RoundId:      roundData.RoundId.Int64(),
 		PriceBI:      (*core.BigInt)(newAnswer),
-		Price:        utils.GetFloat64Decimal(newAnswer, decimals),
-		IsPriceInUSD: isPriceInUSD,
+		Price:        utils.GetFloat64Decimal(newAnswer, version.Decimals()),
+		IsPriceInUSD: version.IsPriceInUSD(),
 	}, nil
 }
 
