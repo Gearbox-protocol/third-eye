@@ -8,13 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *CreditFilter) GetCM() string {
-	creditManager, ok := mdl.Details["creditManager"].(string)
-	if !ok {
-		log.Fatalf("Failed in asserting credit manager(%v) for credit filter %s", mdl.Details["creditManager"], mdl.GetAddress())
-	}
-	return creditManager
-}
 func (mdl *CreditFilter) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	creditManager := mdl.GetCM()
@@ -41,6 +34,10 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			log.Fatal("[CreditManagerModel]: Cant unpack contract forbidden event", err)
 		}
 		mdl.Repo.DisableProtocol(blockNum, txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.Address, contractDisabledEvent.Protocol.Hex())
+	//
+	////////////////////////
+	// credit filter events
+	////////////////////////
 	case core.Topic("NewFastCheckParameters(uint256,uint256)"):
 		fcParams, err := mdl.filterContract.ParseNewFastCheckParameters(txLog)
 		log.CheckFatal(err)
@@ -50,9 +47,6 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),
 			HFCheckInterval: (*core.BigInt)(fcParams.FastCheckDelay),
 		})
-	////////////////////////
-	// credit filter events
-	////////////////////////
 	case core.Topic("TokenAllowed(address,uint256)"):
 		tokenEvent, err := mdl.filterContract.ParseTokenAllowed(txLog)
 		if err != nil {
@@ -91,5 +85,4 @@ func (mdl *CreditFilter) OnLog(txLog types.Log) {
 			Args:        args,
 		})
 	}
-	mdl.OnLogv2(txLog)
 }

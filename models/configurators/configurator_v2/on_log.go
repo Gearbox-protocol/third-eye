@@ -1,4 +1,4 @@
-package credit_filter
+package configurator_v2
 
 import (
 	"math/big"
@@ -10,10 +10,32 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
+func (mdl *Configuratorv2) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	creditManager := mdl.GetCM()
 	switch txLog.Topics[0] {
+	//common
+	case core.Topic("ContractAllowed(address,address)"):
+		contractAllowedEvent, err := mdl.cfgContract.ParseContractAllowed(txLog)
+		if err != nil {
+			log.Fatal("[CreditManagerModel]: Cant unpack contract allowed event", err)
+		}
+		mdl.Repo.AddAllowedProtocol(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.Protocol{
+			BlockNumber:   blockNum,
+			CreditManager: creditManager,
+			Protocol:      contractAllowedEvent.Protocol.Hex(),
+			Adapter:       contractAllowedEvent.Adapter.Hex(),
+			Configurator:  mdl.Address,
+		})
+	case core.Topic("TokenForbidden(address)"):
+		token := common.HexToAddress(txLog.Topics[1].Hex())
+		mdl.Repo.DisableAllowedToken(blockNum, txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.Address, token.Hex())
+	case core.Topic("ContractForbidden(address)"):
+		contractDisabledEvent, err := mdl.cfgContract.ParseContractForbidden(txLog)
+		if err != nil {
+			log.Fatal("[CreditManagerModel]: Cant unpack contract forbidden event", err)
+		}
+		mdl.Repo.DisableProtocol(blockNum, txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.Address, contractDisabledEvent.Protocol.Hex())
 	/////////////////////////////
 	// credit configurator events
 	/////////////////////////////
@@ -59,18 +81,6 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			LiquidationDiscountExpired: 10000 - feesEvent.LiquidationPremiumExpired,
 		}
 		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), params)
-	//
-	// Previous fastcheck has some security issues, we change it for better security
-	// case core.Topic("FastCheckParametersUpdated(uint256,uint256)"):
-	// 	fcParams, err := mdl.cfgContract.ParseFastCheckParametersUpdated(txLog)
-	// 	log.CheckFatal(err)
-	// 	mdl.Repo.AddFastCheckParams(txLog.Index, txLog.TxHash.Hex(), creditManager, mdl.GetAddress(), &schemas.FastCheckParams{
-	// 		BlockNum:        blockNum,
-	// 		CreditManager:   creditManager,
-	// 		ChiThreshold:    (*core.BigInt)(fcParams.ChiThreshold),
-	// 		HFCheckInterval: (*core.BigInt)(fcParams.FastCheckDelay),
-	// 	})
-	//
 	//
 	// we are add dao event on here instead of in logs of creditmanager
 	// as it might happen that this event is emitted before the first event on credit manager

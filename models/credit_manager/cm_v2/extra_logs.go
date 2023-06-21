@@ -8,7 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
+	"github.com/Gearbox-protocol/third-eye/models/configurators/configurator_v2"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -67,16 +67,12 @@ func (mdl *CMv2) IsAddrChanged() bool {
 	return mdl.addrChanged
 }
 
-func (mdl *CMv2) WillBeSyncedTo(blockNum int64) {
-	mdl.SyncAdapter.WillBeSyncedTo(blockNum)
-}
-
 func (mdl *CMv2) GetCreditFacadeAddr() string {
 	return mdl.GetDetailsByKey("facade")
 }
 
 func (cm *CMv2) addCreditConfiguratorAdapter(creditConfigurator string) {
-	cf := credit_filter.NewCreditFilter(creditConfigurator, ds.CreditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
+	cf := configurator_v2.NewConfiguratorv2(creditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 }
 

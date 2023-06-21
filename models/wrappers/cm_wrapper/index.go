@@ -8,8 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v1"
-	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v2"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -62,22 +61,6 @@ func (s CMWrapper) OnLogs(txLogs []types.Log) {
 	}
 }
 
-type blockChangeI interface {
-	OnBlockChange(int64) ([]multicall.Multicall2Call, []func(multicall.Multicall2Result))
-	UpdateSessionWithDirectTokenTransferBefore(int64)
-	IsAddrChanged() bool
-}
-
-func getCM(adapter ds.SyncAdapterI) (cm blockChangeI) {
-	switch v := adapter.(type) {
-	case *cm_v1.CMv1:
-		cm = v
-	case *cm_v2.CMv2:
-		cm = v
-	}
-	return
-}
-
 func (s CMWrapper) onBlockChange(lastBlockNum, newBlockNum int64) {
 	adapters := s.Adapters.GetAll()
 	//
@@ -88,7 +71,7 @@ func (s CMWrapper) onBlockChange(lastBlockNum, newBlockNum int64) {
 		if adapter.GetLastSync() >= lastBlockNum {
 			continue
 		}
-		cm := getCM(adapter)
+		cm := credit_manager.GetCMForWrapper(adapter)
 		call, processFn := cm.OnBlockChange(lastBlockNum)
 		// if process fn is not null
 		if processFn != nil {
@@ -105,14 +88,14 @@ func (s CMWrapper) onBlockChange(lastBlockNum, newBlockNum int64) {
 		if adapter.GetLastSync() >= lastBlockNum {
 			continue
 		}
-		cm := getCM(adapter)
+		cm := credit_manager.GetCMForWrapper(adapter)
 		cm.UpdateSessionWithDirectTokenTransferBefore(newBlockNum)
 	}
 }
 
 func (s CMWrapper) adapterAddrsChanged(addr string) bool {
 	adapter := s.Adapters.GetFromLogAddr(addr)
-	changed := getCM(adapter).IsAddrChanged()
+	changed := credit_manager.GetCMForWrapper(adapter).IsAddrChanged()
 	if changed {
 		s.Adapters.Add(adapter.GetAddress(), adapter.GetAllAddrsForLogs(), adapter)
 	}

@@ -4,13 +4,10 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -39,35 +36,28 @@ func NewCMCommon(adapter *ds.SyncAdapter) CMCommon {
 	}
 }
 
-// sets underlying state on init
-// pool, and underlying token address
+// get underlyigToken
+// get pool
+// set state
 func (mdl *CMCommon) CommonInitState(version core.VersionType) {
-	// do state changes
-	// create underlying token
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(mdl.DiscoveredAt),
-	}
-	var underlyingToken common.Address
-	var err error
-	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)
-	log.CheckFatal(err)
 
-	switch version {
-	case 1:
-		underlyingToken, err = cmContract.UnderlyingToken(opts)
+	var underlyingToken common.Address
+	if version.IsGBv1() {
+		data, err := core.CallFuncWithExtraBytes(mdl.Client, "2495a599", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
+		log.CheckFatal(err) // [underlyingToken] on credit_manager v1
+		underlyingToken = common.BytesToAddress(data)
+	} else {
+		data, err := core.CallFuncWithExtraBytes(mdl.Client, "6f307dc3", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil) // [underlying] on credit manager v2
 		log.CheckFatal(err)
-	case 2:
-		contract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(mdl.Address), mdl.Client)
-		log.CheckFatal(err)
-		underlyingToken, err = contract.Underlying(opts)
-		log.CheckFatal(err)
+		underlyingToken = common.BytesToAddress(data)
 	}
 	mdl.Repo.GetToken(underlyingToken.Hex())
 	//
-	poolAddr, err := cmContract.PoolService(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	data, err := core.CallFuncWithExtraBytes(mdl.Client, "570a7af2", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
+	// [PoolService] on creditManager
+	log.CheckFatal(err)
+	poolAddr := common.BytesToAddress(data)
 	mdl.SetUnderlyingState(&schemas.CreditManagerState{
 		Address:         mdl.Address,
 		PoolAddress:     poolAddr.Hex(),

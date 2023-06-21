@@ -150,7 +150,7 @@ local borrowedAmount = 4000;
           // credit manager on usdc
           address: '#CreditConfigurator_1',
           topics: [
-            'PriceOracleUpdated(address)',
+            'PriceOracleUpgraded(address)',
             '#PriceOracle_2',
           ],
           txHash: '!#Hash_9',

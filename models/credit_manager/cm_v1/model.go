@@ -7,7 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
+	"github.com/Gearbox-protocol/third-eye/models/configurators/credit_filter"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,7 +39,7 @@ func (cm *CMv1) addCreditFilterAdapter(blockNum int64) {
 		log.Fatal(err)
 	}
 	cm.Repo.GetDCWrapper().AddCreditManagerToFilter(cm.Address, creditFilter.Hex())
-	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), ds.CreditFilter, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
+	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 }
 
