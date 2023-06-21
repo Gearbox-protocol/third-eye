@@ -1,4 +1,4 @@
-package credit_manager
+package cm_common
 
 import (
 	"math/big"

@@ -1,4 +1,4 @@
-package credit_manager
+package cm_v2
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 // multicalls and liquidate/close/openwithmulticalls are separate data points,
 // this function adds multicall to mainFacadeActions
 // if that is the correct structure of operation
-func (mdl *CreditManager) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
+func (mdl *CMv2) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
 	facadeActions []*ds.FacadeAccountActionv2) (result []*ds.FacadeAccountActionv2) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
 		log.Fatalf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
@@ -59,7 +59,7 @@ func (mdl *CreditManager) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*
 // check name
 // check multicall for facade action vs tenderly response
 // add to db
-func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string,
+func (mdl *CMv2) validateAndSaveFacadeActions(txHash string,
 	facadeActions []*ds.FacadeAccountActionv2,
 	mainCalls []*ds.FacadeCallNameWithMulticall,
 	nonMultiCallExecuteEvents []ds.ExecuteParams) {
@@ -72,10 +72,10 @@ func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string,
 		var mainEventFromCall string
 		switch mainCall.Name {
 		case ds.FacadeMulticallCall:
-			mdl.setUpdateSession(mainEvent.SessionId)
+			mdl.SetSessionIsUpdated(mainEvent.SessionId)
 			mainEventFromCall = "MultiCallStarted(address)"
 		case ds.FacadeOpenMulticallCall:
-			mdl.setUpdateSession(mainEvent.SessionId)
+			mdl.SetSessionIsUpdated(mainEvent.SessionId)
 			mainEventFromCall = "OpenCreditAccount(address,address,uint256,uint16)"
 		case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall:
 			mdl.setLiquidateStatus(mainEvent.SessionId, mainCall.Name == ds.FacadeLiquidateExpiredCall)
@@ -147,7 +147,7 @@ func (mdl *CreditManager) validateAndSaveFacadeActions(txHash string,
 }
 
 // multicall
-func (mdl *CreditManager) addMulticallToMainEvent(mainEvent *schemas.AccountOperation, allMulticalls []*schemas.AccountOperation) {
+func (mdl *CMv2) addMulticallToMainEvent(mainEvent *schemas.AccountOperation, allMulticalls []*schemas.AccountOperation) {
 	txHash := mainEvent.TxHash
 	//
 	eventsMulticalls := make([]*schemas.AccountOperation, 0, len(allMulticalls))
@@ -183,6 +183,12 @@ func (mdl *CreditManager) addMulticallToMainEvent(mainEvent *schemas.AccountOper
 	mainEvent.MultiCall = eventsMulticalls
 	// calculate initialAmount on open new credit creditaccount
 	if mainEvent.Action == "OpenCreditAccount(address,address,uint256,uint16)" {
-		mdl.addCollteralForOpenCreditAccount(mainEvent.BlockNumber, mainEvent)
+		mdl.addCollateralForOpenCreditAccount(mainEvent.BlockNumber, mainEvent)
 	}
+}
+
+func (mdl CMv2) addCollateralForOpenCreditAccount(blockNum int64, mainAction *schemas.AccountOperation) {
+	collateral := mdl.getCollateralAmount(blockNum, mainAction)
+	(*mainAction.Args)["amount"] = collateral.String()
+	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": collateral})
 }

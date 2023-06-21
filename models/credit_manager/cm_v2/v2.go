@@ -1,4 +1,4 @@
-package credit_manager
+package cm_v2
 
 import (
 	"math/big"
@@ -13,11 +13,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *CreditManager) checkLogV2(txLog types.Log) {
+func (mdl *CMv2) checkLogV2(txLog types.Log) {
 	//-- for credit manager stats
 	switch txLog.Topics[0] {
 	case core.Topic("AddCollateral(address,address,uint256)"):
-		addCollateralEvent, err := mdl.facadeContractV2.ParseAddCollateral(txLog)
+		addCollateralEvent, err := mdl.facadeContractv2.ParseAddCollateral(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack AddCollateral event", err)
 		}
@@ -26,7 +26,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			addCollateralEvent.Token.Hex(),
 			addCollateralEvent.Value)
 	case core.Topic("OpenCreditAccount(address,address,uint256,uint16)"):
-		openCreditAccountEvent, err := mdl.facadeContractV2.ParseOpenCreditAccount(txLog)
+		openCreditAccountEvent, err := mdl.facadeContractv2.ParseOpenCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack OpenCreditAccount event", err)
 		}
@@ -36,7 +36,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			openCreditAccountEvent.BorrowAmount,
 			openCreditAccountEvent.ReferralCode)
 	case core.Topic("CloseCreditAccount(address,address)"):
-		closeCreditAccountEvent, err := mdl.facadeContractV2.ParseCloseCreditAccount(txLog)
+		closeCreditAccountEvent, err := mdl.facadeContractv2.ParseCloseCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack CloseCreditAccount event", err)
 		}
@@ -54,7 +54,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			mdl.State.Paused = false
 		}
 	case core.Topic("LiquidateCreditAccount(address,address,address,uint256)"):
-		liquidateCreditAccountEvent, err := mdl.facadeContractV2.ParseLiquidateCreditAccount(txLog)
+		liquidateCreditAccountEvent, err := mdl.facadeContractv2.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack LiquidateCreditAccount event", err)
 		}
@@ -82,14 +82,14 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	case core.Topic("MultiCallFinished()"):
 		mdl.multicall.End()
 	case core.Topic("IncreaseBorrowedAmount(address,uint256)"):
-		increaseBorrowEvent, err := mdl.facadeContractV2.ParseIncreaseBorrowedAmount(txLog)
+		increaseBorrowEvent, err := mdl.facadeContractv2.ParseIncreaseBorrowedAmount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack IncreaseBorrowedAmount event", err)
 		}
 		mdl.onIncreaseBorrowedAmountV2(&txLog, increaseBorrowEvent.Borrower.Hex(),
 			increaseBorrowEvent.Amount, "IncreaseBorrowedAmount")
 	case core.Topic("DecreaseBorrowedAmount(address,uint256)"):
-		decreaseBorrowEvent, err := mdl.facadeContractV2.ParseDecreaseBorrowedAmount(txLog)
+		decreaseBorrowEvent, err := mdl.facadeContractv2.ParseDecreaseBorrowedAmount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack DecreaseBorrowedAmount event", err)
 		}
@@ -97,7 +97,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			new(big.Int).Neg(decreaseBorrowEvent.Amount), "DecreaseBorrowedAmount")
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
-			transferAccount, err := mdl.facadeContractV2.ParseTransferAccount(txLog)
+			transferAccount, err := mdl.facadeContractv2.ParseTransferAccount(txLog)
 			if err != nil {
 				log.Fatal("[CreditManagerModel]: Cant unpack TransferAccount event", err)
 			}
@@ -108,7 +108,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 			mdl.onTransferAccountV2(&txLog, oldOwner.Hex(), newOwner.Hex())
 		}
 	case core.Topic("TransferAccountAllowed(address,address,bool)"):
-		transferAccount, err := mdl.facadeContractV2.ParseTransferAccountAllowed(txLog)
+		transferAccount, err := mdl.facadeContractv2.ParseTransferAccountAllowed(txLog)
 		log.CheckFatal(err)
 		mdl.Repo.TransferAccountAllowed(&schemas.TransferAccountAllowed{
 			From:        transferAccount.From.Hex(),
@@ -119,7 +119,7 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 		})
 	// on credit manager
 	case core.Topic("ExecuteOrder(address,address)"):
-		execute, err := mdl.contractETHV2.ParseExecuteOrder(txLog)
+		execute, err := mdl.cmContractv2.ParseExecuteOrder(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack ExecuteOrder event", err)
 		}
@@ -143,11 +143,6 @@ func (mdl *CreditManager) checkLogV2(txLog types.Log) {
 	}
 }
 
-func (mdl *CreditManager) onNewTxHashV2() {
-	nonMulticallExecuteEvents := mdl.processNonMultiCalls()
-	mdl.processRemainingMultiCalls(nonMulticallExecuteEvents)
-}
-
 // opencreditaccount
 // addcollateral
 // increase/decase borrow amount
@@ -160,32 +155,27 @@ func (mdl *CreditManager) onNewTxHashV2() {
 // openwithmulticall => other calls
 // multicallstarted => other calls
 // other calls => closed/liquidated
-func (mdl *CreditManager) processRemainingMultiCalls(nonMultiCallExecuteEvents []ds.ExecuteParams) {
+func (mdl *CMv2) processRemainingMultiCalls(lastTxHash string, nonMultiCallExecuteEvents []ds.ExecuteParams) {
 
 	facadeActions, openEventWithoutMulticall := mdl.multicall.PopMainActionsv2()
 
 	for _, entry := range openEventWithoutMulticall {
 		// opencreditaccount without mulitcall
 		openWithoutMC := entry.Data
-		mdl.setUpdateSession(openWithoutMC.SessionId)
+		mdl.SetSessionIsUpdated(openWithoutMC.SessionId)
 		mdl.Repo.AddAccountOperation(openWithoutMC)
-		mdl.addCollteralForOpenCreditAccount(openWithoutMC.BlockNumber, openWithoutMC)
+		mdl.addCollateralForOpenCreditAccount(openWithoutMC.BlockNumber, openWithoutMC)
 	}
 	if len(facadeActions) > 0 { // account operation will only exist if there are one or more facade actions
-		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(mdl.LastTxHash, mdl.GetCreditFacadeAddr())
+		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(lastTxHash, mdl.GetCreditFacadeAddr())
 		fixedFacadeActions := mdl.fixFacadeActionStructureViaTenderlyCalls(mainCalls, facadeActions)
-		mdl.validateAndSaveFacadeActions(mdl.LastTxHash, fixedFacadeActions, mainCalls, nonMultiCallExecuteEvents)
+		mdl.validateAndSaveFacadeActions(lastTxHash, fixedFacadeActions, mainCalls, nonMultiCallExecuteEvents)
 	} else if len(nonMultiCallExecuteEvents) > 0 {
-		mdl.saveExecuteEvents(nonMultiCallExecuteEvents)
+		mdl.SaveExecuteEvents(lastTxHash, nonMultiCallExecuteEvents)
 	}
 }
 
-func (mdl *CreditManager) setUpdateSession(sessionId string) {
-	// log.Info(log.DetectFunc(),sessionId, "increased")
-	mdl.UpdatedSessions[sessionId]++
-}
-
-func (mdl *CreditManager) processNonMultiCalls() (executeEvents []ds.ExecuteParams) {
+func (mdl *CMv2) processNonMultiCalls() (executeEvents []ds.ExecuteParams) {
 	events := mdl.multicall.PopNonMulticallEventsV2()
 
 	for _, event := range events {
@@ -195,11 +185,11 @@ func (mdl *CreditManager) processNonMultiCalls() (executeEvents []ds.ExecutePara
 			"TokenEnabled(address,address)",
 			"TokenDisabled(address,address)",
 			"DecreaseBorrowedAmount(address,uint256)":
-			mdl.setUpdateSession(event.SessionId)
+			mdl.SetSessionIsUpdated(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":
 			account := strings.Split(event.SessionId, "_")[0]
-			mdl.setUpdateSession(event.SessionId)
+			mdl.SetSessionIsUpdated(event.SessionId)
 			executeEvents = append(executeEvents, ds.ExecuteParams{
 				SessionId:     event.SessionId,
 				CreditAccount: common.HexToAddress(account),
@@ -216,7 +206,7 @@ func (mdl *CreditManager) processNonMultiCalls() (executeEvents []ds.ExecutePara
 }
 
 // TO CHECK
-func (mdl *CreditManager) getCollateralAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
+func (mdl *CMv2) getCollateralAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
 	balances := map[string]*big.Int{}
 	for _, event := range mainAction.MultiCall {
 		if event.Action == "AddCollateral(address,address,uint256)" {
@@ -262,10 +252,4 @@ func (mdl *CreditManager) getCollateralAmount(blockNum int64, mainAction *schema
 		log.Fatal("Collateral for opencreditaccount v2 is zero or nil")
 	}
 	return initialAmount
-}
-
-func (mdl *CreditManager) addCollteralForOpenCreditAccount(blockNum int64, mainAction *schemas.AccountOperation) {
-	collateral := mdl.getCollateralAmount(blockNum, mainAction)
-	(*mainAction.Args)["amount"] = collateral.String()
-	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": collateral})
 }

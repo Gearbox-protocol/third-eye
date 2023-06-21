@@ -1,4 +1,4 @@
-package credit_manager
+package cm_common
 
 import (
 	"math/big"
@@ -14,9 +14,9 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
-	for sessionId := range mdl.UpdatedSessions {
-		if mdl.ClosedSessions[sessionId] == nil {
+func (mdl *CMCommon) FetchFromDCForChangedSessions(blockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
+	for sessionId := range mdl.updatedSessions {
+		if mdl.closedSessions[sessionId] == nil {
 			call, processFn := mdl.updateSessionCallAndProcessFn(sessionId, blockNum)
 			if processFn != nil {
 				calls = append(calls, call)
@@ -27,8 +27,8 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) (calls [
 	{
 		calls := make([]multicall.Multicall2Call, 0)
 		processFns := make([]func(multicall.Multicall2Result), 0)
-		for sessionId, closeDetails := range mdl.ClosedSessions {
-			updates := mdl.UpdatedSessions[sessionId]
+		for sessionId, closeDetails := range mdl.closedSessions {
+			updates := mdl.updatedSessions[sessionId]
 			if updates != 0 {
 				// in this case, affected fields are data that we fetch from datacompressor:
 				//
@@ -55,12 +55,12 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) (calls [
 			processFns[i](result)
 		}
 	}
-	mdl.UpdatedSessions = make(map[string]int)
-	mdl.ClosedSessions = make(map[string]*SessionCloseDetails)
+	mdl.updatedSessions = make(map[string]int)
+	mdl.closedSessions = make(map[string]*SessionCloseDetails)
 	return
 }
 
-func (mdl *CreditManager) closeSessionCallAndResultFn(blockNum int64, sessionId string, closeDetails *SessionCloseDetails) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
+func (mdl *CMCommon) closeSessionCallAndResultFn(blockNum int64, sessionId string, closeDetails *SessionCloseDetails) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
@@ -91,7 +91,7 @@ func (mdl *CreditManager) closeSessionCallAndResultFn(blockNum int64, sessionId 
 	}
 }
 
-func (mdl *CreditManager) closeSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData, closeDetails *SessionCloseDetails) {
+func (mdl *CMCommon) closeSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData, closeDetails *SessionCloseDetails) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	// log.Info(mdl.params, session.Version,
 	// "totalvalue", data.TotalValue, closeDetails.Status,
@@ -156,9 +156,9 @@ func (mdl *CreditManager) closeSession(blockNum int64, session *schemas.CreditSe
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CreditManager) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
+func (mdl *CMCommon) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
 	multicall.Multicall2Call, func(multicall.Multicall2Result)) {
-	if mdl.dontGetSessionFromDC {
+	if mdl.DontGetSessionFromDCForTest {
 		return multicall.Multicall2Call{}, nil
 	}
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
@@ -180,7 +180,7 @@ func (mdl *CreditManager) updateSessionCallAndProcessFn(sessionId string, blockN
 	}
 }
 
-func (mdl *CreditManager) updateSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData) {
+func (mdl *CMCommon) updateSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
 	// create session snapshot
@@ -203,7 +203,7 @@ func (mdl *CreditManager) updateSession(blockNum int64, session *schemas.CreditS
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CreditManager) addFloatValue(account string, blockNum int64, dcv2Balances []dcv2.TokenBalance) *core.DBBalanceFormat {
+func (mdl *CMCommon) addFloatValue(account string, blockNum int64, dcv2Balances []dcv2.TokenBalance) *core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
 	for ind, balance := range dcv2Balances {
 		token := balance.Token.Hex()

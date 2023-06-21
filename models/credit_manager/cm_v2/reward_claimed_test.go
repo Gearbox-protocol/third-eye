@@ -1,4 +1,4 @@
-package credit_manager
+package cm_v2
 
 import (
 	"math/big"
@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 )
 
 type repo struct {
@@ -91,22 +92,24 @@ func TestRewardClaimed(t *testing.T) {
 	r.mgr.AddTokenTransfer(transfer2)
 	r.mgr.AddTokenTransfer(transfer3)
 
-	cmModel := CreditManager{
-		SyncAdapter: &ds.SyncAdapter{
-			Repo: r,
-			SyncAdapterSchema: &schemas.SyncAdapterSchema{
-				Contract: &schemas.Contract{
-					Address: cm,
-				},
+	adapter := &ds.SyncAdapter{
+		Repo: r,
+		SyncAdapterSchema: &schemas.SyncAdapterSchema{
+			Contract: &schemas.Contract{
+				Address: cm,
 			},
 		},
-		UpdatedSessions: map[string]int{},
+	}
+	cmModel := CMv2{
+		CMCommon: cm_common.NewCMCommon(adapter),
 		allowedProtocols: map[string]bool{
 			allowedProtocol:  true,
 			allowedProtocol2: true,
 		},
-		dontGetSessionFromDC: true,
 	}
+	cmModel.DontGetSessionFromDCForTest = true
+	cmModel.SetOnDirectTokenTransferFn(cmModel.getDirectTokenTransferFn())
+	//
 	cmModel.UpdateSessionWithDirectTokenTransferBefore(20)
 	if len(r.accountOperations) != 2 {
 		t.Fatal("Improper account operations", utils.ToJson(r.accountOperations))

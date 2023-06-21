@@ -1,4 +1,4 @@
-package credit_manager
+package cm_v2
 
 import (
 	"testing"
@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 )
 
 type RepoWrapper struct {
@@ -34,11 +35,12 @@ func TestGetCollateralAmountOnOpen(t *testing.T) {
 			usdc: {Symbol: "USDC", Decimals: 6},
 		},
 	}
-	cm := CreditManager{
-		SyncAdapter: &ds.SyncAdapter{Repo: repo},
-		State: &schemas.CreditManagerState{
-			UnderlyingToken: weth,
-		},
+	common := cm_common.NewCMCommon(&ds.SyncAdapter{Repo: repo})
+	common.State = &schemas.CreditManagerState{
+		UnderlyingToken: weth,
+	}
+	cm := CMv2{
+		CMCommon: common,
 	}
 	// account has weth as underlying
 	collateral := cm.getCollateralAmount(5, &schemas.AccountOperation{

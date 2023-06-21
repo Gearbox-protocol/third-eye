@@ -18,7 +18,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/composite_chainlink"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
-	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v1"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v2"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
@@ -123,7 +124,12 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.Pool:
 		return pool.NewPoolFromAdapter(adapter)
 	case ds.CreditManager:
-		return credit_manager.NewCreditManagerFromAdapter(adapter)
+		switch adapter.GetVersion() {
+		case 1:
+			return cm_v1.NewCMv1FromAdapter(adapter)
+		case 2:
+			return cm_v2.NewCMv2FromAdapter(adapter)
+		}
 	case ds.PriceOracle:
 		return price_oracle.NewPriceOracleFromAdapter(adapter)
 	case ds.ChainlinkPriceFeed:

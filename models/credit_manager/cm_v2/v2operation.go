@@ -1,4 +1,4 @@
-package credit_manager
+package cm_v2
 
 import (
 	"fmt"
@@ -7,40 +7,14 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *CreditManager) CMStatsOnOpenAccount(borrowAmount *big.Int) {
-	// manager state
-	mdl.State.TotalOpenedAccounts++
-	mdl.State.OpenedAccountsCount++
-	mdl.addBorrowAmountForBlock(borrowAmount)
-}
-
-// borroweAmount can't be negative
-func (mdl *CreditManager) addBorrowAmountForBlock(borrowAmount *big.Int) {
-	if borrowAmount.Sign() < 0 {
-		log.Fatal("Borrowed Amount can't be negative. As repaid amount is tracked on pool")
-	}
-	if mdl.borrowedAmountForBlock == nil {
-		mdl.borrowedAmountForBlock = new(big.Int)
-	}
-	mdl.borrowedAmountForBlock = new(big.Int).Add(mdl.borrowedAmountForBlock, borrowAmount)
-}
-func (mdl *CreditManager) getBorrowAmountForBlockAndClear() *big.Int {
-	if mdl.borrowedAmountForBlock == nil {
-		return new(big.Int)
-	}
-	lastValue := mdl.borrowedAmountForBlock
-	mdl.borrowedAmountForBlock = new(big.Int)
-	return lastValue
-}
-
-func (mdl *CreditManager) getExecuteOrderAccountOperationFromParams(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
+func (mdl *CMv2) getExecuteOrderAccountOperationFromParams(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
 	// credit manager has the execute event
 	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash, mdl.Address, executeParams)
 	for i, call := range calls {
@@ -69,7 +43,7 @@ func (mdl *CreditManager) getExecuteOrderAccountOperationFromParams(txHash strin
 // /////////////////////
 // Main actions
 // /////////////////////
-func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, account string,
+func (mdl *CMv2) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, account string,
 	borrowAmount *big.Int,
 	referralCode uint16) error {
 	mdl.CMStatsOnOpenAccount(borrowAmount)
@@ -116,7 +90,7 @@ func (mdl *CreditManager) onOpenCreditAccountV2(txLog *types.Log, onBehalfOf, ac
 
 // while closing funds can be transferred from the owner account too
 // https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditManager.sol#L286-L291
-func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to string) error {
+func (mdl *CMv2) onCloseCreditAccountV2(txLog *types.Log, owner, to string) error {
 	mdl.State.TotalClosedAccounts++ // update totalclosedStats
 	sessionId := mdl.GetCreditOwnerSession(owner)
 	account := strings.Split(sessionId, "_")[0]
@@ -168,20 +142,20 @@ func (mdl *CreditManager) onCloseCreditAccountV2(txLog *types.Log, owner, to str
 	mdl.multicall.AddCloseOrLiquidateEvent(accountOperation) // add event to multicall processor
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 
-	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{ // update closeSession map with session details
+	mdl.SetSessionIsClosed(sessionId, &cm_common.SessionCloseDetails{ // update closeSession map with session details
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         schemas.Closed,
 		TxHash:         txLog.TxHash.Hex(),
 		Borrower:       owner,
-	}
+	})
 
 	mdl.RemoveCreditOwnerSession(owner) // remove session to manager object
-	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
+	mdl.CloseAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
 }
 
-func (mdl *CreditManager) toJsonBalance(z core.Transfers) core.JsonFloatMap {
+func (mdl *CMv2) toJsonBalance(z core.Transfers) core.JsonFloatMap {
 	dbFormat := core.JsonFloatMap{}
 	for token, amt := range z {
 		dbFormat[token] = utils.GetFloat64Decimal(amt, mdl.Repo.GetToken(token).Decimals)
@@ -189,14 +163,14 @@ func (mdl *CreditManager) toJsonBalance(z core.Transfers) core.JsonFloatMap {
 	return dbFormat
 }
 
-func (mdl *CreditManager) getRemainingFundsOnClose(blockNum int64, txHash, borrower string) *core.Transfers {
+func (mdl *CMv2) getRemainingFundsOnClose(blockNum int64, txHash, borrower string) *core.Transfers {
 	// data := mdl.GetCreditSessionData(blockNum-1, borrower)
 	// for data.Balances {
 
 	// }
 	return nil
 }
-func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, liquidator string, remainingFunds *big.Int) error {
+func (mdl *CMv2) onLiquidateCreditAccountV2(txLog *types.Log, owner, liquidator string, remainingFunds *big.Int) error {
 	mdl.State.TotalLiquidatedAccounts++
 	sessionId := mdl.GetCreditOwnerSession(owner)
 
@@ -219,36 +193,36 @@ func (mdl *CreditManager) onLiquidateCreditAccountV2(txLog *types.Log, owner, li
 	}
 	// add event to multicall processor
 	mdl.multicall.AddCloseOrLiquidateEvent(accountOperation)
-	mdl.ClosedSessions[sessionId] = &SessionCloseDetails{
+	mdl.SetSessionIsClosed(sessionId, &cm_common.SessionCloseDetails{
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         schemas.Liquidated,
 		TxHash:         txLog.TxHash.Hex(),
 		Borrower:       owner,
-	}
+	})
 	session := mdl.Repo.GetCreditSession(sessionId)
 	session.Liquidator = liquidator
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	// remove session to manager object
 	mdl.RemoveCreditOwnerSession(owner)
-	mdl.closeAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
+	mdl.CloseAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 	return nil
 }
 
-func (mdl *CreditManager) setLiquidateStatus(sessionId string, isExpired bool) {
+func (mdl *CMv2) setLiquidateStatus(sessionId string, isExpired bool) {
 	status := schemas.Liquidated
 	if mdl.State.Paused {
 		status = schemas.LiquidatePaused
 	} else if isExpired {
 		status = schemas.LiquidateExpired
 	}
-	mdl.ClosedSessions[sessionId].Status = status
+	mdl.UpdateClosedSessionStatus(sessionId, status)
 }
 
 // /////////////////////
 // Side actions that can also be used as multicall events
 // /////////////////////
-func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token string, value *big.Int) {
+func (mdl *CMv2) onAddCollateralV2(txLog *types.Log, onBehalfOf, token string, value *big.Int) {
 	sessionId := mdl.GetCreditOwnerSession(onBehalfOf)
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent("AddCollateral", txLog)
@@ -272,10 +246,10 @@ func (mdl *CreditManager) onAddCollateralV2(txLog *types.Log, onBehalfOf, token 
 }
 
 // amount can be negative, if decrease borrowamount, add pool repay event
-func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int, eventName string) error {
+func (mdl *CMv2) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, amount *big.Int, eventName string) error {
 	// manager state
 	if amount.Sign() == 1 {
-		mdl.addBorrowAmountForBlock(amount)
+		mdl.AddBorrowAmountForBlock(amount)
 	}
 	// other operations
 	sessionId := mdl.GetCreditOwnerSession(borrower)
@@ -311,7 +285,7 @@ func (mdl *CreditManager) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower 
 	return nil
 }
 
-func (mdl *CreditManager) AddExecuteParamsV2(txLog *types.Log,
+func (mdl *CMv2) AddExecuteParamsV2(txLog *types.Log,
 	borrower,
 	targetContract common.Address) error {
 	sessionId := mdl.GetCreditOwnerSession(borrower.Hex(), true) // for borrower = creditfacade, session id is ""
@@ -329,11 +303,31 @@ func (mdl *CreditManager) AddExecuteParamsV2(txLog *types.Log,
 }
 
 // copied from v1
-func (mdl *CreditManager) onTransferAccountV2(txLog *types.Log, owner, newOwner string) error {
-	return mdl.onTransferAccount(txLog, owner, newOwner)
+func (mdl *CMv2) onTransferAccountV2(txLog *types.Log, owner, newOwner string) error {
+	sessionId := mdl.GetCreditOwnerSession(owner)
+	action, args := mdl.ParseEvent("TransferAccount", txLog)
+	// add account operation
+	accountOperation := &schemas.AccountOperation{
+		TxHash:      txLog.TxHash.Hex(),
+		BlockNumber: int64(txLog.BlockNumber),
+		LogId:       txLog.Index,
+		Borrower:    owner,
+		SessionId:   sessionId,
+		AdapterCall: false,
+		Action:      action,
+		Args:        args,
+		Transfers:   nil,
+		Dapp:        txLog.Address.Hex(),
+	}
+	mdl.AddAccountOperation(accountOperation)
+	// remove session to manager object
+	mdl.RemoveCreditOwnerSession(owner)
+	mdl.AddCreditOwnerSession(newOwner, sessionId)
+	mdl.Repo.UpdateCreditSession(sessionId, map[string]interface{}{"Borrower": newOwner})
+	return nil
 }
 
-func (mdl *CreditManager) enableOrDisableToken(txLog types.Log, action string) {
+func (mdl *CMv2) enableOrDisableToken(txLog types.Log, action string) {
 	borrower := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 	token := common.BytesToAddress(txLog.Topics[2][:]).Hex()
 	//

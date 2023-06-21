@@ -1,66 +1,18 @@
-package credit_manager
+package cm_v1
 
 import (
-	"math/big"
-
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-// sets underlying state on init
-// pool, and underlying token address
-func (mdl *CreditManager) CommonInit(version core.VersionType) {
-	// do state changes
-	// create underlying token
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(mdl.DiscoveredAt),
-	}
-	var underlyingToken common.Address
-	var err error
-	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)
-	log.CheckFatal(err)
-	if version.IsGBv1() {
-		underlyingToken, err = cmContract.UnderlyingToken(opts)
-		log.CheckFatal(err)
-	} else {
-		contract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(mdl.Address), mdl.Client)
-		log.CheckFatal(err)
-		underlyingToken, err = contract.Underlying(opts)
-		log.CheckFatal(err)
-	}
-	mdl.Repo.GetToken(underlyingToken.Hex())
-	//
-	poolAddr, err := cmContract.PoolService(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
-	mdl.SetUnderlyingState(&schemas.CreditManagerState{
-		Address:         mdl.Address,
-		PoolAddress:     poolAddr.Hex(),
-		UnderlyingToken: underlyingToken.Hex(),
-		Version:         version,
-	})
+func (mdl *CMv1) OnLog(txLog types.Log) {
+	mdl.CMCommon.OnLog(txLog)
+	mdl.checkLogV1(txLog)
 }
-
-func (cm *CreditManager) addCreditFilterAdapter(blockNum int64) {
-	creditFilter, err := cm.contractETHV1.CreditFilter(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)})
-	if err != nil {
-		log.Fatal(err)
-	}
-	cm.Repo.GetDCWrapper().AddCreditManagerToFilter(cm.Address, creditFilter.Hex())
-	cf := credit_filter.NewCreditFilter(creditFilter.Hex(), ds.CreditFilter, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
-	cm.Repo.AddSyncAdapter(cf)
-}
-
-func (mdl *CreditManager) checkLogV1(txLog types.Log) {
+func (mdl *CMv1) checkLogV1(txLog types.Log) {
 	//-- for credit manager stats
 	switch txLog.Topics[0] {
 	case core.Topic("OpenCreditAccount(address,address,address,uint256,uint256,uint256)"):
@@ -146,7 +98,7 @@ func (mdl *CreditManager) checkLogV1(txLog types.Log) {
 			LiquidationDiscount: uint16(paramsEvent.LiquidationDiscount.Int64()),
 		}
 		mdl.Repo.AddParameters(txLog.Index, txLog.TxHash.Hex(), params, mdl.State.UnderlyingToken)
-		mdl.setParams(params)
+		mdl.SetParams(params)
 	case core.Topic("TransferAccount(address,address)"):
 		if len(txLog.Data) == 0 { // oldowner and newowner are indexed
 			transferAccount, err := mdl.contractETHV1.ParseTransferAccount(txLog)
