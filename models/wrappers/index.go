@@ -126,9 +126,6 @@ func (SyncWrapper) GetUnderlyingState() interface{} {
 func (SyncWrapper) Query(queryTill int64) {
 }
 
-func (SyncWrapper) Version() int16 {
-	return 1
-}
 func (SyncWrapper) GetDetails() core.Json {
 	return nil
 }
@@ -151,7 +148,7 @@ func (SyncWrapper) SetBlockToDisableOn(int64) {
 }
 
 // /
-func (SyncWrapper) GetVersion() int16 {
+func (SyncWrapper) GetVersion() core.VersionType {
 	return 1
 }
 func (w SyncWrapper) GetLastSync() int64 {

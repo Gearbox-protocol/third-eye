@@ -74,7 +74,7 @@ func (mdl *CreditManager) OnLog(txLog types.Log) {
 	mdl.onTxHash(txLog.TxHash.Hex())
 	mdl.lastEventBlock = int64(txLog.BlockNumber)
 	//
-	mdl.Repo.GetAccountManager().DeleteTxHash(blockNum, txLog.TxHash.Hex())
+	mdl.Repo.GetAccountManager().DeleteTxHash(int64(txLog.BlockNumber), txLog.TxHash.Hex())
 	if mdl.GetVersion().IsGBv1() {
 		mdl.checkLogV1(txLog)
 	} else {

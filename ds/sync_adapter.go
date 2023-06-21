@@ -61,7 +61,7 @@ type SyncAdapterI interface {
 	GetDetailsByKey(key string) string
 	GetDetails() core.Json
 	GetVersion() core.VersionType
-	GetOtherAddrsForLogs() []common.Address
+	GetAllAddrsForLogs() []common.Address
 	Topics() [][]common.Hash
 }
 
