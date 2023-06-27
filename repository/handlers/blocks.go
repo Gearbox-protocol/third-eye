@@ -69,6 +69,13 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 }
 
 // external funcs
+func (repo *BlocksRepo) GetPrice(token string) *big.Int {
+	if details := repo.prevStore.currentPrices[token]; details != nil {
+		return details.PriceBI.Convert()
+	}
+	return nil
+}
+
 func (repo *BlocksRepo) GetBlocks() map[int64]*schemas.Block {
 	repo.mu.RLock()
 	defer repo.mu.RUnlock()

@@ -41,6 +41,7 @@ type RepositoryI interface {
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
 	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool)
 	//
+	GetPrice(token string) *big.Int
 	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol)

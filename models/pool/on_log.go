@@ -34,6 +34,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			AmountBI:    (*core.BigInt)(addLiquidityEvent.Amount),
 			Amount:      utils.GetFloat64Decimal(addLiquidityEvent.Amount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals),
 		})
+		mdl.checkIfAmountMoreThan1Mil(addLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "deposit")
 		mdl.lastEventBlock = blockNum
 	case core.Topic("RemoveLiquidity(address,address,uint256)"):
 		removeLiquidityEvent, err := mdl.contractETH.ParseRemoveLiquidity(txLog)
@@ -50,6 +51,8 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			AmountBI:    (*core.BigInt)(removeLiquidityEvent.Amount),
 		})
 		mdl.lastEventBlock = blockNum
+		mdl.checkIfAmountMoreThan1Mil(removeLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "withdrawn")
+
 	case core.Topic("Borrow(address,address,uint256)"):
 		mdl.lastEventBlock = blockNum
 	case core.Topic("Repay(address,uint256,uint256,uint256)"):
@@ -153,5 +156,20 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		ind := txLog.TxIndex - 3
 		blockNum := int64(txLog.BlockNumber)
 		mdl.gatewayHandler.checkWithdrawETH(blockNum, int64(ind), mdl.Address, to)
+	}
+}
+
+func (mdl Pool) checkIfAmountMoreThan1Mil(amount *big.Int, blockNum int64, txHash string, operation string) {
+	token := mdl.State.UnderlyingToken
+	priceInUSD := mdl.Repo.GetPrice(token)
+	if priceInUSD == nil {
+		return
+	}
+	value := utils.GetFloat64Decimal(new(big.Int).Mul(priceInUSD, amount), mdl.Repo.GetToken(token).Decimals+8)
+	if value > 1_000_000 {
+		mdl.Repo.RecentMsgf(log.RiskHeader{
+			BlockNumber: blockNum,
+			EventCode:   "AMQP",
+		}, "Pool %s  in %s is more than 1Million USD, calculated value is %d", operation, txHash, value)
 	}
 }
