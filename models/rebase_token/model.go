@@ -20,6 +20,7 @@ type RebaseToken struct {
 	state               *schemas.RebaseTokenDetails
 	knownImplmentations []string
 	lastBlockNum        int64
+	prevRatio           *big.Int
 }
 
 func NewRebaseToken(addr string, client core.ClientI, repo ds.RepositoryI) *RebaseToken {
@@ -87,11 +88,13 @@ func NewRebaseTokenFromAdapter(adapter *ds.SyncAdapter) *RebaseToken {
 			"0x47EbaB13B806773ec2A2d16873e2dF770D130b50", // same as above implemenation but was added at 14860268
 			"0x17144556fd3424EDC8Fc8A4C940B2D04936d17eb", // 2 for steth on mainnet, 17266004
 		},
+		prevRatio: new(big.Int),
 		// validatorHandler: NewValidatorHandler(core.GetChainId(adapter.Client)),
 	}
 	if obj.Details["kernel"] == nil {
 		obj.operationsAtInit(obj.LastSync)
 	} else {
+		obj.state = &schemas.RebaseTokenDetails{}
 		obj.state.Unserialize(obj.Details)
 	}
 	return obj
@@ -129,5 +132,13 @@ func (mdl RebaseToken) GetAllAddrsForLogs() []common.Address {
 	return []common.Address{
 		common.HexToAddress(mdl.Address),
 		mdl.state.Kernel,
+	}
+}
+
+func (mdl *RebaseToken) SetUnderlyingState(state interface{}) {
+	switch v := state.(type) {
+	case *schemas.RebaseDetailsForDB:
+		mdl.prevRatio = getETHToSharesRatio(v)
+		log.Info(mdl.prevRatio)
 	}
 }

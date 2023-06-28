@@ -24,14 +24,16 @@ func main() {
 	db := repository.NewDBClient(&cfg)
 
 	query := `SELECT id, css.session_id, block_num , css.balances FROM
-	credit_session_snapshots css WHERE css.balances ?? (SELECT address FROM tokens where symbol='stETH');`
+	credit_session_snapshots css WHERE css.balances ? (SELECT address FROM tokens where symbol='stETH');`
 	css := []schemas.CreditSessionSnapshot{}
 	err = db.Raw(query).Find(&css).Error
-	stETH := core.GetSymToAddrByChainId(core.GetChainId(client)).Tokens["stETH"]
 	log.CheckFatal(err)
 
+	stETH := core.GetSymToAddrByChainId(core.GetChainId(client)).Tokens["stETH"]
 	tx := db.Begin()
-	for _, snapshot := range css {
+	log.Info(len(css))
+	for ind, snapshot := range css {
+		log.Info(ind)
 		account := strings.Split(snapshot.SessionId, "_")[0]
 		accountData := common.HexToHash(account)
 		_v, err := core.CallFuncWithExtraBytes(
@@ -48,12 +50,13 @@ func main() {
 			F:         utils.GetFloat64Decimal(amt, 18),
 			Ind:       -1,
 		}
-		err = tx.Raw("UPDATE credit_session_snapshots set balances=? WHERE id = ?", snapshot.Balances, snapshot.ID).Error
+		// log.Info(ind, snapshot.BlockNum, snapshot.SessionId, utils.ToJson(snapshot.Balances))
+		err = tx.Exec("UPDATE credit_session_snapshots set balances=? WHERE id = ?", snapshot.Balances, snapshot.ID).Error
 		log.CheckFatal(err)
 	}
 	//
-	query2 := `UPDATE credit_sessions cs set cs.balances= css.balances FROM (SELECT DISTINCT ON (session_id) balances, session_id from credit_session_snapshots ORDER BY session_id, block_num DESC) css WHERE cs.id= css.session_id`
-	log.CheckFatal(tx.Raw(query2).Error)
+	query2 := `UPDATE credit_sessions set balances= css.balances FROM (SELECT DISTINCT ON (session_id) balances, session_id from credit_session_snapshots ORDER BY session_id, block_num DESC) css WHERE credit_sessions.id= css.session_id`
+	log.CheckFatal(tx.Exec(query2).Error)
 	//
 	info := tx.Commit()
 	log.CheckFatal(info.Error)

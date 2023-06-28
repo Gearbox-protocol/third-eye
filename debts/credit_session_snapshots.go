@@ -28,5 +28,7 @@ func (eng *DebtEngine) loadLastRebaseDetails(lastDebtSync int64) {
 	query := `SELECT * FROM rebase_details WHERE block_num <= ? order by block_num DESC Limit 1`
 	err := eng.db.Raw(query, lastDebtSync).Find(obj).Error
 	log.CheckFatal(err)
-	eng.lastRebaseDetails = obj
+	if obj.BlockNum != 0 {
+		eng.lastRebaseDetails = obj
+	}
 }

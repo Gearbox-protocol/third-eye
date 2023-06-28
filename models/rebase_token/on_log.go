@@ -5,27 +5,44 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *RebaseToken) saveUpdatesFromValidatorsJson(blockNum int64, saveLast bool) {
-	// for _, update := range mdl.validatorHandler.GetValuesBefore(blockNum) {
-	// 	mdl.state.DepositValidators = update.Validator
-	// 	if update.Block != blockNum || saveLast {
-	// 		//TODO: save
-	// 		mdl.Repo.AddRebaseDetailsForDB(mdl.state.GetDataForDB(update.Block))
-	// 	}
-	// }
+// func (mdl *RebaseToken) saveUpdatesFromValidatorsJson(blockNum int64, saveLast bool) {
+// for _, update := range mdl.validatorHandler.GetValuesBefore(blockNum) {
+// 	mdl.state.DepositValidators = update.Validator
+// 	if update.Block != blockNum || saveLast {
+// 		//TODO: save
+// 		mdl.Repo.AddRebaseDetailsForDB(mdl.state.GetDataForDB(update.Block))
+// 	}
+// }
+// }
+
+func (mdl *RebaseToken) save(blockNum int64) {
+	if blockNum == 0 {
+		return
+	}
+	dataToSave := mdl.state.GetDataForDB(blockNum)
+	newRatio := getETHToSharesRatio(dataToSave)
+	if utils.DiffMoreThanFraction(newRatio, mdl.prevRatio, big.NewFloat(.001)) { // .1%
+		mdl.Repo.AddRebaseDetailsForDB(dataToSave)
+		mdl.prevRatio = newRatio
+	}
+}
+func getETHToSharesRatio(dataToSave *schemas.RebaseDetailsForDB) *big.Int {
+	return new(big.Int).Quo(utils.GetInt64(dataToSave.TotalETH.Convert(), -18), dataToSave.TotalShares.Convert())
 }
 func (mdl *RebaseToken) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
-	if mdl.lastBlockNum != 0 && mdl.lastBlockNum != blockNum {
+	if mdl.lastBlockNum != blockNum {
 		// TODO:save
-		mdl.Repo.AddRebaseDetailsForDB(mdl.state.GetDataForDB(mdl.lastBlockNum))
+		mdl.save(mdl.lastBlockNum)
 	}
-	mdl.saveUpdatesFromValidatorsJson(blockNum, false)
+	// mdl.saveUpdatesFromValidatorsJson(blockNum, false)
 	mdl.lastBlockNum = blockNum
 	switch txLog.Topics[0] {
 	case core.Topic("SetApp(bytes32,bytes32,address)"):
@@ -104,10 +121,10 @@ func (mdl *RebaseToken) OnLog(txLog types.Log) {
 
 func (mdl *RebaseToken) AfterSyncHook(block int64) {
 	// TODO:save
-	mdl.Repo.AddRebaseDetailsForDB(mdl.state.GetDataForDB(mdl.lastBlockNum))
+	mdl.save(mdl.lastBlockNum)
 	mdl.lastBlockNum = 0
 	//
-	mdl.saveUpdatesFromValidatorsJson(block, true)
+	// mdl.saveUpdatesFromValidatorsJson(block, true)
 	//
 	mdl.Details = mdl.state.Serialize()
 	//

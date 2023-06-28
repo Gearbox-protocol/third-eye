@@ -38,7 +38,7 @@ func (calc FarmingCalculator) addFarmingVal(debt *schemas.Debt, session *schemas
 	}
 	var farmingVal float64 = 0
 	for token, balance := range *css.Balances {
-		if !calc.tradingTokensMap[token] {
+		if balance.IsEnabled && balance.HasBalanceMoreThanOne() && !calc.tradingTokensMap[token] {
 			var priceDecimals int8 = 8
 			if session.Version == 1 {
 				priceDecimals = 18

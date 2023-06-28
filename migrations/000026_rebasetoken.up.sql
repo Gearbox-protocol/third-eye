@@ -1,7 +1,7 @@
 create table rebase_details(
     total_eth varchar(80),
     total_shares varchar(80),
-    blockNum integer PRIMARY KEY
+    block_num integer PRIMARY KEY
 );
 
 INSERT INTO sync_adapters(address,discovered_at,last_sync,firstlog_at,type ) 

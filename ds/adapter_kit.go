@@ -9,9 +9,10 @@ type AdapterKit struct {
 }
 
 func (kit *AdapterKit) init() {
+	// wrapper should have same topics
 	kit.AddLevel([]string{AddressProvider})
 	// REVERT_ADMIN_WRAPPER: ACL, AccountFactory, GearToken, ContractRegister, RebaseToken
-	kit.AddLevel([]string{PriceOracle, AdminWrapper})
+	kit.AddLevel([]string{PriceOracle, AdminWrapper, RebaseToken})
 	// REVERT_POOL_WRAPPER
 	kit.AddLevel([]string{PoolWrapper, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
 	// REVERT_CM_WRAPPER
