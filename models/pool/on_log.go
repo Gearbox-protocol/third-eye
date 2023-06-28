@@ -167,9 +167,10 @@ func (mdl Pool) checkIfAmountMoreThan1Mil(amount *big.Int, blockNum int64, txHas
 	}
 	value := utils.GetFloat64Decimal(new(big.Int).Mul(priceInUSD, amount), mdl.Repo.GetToken(token).Decimals+8)
 	if value > 1_000_000 {
+		urls := core.NetworkUIUrl(core.GetChainId(mdl.Client))
 		mdl.Repo.RecentMsgf(log.RiskHeader{
 			BlockNumber: blockNum,
 			EventCode:   "AMQP",
-		}, "Pool %s  in %s is more than 1Million USD, calculated value is %d", operation, txHash, value)
+		}, "Pool %s in %s is more than 1Million USD, calculated value is %f", operation, urls.ExplorerHashUrl(txHash), value)
 	}
 }

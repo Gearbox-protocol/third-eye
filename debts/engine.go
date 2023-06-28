@@ -289,18 +289,15 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	// solution: fetch price again for all stale yearn feeds
 	if profile != nil {
 		yearnFeeds := eng.repo.GetYearnFeedAddrs()
-		for tokenAddr := range *sessionSnapshot.Balances {
-			lastPriceEvent := eng.getTokenPriceFeed(tokenAddr, session.Version)
-			// for weth price feed is null
-			// if lastPriceEvent != nil {
-			// 	log.Infof("%+v\n",lastPriceEvent)
-			// 	feed := lastPriceEvent.Feed
-			// 	eng.requestPriceFeed(blockNum, feed, tokenAddr)
-			// }
-			if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
-				feed := lastPriceEvent.Feed
-				if utils.Contains(yearnFeeds, feed) {
-					eng.requestPriceFeed(blockNum, feed, tokenAddr, lastPriceEvent.IsPriceInUSD)
+		for tokenAddr, details := range *sessionSnapshot.Balances {
+			if details.IsEnabled && details.HasBalanceMoreThanOne() {
+				lastPriceEvent := eng.getTokenPriceFeed(tokenAddr, session.Version)
+				//
+				if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
+					feed := lastPriceEvent.Feed
+					if utils.Contains(yearnFeeds, feed) {
+						eng.requestPriceFeed(blockNum, feed, tokenAddr, lastPriceEvent.IsPriceInUSD)
+					}
 				}
 			}
 		}
