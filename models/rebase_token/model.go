@@ -109,7 +109,7 @@ func (mdl RebaseToken) Topics() [][]common.Hash {
 		// - position: DEPOSITED_VALIDATORS_POSITION
 		core.Topic("DepositedValidatorsChanged(uint256)"), // DepositedValidatorsChanged [final value]
 		// - position: BUFFERED_ETHER_POSITION
-		core.Topic("Unbuffered(uint256)"),                                             // Unbuffered [delta]
+		core.Topic("Unbuffered(uint256)"),                                             // Unbuffered [-delta]
 		core.Topic("Submitted(address,uint256,address)"),                              // Submitted [delta]
 		core.Topic("ETHDistributed(uint256,uint256,uint256,uint256,uint256,uint256)"), // ETHDistributed(last field) [final value] subtracted value due to withdrawals
 		//

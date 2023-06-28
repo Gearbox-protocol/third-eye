@@ -14,6 +14,8 @@ import (
 
 var validatorsKey string = "0x9f70001d82b6ef54e9d3725b46581c3eb9ee3aa02b941b6aa54d678a9ca35b10"
 var totalSharesKey string = "0xe3b4b636e601189b5f4c6742edf2538ac12bb61ed03e6da26949d69838fa447e"
+var depositedBalanceKey string = "0xed310af23f61f96daefbcd140b306c0bdbf8c178398299741687b90e794772b0"
+var clBalanceKey string = "0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483"
 
 func FetchRebaseDetails() {
 	client := ethclient.NewEthClient(&config.Config{EthProvider: ""})

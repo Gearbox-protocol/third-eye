@@ -28,7 +28,10 @@ func (mdl *RebaseToken) save(blockNum int64) {
 	}
 	dataToSave := mdl.state.GetDataForDB(blockNum)
 	newRatio := getETHToSharesRatio(dataToSave)
-	if utils.DiffMoreThanFraction(newRatio, mdl.prevRatio, big.NewFloat(.001)) { // .1%
+	if newRatio.Cmp(mdl.prevRatio) < 0 {
+		log.Fatal(mdl.prevRatio, newRatio, utils.ToJson(mdl.state))
+	}
+	if utils.DiffMoreThanFraction(newRatio, mdl.prevRatio, big.NewFloat(.00001)) { // .001%
 		mdl.Repo.AddRebaseDetailsForDB(dataToSave)
 		mdl.prevRatio = newRatio
 	}
@@ -68,7 +71,7 @@ func (mdl *RebaseToken) OnLog(txLog types.Log) {
 			mdl.state.DepositBalance = core.NewBigInt(nil)
 		}
 		mdl.state.DepositBalance = (*core.BigInt)(
-			new(big.Int).Add(mdl.state.DepositBalance.Convert(), delta))
+			new(big.Int).Sub(mdl.state.DepositBalance.Convert(), delta))
 	case core.Topic("Submitted(address,uint256,address)"):
 		event, err := mdl.contract.ParseSubmitted(txLog)
 		log.CheckFatal(err)

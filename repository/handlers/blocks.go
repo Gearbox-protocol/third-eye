@@ -45,6 +45,7 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	data := []*schemas.Block{}
 	err := repo.db.Preload("CSS").Preload("PoolStats").
 		Preload("AllowedTokens").Preload("PriceFeeds").Preload("Params").
+		Preload("RebaseDetailsForDB").
 		Find(&data, "id > ? AND id <= ?", from, to).Error
 	if err != nil {
 		log.Fatal(err)
