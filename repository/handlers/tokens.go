@@ -22,8 +22,9 @@ type TokensRepo struct {
 	// diesel tokens to pool and underlying
 	dieselTokens map[string]*schemas.UTokenAndPool
 	//
-	mu     *sync.Mutex
-	client core.ClientI
+	mu             *sync.Mutex
+	client         core.ClientI
+	symToAddrToken map[string]common.Address
 }
 
 func NewTokensRepo(client core.ClientI) *TokensRepo {
@@ -33,8 +34,17 @@ func NewTokensRepo(client core.ClientI) *TokensRepo {
 		//
 		tokens: map[string]*schemas.Token{},
 		// for getting the diesel tokens
-		dieselTokens: make(map[string]*schemas.UTokenAndPool),
+		dieselTokens:   make(map[string]*schemas.UTokenAndPool),
+		symToAddrToken: core.GetSymToAddrByChainId(core.GetChainId(client)).Tokens,
 	}
+}
+
+func (repo *TokensRepo) GetTokenFromSdk(symbol string) string {
+	if addr, ok := repo.symToAddrToken[symbol]; ok {
+		return addr.Hex()
+	}
+	log.Fatalf("Can't get token(%s) from sdk", symbol)
+	return ""
 }
 
 // load/save tokens

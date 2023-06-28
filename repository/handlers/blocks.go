@@ -191,6 +191,9 @@ func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 func (repo *BlocksRepo) AddDieselTransfer(transfer *schemas.DieselTransfer) {
 	repo.SetAndGetBlock(transfer.BlockNum).AddDieselTransfer(transfer)
 }
+func (repo *BlocksRepo) AddRebaseDetailsForDB(transfer *schemas.RebaseDetailsForDB) {
+	repo.SetAndGetBlock(transfer.BlockNum).AddRebaseDetailsForDB(transfer)
+}
 
 func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)

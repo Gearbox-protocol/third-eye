@@ -14,6 +14,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
+	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -58,15 +59,30 @@ func (e *Engine) init() {
 	e.debtEng.ProcessBackLogs()
 }
 
+func (e *Engine) addstETHToken() {
+	// rebase token stETH
+	chainId := core.GetChainId(e.Client)
+	if chainId != 1 {
+		return
+	}
+	addr := core.GetSymToAddrByChainId(chainId).Tokens["stETH"]
+	stETHToken := rebase_token.NewRebaseToken(addr.Hex(), e.Client, e.repo)
+	e.repo.AddSyncAdapter(stETHToken)
+}
+
 func (e *Engine) getLastSyncedTill() int64 {
 	kit := e.repo.GetKit()
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {
+		// address Provider
 		addr := common.HexToAddress(e.config.AddressProviderAddress).Hex()
 		obj := address_provider.NewAddressProvider(addr, e.Client, e.repo)
 		e.repo.AddSyncAdapter(obj)
+		// pool LM rewards
 		poolLMRewardObj := pool_lmrewards.NewPoolLMRewards("0x000000000000000000000000000000000000beef", obj.FirstLogAt-1, e.Client, e.repo)
+		e.addstETHToken()
 		e.repo.AddSyncAdapter(poolLMRewardObj)
+
 		return obj.GetLastSync()
 	} else {
 		// it will allow syncing from scratch of least synced adapter in batches

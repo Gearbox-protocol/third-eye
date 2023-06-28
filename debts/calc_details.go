@@ -9,15 +9,20 @@ import (
 
 type sessionDetailsForCalc struct {
 	*schemas.CreditSessionSnapshot
-	CM string
+	CM            string
+	rebaseDetails *schemas.RebaseDetailsForDB
+	stETH         string
 }
 
 func (s sessionDetailsForCalc) GetCM() string {
 	return s.CM
 }
 func (s sessionDetailsForCalc) GetBalances() map[string]core.BalanceType {
-	return s.Balances.ToBalanceType()
+	balances := s.Balances.ToBalanceType()
+	schemas.AdjustRebaseToken(balances, s.stETH, s.rebaseDetails)
+	return balances
 }
+
 func (s sessionDetailsForCalc) GetBorrowedAmount() *big.Int {
 	return s.BorrowedAmountBI.Convert()
 }

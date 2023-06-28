@@ -21,6 +21,8 @@ const (
 	AccountManager     = "AccountManager"
 	CreditConfigurator = "CreditConfigurator"
 	PoolLMRewards      = "PoolLMRewards"
+	//
+	RebaseToken = "RebaseToken"
 	// Wrapper
 	AggregatedQueryFeedWrapper = "AggregatedQueryFeedWrapper"
 	AdminWrapper               = "AdminWrapper"

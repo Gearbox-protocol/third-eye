@@ -3,7 +3,6 @@ package credit_manager
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
@@ -142,7 +141,7 @@ func (mdl *CreditManager) closeSession(blockNum int64, session *schemas.CreditSe
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	// set balances
-	css.Balances = mdl.addFloatValue(data.Balances)
+	css.Balances = mdl.addFloatValue(session.Account, blockNum-1, data.Balances)
 	// for close credit account operation on gearbox v2
 	// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditFacade.sol#L235
 	// there is a skipTokenMask which can be used to skip certain tokens from getting transferred to borrower
@@ -195,7 +194,7 @@ func (mdl *CreditManager) updateSession(blockNum int64, session *schemas.CreditS
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	// set balances of css and credit session
-	css.Balances = mdl.addFloatValue(data.Balances)
+	css.Balances = mdl.addFloatValue(session.Account, blockNum, data.Balances)
 	session.Balances = css.Balances
 	//
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
@@ -204,7 +203,7 @@ func (mdl *CreditManager) updateSession(blockNum int64, session *schemas.CreditS
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CreditManager) addFloatValue(dcv2Balances []dataCompressorv2.TokenBalance) *core.DBBalanceFormat {
+func (mdl *CreditManager) addFloatValue(account string, blockNum int64, dcv2Balances []dcv2.TokenBalance) *core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
 	for ind, balance := range dcv2Balances {
 		token := balance.Token.Hex()
@@ -215,6 +214,23 @@ func (mdl *CreditManager) addFloatValue(dcv2Balances []dataCompressorv2.TokenBal
 				BI:        (*core.BigInt)(balance.Balance),
 				F:         utils.GetFloat64Decimal(balance.Balance, mdl.Repo.GetToken(token).Decimals),
 				Ind:       ind,
+			}
+			if mdl.Repo.GetTokenFromSdk("stETH") == token {
+				accountData := common.HexToHash(account)
+				_v, err := core.CallFuncWithExtraBytes(
+					mdl.Client, "f5eb42dc", // shareOf, https://etherscan.io/token/0xae7ab96520de3a18e5e111b5eaab095312d7fe84#readProxyContract
+					common.HexToAddress(token), blockNum, accountData[:],
+				)
+				log.CheckFatal(err)
+				amt := new(big.Int).SetBytes(_v)
+				//
+				dbFormat[core.NULL_ADDR.Hex()] = core.CoreIntBalance{
+					IsAllowed: false,
+					IsEnabled: false,
+					BI:        (*core.BigInt)(amt),
+					F:         utils.GetFloat64Decimal(amt, 18),
+					Ind:       -1,
+				}
 			}
 		}
 	}

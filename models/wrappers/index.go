@@ -115,7 +115,7 @@ func (s SyncWrapper) GetAddress() string {
 	return s.name
 }
 
-func (SyncWrapper) HasUnderlyingState() bool {
+func (SyncWrapper) HasUnderlyingStateToSave() bool {
 	return false
 }
 
