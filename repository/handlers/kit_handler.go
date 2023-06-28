@@ -48,8 +48,8 @@ func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 	switch adapterI.GetName() {
 	case ds.QueryPriceFeed:
 		handler.aggregatedBlockFeed.AddYearnFeed(adapterI)
-		// REVERT ADMIN_WRAPPER
-	case ds.ContractRegister, ds.ACL, ds.AccountFactory, ds.GearToken:
+		// REVERT_ADMIN_WRAPPER
+	case ds.ContractRegister, ds.ACL, ds.AccountFactory, ds.GearToken, ds.RebaseToken:
 		handler.adminWrapper.AddSyncAdapter(adapterI)
 		// REVERT_CF_WRAPPER
 	case ds.CreditFilter, ds.CreditConfigurator:
@@ -126,7 +126,8 @@ func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string {
 		return repo.cmWrapper.GetUnderlyingAdapterAddrs()
 	}
 	// REVERT_ADMIN_WRAPPER
-	if utils.Contains([]string{ds.ContractRegister, ds.ACL, ds.AccountFactory, ds.GearToken}, name) {
+	if utils.Contains([]string{ds.ContractRegister, ds.ACL, ds.AccountFactory,
+		ds.GearToken, ds.RebaseToken}, name) {
 		return repo.adminWrapper.GetAdapterAddrByName(name)
 	}
 	return repo.kit.GetAdapterAddressByName(name)

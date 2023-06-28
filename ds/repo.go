@@ -73,6 +73,7 @@ type RepositoryI interface {
 	// pools
 	AddPoolStat(ps *schemas.PoolStat)
 	AddDieselTransfer(dt *schemas.DieselTransfer)
+	AddRebaseDetailsForDB(transfer *schemas.RebaseDetailsForDB)
 	AddPoolLedger(pl *schemas.PoolLedger)
 	GetPoolUniqueUserLen(pool string) int
 	IsDieselToken(token string) bool
@@ -107,4 +108,6 @@ type RepositoryI interface {
 	// for testing
 	AddTokenObj(token *schemas.Token)
 	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
+	//
+	GetTokenFromSdk(symbol string) string
 }

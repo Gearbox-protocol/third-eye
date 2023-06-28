@@ -34,10 +34,15 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	// L3 credit session snapshots
 	// L4 lt
 	// L5 pricefeeds
+	// L5 rebaseToken details for stETH
 	//
 	// L1:update params
 	for _, params := range block.GetParams() {
 		eng.addLastParameters(params)
+	}
+	// L6: rebaseToken
+	for _, params := range block.RebaseDetailsForDB {
+		eng.lastRebaseDetails = params
 	}
 
 	///////////////////////////////////
@@ -323,7 +328,12 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	calHF, calDebt, calTotalValue, calThresholdValue, _calBorowedWithInterst := calculator.CalcAccountFields(
 		session.Version,
 		blockNum,
-		sessionDetailsForCalc{CreditSessionSnapshot: sessionSnapshot, CM: session.CreditManager},
+		sessionDetailsForCalc{
+			CreditSessionSnapshot: sessionSnapshot,
+			CM:                    session.CreditManager,
+			rebaseDetails:         eng.lastRebaseDetails,
+			stETH:                 eng.repo.GetTokenFromSdk("stETH"),
+		},
 		cumIndexAndUToken.CumulativeIndex,
 		cumIndexAndUToken.Token,
 		eng.lastParameters[session.CreditManager].FeeInterest,

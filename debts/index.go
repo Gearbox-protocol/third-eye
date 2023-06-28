@@ -27,10 +27,11 @@ type DebtEngine struct {
 	currentDebts           []*schemas.CurrentDebt
 	liquidableBlockTracker map[string]*schemas.LiquidableAccount
 	// cm to paramters
-	lastParameters  map[string]*schemas.Parameters
-	isTesting       bool
-	farmingCalc     *FarmingCalculator
-	lastTvlSnapshot *schemas.TvlSnapshots
+	lastParameters    map[string]*schemas.Parameters
+	isTesting         bool
+	farmingCalc       *FarmingCalculator
+	lastTvlSnapshot   *schemas.TvlSnapshots
+	lastRebaseDetails *schemas.RebaseDetailsForDB
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -71,6 +72,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	lastDebtSynced := eng.repo.LoadLastDebtSync()
 	eng.loadLastTvlSnapshot()
 	eng.loadLastCSS(lastDebtSynced)
+	eng.loadLastRebaseDetails(lastDebtSynced)
 	eng.loadTokenLastPrice(lastDebtSynced)
 	eng.loadAllowedTokenThreshold(lastDebtSynced)
 	eng.loadPoolLastInterestData(lastDebtSynced)

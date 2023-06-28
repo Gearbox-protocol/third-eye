@@ -23,6 +23,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -74,7 +75,7 @@ func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
 				continue
 			}
 			adapters = append(adapters, adapter.GetAdapterState())
-			if adapter.HasUnderlyingState() {
+			if adapter.HasUnderlyingStateToSave() {
 				err := tx.Clauses(clause.OnConflict{
 					UpdateAll: true,
 				}).Create(adapter.GetUnderlyingState()).Error
@@ -85,7 +86,7 @@ func (repo *SyncAdaptersRepo) Save(tx *gorm.DB) {
 	}
 	// save wrapper underlying states
 	for _, adapter := range repo.AdapterKitHandler.GetAdaptersFromWrapper() {
-		if adapter.HasUnderlyingState() {
+		if adapter.HasUnderlyingStateToSave() {
 			err := tx.Clauses(clause.OnConflict{
 				UpdateAll: true,
 			}).Create(adapter.GetUnderlyingState()).Error
@@ -137,6 +138,8 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 		return gear_token.NewGearTokenFromAdapter(adapter)
 	case ds.Treasury:
 		return treasury.NewTreasuryFromAdapter(adapter)
+	case ds.RebaseToken:
+		return rebase_token.NewRebaseTokenFromAdapter(adapter)
 	case ds.AccountManager:
 		return account_manager.NewAccountManagerFromAdapter(adapter)
 	case ds.CreditConfigurator:

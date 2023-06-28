@@ -138,7 +138,12 @@ func (DummyRepo) GetDCWrapper() *dc_wrapper.DataCompressorWrapper {
 func (DummyRepo) AddPoolStat(ps *schemas.PoolStat) {
 }
 func (DummyRepo) AddDieselTransfer(dt *schemas.DieselTransfer) {
+}
 
+var Count int64
+
+func (DummyRepo) AddRebaseDetailsForDB(transfer *schemas.RebaseDetailsForDB) {
+	Count += 1
 }
 func (DummyRepo) AddPoolLedger(pl *schemas.PoolLedger) {
 }
@@ -223,4 +228,8 @@ func (DummyRepo) AddTokenObj(token *schemas.Token) {
 }
 func (DummyRepo) PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI {
 	return nil
+}
+
+func (DummyRepo) GetTokenFromSdk(string) string {
+	return ""
 }

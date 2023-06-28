@@ -16,10 +16,10 @@ import (
 
 type SyncAdapter struct {
 	*schemas.SyncAdapterSchema
-	UnderlyingStatePresent bool        `gorm:"-" json:"-"`
-	Repo                   RepositoryI `gorm:"-" json:"-"`
-	DataProcessType        int         `gorm:"-" json:"-"`
-	WillSyncTill           int64       `gorm:"-" json:"-"`
+	UnderlyingStateToSave bool        `gorm:"-" json:"-"`
+	Repo                  RepositoryI `gorm:"-" json:"-"`
+	DataProcessType       int         `gorm:"-" json:"-"`
+	WillSyncTill          int64       `gorm:"-" json:"-"`
 }
 
 func (SyncAdapter) TableName() string {
@@ -48,7 +48,7 @@ type SyncAdapterI interface {
 	GetAddress() string              //
 	GetName() string                 //
 	AfterSyncHook(syncTill int64)    //
-	HasUnderlyingState() bool        //
+	HasUnderlyingStateToSave() bool  //
 	GetUnderlyingState() interface{} //
 	SetUnderlyingState(obj interface{})
 	GetAdapterState() *SyncAdapter //
@@ -185,8 +185,8 @@ func (s *SyncAdapter) GetUnderlyingState() interface{} {
 	return nil
 }
 
-func (s *SyncAdapter) HasUnderlyingState() bool {
-	return s.UnderlyingStatePresent
+func (s *SyncAdapter) HasUnderlyingStateToSave() bool {
+	return s.UnderlyingStateToSave
 }
 
 func (s *SyncAdapter) GetAdapterState() *SyncAdapter {

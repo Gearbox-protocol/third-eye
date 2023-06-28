@@ -12,7 +12,7 @@ func (mdl *GearToken) GetUnderlyingState() interface{} {
 }
 
 func (mdl *GearToken) SetUnderlyingState(obj interface{}) {
-	mdl.UnderlyingStatePresent = true
+	mdl.UnderlyingStateToSave = true
 	gb, ok := obj.([]*schemas.GearBalance)
 	if !ok {
 		log.Fatal("Type assertion for gear token state failed")
@@ -24,7 +24,7 @@ func (mdl *GearToken) SetUnderlyingState(obj interface{}) {
 	mdl.State = state
 }
 
-func (mdl *GearToken) HasUnderlyingState() bool {
+func (mdl *GearToken) HasUnderlyingStateToSave() bool {
 	gb := []*schemas.GearBalance{}
 	for _, entry := range mdl.State {
 		if entry.Updated {
