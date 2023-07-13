@@ -111,7 +111,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 			}
 			return ds.YearnPF, false, nil
 		}
-	} else {
+	} else { //chainlink description
 		yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 		log.CheckFatal(err)
 		description, err := yearnContract.Description(opts)

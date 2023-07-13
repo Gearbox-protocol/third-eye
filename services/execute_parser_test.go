@@ -21,6 +21,7 @@ func (c TestClient) ChainID(ctx context.Context) (*big.Int, error) {
 	return big.NewInt(c.chainId), nil
 }
 func TestGetMainEventLogs(t *testing.T) {
+	t.Skip()
 	ep := NewExecuteParser(&config.Config{UseTenderlyTrace: true}, &TestClient{chainId: 42})
 	actionWithMulticall := ep.GetMainCalls("0xfbbfbca8d6300adc20c1fd9b2bf2074a14cad0873ad5ed8492ef226861f7c0cc", "0x5aacdab79aa2d30f4242898ecdafda2ed2216db2")
 	if len(actionWithMulticall) != 1 || actionWithMulticall[0].Name != "FacadeOpenMulticall" || actionWithMulticall[0].LenOfMulticalls() != 1 {

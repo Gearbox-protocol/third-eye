@@ -27,7 +27,6 @@ func (mdl *CreditManager) CommonInit(version core.VersionType) {
 	var err error
 	cmContract, err := creditManager.NewCreditManager(common.HexToAddress(mdl.Address), mdl.Client)
 	log.CheckFatal(err)
-
 	if version.IsGBv1() {
 		underlyingToken, err = cmContract.UnderlyingToken(opts)
 		log.CheckFatal(err)

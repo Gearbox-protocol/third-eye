@@ -7,6 +7,9 @@ local borrowedAmount = 4000;
     tokens: '../inputs/mocks/tokens.json',
   },
   states: {
+    otherCalls: {
+      '54fd4d50': { '#CreditConfigurator_2': '2' },
+    },
     oracles: {
       '#Oracle_0': [{  // for v1
         oracle: '#Oracle_0',

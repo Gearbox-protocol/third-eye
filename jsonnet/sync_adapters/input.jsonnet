@@ -25,6 +25,16 @@ local utils = import '../utils.libsonnet';
     // v1 blocks: 3 and 4
     // v2 blocks: 5 and 6
     '3': {
+      calls: {
+        others: {
+          '54fd4d50': {
+            '#ACL_1': '1',
+            '#ContractRegister_1': '1',
+            '#DC_1': '1',
+            '#PriceOracle_1': '1',
+          },
+        },
+      },
       //
       events: [
         {
@@ -114,6 +124,11 @@ local utils = import '../utils.libsonnet';
           '36dda7d5': { '#Pool_1': '#DieselToken_1' },
           f93f515b: { '#CreditManager_1': '#CreditFilter_1' },
           '570a7af2': { '#CreditManager_1': '#Pool_1' },
+          '54fd4d50': {
+            '#CreditManager_1': '1',
+            '#Pool_1': '1',
+            '#CreditFilter_1': '1',
+          },
         },
         pools: [{
           address: '#Pool_1',
@@ -156,7 +171,10 @@ local utils = import '../utils.libsonnet';
       ],
       calls: {
         others: {
-          '54fd4d50': { '#PriceOracle_2': '2' },  // version 2 for price oracle
+          '54fd4d50': {
+            '#PriceOracle_2': '2',  // version 2 for price oracle
+            '#DC_2': '2',
+          },
         },
       },
     },
@@ -228,13 +246,20 @@ local utils = import '../utils.libsonnet';
       ],
       calls: {
         others: {
-          '2495a599': { '#Pool_2': '#Token_1' },  // underlyingTOken used by pool
+          '2495a599': {
+            '#Pool_2': '#Token_1',
+            '#CreditManager_2': '#Token_1',
+          },  // underlyingTOken used by pool
           '6f307dc3': { '#CreditManager_2': '#Token_1' },  // underlying used by credit manager version 2
           '36dda7d5': { '#Pool_2': '#DieselToken_1' },  // get dieeltoken on pool
           '570a7af2': { '#CreditManager_2': '#Pool_2' },  // poolservice
           '2f7a1881': { '#CreditManager_2': '#CreditFacade_2' },  // creditfacade
           f9aa028a: { '#CreditManager_2': '#CreditConfigurator_2' },  // getcreditconfigurator
-          '54fd4d50': { '#CreditManager_2': '2', '#CreditConfigurator_2': '2', '#Pool_2': '2' },  // version
+          '54fd4d50': {  // version
+            '#CreditManager_2': '2',
+            '#CreditConfigurator_2': '2',
+            '#Pool_2': '2',
+          },
         },
         pools: [{
           address: '#Pool_2',
