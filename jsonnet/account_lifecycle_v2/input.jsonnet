@@ -484,13 +484,6 @@ local newCollateral = 1;
               isEnabled: true,
 
             },
-            // {
-            //   // token 2 yfi is allowed.but  its not linked to account
-            //   token: '#Token_2',
-            //   balance: utils.bigInt(0.1, 18),
-            //   isAllowed: true,
-            //   isEnabled: false,
-            // }
           ],
           version: 2,
         }],
