@@ -88,7 +88,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 				if strings.Contains(description, "USD Composite") {
 					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/CompositePriceFeed.sol
 					return ds.CompositeChainlinkPF, false, nil
-				} else if strings.Contains(description, "CurveLP pricefeed") {
+				} else if strings.Contains(description, "CurveLP pricefeed") || description == "PRICEFEED_MIM_3LP3CRV" {
 					// https://github.com/Gearbox-protocol/integrations-v2/tree/main/contracts/oracles/curve
 					return ds.CurvePF, false, nil
 				} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
