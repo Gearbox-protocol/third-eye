@@ -35,7 +35,7 @@ Adapters are of two types: `Event` and `Query` based.
 - `Pool`: Getting Pool operations like add/remove liquidity and borrow/repay etc.
 - `PriceOracle`: Getting token and their registered PriceFeed. These priceFeeds can be ChainlinkPF, YearnPF, CurvePF, ZeroPF, AlmostZeroPF. 
 - `Treasury`: Getting all token transfers on Treasury.
-- `CreditManager`: This adapter is reponsible for bulk of operations. 
+- `CreditManager`: This adapter is responsible for bulk of operations. 
     * With help of `AccountManager` checks if there is any token transfers to credit account which doesn't emit Gearbox CreditManager/CreditFacade event. 
     * Using events on CreditManager, we can find all operations that are executed by individual CreditAccount. 
     * CreditManager is internally divided in v1 and v2 modules.  
@@ -43,7 +43,7 @@ Adapters are of two types: `Event` and `Query` based.
 #### Query Based
 - `AggregatedQueryFeedWrapper`: Maintains list of yearn and curve price feeds, and uniswap v2/v3 pools for token/eth pairs. It uses multicall for getting involving prices after a set interval:
     * prices from yearn, curve feeds.
-    * yearn and curve feeds internally uses chainlink price feed. If any major change occurs in the chainlink feed, yearn/curve token's price will also be affected. To account for this, AQFWrapper maintains a dependency graph of chainlink-based tokens and dependent yearn/curve tokens. Since chainlink price feed syncs before AQFWrapper, AQFWrapper can get a list of block numbers where the chainlink-based token's price changed. If AQFWrapper missed getting the price for any of the chainlink feeds' updated blocks, it would fetch the price for dependent tokens for these remaining block numbers.
+    * yearn and curve feeds internally use chainlink price feed. If any major change occurs in the chainlink feed, yearn/curve token's price will also be affected. To account for this, AQFWrapper maintains a dependency graph of chainlink-based tokens and dependent yearn/curve tokens. Since chainlink price feed syncs before AQFWrapper, AQFWrapper can get a list of block numbers where the chainlink-based token's price changed. If AQFWrapper missed getting the price for any of the chainlink feeds' updated blocks, it would fetch the price for dependent tokens for these remaining block numbers.
 
 ## Repo
 Repo is used by both sync and debt engines to get data from DB and store fetched data to DB. It acts as an intermediate between different adapters. Repo syncs all this data to DB using a single transaction in `save.go`, this provides the atomic guarantee that either all data is saved or nothing. On crash, the sync engine will restart with the previous state fetched from DB.
@@ -80,7 +80,7 @@ The debt parameters calculated by the debt engine can deviate from on-chain data
 
 ### Current debt table
 
-We also want to have snapshots of the latest state for each credit session. This goal can't be achieved with the debt table as due to throttling the debt parameters are calculated at different block numbers, and it can happen last debt blocks are different for each credit session. Apart from this, debt table is still very large with millions of entries. So queries on this debt takes some time. 
+We also want to have snapshots of the latest state for each credit session. This goal can't be achieved with the debt table as due to throttling the debt parameters are calculated at different block numbers, and it can happen last debt blocks are different for each credit session. Apart from this, debt table is still very large with millions of entries. So queries on this debt take some time. 
 
 To solve this, another table for debts called `current_debts` is used. After the sync engine completes syncing till block number `x`, the debt engine firstly calculates debt snapshots for credit accounts for blocks that the sync engine fetched. Then for block number `x`, the debt parameters are calculated and stored in `current_debts` table. If there are accounts that are closed before `x`, then the current_debt logic skips those accounts. These accounts have their current debt calculated in the debt logic. Refer: [debt module](https://github.com/Gearbox-protocol/third-eye/blob/master/debts/engine.go#L221-L224) and [current_debt module](https://github.com/Gearbox-protocol/third-eye/blob/master/debts/current_debt.go#L36-L37).
 
