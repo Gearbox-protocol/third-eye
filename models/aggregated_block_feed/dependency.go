@@ -141,6 +141,31 @@ func getDepGraph() map[string][]string {
 		"steCRV":        {"stETH", "WETH"}, // curve steth
 		"yvCurve_stETH": {"stETH", "WETH"}, // yearn
 		"cvxsteCRV":     {"stETH", "WETH"}, // convex token for steth
+		//
+		// new v3 pools
+		"OHMFRAXBP":       {"OHM", "FRAX", "USDC"},
+		"cvxOHMFRAXBP":    {"OHM", "FRAX", "USDC"},
+		"stkcvxOHMFRAXBP": {"OHM", "FRAX", "USDC"},
+		//
+		"MIM_3LP3CRV":       {"USDC", "USDT", "DAI", "MIM"},
+		"cvxMIM_3LP3CRV":    {"USDC", "USDT", "DAI", "MIM"},
+		"stkcvxMIM_3LP3CRV": {"USDC", "USDT", "DAI", "MIM"},
+		//
+		"crvCRVETH":       {"CRV", "WETH"},
+		"cvxcrvCRVETH":    {"CRV", "WETH"},
+		"stkcvxcrvCRVETH": {"CRV", "WETH"},
+		//
+		"crvCVXETH":       {"CVX", "WETH"},
+		"cvxcrvCVXETH":    {"CVX", "WETH"},
+		"stkcvxcrvCVXETH": {"CVX", "WETH"},
+		//
+		"crvUSDTWBTCWETH":       {"USDT", "WBTC", "WETH"},
+		"cvxcrvUSDTWBTCWETH":    {"USDT", "WBTC", "WETH"},
+		"stkcvxcrvUSDTWBTCWETH": {"USDT", "WBTC", "WETH"},
+		//
+		"LDOETH":       {"LDO", "WETH"},
+		"cvxLDOETH":    {"LDO", "WETH"},
+		"stkcvxLDOETH": {"LDO", "WETH"},
 	}
 	return depGraph
 }

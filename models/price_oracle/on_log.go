@@ -14,6 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"gorm.io/gorm/utils"
 )
 
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
@@ -51,6 +52,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			// - Chainlink price feed: market based price value
 			// - Composite price feed: price calculated from multiple price feeds
 			// - Query price feed: price fetched from curve or yearn
+			mdl.Repo.GetToken(token)
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 				Token:       token,
 				Oracle:      oracle,
@@ -88,7 +90,14 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 				if strings.Contains(description, "USD Composite") {
 					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/CompositePriceFeed.sol
 					return ds.CompositeChainlinkPF, false, nil
-				} else if strings.Contains(description, "CurveLP pricefeed") || description == "PRICEFEED_MIM_3LP3CRV" {
+				} else if strings.Contains(description, "CurveLP pricefeed") || utils.Contains([]string{
+					"PRICEFEED_OHMFRAXBP",
+					"PRICEFEED_MIM_3LP3CRV",
+					"PRICEFEED_crvCRVETH",
+					"PRICEFEED_crvCVXETH",
+					"PRICEFEED_crvUSDTWBTCWETH",
+					"PRICEFEED_LDOETH",
+				}, description) {
 					// https://github.com/Gearbox-protocol/integrations-v2/tree/main/contracts/oracles/curve
 					return ds.CurvePF, false, nil
 				} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
