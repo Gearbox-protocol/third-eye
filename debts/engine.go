@@ -506,7 +506,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 
 	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds, session.Version)
 	debt.ProfitInUnderlying = utils.GetFloat64Decimal(remainingFunds, cumIndexAndUToken.Decimals) - debt.CollateralInUnderlying
-	debt.CollateralInUnderlying = sessionSnapshot.CollateralInUnderlying
+	// debt.CollateralInUnderlying = sessionSnapshot.CollateralInUnderlying
 	// fields in USD
 	debt.CollateralInUSD = sessionSnapshot.CollateralInUSD
 	debt.ProfitInUSD = utils.GetFloat64Decimal(remainingFundsInUSD, 8) - sessionSnapshot.CollateralInUSD
