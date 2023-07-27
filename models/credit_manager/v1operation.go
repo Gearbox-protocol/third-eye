@@ -206,9 +206,10 @@ func (mdl *CreditManager) AddCollateralToSession(blockNum int64, sessionId, toke
 	if !mdl.Repo.IsDieselToken(token) && mdl.Repo.GetGearTokenAddr() != token {
 		session := mdl.Repo.GetCreditSession(sessionId)
 		//
-		if session.Collateral == nil {
+		if session.Collateral == nil || *session.Collateral == nil {
 			session.Collateral = &core.JsonBigIntMap{}
 		}
+		//
 		(*session.Collateral)[token] = (*core.BigInt)(new(big.Int).Add(
 			core.NewBigInt((*session.Collateral)[token]).Convert(),
 			amount,
