@@ -118,8 +118,7 @@ func (repo *TokensRepo) GetToken(addr string) *schemas.Token {
 	defer repo.mu.Unlock()
 	token, err := repo.getTokenWithError(addr)
 	if err != nil {
-		log.Error(err)
-		panic(err)
+		log.Fatal(addr, err)
 	}
 	return token
 }

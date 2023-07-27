@@ -187,8 +187,12 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	mdl.WillBeSyncedTo(syncTill)
 	//
-	txLogs, err := e.GetLogs(syncFrom, syncTill, mdl.GetAllAddrsForLogs(), mdl.Topics())
-	log.Infof("Sync %s(%s)[addrs: %d] from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), len(mdl.GetAllAddrsForLogs()), syncFrom, syncTill, len(txLogs))
+	addrsToFetchLogs := mdl.GetAllAddrsForLogs()
+	if len(addrsToFetchLogs) == 0 {
+		return
+	}
+	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsToFetchLogs, mdl.Topics())
+	log.Infof("Sync %s(%s)[addrs: %d] from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), len(addrsToFetchLogs), syncFrom, syncTill, len(txLogs))
 	if err != nil {
 		log.Fatal(err)
 	}
