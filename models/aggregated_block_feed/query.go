@@ -133,6 +133,27 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 					adapter.GetAddress(), err.Error()))
 			}
 			priceData = _priceData
+		case ds.CurvePF:
+			// if virtualprice of pool for this oracle is not within lowerBound and upperBound , ignore the price
+			oracleAddr := common.HexToAddress(adapter.GetAddress())
+			virtualPrice := func() *big.Int {
+				curvePool, err := core.CallFuncWithExtraBytes(mdl.Client, "218751b2", oracleAddr, blockNum, nil) // curvePool from curvev1Adapter abi
+				log.CheckFatal(err)
+				virtualPrice, err := core.CallFuncWithExtraBytes(mdl.Client, "bb7b8b80", common.BytesToAddress(curvePool), blockNum, nil) // getVirtualPrice
+				log.CheckFatal(err)
+				return new(big.Int).SetBytes(virtualPrice)
+			}()
+			withinLimits := func() bool {
+				lowerLimit, err := core.CallFuncWithExtraBytes(mdl.Client, "a384d6ff", oracleAddr, blockNum, nil) // lowerBound
+				log.CheckFatal(err)
+				upperLimit, err := core.CallFuncWithExtraBytes(mdl.Client, "b09ad8a0", oracleAddr, blockNum, nil) // upperBound
+				log.CheckFatal(err)
+				return new(big.Int).SetBytes(lowerLimit).Cmp(virtualPrice) < 0 &&
+					new(big.Int).SetBytes(upperLimit).Cmp(virtualPrice) > 0
+			}()
+			if !withinLimits {
+				return nil
+			}
 		default:
 			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s)", adapter.GetDetailsByKey("pfType"), adapter.GetAddress())
 		}
