@@ -174,7 +174,7 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			Type:        schemas.RemovedFromUpgradeable,
 		})
 	case core.Topic("EmergencyLiquidatorAdded(address)"):
-		emergencyLiquidator := common.BytesToAddress(txLog.Topics[1][:]).Hex()
+		emergencyLiquidator := common.BytesToAddress(txLog.Data[:]).Hex()
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
@@ -184,7 +184,7 @@ func (mdl *CreditFilter) OnLogv2(txLog types.Log) {
 			Type:        schemas.EmergencyLiquidatorAdded,
 		})
 	case core.Topic("EmergencyLiquidatorRemoved(address)"):
-		emergencyLiquidator := common.BytesToAddress(txLog.Topics[1][:]).Hex()
+		emergencyLiquidator := common.BytesToAddress(txLog.Data[:]).Hex()
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,

@@ -290,6 +290,8 @@ local borrowedAmount = 4000;
           address: '#CreditConfigurator_2',
           topics: [
             'EmergencyLiquidatorAdded(address)',
+          ],
+          data: [
             '#Emergencyiquidator_1',
           ],
           txHash: '!#Hash_18',
@@ -298,6 +300,8 @@ local borrowedAmount = 4000;
           address: '#CreditConfigurator_2',
           topics: [
             'EmergencyLiquidatorRemoved(address)',
+          ],
+          data: [
             '#Emergencyiquidator_1',
           ],
           txHash: '!#Hash_18',
