@@ -119,6 +119,7 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 
 func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
+
 	if entry.Success {
 		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
 		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
@@ -132,6 +133,8 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 					adapter.GetAddress(), err.Error()))
 			}
 			priceData = _priceData
+		default:
+			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s)", adapter.GetDetailsByKey("pfType"), adapter.GetAddress())
 		}
 	}
 	priceFeeds := []*schemas.PriceFeed{}
