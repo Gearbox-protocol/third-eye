@@ -42,7 +42,7 @@ func (mdl *CreditManager) FetchFromDCForChangedSessions(blockNum int64) (calls [
 				//
 				// remainingFunds, collateral, won't be affected, dependent
 				// on (close, liquidate adding remainingFunds and collateral)
-				log.Warnf("Session: %s updated %d before close %+v in same block %d\n", sessionId, updates, closeDetails, blockNum)
+				log.Infof("Warn Session: %s updated %d before close %+v in same block %d\n", sessionId, updates, closeDetails, blockNum)
 			}
 			call, processFn := mdl.closeSessionCallAndResultFn(blockNum, sessionId, closeDetails)
 			if processFn != nil {
