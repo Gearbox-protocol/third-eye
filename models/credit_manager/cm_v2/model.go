@@ -7,7 +7,7 @@ import (
 )
 
 type CMv2 struct {
-	cm_mvp.CmMVP
+	*cm_mvp.CmMVP
 	CMv2Fields
 	//
 	allowedProtocols map[string]bool

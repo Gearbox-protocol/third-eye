@@ -44,6 +44,7 @@ local borrowedAmount = 4000;
         others: {
           '2f7a1881': { '#CreditManager_1': '#CreditFacade_1' },
           f9aa028a: { '#CreditManager_1': '#CreditConfigurator_1' },
+          '54fd4d50': { '#CreditConfigurator_2': '2' },
         },
       },
     },

@@ -7,7 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-func (mdl CommonCMAdapter) CalculateCMStat(blockNum int64, state dcv2.CreditManagerData) {
+func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dcv2.CreditManagerData) {
 	//
 	mdl.State.IsWETH = state.IsWETH
 	//

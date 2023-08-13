@@ -60,7 +60,9 @@ func (mdl *CommonCMAdapter) getCMCallAndProcessFn(blockNum int64) (call multical
 		if err != nil {
 			log.Fatalf("[CM:%s] Cant get data from data compressor", mdl.Address, err)
 		}
+		log.Info(mdl.State.IsWETH, state.IsWETH)
 		mdl.calculateCMStat(blockNum, state)
+		log.Info("here")
 	}
 }
 

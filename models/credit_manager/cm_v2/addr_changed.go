@@ -73,10 +73,6 @@ func (mdl *CMv2) IsAddrChanged() bool {
 	return mdl.addrChanged
 }
 
-func (mdl *CMv2) GetCreditFacadeAddr() string {
-	return mdl.GetDetailsByKey("facade")
-}
-
 func (cm *CMv2) addCreditConfiguratorAdapter(creditConfigurator string) {
 	cf := configurator_v2.NewConfiguratorv2(creditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)

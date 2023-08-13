@@ -20,7 +20,7 @@ type CMv1 struct {
 	executeParams []ds.ExecuteParams
 
 	//
-	cm_mvp.CmMVP
+	*cm_mvp.CmMVP
 }
 
 func NewCMv1(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *CMv1 {

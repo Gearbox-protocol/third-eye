@@ -1,8 +1,6 @@
 package cm_v3
 
 import (
-	"math/big"
-
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -17,10 +15,9 @@ type AccountOwner struct {
 }
 type Cmv3State struct {
 	cm_common.CommonCMAdapter
-	whosAccount            map[string]AccountOwner
-	allowedProtocols       map[string]bool
-	params                 *schemas.Parameters
-	borrowedAmountForBlock *big.Int
+	whosAccount      map[string]AccountOwner
+	allowedProtocols map[string]bool
+	params           *schemas.Parameters
 	ds.SyncAdapter
 }
 
@@ -49,6 +46,10 @@ func (mdl *Cmv3State) SetUnderlyingState(obj interface{}) {
 	default:
 		log.Fatal("Type assertion for credit manager state failed")
 	}
+}
+
+func (mdl Cmv3State) GetUnderlyingState() interface{} {
+	return mdl.State
 }
 
 func (mdl *CMv3) InitState() {

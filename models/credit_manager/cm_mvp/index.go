@@ -12,13 +12,13 @@ import (
 )
 
 type CmMVP struct {
-	cm_common.CommonCMAdapter
+	*cm_common.CommonCMAdapter
 	Sessions map[string]string // borrower to sessionId
 	//
 }
 
-func NewCMCommon(adapter *ds.SyncAdapter) CmMVP {
-	return CmMVP{
+func NewCMCommon(adapter *ds.SyncAdapter) *CmMVP {
+	return &CmMVP{
 		CommonCMAdapter: cm_common.NewCommonCMAdapter(adapter),
 		Sessions:        map[string]string{},
 	}

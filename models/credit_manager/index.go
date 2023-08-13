@@ -5,6 +5,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v1"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v2"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v3"
 )
 
 func NewCMFromAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
@@ -13,6 +14,8 @@ func NewCMFromAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
 		return cm_v1.NewCMv1FromAdapter(adapter)
 	case 2:
 		return cm_v2.NewCMv2FromAdapter(adapter)
+	case 3:
+		return cm_v3.NewCMv3FromAdapter(adapter)
 	}
 	panic("")
 }
@@ -28,6 +31,8 @@ func GetCMForWrapper(adapter ds.SyncAdapterI) (cm BlockChangeI) {
 	case *cm_v1.CMv1:
 		cm = v
 	case *cm_v2.CMv2:
+		cm = v
+	case *cm_v3.CMv3:
 		cm = v
 	}
 	return

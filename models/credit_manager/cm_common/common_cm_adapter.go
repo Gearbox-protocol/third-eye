@@ -15,7 +15,7 @@ type CommonCMAdapter struct {
 	*ds.SyncAdapter
 	State                  *schemas.CreditManagerState
 	borrowedAmountForBlock *big.Int
-	MulticallMgr           ds.MultiCallProcessor
+	MulticallMgr           *ds.MultiCallProcessor
 	//
 	onChangeDetails
 	//
@@ -29,26 +29,27 @@ type CommonCMAdapter struct {
 	ClosedSessions  map[string]*SessionCloseDetails
 }
 
-func NewCommonCMAdapter(adapter *ds.SyncAdapter) CommonCMAdapter {
-	return CommonCMAdapter{
+func NewCommonCMAdapter(adapter *ds.SyncAdapter) *CommonCMAdapter {
+	return &CommonCMAdapter{
 		SyncAdapter: adapter,
 		//
-		PnlOnCM: NewPnlCM(),
+		PnlOnCM:      NewPnlCM(),
+		MulticallMgr: &ds.MultiCallProcessor{},
 		//
 		UpdatedSessions: make(map[string]int),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 	}
 }
 
-func (mdl *CommonCMAdapter) GetUnderlyingToken() string {
+func (mdl CommonCMAdapter) GetUnderlyingToken() string {
 	return mdl.State.UnderlyingToken
 }
-func (mdl *CommonCMAdapter) GetUnderlyingDecimal() int8 {
+func (mdl CommonCMAdapter) GetUnderlyingDecimal() int8 {
 	decimals := mdl.Repo.GetToken(mdl.GetUnderlyingToken()).Decimals
 	return decimals
 }
 
-func (mdl *CommonCMAdapter) PoolBorrow(txLog *types.Log, sessionId, borrower string, amount *big.Int) {
+func (mdl CommonCMAdapter) PoolBorrow(txLog *types.Log, sessionId, borrower string, amount *big.Int) {
 	mdl.Repo.AddPoolLedger(&schemas.PoolLedger{
 		LogId:       txLog.Index,
 		BlockNumber: int64(txLog.BlockNumber),
@@ -62,7 +63,7 @@ func (mdl *CommonCMAdapter) PoolBorrow(txLog *types.Log, sessionId, borrower str
 	})
 }
 
-func (mdl *CommonCMAdapter) PoolRepay(blockNum int64, logId uint, txHash, sessionId, borrower string, amount *big.Int) {
+func (mdl CommonCMAdapter) PoolRepay(blockNum int64, logId uint, txHash, sessionId, borrower string, amount *big.Int) {
 	mdl.Repo.AddPoolLedger(&schemas.PoolLedger{
 		LogId:       logId,
 		BlockNumber: blockNum,
@@ -76,7 +77,7 @@ func (mdl *CommonCMAdapter) PoolRepay(blockNum int64, logId uint, txHash, sessio
 	})
 }
 
-func (mdl *CommonCMAdapter) GetUnderlyingState() interface{} {
+func (mdl CommonCMAdapter) GetUnderlyingState() interface{} {
 	return mdl.State
 }
 

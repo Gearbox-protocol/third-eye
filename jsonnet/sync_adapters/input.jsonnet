@@ -8,6 +8,9 @@ local utils = import '../utils.libsonnet';
     tokens: '../inputs/mocks/tokens.json',
   },
   states: {
+    otherCalls: {
+      '54fd4d50': { '#ACL_1': '1', '#ContractRegister_1': '1', '#PriceOracle_1': '1', '#Pool_1': '1', '#CreditManager_1': '1', '#CreditFilter_1': '1' },
+    },
     oracles: {
       '#Oracle_1': [{
         oracle: '#Oracle_1',
