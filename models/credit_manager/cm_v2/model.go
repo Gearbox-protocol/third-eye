@@ -1,17 +1,13 @@
 package cm_v2
 
 import (
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_mvp"
 )
 
 type CMv2 struct {
-	cm_common.CMCommon
+	cm_mvp.CmMVP
 	CMv2Fields
 	//
 	allowedProtocols map[string]bool
@@ -23,6 +19,7 @@ func NewCMv2(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		ds.NewSyncAdapter(addr, ds.CreditManager, discoveredAt, client, repo),
 	)
 	mdl.CommonInitState(mdl.GetVersion())
+	// add contract to the syncadapter on creation
 	mdl.addCreditConfiguratorAdapter(mdl.GetDetailsByKey("configurator"))
 	return mdl
 }
@@ -30,32 +27,16 @@ func NewCMv2(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 func NewCMv2FromAdapter(adapter *ds.SyncAdapter) *CMv2 {
 	//
 	obj := &CMv2{
-		CMCommon:         cm_common.NewCMCommon(adapter),
+		CmMVP:            cm_mvp.NewCMCommon(adapter),
 		CMv2Fields:       CMv2Fields{},
 		allowedProtocols: map[string]bool{},
 	}
 
-	// cm is registered with dataCompressor after discoveredAt, so we can get adapters for blockNum more than discoveredAt
-	blockToFetchCMData := obj.DiscoveredAt
-	if blockToFetchCMData < obj.LastSync {
-		blockToFetchCMData = obj.LastSync
-	}
-	obj.addProtocolAdaptersLocally(blockToFetchCMData)
+	obj.addProtocolAdaptersLocally()
 	obj.GetAbi()
-	obj.SetOnChange()
+	obj.SetOnChangeFn()
 
 	// v2 logic
-	//
-	// set credit manager
-	cmContract, err := creditManagerv2.NewCreditManagerv2(common.HexToAddress(adapter.Address), adapter.Client)
-	if err != nil {
-		log.Fatal(err)
-	}
-	obj.cmContractv2 = cmContract
-	// set credit facade contract
-	obj.facadeContractv2, err = creditFacade.NewCreditFacade(core.NULL_ADDR, nil)
-	log.CheckFatal(err)
-
 	// set facade and configurator in map
 	obj.setv2AddrIfNotPresent()
 	// credit facade syncer

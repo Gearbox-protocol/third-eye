@@ -54,16 +54,21 @@ const (
 
 func FacadeAccountMethodSigToCallName(funcSig string) string {
 	switch funcSig {
-	case "openCreditAccountMulticall":
-		return FacadeOpenMulticallCall
+	// common
 	case "liquidateCreditAccount":
 		return FacadeLiquidateCall
-	case "liquidateExpiredCreditAccount":
-		return FacadeLiquidateExpiredCall
 	case "closeCreditAccount":
 		return FacadeCloseAccountCall
 	case "multicall":
 		return FacadeMulticallCall
+	// v2
+	case "openCreditAccountMulticall":
+		return FacadeOpenMulticallCall
+	case "liquidateExpiredCreditAccount":
+		return FacadeLiquidateExpiredCall
+	// for v3
+	case "openCreditAccount":
+		return FacadeOpenMulticallCall
 	}
 	log.Fatal()
 	return ""

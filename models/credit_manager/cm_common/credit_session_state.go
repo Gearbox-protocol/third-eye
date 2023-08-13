@@ -14,9 +14,9 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-func (mdl *CMCommon) FetchFromDCForChangedSessions(blockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
-	for sessionId := range mdl.updatedSessions {
-		if mdl.closedSessions[sessionId] == nil {
+func (mdl *CommonCMAdapter) FetchFromDCForChangedSessions(blockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
+	for sessionId := range mdl.UpdatedSessions {
+		if mdl.ClosedSessions[sessionId] == nil {
 			call, processFn := mdl.updateSessionCallAndProcessFn(sessionId, blockNum)
 			if processFn != nil {
 				calls = append(calls, call)
@@ -27,8 +27,8 @@ func (mdl *CMCommon) FetchFromDCForChangedSessions(blockNum int64) (calls []mult
 	{
 		calls := make([]multicall.Multicall2Call, 0)
 		processFns := make([]func(multicall.Multicall2Result), 0)
-		for sessionId, closeDetails := range mdl.closedSessions {
-			updates := mdl.updatedSessions[sessionId]
+		for sessionId, closeDetails := range mdl.ClosedSessions {
+			updates := mdl.UpdatedSessions[sessionId]
 			if updates != 0 {
 				// in this case, affected fields are data that we fetch from datacompressor:
 				//
@@ -55,12 +55,12 @@ func (mdl *CMCommon) FetchFromDCForChangedSessions(blockNum int64) (calls []mult
 			processFns[i](result)
 		}
 	}
-	mdl.updatedSessions = make(map[string]int)
-	mdl.closedSessions = make(map[string]*SessionCloseDetails)
+	mdl.UpdatedSessions = make(map[string]int)
+	mdl.ClosedSessions = make(map[string]*SessionCloseDetails)
 	return
 }
 
-func (mdl *CMCommon) closeSessionCallAndResultFn(blockNum int64, sessionId string, closeDetails *SessionCloseDetails) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
+func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(blockNum int64, sessionId string, closeDetails *SessionCloseDetails) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	mdl.State.OpenedAccountsCount--
 	// check the data before credit session was closed by minus 1.
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
@@ -91,7 +91,7 @@ func (mdl *CMCommon) closeSessionCallAndResultFn(blockNum int64, sessionId strin
 	}
 }
 
-func (mdl *CMCommon) closeSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData, closeDetails *SessionCloseDetails) {
+func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData, closeDetails *SessionCloseDetails) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	// log.Info(mdl.params, session.Version,
 	// "totalvalue", data.TotalValue, closeDetails.Status,
@@ -102,13 +102,6 @@ func (mdl *CMCommon) closeSession(blockNum int64, session *schemas.CreditSession
 		data.BorrowedAmountPlusInterest,
 		data.BorrowedAmount,
 	)
-	// switch closeDetails.Status {
-	// case schemas.Closed,
-	// 	schemas.Repaid:
-	// 	amountToPool = data.RepayAmount
-	// case schemas.Liquidated:
-	// 	amountToPool = data.LiquidationAmount
-	// }
 	// pool repay
 	// check for avoiding db errors
 	mdl.PoolRepay(blockNum,
@@ -156,7 +149,7 @@ func (mdl *CMCommon) closeSession(blockNum int64, session *schemas.CreditSession
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CMCommon) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
+func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
 	multicall.Multicall2Call, func(multicall.Multicall2Result)) {
 	if mdl.DontGetSessionFromDCForTest {
 		return multicall.Multicall2Call{}, nil
@@ -180,7 +173,7 @@ func (mdl *CMCommon) updateSessionCallAndProcessFn(sessionId string, blockNum in
 	}
 }
 
-func (mdl *CMCommon) updateSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData) {
+func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
 	// create session snapshot
@@ -203,7 +196,7 @@ func (mdl *CMCommon) updateSession(blockNum int64, session *schemas.CreditSessio
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CMCommon) addFloatValue(account string, blockNum int64, dcv2Balances []dcv2.TokenBalance) *core.DBBalanceFormat {
+func (mdl *CommonCMAdapter) addFloatValue(dcv2Balances []dataCompressorv2.TokenBalance) *core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
 	for ind, balance := range dcv2Balances {
 		token := balance.Token.Hex()

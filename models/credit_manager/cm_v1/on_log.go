@@ -9,7 +9,7 @@ import (
 )
 
 func (mdl *CMv1) OnLog(txLog types.Log) {
-	mdl.CMCommon.OnLog(txLog)
+	mdl.CmMVP.OnLog(txLog)
 	mdl.checkLogV1(txLog)
 }
 func (mdl *CMv1) checkLogV1(txLog types.Log) {

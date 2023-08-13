@@ -33,6 +33,7 @@ func newRewardClaimDetails() RewardClaimDetails {
 // /////////
 // Direct Token Transfer
 // /////////
+// if tx is nil and currentReward.TxHash is not null, add the rewards AccountOperation
 func (mdl *CMv2) getDirectTokenTransferFn() cm_common.OnDirectTokenTransferFn {
 	currentRewardClaim := newRewardClaimDetails()
 	return func(repo ds.RepositoryI, tx *schemas.TokenTransfer, session *schemas.CreditSession) {
@@ -77,14 +78,6 @@ func addRewardClaimAccountOperation(repo ds.RepositoryI, claim RewardClaimDetail
 }
 
 // /////////
-// On TxHash
-// /////////
-func (mdl *CMv2) lastTxHashCompleted(lastTxHash string) {
-	nonMulticallExecuteEvents := mdl.processNonMultiCalls()
-	mdl.processRemainingMultiCalls(lastTxHash, nonMulticallExecuteEvents)
-}
-
-// /////////
 // OnLog
 // /////////
 func (mdl *CMv2) OnLog(txLog types.Log) {
@@ -110,7 +103,7 @@ func (mdl *CMv2) OnLog(txLog types.Log) {
 		return
 	}
 	//
-	mdl.CMCommon.OnLog(txLog)
+	mdl.CmMVP.OnLog(txLog)
 	mdl.checkLogV2(txLog)
 }
 
@@ -118,11 +111,19 @@ func bytesToUInt16(data []byte) uint16 {
 	return uint16(new(big.Int).SetBytes(data).Int64())
 }
 
-func (mdl *CMv2) SetOnChange() {
+func (mdl *CMv2) SetOnChangeFn() {
 	mdl.SetLastTxHashCompleted(mdl.lastTxHashCompleted)
 	mdl.SetCalculateCMStatFn(func(blockNum int64, state dcv2.CreditManagerData) {
 		mdl.addProtocolAdapters(state)
-		mdl.CMCommon.CalculateCMStat(blockNum, state)
+		mdl.CmMVP.CalculateCMStat(blockNum, state)
 	})
 	mdl.SetOnDirectTokenTransferFn(mdl.getDirectTokenTransferFn())
+}
+
+// /////////
+// On TxHash
+// /////////
+func (mdl *CMv2) lastTxHashCompleted(lastTxHash string) {
+	nonMulticallExecuteEvents := mdl.ProcessNonMultiCalls()
+	mdl.ProcessRemainingMultiCalls(mdl.GetVersion(), lastTxHash, nonMulticallExecuteEvents)
 }

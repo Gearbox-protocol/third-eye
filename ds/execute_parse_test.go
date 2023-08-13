@@ -24,44 +24,44 @@ func getCallsAndEvents(callSigs []string, eventNames []string) (mainAction Facad
 	mainAction = FacadeCallNameWithMulticall{multiCalls: multicalls}
 	return
 }
-func TestCmpLenSimple(t *testing.T) {
+func TestCmpLenSimpleV2(t *testing.T) {
 	log.SetTestLogging(t)
 	mainAction, events := getCallsAndEvents(
 		[]string{"59781034"},
 		[]string{"AddCollateral(address,address,uint256)"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(2, events) {
 		log.Fatal()
 	}
 }
-func TestCmpLenWith2Events(t *testing.T) {
+func TestCmpLenWith2EventsV2(t *testing.T) {
 	log.SetTestLogging(t)
 	mainAction, events := getCallsAndEvents(
 		[]string{"59781034", "d0e30db0"},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(2, events) {
 		log.Fatal()
 	}
 }
-func TestCmpLenWith2PlusRevertEvents(t *testing.T) {
+func TestCmpLenWith2PlusRevertEventsV2(t *testing.T) {
 	log.SetTestLogging(t)
 	mainAction, events := getCallsAndEvents(
 		[]string{"59781034", "81314b59", "c7fbf4de", "bdbeaa31"},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder", "ExecuteOrder"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(2, events) {
 		log.Fatal()
 	}
 }
 
-func TestCmpLenTrivalRevert(t *testing.T) {
+func TestCmpLenTrivalRevertV2(t *testing.T) {
 	log.SetTestLogging(t)
 	mainAction, events := getCallsAndEvents(
 		[]string{"81314b59"},
 		nil,
 	)
-	if !mainAction.SameMulticallLenAsEvents(events) {
+	if !mainAction.SameMulticallLenAsEvents(2, events) {
 		log.Fatal()
 	}
 }

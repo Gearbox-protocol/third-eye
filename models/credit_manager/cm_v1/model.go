@@ -8,7 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/configurators/credit_filter"
-	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_mvp"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -20,7 +20,7 @@ type CMv1 struct {
 	executeParams []ds.ExecuteParams
 
 	//
-	cm_common.CMCommon
+	cm_mvp.CmMVP
 }
 
 func NewCMv1(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *CMv1 {
@@ -46,7 +46,7 @@ func (cm *CMv1) addCreditFilterAdapter(blockNum int64) {
 func NewCMv1FromAdapter(adapter *ds.SyncAdapter) *CMv1 {
 	//
 	obj := &CMv1{
-		CMCommon: cm_common.NewCMCommon(adapter),
+		CmMVP: cm_mvp.NewCMCommon(adapter),
 		//
 	}
 	//

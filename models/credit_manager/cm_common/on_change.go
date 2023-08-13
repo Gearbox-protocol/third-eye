@@ -29,11 +29,8 @@ func (details *onChangeDetails) SetCalculateCMStatFn(fn func(int64, dcv2.CreditM
 	details.calculateCMStat = fn
 }
 
-// x,i event
-// fetch events x,i+1 to x,i+1000
-//
 // works for newBlockNum > mdl.lastEventBlock
-func (mdl *CMCommon) OnBlockChange(lastBlockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
+func (mdl *CommonCMAdapter) OnBlockChange(lastBlockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
 	// datacompressor works for cm address only after the address is registered with contractregister
 	// i.e. discoveredAt
 	if mdl.lastEventBlock != 0 && mdl.lastEventBlock == lastBlockNum && lastBlockNum >= mdl.DiscoveredAt {
@@ -53,7 +50,7 @@ func (mdl *CMCommon) OnBlockChange(lastBlockNum int64) (calls []multicall.Multic
 	return
 }
 
-func (mdl *CMCommon) getCMCallAndProcessFn(blockNum int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
+func (mdl *CommonCMAdapter) getCMCallAndProcessFn(blockNum int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(blockNum, common.HexToAddress(mdl.Address))
 	if err != nil {
 		log.Fatalf("[CM:%s] Failed preparing get Cm call %v", mdl.Address, err)
@@ -68,7 +65,7 @@ func (mdl *CMCommon) getCMCallAndProcessFn(blockNum int64) (call multicall.Multi
 }
 
 // handles for v2(for multicalls) and v1 (for executeorder)
-func (mdl *CMCommon) processLastTx(newTxHash string) {
+func (mdl *CommonCMAdapter) processLastTx(newTxHash string) {
 	// on txHash
 	if mdl.lastTxHash != "" && mdl.lastTxHash != newTxHash {
 		mdl.lastTxHashCompleted(mdl.lastTxHash)
@@ -76,7 +73,7 @@ func (mdl *CMCommon) processLastTx(newTxHash string) {
 	mdl.lastTxHash = newTxHash
 }
 
-func (mdl *CMCommon) OnLog(txLog types.Log) {
+func (mdl *CommonCMAdapter) OnLog(txLog types.Log) {
 	mdl.processLastTx(txLog.TxHash.Hex())
 	mdl.lastEventBlock = int64(txLog.BlockNumber)
 	//

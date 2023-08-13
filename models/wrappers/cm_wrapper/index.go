@@ -45,7 +45,7 @@ func (s CMWrapper) OnLogs(txLogs []types.Log) {
 		// check if the addr changed in creditManager, if changed fetch all logs again for new addr set.
 
 		if s.adapterAddrsChanged(txLog.Address.Hex()) {
-			newTxLogs, err := pkg.Node{Client: s.Client}.GetLogs(int64(txLog.BlockNumber), s.WillSyncTill, s.GetAllAddrsForLogs(), nil)
+			newTxLogs, err := pkg.Node{Client: s.Client}.GetLogs(int64(txLog.BlockNumber), s.WillSyncTill, s.GetAllAddrsForLogs(), nil) // works as no event on credit facade is emitted before it is added to credit manager
 			log.CheckFatal(err)
 			splitInd := sort.Search(len(newTxLogs), func(i int) bool {
 				return newTxLogs[i].BlockNumber > txLog.BlockNumber ||

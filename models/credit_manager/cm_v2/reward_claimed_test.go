@@ -8,7 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_mvp"
 )
 
 type repo struct {
@@ -101,7 +101,7 @@ func TestRewardClaimed(t *testing.T) {
 		},
 	}
 	cmModel := CMv2{
-		CMCommon: cm_common.NewCMCommon(adapter),
+		CmMVP: cm_mvp.NewCMCommon(adapter),
 		allowedProtocols: map[string]bool{
 			allowedProtocol:  true,
 			allowedProtocol2: true,

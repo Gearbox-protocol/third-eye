@@ -14,7 +14,7 @@ import (
 
 // range is [from, to)  or just before newBlockNum
 // - gets all the directokentransfer by block
-func (mdl *CMCommon) UpdateSessionWithDirectTokenTransferBefore(tillBlock int64) {
+func (mdl *CommonCMAdapter) UpdateSessionWithDirectTokenTransferBefore(tillBlock int64) {
 	data := mdl.Repo.GetAccountManager().CheckTokenTransfer(mdl.GetAddress(), 0, tillBlock)
 	blockNums := []int64{}
 	for blockNum := range data {
@@ -43,7 +43,7 @@ func DirecTokenTransferString(repo ds.RepositoryI, tx *schemas.TokenTransfer) st
 
 // if blockNum is lasteventblock then set session is Updated
 // if blockNum is not equal to lasteventblock then fetch details for that session
-func (mdl *CMCommon) processDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
+func (mdl *CommonCMAdapter) processDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
 	for sessionID, txs := range sessionIDToTxs {
 		session := mdl.Repo.GetCreditSession(sessionID)
 		txsList := schemas.TokenTransferList(txs)

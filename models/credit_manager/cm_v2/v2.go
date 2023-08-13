@@ -2,13 +2,11 @@ package cm_v2
 
 import (
 	"math/big"
-	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -70,7 +68,7 @@ func (mdl *CMv2) checkLogV2(txLog types.Log) {
 	case core.Topic("MultiCallStarted(address)"):
 		borrower := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		sessionId := mdl.GetCreditOwnerSession(borrower)
-		mdl.multicall.Start(txLog.TxHash.Hex(), &schemas.AccountOperation{
+		mdl.MulticallMgr.Start(txLog.TxHash.Hex(), &schemas.AccountOperation{
 			TxHash:      txLog.TxHash.Hex(),
 			BlockNumber: int64(txLog.BlockNumber),
 			SessionId:   sessionId,
@@ -80,7 +78,7 @@ func (mdl *CMv2) checkLogV2(txLog types.Log) {
 			Action:      "MultiCallStarted(address)",
 		})
 	case core.Topic("MultiCallFinished()"):
-		mdl.multicall.End()
+		mdl.MulticallMgr.End()
 	case core.Topic("IncreaseBorrowedAmount(address,uint256)"):
 		increaseBorrowEvent, err := mdl.facadeContractv2.ParseIncreaseBorrowedAmount(txLog)
 		if err != nil {
@@ -141,115 +139,4 @@ func (mdl *CMv2) checkLogV2(txLog types.Log) {
 			mdl.setConfiguratorSyncer(newConfigurator)
 		}
 	}
-}
-
-// opencreditaccount
-// addcollateral
-// increase/decase borrow amount
-// executeorder
-// are added to multicall manager
-//
-// #######
-// FLOWS ->
-// openwithoutmulticall => add collateral
-// openwithmulticall => other calls
-// multicallstarted => other calls
-// other calls => closed/liquidated
-func (mdl *CMv2) processRemainingMultiCalls(lastTxHash string, nonMultiCallExecuteEvents []ds.ExecuteParams) {
-
-	facadeActions, openEventWithoutMulticall := mdl.multicall.PopMainActionsv2()
-
-	for _, entry := range openEventWithoutMulticall {
-		// opencreditaccount without mulitcall
-		openWithoutMC := entry.Data
-		mdl.SetSessionIsUpdated(openWithoutMC.SessionId)
-		mdl.Repo.AddAccountOperation(openWithoutMC)
-		mdl.addCollateralForOpenCreditAccount(openWithoutMC.BlockNumber, openWithoutMC)
-	}
-	if len(facadeActions) > 0 { // account operation will only exist if there are one or more facade actions
-		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(lastTxHash, mdl.GetCreditFacadeAddr())
-		fixedFacadeActions := mdl.fixFacadeActionStructureViaTenderlyCalls(mainCalls, facadeActions)
-		mdl.validateAndSaveFacadeActions(lastTxHash, fixedFacadeActions, mainCalls, nonMultiCallExecuteEvents)
-	} else if len(nonMultiCallExecuteEvents) > 0 {
-		mdl.SaveExecuteEvents(lastTxHash, nonMultiCallExecuteEvents)
-	}
-}
-
-func (mdl *CMv2) processNonMultiCalls() (executeEvents []ds.ExecuteParams) {
-	events := mdl.multicall.PopNonMulticallEventsV2()
-
-	for _, event := range events {
-		switch event.Action {
-		case "AddCollateral(address,address,uint256)",
-			"IncreaseBorrowedAmount(address,uint256)",
-			"TokenEnabled(address,address)",
-			"TokenDisabled(address,address)",
-			"DecreaseBorrowedAmount(address,uint256)":
-			mdl.SetSessionIsUpdated(event.SessionId)
-			mdl.Repo.AddAccountOperation(event)
-		case "ExecuteOrder":
-			account := strings.Split(event.SessionId, "_")[0]
-			mdl.SetSessionIsUpdated(event.SessionId)
-			executeEvents = append(executeEvents, ds.ExecuteParams{
-				SessionId:     event.SessionId,
-				CreditAccount: common.HexToAddress(account),
-				Protocol:      common.HexToAddress(event.Dapp),
-				Borrower:      common.HexToAddress(event.Borrower),
-				Index:         event.LogId,
-				BlockNumber:   event.BlockNumber,
-			})
-		default:
-			log.Fatal(event.Action)
-		}
-	}
-	return
-}
-
-// TO CHECK
-func (mdl *CMv2) getCollateralAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
-	balances := map[string]*big.Int{}
-	for _, event := range mainAction.MultiCall {
-		if event.Action == "AddCollateral(address,address,uint256)" {
-			for token, amount := range *event.Transfers {
-				if balances[token] == nil {
-					balances[token] = new(big.Int)
-				}
-				balances[token] = new(big.Int).Add(balances[token], amount)
-			}
-		}
-	}
-	tokens := make([]string, 0, len(balances)+1)
-	for token := range balances {
-		tokens = append(tokens, token)
-	}
-	underlyingToken := mdl.GetUnderlyingToken()
-	if balances[underlyingToken] == nil {
-		tokens = append(tokens, underlyingToken)
-	}
-	//
-	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
-	underlyingDecimals := mdl.GetUnderlyingDecimal()
-	//
-	totalValue := new(big.Float)
-	// sigma(tokenAmount(i)*price(i)/exp(tokendecimals- underlyingToken))/price(underlying)
-	for token, amount := range balances {
-		if token == underlyingToken { // directly add collateral for underlying token
-			continue
-		}
-		calcValue := utils.GetFloat64(amount, -1*underlyingDecimals)
-		nomunerator := new(big.Float).Mul(calcValue, big.NewFloat(prices[token]))
-		//
-		tokenDecimals := utils.GetExpFloat(mdl.Repo.GetToken(token).Decimals)
-		//
-		totalValue = new(big.Float).Add(totalValue, new(big.Float).Quo(nomunerator, tokenDecimals))
-	}
-	initialAmount, _ := new(big.Float).Quo(totalValue, big.NewFloat(prices[underlyingToken])).Int(nil)
-
-	if balances[underlyingToken] != nil { // directly add collateral for underlying token
-		initialAmount = new(big.Int).Add(initialAmount, balances[underlyingToken])
-	}
-	if initialAmount == nil || initialAmount.Cmp(new(big.Int)) == 0 {
-		log.Fatal("Collateral for opencreditaccount v2 is zero or nil")
-	}
-	return initialAmount
 }

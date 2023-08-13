@@ -1,10 +1,11 @@
-package cm_v2
+package cm_common
 
 import (
 	"fmt"
 	"sort"
 	"strings"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -15,7 +16,7 @@ import (
 // multicalls and liquidate/close/openwithmulticalls are separate data points,
 // this function adds multicall to mainFacadeActions
 // if that is the correct structure of operation
-func (mdl *CMv2) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
+func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
 	facadeActions []*ds.FacadeAccountActionv2) (result []*ds.FacadeAccountActionv2) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
 		log.Fatalf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
@@ -59,7 +60,7 @@ func (mdl *CMv2) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.Facade
 // check name
 // check multicall for facade action vs tenderly response
 // add to db
-func (mdl *CMv2) validateAndSaveFacadeActions(txHash string,
+func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionType, txHash string,
 	facadeActions []*ds.FacadeAccountActionv2,
 	mainCalls []*ds.FacadeCallNameWithMulticall,
 	nonMultiCallExecuteEvents []ds.ExecuteParams) {
@@ -69,27 +70,16 @@ func (mdl *CMv2) validateAndSaveFacadeActions(txHash string,
 		mainEvent := mainAction.Data
 
 		mainCall := mainCalls[ind]
-		var mainEventFromCall string
-		switch mainCall.Name {
-		case ds.FacadeMulticallCall:
-			mdl.SetSessionIsUpdated(mainEvent.SessionId)
-			mainEventFromCall = "MultiCallStarted(address)"
-		case ds.FacadeOpenMulticallCall:
-			mdl.SetSessionIsUpdated(mainEvent.SessionId)
-			mainEventFromCall = "OpenCreditAccount(address,address,uint256,uint16)"
-		case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall:
-			mdl.setLiquidateStatus(mainEvent.SessionId, mainCall.Name == ds.FacadeLiquidateExpiredCall)
-			mainEventFromCall = "LiquidateCreditAccount(address,address,address,uint256)"
-		case ds.FacadeCloseAccountCall:
-			mainEventFromCall = "CloseCreditAccount(address,address)"
-		}
+		//
+		mainEventFromCall := mdl.getEventNameFromCall(version, mainCall.Name, mainEvent.SessionId)
+
 		if mainEventFromCall != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
 			msg := fmt.Sprintf("Tenderly call(%s)is different from facade event(%s)", mainCall.Name, mainEvent.Action)
 			log.Fatal(msg)
 		}
 		//
 		eventMulticalls := mainAction.GetMulticallsFromFA()
-		if !mainCall.SameMulticallLenAsEvents(eventMulticalls) {
+		if !mainCall.SameMulticallLenAsEvents(version, eventMulticalls) {
 			log.Fatalf("%s expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
 				utils.ToJson(eventMulticalls), mainCall.String(), mainEvent.TxHash)
@@ -111,7 +101,7 @@ func (mdl *CMv2) validateAndSaveFacadeActions(txHash string,
 
 	executeParams = append(executeParams, nonMultiCallExecuteEvents...)
 	sort.Slice(executeParams, func(i, j int) bool { return executeParams[i].Index < executeParams[j].Index })
-	tenderlyExecOperations := mdl.getExecuteOrderAccountOperationFromParams(txHash, executeParams)
+	tenderlyExecOperations := mdl.GetExecuteOrderAccountOperationFromParams(txHash, executeParams)
 
 	// process non multicall execute order operations
 	remainingExecOperations := []*schemas.AccountOperation{}
@@ -146,8 +136,34 @@ func (mdl *CMv2) validateAndSaveFacadeActions(txHash string,
 	}
 }
 
+func (mdl CommonCMAdapter) GetExecuteOrderAccountOperationFromParams(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
+	// credit manager has the execute event
+	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash, mdl.Address, executeParams)
+	for i, call := range calls {
+		params := executeParams[i]
+		// add account operation
+		accountOperation := &schemas.AccountOperation{
+			BlockNumber: params.BlockNumber,
+			TxHash:      txHash,
+			LogId:       params.Index,
+			// owner/account data
+			Borrower:  params.Borrower.Hex(),
+			SessionId: params.SessionId,
+			// dapp
+			Dapp: params.Protocol.Hex(),
+			// call/events data
+			Action:      call.Name,
+			Args:        call.Args,
+			AdapterCall: true,
+			Transfers:   &call.Transfers,
+		}
+		multiCalls = append(multiCalls, accountOperation)
+	}
+	return
+}
+
 // multicall
-func (mdl *CMv2) addMulticallToMainEvent(mainEvent *schemas.AccountOperation, allMulticalls []*schemas.AccountOperation) {
+func (mdl *CommonCMAdapter) addMulticallToMainEvent(mainEvent *schemas.AccountOperation, allMulticalls []*schemas.AccountOperation) {
 	txHash := mainEvent.TxHash
 	//
 	eventsMulticalls := make([]*schemas.AccountOperation, 0, len(allMulticalls))
@@ -183,12 +199,6 @@ func (mdl *CMv2) addMulticallToMainEvent(mainEvent *schemas.AccountOperation, al
 	mainEvent.MultiCall = eventsMulticalls
 	// calculate initialAmount on open new credit creditaccount
 	if mainEvent.Action == "OpenCreditAccount(address,address,uint256,uint16)" {
-		mdl.addCollateralForOpenCreditAccount(mainEvent.BlockNumber, mainEvent)
+		mdl.AddCollateralForOpenCreditAccount(mainEvent.BlockNumber, mainEvent)
 	}
-}
-
-func (mdl CMv2) addCollateralForOpenCreditAccount(blockNum int64, mainAction *schemas.AccountOperation) {
-	collateral := mdl.getCollateralAmount(blockNum, mainAction)
-	(*mainAction.Args)["amount"] = collateral.String()
-	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": collateral})
 }

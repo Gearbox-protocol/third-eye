@@ -15,12 +15,18 @@ func (mdl *CMv2) addProtocolAdapters(state dcv2.CreditManagerData) {
 	}
 	mdl.allowedProtocols = newProtocols
 }
-func (mdl *CMv2) addProtocolAdaptersLocally(blockNum int64) {
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(blockNum, common.HexToAddress(mdl.GetAddress()))
+func (mdl *CMv2) addProtocolAdaptersLocally() {
+	// cm is registered with dataCompressor after discoveredAt, so we can get adapters for blockNum more than discoveredAt
+	blockToFetchCMData := mdl.DiscoveredAt
+	if blockToFetchCMData < mdl.LastSync {
+		blockToFetchCMData = mdl.LastSync
+	}
+	//
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(blockToFetchCMData, common.HexToAddress(mdl.GetAddress()))
 	if err != nil {
 		log.Fatal("Failed preparing credit manager data", err)
 	}
-	results := core.MakeMultiCall(mdl.Client, blockNum, false, []multicall.Multicall2Call{call})
+	results := core.MakeMultiCall(mdl.Client, blockToFetchCMData, false, []multicall.Multicall2Call{call})
 	state, err := resultFn(results[0].ReturnData)
 	if err != nil {
 		log.Fatal("Failed call", err)

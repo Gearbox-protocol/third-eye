@@ -67,6 +67,9 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	}
 }
 
+// YearnPF covers LIDO, AAVE, COMPOUND, YEARN, ERC4626, Balancer(Stable, weighted)
+// CurvePF covers curve and convex
+// ChainlinkPF cover chainlink
 func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string) (string, bool, error) { // type, bounded , error
 	if oracle == "0xE26FB07da646138553f635c94E2a345270240e30" { // for goerli , the chainlink bounded oracle doesn't have phaseId method // LUSD price oracle
 		return ds.ChainlinkPriceFeed, true, nil

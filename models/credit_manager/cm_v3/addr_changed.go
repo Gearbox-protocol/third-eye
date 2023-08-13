@@ -1,26 +1,33 @@
-package cm_v2
+package cm_v3
 
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv2"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacadev3"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/configurators/configurator_v2"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (mdl *CMv2) setv2AddrIfNotPresent() {
+func (mdl *CMv3) setv3AddrIfNotPresent() {
+	// set credit manager
+	cmContract, err := creditManagerv3.NewCreditManagerv3(common.HexToAddress(mdl.Address), mdl.Client)
+	log.CheckFatal(err)
+	mdl.cmContractv3 = cmContract
+	// set credit facade contract
+	mdl.facadeContractv3, err = creditFacadev3.NewCreditFacadev3(core.NULL_ADDR, nil)
+	log.CheckFatal(err)
+	//
 	if mdl.Details != nil && mdl.Details["facade"] != nil {
 		return
 	}
 	opts := &bind.CallOpts{BlockNumber: big.NewInt(mdl.DiscoveredAt)}
-	configuratorAddr, err := mdl.cmContractv2.CreditConfigurator(opts)
+	configuratorAddr, err := mdl.cmContractv3.CreditConfigurator(opts)
 	log.CheckFatal(err)
-	facadeAddr, err := mdl.cmContractv2.CreditFacade(opts)
+	facadeAddr, err := mdl.cmContractv3.CreditFacade(opts)
 	log.CheckFatal(err)
 	if mdl.Details == nil {
 		mdl.Details = core.Json{}
@@ -29,15 +36,14 @@ func (mdl *CMv2) setv2AddrIfNotPresent() {
 	mdl.Details["configurator"] = configuratorAddr.Hex()
 }
 
-type CMv2Fields struct {
-	multicall   ds.MultiCallProcessor
+type CMv3Fields struct {
 	addrChanged bool
 	//
-	cmContractv2     *creditManagerv2.CreditManagerv2
-	facadeContractv2 *creditFacade.CreditFacade
+	cmContractv3     *creditManagerv3.CreditManagerv3
+	facadeContractv3 *creditFacadev3.CreditFacadev3
 }
 
-func (mdl *CMv2) setCreditFacadeSyncer(creditFacadeAddr string) {
+func (mdl *CMv3) setCreditFacadeSyncer(creditFacadeAddr string) {
 	if mdl.Details == nil {
 		mdl.Details = map[string]interface{}{}
 	}
@@ -50,7 +56,7 @@ func (mdl *CMv2) setCreditFacadeSyncer(creditFacadeAddr string) {
 	mdl.addrChanged = true
 }
 
-func (mdl *CMv2) setConfiguratorSyncer(configuratorAddr string) {
+func (mdl *CMv3) setConfiguratorSyncer(configuratorAddr string) {
 	if mdl.Details == nil {
 		mdl.Details = map[string]interface{}{}
 	}
@@ -62,21 +68,17 @@ func (mdl *CMv2) setConfiguratorSyncer(configuratorAddr string) {
 	mdl.addrChanged = true
 }
 
-func (mdl *CMv2) IsAddrChanged() bool {
+func (mdl CMv3Fields) IsAddrChanged() bool {
 	defer func() { mdl.addrChanged = false }()
 	return mdl.addrChanged
 }
 
-func (mdl *CMv2) GetCreditFacadeAddr() string {
-	return mdl.GetDetailsByKey("facade")
-}
-
-func (cm *CMv2) addCreditConfiguratorAdapter(creditConfigurator string) {
+func (cm CMv3) addCreditConfiguratorAdapter(creditConfigurator string) {
 	cf := configurator_v2.NewConfiguratorv2(creditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 }
 
-func (cm CMv2) GetAllAddrsForLogs() []common.Address {
+func (cm CMv3) GetAllAddrsForLogs() []common.Address {
 	addrs := []common.Address{common.HexToAddress(cm.GetAddress())}
 	if addr := cm.GetDetailsByKey("facade"); addr != "" {
 		addrs = append(addrs, common.HexToAddress(addr))
