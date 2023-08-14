@@ -38,7 +38,8 @@ type CreditManager struct {
 	//
 	contractETHV1 *creditManager.CreditManager
 	//
-	State *schemas.CreditManagerState
+	State    *schemas.CreditManagerState
+	Sessions map[string]string `json:"-" gorm:"-"`
 	//
 	LastTxHash      string
 	lastEventBlock  int64
@@ -92,6 +93,7 @@ func NewCreditManagerFromAdapter(adapter *ds.SyncAdapter) *CreditManager {
 		UpdatedSessions: make(map[string]int),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 		pnlOnCM:         NewPnlCM(),
+		Sessions:        map[string]string{},
 	}
 	// cm is registered with dataCompressor after discoveredAt, so we can get adapters for blockNum more than discoveredAt
 	blockToFetchCMData := obj.DiscoveredAt

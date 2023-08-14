@@ -18,7 +18,7 @@ func (mdl *CreditManager) SetUnderlyingState(obj interface{}) {
 	case (*schemas.CreditManagerState):
 		mdl.State = underlyingObj
 	case (map[string]string):
-		mdl.State.Sessions = underlyingObj
+		mdl.Sessions = underlyingObj
 	case *schemas.PnlOnRepay:
 		mdl.pnlOnCM.Set(underlyingObj)
 	case *schemas.Parameters:
@@ -37,18 +37,18 @@ func (mdl *CreditManager) GetUnderlyingState() interface{} {
 }
 
 func (mdl *CreditManager) AddCreditOwnerSession(owner, sessionId string) {
-	mdl.State.Sessions[owner] = sessionId
+	mdl.Sessions[owner] = sessionId
 }
 
 func (mdl *CreditManager) RemoveCreditOwnerSession(owner string) {
-	delete(mdl.State.Sessions, owner)
+	delete(mdl.Sessions, owner)
 }
 
 func (mdl *CreditManager) GetCreditOwnerSession(owner string, dontFail ...bool) string {
-	sessionId := mdl.State.Sessions[owner]
+	sessionId := mdl.Sessions[owner]
 	if (len(dontFail) == 0 || !dontFail[0]) && sessionId == "" {
 		panic(
-			fmt.Sprintf("session id not found for %s in %+v %s\n", owner, mdl.State.Sessions, mdl.Address),
+			fmt.Sprintf("session id not found for %s in %+v %s\n", owner, mdl.Sessions, mdl.Address),
 		)
 	}
 	return sessionId

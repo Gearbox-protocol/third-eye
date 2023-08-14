@@ -114,7 +114,6 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		case ds.CreditManager:
 			for _, state := range obj.CMState {
 				if state.Address == actualAdapter.GetAddress() {
-					state.Sessions = map[string]string{}
 					actualAdapter.SetUnderlyingState(state)
 				}
 			}

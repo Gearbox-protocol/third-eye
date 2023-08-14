@@ -46,7 +46,6 @@ func (mdl *CreditManager) CommonInit(version core.VersionType) {
 		Address:         mdl.Address,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
-		Sessions:        map[string]string{},
 		Version:         version,
 	})
 }
