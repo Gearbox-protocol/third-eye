@@ -7,7 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/third-eye/models/configurators/configurator_v2"
+	"github.com/Gearbox-protocol/third-eye/models/configurators/configurator_v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -74,7 +74,7 @@ func (mdl CMv3Fields) IsAddrChanged() bool {
 }
 
 func (cm CMv3) addCreditConfiguratorAdapter(creditConfigurator string) {
-	cf := configurator_v2.NewConfiguratorv2(creditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
+	cf := configurator_v3.NewConfiguratorv3(creditConfigurator, cm.Address, cm.DiscoveredAt, cm.Client, cm.Repo)
 	cm.Repo.AddSyncAdapter(cf)
 }
 

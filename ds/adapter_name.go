@@ -29,6 +29,8 @@ const (
 	CFWrapper                  = "CFWrapper"
 	CMWrapper                  = "CMWrapper"
 	PoolWrapper                = "PoolWrapper"
+	// v3
+	PoolKeeper = "PoolKeeper"
 )
 
 func IsWrapperAdapter(name string) bool {

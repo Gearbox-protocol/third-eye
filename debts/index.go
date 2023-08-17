@@ -3,6 +3,7 @@ package debts
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -20,6 +21,7 @@ type DebtEngine struct {
 	tokenLastPriceV2 map[string]*schemas.PriceFeed
 	//// credit_manager -> token -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
+	tokenLTRamp            map[string]map[string]*schemas_v3.TokenLTRamp
 	poolLastInterestData   map[string]*schemas.PoolInterestData
 	debts                  []*schemas.Debt
 	tvlSnapshots           []*schemas.TvlSnapshots
@@ -32,6 +34,8 @@ type DebtEngine struct {
 	farmingCalc       *FarmingCalculator
 	lastTvlSnapshot   *schemas.TvlSnapshots
 	lastRebaseDetails *schemas.RebaseDetailsForDB
+	// used for v3 calc closed Account amount
+	currentTs int64
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -75,6 +79,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.loadLastRebaseDetails(lastDebtSynced)
 	eng.loadTokenLastPrice(lastDebtSynced)
 	eng.loadAllowedTokenThreshold(lastDebtSynced)
+	eng.loadLastLTRamp(lastDebtSynced)
 	eng.loadPoolLastInterestData(lastDebtSynced)
 	eng.loadLastDebts(lastDebtSynced)
 	eng.loadParameters(lastDebtSynced)

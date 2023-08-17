@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"sync"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -18,10 +18,9 @@ import (
 )
 
 type BlocksRepo struct {
-	mu     *sync.RWMutex
-	blocks map[int64]*schemas.Block
+	blocks *core.MutexDS[int64, *schemas.Block]
 	// for treasury to get the date
-	blockDatePairs map[int64]*schemas.BlockDate
+	blockDatePairs *core.MutexDS[int64, *schemas.BlockDate]
 	client         core.ClientI
 	db             *gorm.DB
 	prevStore      *PrevPriceStore
@@ -29,9 +28,8 @@ type BlocksRepo struct {
 
 func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config, tokensRepo *TokensRepo) *BlocksRepo {
 	blocksRepo := &BlocksRepo{
-		blocks:         make(map[int64]*schemas.Block),
-		blockDatePairs: map[int64]*schemas.BlockDate{},
-		mu:             &sync.RWMutex{},
+		blocks:         core.NewMutexDS[int64, *schemas.Block](),
+		blockDatePairs: core.NewMutexDS[int64, *schemas.BlockDate](),
 		//
 		client:    client,
 		db:        db,
@@ -51,7 +49,7 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 		log.Fatal(err)
 	}
 	for _, block := range data {
-		repo.blocks[block.BlockNumber] = block
+		repo.blocks.Set(block.BlockNumber, block)
 	}
 }
 
@@ -78,15 +76,11 @@ func (repo *BlocksRepo) GetPrice(token string) *big.Int {
 }
 
 func (repo *BlocksRepo) GetBlocks() map[int64]*schemas.Block {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
-	return repo.blocks
+	return repo.blocks.GetInner()
 }
 
 func (repo *BlocksRepo) GetBlockDatePairs(ts int64) *schemas.BlockDate {
-	repo.mu.RLock()
-	defer repo.mu.RUnlock()
-	return repo.blockDatePairs[ts]
+	return repo.blockDatePairs.Get(ts)
 }
 
 func (repo *BlocksRepo) fetchBlock(blockNum int64) *types.Block {
@@ -99,36 +93,32 @@ func (repo *BlocksRepo) fetchBlock(blockNum int64) *types.Block {
 	return b
 }
 func (repo *BlocksRepo) setBlock(blockNum int64) {
-	if repo.blocks[blockNum] == nil {
+	if repo.blocks.Get(blockNum) == nil {
 		b := repo.fetchBlock(blockNum)
-		repo.blocks[blockNum] = &schemas.Block{BlockNumber: blockNum, Timestamp: b.Time()}
+		repo.blocks.Set(blockNum, &schemas.Block{BlockNumber: blockNum, Timestamp: b.Time()})
 		repo.addBlockDate(&schemas.BlockDate{BlockNum: blockNum, Timestamp: int64(b.Time())})
 	}
 }
 
 func (repo *BlocksRepo) SetBlock(blockNum int64) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 	repo.setBlock(blockNum)
 }
 
 func (repo *BlocksRepo) _setAndGetBlock(blockNum int64) *schemas.Block {
 	repo.setBlock(blockNum)
-	return repo.blocks[blockNum]
+	return repo.blocks.Get(blockNum)
 }
 
 func (repo *BlocksRepo) SetAndGetBlock(blockNum int64) *schemas.Block {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 	return repo._setAndGetBlock(blockNum)
 }
 
 // for treasury calculations
 func (repo *BlocksRepo) addBlockDate(entry *schemas.BlockDate) {
 	ts := utils.TimeToDateEndTs(time.Unix(entry.Timestamp, 0))
-	previousEntry := repo.blockDatePairs[ts]
+	previousEntry := repo.blockDatePairs.Get(ts)
 	if previousEntry == nil || previousEntry.BlockNum < entry.BlockNum {
-		repo.blockDatePairs[ts] = entry
+		repo.blockDatePairs.Set(ts, entry)
 	}
 }
 
@@ -152,8 +142,6 @@ func (repo *BlocksRepo) Load() {
 }
 
 func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...interface{}) {
-	repo.mu.Lock()
-	defer repo.mu.Unlock()
 	ts := repo._setAndGetBlock(header.BlockNumber).Timestamp
 	if time.Since(time.Unix(int64(ts), 0)) < time.Hour {
 		if header.EventCode == "AMQP" {
@@ -168,7 +156,7 @@ func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...in
 }
 
 func (repo *BlocksRepo) Clear() {
-	repo.blocks = map[int64]*schemas.Block{}
+	repo.blocks.Clear()
 }
 
 // setter
@@ -184,6 +172,12 @@ func (repo *BlocksRepo) AddDAOOperation(operation *schemas.DAOOperation) {
 
 func (repo *BlocksRepo) AddCreditManagerStats(cms *schemas.CreditManagerStat) {
 	repo.SetAndGetBlock(cms.BlockNum).AddCreditManagerStats(cms)
+}
+func (repo *BlocksRepo) AddTokenLTRamp(details *schemas_v3.TokenLTRamp) {
+	repo.SetAndGetBlock(details.BlockNum).AddTokenLTRamp(details)
+}
+func (repo *BlocksRepo) AddQuotaDetails(details *schemas_v3.QuotaDetails) {
+	repo.SetAndGetBlock(details.BlockNum).AddQuotaDetails(details)
 }
 
 func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {

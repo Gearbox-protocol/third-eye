@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
@@ -232,3 +233,5 @@ func (DummyRepo) PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI {
 func (DummyRepo) GetTokenFromSdk(string) string {
 	return ""
 }
+func (DummyRepo) AddTokenLTRamp(*schemas_v3.TokenLTRamp)   {}
+func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails) {}

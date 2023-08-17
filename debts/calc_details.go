@@ -41,6 +41,9 @@ func (s storeForCalc) GetPrices(token string, version core.VersionType, blockNum
 	return s.inner.GetTokenLastPrice(token, version)
 }
 
-func (s storeForCalc) GetLiqThreshold(cm, token string) *big.Int {
+func (s storeForCalc) GetLiqThreshold(ts int64, cm, token string) *big.Int {
+	if ltRamp := s.inner.tokenLTRamp[cm][token]; ltRamp != nil {
+		return ltRamp.GetLTForTs(ts)
+	}
 	return s.inner.allowedTokensThreshold[cm][token].Convert()
 }

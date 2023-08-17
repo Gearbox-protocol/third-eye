@@ -38,6 +38,7 @@ func (mdl *CMv3) OnLog(txLog types.Log) {
 		return
 	}
 	//
+	mdl.CommonCMAdapter.PrefixOnLog(txLog)
 	mdl.checkLogV3(txLog)
 }
 

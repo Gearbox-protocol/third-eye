@@ -75,7 +75,7 @@ func (mdl *CommonCMAdapter) processLastTx(newTxHash string) {
 	mdl.lastTxHash = newTxHash
 }
 
-func (mdl *CommonCMAdapter) OnLog(txLog types.Log) {
+func (mdl *CommonCMAdapter) PrefixOnLog(txLog types.Log) {
 	mdl.processLastTx(txLog.TxHash.Hex())
 	mdl.lastEventBlock = int64(txLog.BlockNumber)
 	//

@@ -89,7 +89,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		}
 		mdl.onIncreaseBorrowedAmountV3(&txLog, decreaseBorrowEvent.CreditAccount.Hex(),
 			new(big.Int).Neg(decreaseBorrowEvent.Amount), "DecreaseBorrowedAmount")
-	case core.Topic("NewConfigurator(address)"):
+	case core.Topic("SetCreditConfigurator(address)"):
 		newConfigurator := utils.ChecksumAddr(txLog.Topics[1].Hex())
 		oldConfigurator := mdl.GetDetailsByKey("configurator")
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{

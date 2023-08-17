@@ -3,6 +3,7 @@ package cm_common
 import (
 	"math/big"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
@@ -196,7 +197,7 @@ func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.Credi
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CommonCMAdapter) addFloatValue(dcv2Balances []dataCompressorv2.TokenBalance) *core.DBBalanceFormat {
+func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Balances []dataCompressorv2.TokenBalance) *core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
 	for ind, balance := range dcv2Balances {
 		token := balance.Token.Hex()

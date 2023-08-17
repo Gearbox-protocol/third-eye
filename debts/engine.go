@@ -84,6 +84,9 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 		eng.AddAllowedTokenThreshold(allowedToken)
 		tokensUpdated[allowedToken.Token] = true
 	}
+	for _, ltRamp := range block.GetTokenLTRamp() {
+		eng.AddTokenLTRamp(ltRamp)
+	}
 
 	// C3.b: updated price
 	for _, pf := range block.GetPriceFeeds() {
@@ -108,6 +111,8 @@ func (eng *DebtEngine) CalculateDebt() {
 	//
 	for _, blockNum := range blockNums {
 		block := blocks[blockNum]
+		eng.currentTs = int64(block.Timestamp)
+		//
 		poolsUpdated, tokensUpdated, sessionsUpdated := eng.updateLocalState(blockNum, block)
 		// get pool cumulative interest rate
 		cmToPoolDetails := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
@@ -323,6 +328,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	// calculating account fields
 	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
 	calHF, calDebt, calTotalValue, calThresholdValue, _calBorowedWithInterst := calculator.CalcAccountFields(
+		eng.currentTs,
 		session.Version,
 		blockNum,
 		sessionDetailsForCalc{

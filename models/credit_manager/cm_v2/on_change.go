@@ -103,7 +103,7 @@ func (mdl *CMv2) OnLog(txLog types.Log) {
 		return
 	}
 	//
-	mdl.CmMVP.OnLog(txLog)
+	mdl.CmMVP.PrefixOnLog(txLog)
 	mdl.checkLogV2(txLog)
 }
 
