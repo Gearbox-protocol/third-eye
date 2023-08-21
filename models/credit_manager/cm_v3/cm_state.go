@@ -14,15 +14,15 @@ type AccountOwner struct {
 	SessionId string
 }
 type Cmv3State struct {
-	cm_common.CommonCMAdapter
+	*cm_common.CommonCMAdapter
 	whosAccount      map[string]AccountOwner
 	allowedProtocols map[string]bool
 	params           *schemas.Parameters
-	ds.SyncAdapter
 }
 
-func NewCmv3State() Cmv3State {
+func NewCmv3State(adapter *ds.SyncAdapter) Cmv3State {
 	return Cmv3State{
+		CommonCMAdapter:  cm_common.NewCommonCMAdapter(adapter),
 		allowedProtocols: map[string]bool{},
 		whosAccount:      map[string]AccountOwner{},
 	}
@@ -33,7 +33,7 @@ func (mdl *Cmv3State) SetParams(params *schemas.Parameters) {
 }
 
 func (mdl *Cmv3State) SetUnderlyingState(obj interface{}) {
-	mdl.UnderlyingStatePresent = true
+	mdl.UnderlyingStateToSave = true
 	switch underlyingObj := obj.(type) {
 	case (*schemas.CreditManagerState):
 		mdl.State = underlyingObj
@@ -46,10 +46,6 @@ func (mdl *Cmv3State) SetUnderlyingState(obj interface{}) {
 	default:
 		log.Fatal("Type assertion for credit manager state failed")
 	}
-}
-
-func (mdl Cmv3State) GetUnderlyingState() interface{} {
-	return mdl.State
 }
 
 func (mdl *CMv3) InitState() {

@@ -7,7 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_common"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -23,14 +23,14 @@ func main() {
 	log.CheckFatal(err)
 	cfg := config.Config{DatabaseUrl: utils.GetEnvOrDefault("DATABASE_URL", "")}
 	db := repository.NewDBClient(&cfg)
-	for pool, details := range pool.GetPoolGateways(client) {
+	for pool, details := range pool_common.GetPoolGateways(client) {
 		log.Info(pool, details.Gateway, details.Sym)
 		processGateway(pool, details, client, db)
 	}
 }
 
 // ind, user, ignore
-func getIndUser(txLog types.Log, details pool.GatewayDetails, pool common.Address) (indToSearch []int64, user common.Address, ignore bool) {
+func getIndUser(txLog types.Log, details pool_common.GatewayDetails, pool common.Address) (indToSearch []int64, user common.Address, ignore bool) {
 	if details.Sym == "WETH" {
 		indToSearch = []int64{int64(txLog.Index - 2)}
 		user = common.BytesToAddress(txLog.Topics[2][:])
@@ -46,7 +46,7 @@ func getIndUser(txLog types.Log, details pool.GatewayDetails, pool common.Addres
 	return indToSearch, user, false
 }
 
-func checkGatewayInDB(poolOriginal common.Address, details pool.GatewayDetails, txLogs []types.Log, db *gorm.DB) {
+func checkGatewayInDB(poolOriginal common.Address, details pool_common.GatewayDetails, txLogs []types.Log, db *gorm.DB) {
 	type Allgateway struct {
 		Count int `gorm:"column:count"`
 	}
@@ -83,7 +83,7 @@ func checkGatewayInDB(poolOriginal common.Address, details pool.GatewayDetails, 
 	return
 }
 
-func updateGatewayInDB(pool common.Address, details pool.GatewayDetails, txLogs []types.Log, db *gorm.DB) (count int) {
+func updateGatewayInDB(pool common.Address, details pool_common.GatewayDetails, txLogs []types.Log, db *gorm.DB) (count int) {
 	for _, txLog := range txLogs {
 		indToSearch, user, ignore := getIndUser(txLog, details, pool)
 		if ignore {
@@ -99,7 +99,7 @@ func updateGatewayInDB(pool common.Address, details pool.GatewayDetails, txLogs 
 	return
 }
 
-func processGateway(pool common.Address, details pool.GatewayDetails, client core.ClientI, db *gorm.DB) {
+func processGateway(pool common.Address, details pool_common.GatewayDetails, client core.ClientI, db *gorm.DB) {
 	maxBlock := schemas.Block{}
 	if err := db.Raw("SELECT max(id) id from blocks").Find(&maxBlock).Error; err != nil {
 		log.Fatal(err)

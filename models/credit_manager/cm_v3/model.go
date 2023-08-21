@@ -24,7 +24,7 @@ func NewCMv3(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 
 func NewCMv3FromAdapter(adapter *ds.SyncAdapter) *CMv3 {
 	obj := &CMv3{
-		Cmv3State:        NewCmv3State(),
+		Cmv3State:        NewCmv3State(adapter),
 		allowedProtocols: map[string]bool{},
 	}
 

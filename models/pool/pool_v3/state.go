@@ -6,7 +6,7 @@ import (
 )
 
 func (mdl *Poolv3) SetUnderlyingState(obj interface{}) {
-	mdl.UnderlyingStatePresent = true
+	mdl.UnderlyingStateToSave = true
 	state, ok := obj.(*schemas.PoolState)
 	if !ok {
 		log.Fatal("Type assertion for credit manager state failed")

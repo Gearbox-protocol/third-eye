@@ -1,7 +1,6 @@
 package cm_common
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -62,7 +61,6 @@ func (mdl *CMCommon) CommonInitState(version core.VersionType) {
 		Address:         mdl.Address,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
-		Sessions:        map[string]string{},
 		Version:         version,
 	})
 }
@@ -74,12 +72,10 @@ func (mdl *CMCommon) SetParams(params *schemas.Parameters) {
 
 // for states
 func (mdl *CMCommon) SetUnderlyingState(obj interface{}) {
-	mdl.UnderlyingStatePresent = true
+	mdl.UnderlyingStateToSave = true
 	switch underlyingObj := obj.(type) {
 	case (*schemas.CreditManagerState):
 		mdl.State = underlyingObj
-	case (map[string]string):
-		mdl.Sessions = underlyingObj
 	case *schemas.PnlOnRepay:
 		mdl.pnlOnCM.Set(underlyingObj)
 	case *schemas.Parameters:
@@ -93,27 +89,10 @@ func (mdl *CMCommon) GetUnderlyingState() interface{} {
 	return mdl.State
 }
 
-func (mdl *CMCommon) AddCreditOwnerSession(owner, sessionId string) {
-	mdl.State.Sessions[owner] = sessionId
-}
-
-func (mdl *CMCommon) RemoveCreditOwnerSession(owner string) {
-	delete(mdl.State.Sessions, owner)
-}
-
-func (mdl *CMCommon) GetCreditOwnerSession(owner string, dontFail ...bool) string {
-	sessionId := mdl.State.Sessions[owner]
-	if (len(dontFail) == 0 || !dontFail[0]) && sessionId == "" {
-		panic(
-			fmt.Sprintf("session id not found for %s in %+v %s\n", owner, mdl.State.Sessions, mdl.Address),
-		)
-	}
-	return sessionId
-}
-
 func (mdl *CMCommon) GetUnderlyingToken() string {
 	return mdl.State.UnderlyingToken
 }
+
 func (mdl *CMCommon) GetUnderlyingDecimal() int8 {
 	decimals := mdl.Repo.GetToken(mdl.GetUnderlyingToken()).Decimals
 	return decimals

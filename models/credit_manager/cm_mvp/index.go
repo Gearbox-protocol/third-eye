@@ -58,7 +58,7 @@ func (mdl *CmMVP) CommonInitState(version core.VersionType) {
 
 // for states
 func (mdl *CmMVP) SetUnderlyingState(obj interface{}) {
-	mdl.UnderlyingStatePresent = true
+	mdl.UnderlyingStateToSave = true
 	switch underlyingObj := obj.(type) {
 	case (*schemas.CreditManagerState):
 		mdl.State = underlyingObj
