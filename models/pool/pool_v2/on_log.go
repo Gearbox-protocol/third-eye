@@ -55,13 +55,16 @@ func (mdl *Poolv2) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
+		log.Info(removeLiquidityEvent.Sender.Hex())
 		mdl.gatewayHandler.AddRemoveLiqEvent(&schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
 			Pool:        mdl.Address,
 			Event:       "RemoveLiquidity",
+			Executor:    removeLiquidityEvent.Sender.Hex(),
 			User:        removeLiquidityEvent.Sender.Hex(),
+			Receiver:    removeLiquidityEvent.To.Hex(),
 			AmountBI:    (*core.BigInt)(removeLiquidityEvent.Amount),
 		})
 		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, removeLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "withdrawn")

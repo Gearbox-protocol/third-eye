@@ -3,7 +3,7 @@ module github.com/Gearbox-protocol/third-eye
 go 1.19
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20230813203217-df316cfe5817
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20230821133500-4d1a58807a42
 	github.com/ethereum/go-ethereum v1.10.17
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.5.8
@@ -73,4 +73,4 @@ require (
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-replace github.com/Gearbox-protocol/sdk-go v0.0.0-20230813203217-df316cfe5817 => ../sdk-go
+// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20230821130944-0e4621e73883 => ../sdk-go
