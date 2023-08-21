@@ -31,10 +31,11 @@ type Repository struct {
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
-	db             *gorm.DB
-	client         core.ClientI
-	config         *config.Config
-	accountManager *ds.DirectTransferManager
+	db              *gorm.DB
+	client          core.ClientI
+	config          *config.Config
+	accountManager  *ds.DirectTransferManager
+	AccountQuotaMgr *ds.AccountQuotaMgr
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
@@ -57,6 +58,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
 	repo.TreasuryRepo = treasury.NewTreasuryRepo(tokensRepo, blocksRepo, repo.SyncAdaptersRepo, client, cfg)
+	repo.AccountQuotaMgr = ds.NewAccountQuotaMgr()
 	return repo
 }
 
@@ -94,6 +96,8 @@ func (repo *Repository) Init() {
 	// load state for sync_adapters
 	repo.loadPool()
 	repo.LoadPoolUniqueUsers(repo.db)
+	repo.loadQuotaDetails()
+	repo.loadAccountQuotaInfo()
 	// load credit manager
 	repo.loadCreditManagers()
 	repo.loadGearBalances()

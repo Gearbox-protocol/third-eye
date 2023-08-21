@@ -233,5 +233,7 @@ func (DummyRepo) PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI {
 func (DummyRepo) GetTokenFromSdk(string) string {
 	return ""
 }
-func (DummyRepo) AddTokenLTRamp(*schemas_v3.TokenLTRamp)   {}
-func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails) {}
+func (DummyRepo) AddTokenLTRamp(*schemas_v3.TokenLTRamp)           {}
+func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails)         {}
+func (DummyRepo) GetAccountQuotaMgr() *AccountQuotaMgr             { return nil }
+func (DummyRepo) AddAccountQuotaInfo(*schemas_v3.AccountQuotaInfo) {}

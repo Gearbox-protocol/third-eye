@@ -1,8 +1,6 @@
-package pool
+package pool_v3
 
 import (
-	"math/big"
-
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -12,21 +10,16 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (mdl *Pool) fixPoolLedgerAddrForGateway() {
+// asset is already in underlying
+func (mdl *Poolv3) fixPoolLedgerAddrForGateway() {
 	// for remove liquidity
-	for _, removeLiqEvent := range mdl.gatewayHandler.getRemoveLiqEventsAndClear() {
-		// calculate removed liquidity amount in underlying token
-		numerator := new(big.Int).Mul(removeLiqEvent.AmountBI.Convert(), mdl.dieselRate)
-		underlyingRemovedAmount := new(big.Int).Quo(numerator, utils.GetExpInt(27))
-		// set removed  amount fields in poolLedger
-		removeLiqEvent.AmountBI = (*core.BigInt)(underlyingRemovedAmount)
-		removeLiqEvent.Amount = utils.GetFloat64Decimal(underlyingRemovedAmount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals)
+	for _, removeLiqEvent := range mdl.gatewayHandler.GetRemoveLiqEventsAndClear() {
 		// add poolLedger to repository
 		mdl.Repo.AddPoolLedger(removeLiqEvent)
 	}
 }
 
-func (mdl *Pool) OnBlockChange(inputBlock int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
+func (mdl *Poolv3) OnBlockChange(inputBlock int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	// if no addLiquidity/removeLiquidity events are emitted then lastEventBlock is zero.Thus,  fixPoolLedgerAddrForGateway will not be called and pool snapshot is not created
 	if mdl.lastEventBlock == 0 ||
 		// datacompressor works for pool address only after the address is registered with contractregister
@@ -42,7 +35,7 @@ func (mdl *Pool) OnBlockChange(inputBlock int64) (call multicall.Multicall2Call,
 	return mdl.getCallAndProcessFn(inputBlock)
 }
 
-func (mdl *Pool) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, func(multicall.Multicall2Result)) {
+func (mdl *Poolv3) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, func(multicall.Multicall2Result)) {
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetPoolData(inputB, common.HexToAddress(mdl.Address))
 	if err != nil {
 		log.Fatal("[PoolService] Cant create call for data compressor", err)
@@ -57,19 +50,18 @@ func (mdl *Pool) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, fu
 		}
 		//
 		mdl.createSnapshot(inputB, poolState)
-		//
+		// it uses dieselRate from create snapshot so this call should be after createSnapshots
 		mdl.fixPoolLedgerAddrForGateway()
 	}
 }
 
-func (mdl *Pool) onBlockChangeInternally(inputB int64) {
+func (mdl *Poolv3) onBlockChangeInternally(inputB int64) {
 	call, processFn := mdl.getCallAndProcessFn(inputB)
 	result := core.MakeMultiCall(mdl.Client, inputB, false, []multicall.Multicall2Call{call})
 	processFn(result[0])
-	mdl.fixPoolLedgerAddrForGateway()
 }
 
-func (p *Pool) createSnapshot(blockNum int64, state dcv2.PoolData) {
+func (p *Poolv3) createSnapshot(blockNum int64, state dcv2.PoolData) {
 	token := p.Repo.GetToken(p.State.UnderlyingToken)
 	p.State.IsWETH = state.IsWETH
 	p.State.BorrowAPYBI = (*core.BigInt)(state.BorrowAPYRAY)
@@ -103,5 +95,4 @@ func (p *Pool) createSnapshot(blockNum int64, state dcv2.PoolData) {
 		WithdrawFee:        int(state.WithdrawFee.Int64()),
 		CumulativeIndexRAY: (*core.BigInt)(state.LinearCumulativeIndex),
 	})
-	p.dieselRate = state.DieselRateRAY
 }

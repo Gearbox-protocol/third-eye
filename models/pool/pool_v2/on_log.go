@@ -1,4 +1,4 @@
-package pool
+package pool_v2
 
 import (
 	"math/big"
@@ -7,11 +7,21 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_common"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *Pool) OnLog(txLog types.Log) {
+// addLiquidity , amount is underlying token
+// remove Liquidity , amount is in diesel. though after the gatewayHandler all the removeLiquidity amount are changed to underlyingToken in fixPoolLedgerAddrForGateway
+// lend amount is in underlying
+// repay amount/profit/loss is in underlying
+
+// called on lend,repay,add,remove and NewInterestRateModel
+func (mdl *Poolv2) updateBorrowRate(blockNum int64) {
+	mdl.lastEventBlock = blockNum
+}
+func (mdl *Poolv2) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	// REVERT_POOL_WRAPPER
 	// if mdl.lastEventBlock != 0 && blockNum != mdl.lastEventBlock && mdl.lastEventBlock >= mdl.DiscoveredAt {
@@ -30,18 +40,22 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			TxHash:      txLog.TxHash.Hex(),
 			Pool:        mdl.Address,
 			Event:       "AddLiquidity",
-			User:        addLiquidityEvent.OnBehalfOf.Hex(),
-			AmountBI:    (*core.BigInt)(addLiquidityEvent.Amount),
-			Amount:      utils.GetFloat64Decimal(addLiquidityEvent.Amount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals),
+			//
+			Executor: addLiquidityEvent.Sender.Hex(),
+			User:     addLiquidityEvent.Sender.Hex(),
+			Receiver: addLiquidityEvent.OnBehalfOf.Hex(),
+			//
+			AmountBI: (*core.BigInt)(addLiquidityEvent.Amount),
+			Amount:   utils.GetFloat64Decimal(addLiquidityEvent.Amount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals),
 		})
-		mdl.checkIfAmountMoreThan1Mil(addLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "deposit")
-		mdl.lastEventBlock = blockNum
+		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, addLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "deposit")
+		mdl.updateBorrowRate(blockNum)
 	case core.Topic("RemoveLiquidity(address,address,uint256)"):
 		removeLiquidityEvent, err := mdl.contractETH.ParseRemoveLiquidity(txLog)
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		mdl.gatewayHandler.addRemoveLiqEvent(&schemas.PoolLedger{
+		mdl.gatewayHandler.AddRemoveLiqEvent(&schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
@@ -50,11 +64,11 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			User:        removeLiquidityEvent.Sender.Hex(),
 			AmountBI:    (*core.BigInt)(removeLiquidityEvent.Amount),
 		})
-		mdl.lastEventBlock = blockNum
-		mdl.checkIfAmountMoreThan1Mil(removeLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "withdrawn")
+		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, removeLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "withdrawn")
 
+		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Borrow(address,address,uint256)"):
-		mdl.lastEventBlock = blockNum
+		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Repay(address,uint256,uint256,uint256)"):
 		repayEvent, err := mdl.contractETH.ParseRepay(txLog)
 		if err != nil {
@@ -66,7 +80,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Profit:         repayEvent.Profit,
 			Loss:           repayEvent.Loss,
 		})
-		mdl.lastEventBlock = blockNum
+		mdl.updateBorrowRate(blockNum)
 	case core.Topic("NewInterestRateModel(address)"):
 		interestModel, err := mdl.contractETH.ParseNewInterestRateModel(txLog)
 		log.CheckFatal(err)
@@ -78,7 +92,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 			Type:        schemas.NewInterestRateModel,
 			Args:        &core.Json{"newInterestRateModel": interestModel.NewInterestRateModel.Hex()},
 		})
-		mdl.lastEventBlock = blockNum
+		mdl.updateBorrowRate(blockNum)
 	case core.Topic("NewCreditManagerConnected(address)"):
 		newCreditManager, err := mdl.contractETH.ParseNewCreditManagerConnected(txLog)
 		log.CheckFatal(err)
@@ -144,7 +158,7 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		ind := txLog.Index - 2
 		blockNum := int64(txLog.BlockNumber)
 		// for weth pool, WithdrawETH is emitted on weth gateway, so we track withdraETH on gateway for getting user
-		mdl.gatewayHandler.checkWithdrawETH(txLog.TxHash.Hex(), blockNum, int64(ind), pool, user)
+		mdl.gatewayHandler.CheckWithdrawETH(txLog.TxHash.Hex(), blockNum, int64(ind), pool, user)
 	case core.Topic("Transfer(address,address,uint256)"):
 		from := common.BytesToAddress(txLog.Topics[1][:])
 		to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
@@ -155,11 +169,11 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		}
 		ind := txLog.Index - 3
 		blockNum := int64(txLog.BlockNumber)
-		mdl.gatewayHandler.checkWithdrawETH(txLog.TxHash.Hex(), blockNum, int64(ind), mdl.Address, to)
+		mdl.gatewayHandler.CheckWithdrawETH(txLog.TxHash.Hex(), blockNum, int64(ind), mdl.Address, to)
 	}
 }
 
-func (mdl Pool) checkIfAmountMoreThan1Mil(amount *big.Int, blockNum int64, txHash string, operation string) {
+func (mdl Poolv2) checkIfAmountMoreThan1Mil(amount *big.Int, blockNum int64, txHash string, operation string) {
 	token := mdl.State.UnderlyingToken
 	priceInUSD := mdl.Repo.GetPrice(token)
 	if priceInUSD == nil {

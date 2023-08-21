@@ -189,6 +189,9 @@ func (repo *BlocksRepo) AddDieselTransfer(transfer *schemas.DieselTransfer) {
 func (repo *BlocksRepo) AddRebaseDetailsForDB(transfer *schemas.RebaseDetailsForDB) {
 	repo.SetAndGetBlock(transfer.BlockNum).AddRebaseDetailsForDB(transfer)
 }
+func (repo *BlocksRepo) AddAccountQuotaInfo(event *schemas_v3.AccountQuotaInfo) {
+	repo.SetAndGetBlock(event.BlockNum).AddAccountQuotaInfo(event)
+}
 
 func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)

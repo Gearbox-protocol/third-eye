@@ -10,7 +10,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v1"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v2"
-	"github.com/Gearbox-protocol/third-eye/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 )
 
 func (mdl *ContractRegister) OnLog(txLog types.Log) {
@@ -18,7 +19,7 @@ func (mdl *ContractRegister) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("NewPoolAdded(address)"):
 		address := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
-		obj := pool.NewPool(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
+		obj := NewPool(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
 		mdl.Repo.AddSyncAdapter(obj)
 	case core.Topic("NewCreditManagerAdded(address)"):
 		address := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
@@ -36,6 +37,19 @@ func NewCM(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int64
 		return cm_v2.NewCMv2(addr, client, repo, blockNum)
 	default:
 		log.Fatalf("Version(%d) of cm can't be created.", version)
+	}
+	return nil
+}
+
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int64) ds.SyncAdapterI {
+	version := core.FetchVersion(addr, blockNum, client)
+	switch version {
+	case 1, 2:
+		return pool_v2.NewPool(addr, client, repo, blockNum)
+	case 3:
+		return pool_v3.NewPool(addr, client, repo, blockNum)
+	default:
+		log.Fatalf("Version(%d) of pool can't be created.", version)
 	}
 	return nil
 }

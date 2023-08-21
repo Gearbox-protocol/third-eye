@@ -1,6 +1,7 @@
 package cm_common
 
 import (
+	"encoding/hex"
 	"fmt"
 	"sort"
 	"strings"
@@ -55,6 +56,19 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 		Len: %d, processed: %d`, len(facadeActions), ind)
 	}
 	return
+}
+
+func (mdl CommonCMAdapter) updateQuotasWithSessionId(sessionId string, mainCalls []*ds.FacadeCallNameWithMulticall) {
+	for _, call := range mainCalls {
+		for _, multicall := range call.GetMulticalls() {
+			sig := hex.EncodeToString(multicall.CallData[:4])
+			if sig == "712c10ad" { // updateQuota
+				quotaEvent := mdl.Repo.GetAccountQuotaMgr().GetUpdateQuotaEventForAccount(strings.Split(sessionId, "_")[0])
+				quotaEvent.SessionId = sessionId
+				mdl.Repo.AddAccountQuotaInfo(quotaEvent)
+			}
+		}
+	}
 }
 
 // check name

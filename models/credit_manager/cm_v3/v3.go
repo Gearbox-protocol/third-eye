@@ -11,6 +11,11 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// TODO:
+// - on updateQuota/increasedebt/decreasedebt, update creditsessionsnapshot with accrued fees/interest
+// - use accountQuotaInfo for calculating new accrued interest
+// - add use quota for calculating the tvw.
+
 // SetEnabledTokensMask(address,uint256) // same as enabledToken/disabledToken
 func (mdl *CMv3) checkLogV3(txLog types.Log) {
 	switch txLog.Topics[0] {

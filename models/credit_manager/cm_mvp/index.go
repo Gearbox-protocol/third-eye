@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// It is only used by v1 and v2 cm
 type CmMVP struct {
 	*cm_common.CommonCMAdapter
 	Sessions map[string]string // borrower to sessionId

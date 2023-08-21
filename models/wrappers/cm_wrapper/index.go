@@ -21,6 +21,7 @@ func NewCMWrapper(client core.ClientI) *CMWrapper {
 	w := &CMWrapper{
 		SyncWrapper: wrappers.NewSyncWrapper(ds.CMWrapper, client),
 	}
+	// if using onBlockChange
 	w.ViaDataProcess = ds.ViaMultipleLogs
 	return w
 }

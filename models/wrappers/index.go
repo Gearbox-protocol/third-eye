@@ -8,7 +8,9 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
+	"github.com/Gearbox-protocol/third-eye/models/pool_quota_keeper"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -186,13 +188,20 @@ func (s SyncWrapper) onBlockChange(lastBlockNum int64) {
 			continue
 		}
 		switch v := adapter.(type) {
-		case *pool.Pool:
-			call, processFn := v.OnBlockChange(lastBlockNum)
+		case *pool_v2.Poolv2:
 			// if process fn is not null
-			if processFn != nil {
+			if call, processFn := v.OnBlockChange(lastBlockNum); processFn != nil {
 				processFns = append(processFns, processFn)
 				calls = append(calls, call)
 			}
+		case *pool_v3.Poolv3:
+			// if process fn is not null
+			if call, processFn := v.OnBlockChange(lastBlockNum); processFn != nil {
+				processFns = append(processFns, processFn)
+				calls = append(calls, call)
+			}
+		case *pool_quota_keeper.PoolQuotaKeeper:
+			_ = 1
 		}
 	}
 	results := core.MakeMultiCall(s.Client, lastBlockNum, false, calls)

@@ -1,4 +1,4 @@
-package pool
+package pool_v2
 
 import (
 	"math/big"
@@ -8,25 +8,22 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_common"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type Pool struct {
+type Poolv2 struct {
 	*ds.SyncAdapter
 	contractETH *poolService.PoolService
 	// used for when to take a snapshot of pool state, these can only be taken for 5 events, new interest rate, add/remove liquidity and borrow/repay pool owed amount
 	lastEventBlock int64
 	State          *schemas.PoolState
 	dieselRate     *big.Int
-	gatewayHandler GatewayHandler
+	gatewayHandler pool_common.GatewayHandler
 }
 
-func (Pool) TableName() string {
-	return "sync_adapters"
-}
-
-func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *Pool {
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *Poolv2 {
 	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
 	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
@@ -35,15 +32,14 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(pool.DiscoveredAt),
 	}
+	//
 	underlyingToken, err := pool.contractETH.UnderlyingToken(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.CheckFatal(err)
 	repo.GetToken(underlyingToken.Hex())
+	//
 	dieselToken, err := pool.contractETH.DieselToken(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.CheckFatal(err)
+	//
 	pool.SetUnderlyingState(&schemas.PoolState{
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),
@@ -64,20 +60,20 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 // 	p.SyncAdapter.AfterSyncHook(syncedTill)
 // }
 
-func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Pool {
+func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv2 {
 	poolAddr := common.HexToAddress(adapter.Address)
 	cmContract, err := poolService.NewPoolService(poolAddr, adapter.Client)
 	log.CheckFatal(err)
-	gateway := GetPoolGateways(adapter.Client)[poolAddr]
-	obj := &Pool{
+	gateway := pool_common.GetPoolGateways(adapter.Client)[poolAddr]
+	obj := &Poolv2{
 		SyncAdapter:    adapter,
 		contractETH:    cmContract,
-		gatewayHandler: NewGatewayHandler(gateway),
+		gatewayHandler: pool_common.NewGatewayHandler(gateway),
 	}
 	return obj
 }
 
-func (mdl Pool) Topics() [][]common.Hash {
+func (mdl Poolv2) Topics() [][]common.Hash {
 	return [][]common.Hash{
 		{
 			// for pool
@@ -98,7 +94,7 @@ func (mdl Pool) Topics() [][]common.Hash {
 	}
 }
 
-func (mdl Pool) GetAllAddrsForLogs() (addrs []common.Address) {
+func (mdl Poolv2) GetAllAddrsForLogs() (addrs []common.Address) {
 	addrs = append(addrs, mdl.SyncAdapter.GetAllAddrsForLogs()...)
 	if mdl.gatewayHandler.Gateway == core.NULL_ADDR {
 		return

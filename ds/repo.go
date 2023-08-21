@@ -113,4 +113,6 @@ type RepositoryI interface {
 	// v3 events
 	AddTokenLTRamp(*schemas_v3.TokenLTRamp)
 	AddQuotaDetails(*schemas_v3.QuotaDetails)
+	AddAccountQuotaInfo(*schemas_v3.AccountQuotaInfo)
+	GetAccountQuotaMgr() *AccountQuotaMgr
 }

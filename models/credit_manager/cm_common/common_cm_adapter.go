@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// Used by CM v1,v2,v3
 type CommonCMAdapter struct {
 	*ds.SyncAdapter
 	State                  *schemas.CreditManagerState

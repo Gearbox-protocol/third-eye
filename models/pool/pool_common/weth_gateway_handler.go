@@ -1,4 +1,4 @@
-package pool
+package pool_common
 
 import (
 	"context"
@@ -33,7 +33,7 @@ func NewGatewayHandler(details GatewayDetails) GatewayHandler {
 	return GatewayHandler{GatewayDetails: details}
 }
 
-func (g *GatewayHandler) addRemoveLiqEvent(entry *schemas.PoolLedger) {
+func (g *GatewayHandler) AddRemoveLiqEvent(entry *schemas.PoolLedger) {
 	g.addLastEventToArr()
 	g.lastEntry = entry
 }
@@ -45,19 +45,20 @@ func (g *GatewayHandler) addLastEventToArr() {
 	g.lastEntry = nil
 }
 
-func (g *GatewayHandler) getRemoveLiqEventsAndClear() []*schemas.PoolLedger {
+func (g *GatewayHandler) GetRemoveLiqEventsAndClear() []*schemas.PoolLedger {
 	g.addLastEventToArr()
 	events := g.removeLiqEvents
 	g.removeLiqEvents = nil
 	return events
 }
 
-func (g *GatewayHandler) checkWithdrawETH(txHash string, blockNum, ind int64, pool, user string) {
+func (g *GatewayHandler) CheckWithdrawETH(txHash string, blockNum, ind int64, pool, user string) {
 	if g.Gateway == core.NULL_ADDR {
 		return
 	}
 	if g.lastEntry != nil && g.lastEntry.BlockNumber == blockNum &&
 		g.lastEntry.User == g.Gateway.Hex() && g.lastEntry.Pool == pool {
+		g.lastEntry.Executor = g.lastEntry.User // executor in this case is the gateway address for removeLiquidity
 		g.lastEntry.User = user
 	} else {
 		log.Fatalf(`WithdrawalWETH event on gateway@(%d,%d) 
