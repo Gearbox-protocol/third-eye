@@ -36,8 +36,6 @@ type RepositoryI interface {
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
 	GetTokenOracles() map[core.VersionType]map[string]*schemas.TokenOracle
-	// if returned value is nil, it means that token oracle hasn't been added yet.
-	GetOracleForV2Token(token string) *schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
 	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool)
 	//

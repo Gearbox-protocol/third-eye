@@ -12,11 +12,16 @@ type TokenSymMap struct {
 	chainId   int64
 }
 
+func (x TokenSymMap) UpdateForTest(sym string, token common.Address) {
+	x.addrToSym[token] = sym
+	x.symToAddr[sym] = token
+}
+
 func newTokenSymMap(chainId int64) TokenSymMap {
 	if chainId == 1337 {
 		return TokenSymMap{chainId: chainId}
 	} else {
-		return tokenSymMapFromchainId(chainId)
+		return TokenSymMapFromchainId(chainId)
 	}
 }
 
@@ -27,7 +32,6 @@ func (m *TokenSymMap) updateIfTest(repo repoI) {
 	symToAddr := map[string]common.Address{}
 	addrToSym := map[common.Address]string{}
 	for _, tokenStr := range repo.GetTokens() {
-		// log.Info(tokenStr)
 		sym := repo.GetToken(tokenStr).Symbol
 		token := common.HexToAddress(tokenStr)
 		symToAddr[sym] = token
@@ -37,7 +41,7 @@ func (m *TokenSymMap) updateIfTest(repo repoI) {
 	m.addrToSym = addrToSym
 }
 
-func tokenSymMapFromchainId(chainId int64) TokenSymMap {
+func TokenSymMapFromchainId(chainId int64) TokenSymMap {
 	symToAddr := core.GetSymToAddrByChainId(chainId)
 	addrToSym := map[common.Address]string{}
 	for sym, addr := range symToAddr.Tokens {

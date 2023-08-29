@@ -15,7 +15,6 @@ import (
 type repoI interface {
 	GetAdapter(addr string) ds.SyncAdapterI
 	// if returned value is nil, it means that token oracle hasn't been added yet.
-	GetOracleForV2Token(token string) *schemas.TokenOracle
 	GetTokens() []string
 	GetToken(string) *schemas.Token
 }
@@ -32,6 +31,8 @@ type QueryPFDependencies struct {
 	aggregatedFetchedBlocks []int64
 	// yearn feed prices to be ordered
 	depBasedExtraPrices []*schemas.PriceFeed
+	//
+	aqf *AQFWrapper
 	//
 	repo repoI
 	TokenSymMap
@@ -55,7 +56,7 @@ func NewQueryPFDepenencies(repo ds.RepositoryI, client core.ClientI) *QueryPFDep
 	}
 }
 
-func (q *QueryPFDependencies) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
+func (q *QueryPFDependencies) chainlinkPriceUpdatedAt(token string, blockNums []int64) {
 	q.updateIfTest(q.repo)
 	chainlinkSym := q.getTokenSym(token)
 	q.mu.Lock()
@@ -223,13 +224,9 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 
 	// generate calls
 	var calls []multicall.Multicall2Call
-	var tokenOracles []*schemas.TokenOracle
-	for token := range tokens {
-		details := q.repo.GetOracleForV2Token(token)
-		if details == nil {
-			continue
-		}
-		tokenOracles = append(tokenOracles, details)
+
+	feedAndToken := q.aqf.getFeeds(blockNum, tokens)
+	for _, details := range feedAndToken {
 		call := multicall.Multicall2Call{
 			Target:   common.HexToAddress(details.Feed),
 			CallData: data,
@@ -241,7 +238,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 	// parse result and create PriceFeed obj
 	var newPrices []*schemas.PriceFeed
 	for ind, entry := range results {
-		details := tokenOracles[ind]
+		details := feedAndToken[ind]
 		var newPrice *schemas.PriceFeed
 		/// parse price
 		// there is no check that call was made for feed that is existing for given blockNum

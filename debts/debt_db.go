@@ -50,7 +50,7 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 				HF: %s
 				CreditManager: %s
 				Borrower: %s Debt:%f %s
-				web: %s/accounts/history/%s`,
+				web: %s/accounts/%s`,
 			sendMsgAfterXBlocks,
 			debt.SessionId, debt.CalHealthFactor,
 			urls.ExplorerAddrUrl(cmAddr),

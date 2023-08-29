@@ -176,5 +176,5 @@ func (repo *Repository) AfterSync(syncTill int64) {
 }
 
 func (repo *Repository) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
-	repo.GetAggregatedFeed().GetDepFetcher().ChainlinkPriceUpdatedAt(token, blockNums)
+	repo.GetAggregatedFeed().ChainlinkPriceUpdatedAt(token, blockNums)
 }

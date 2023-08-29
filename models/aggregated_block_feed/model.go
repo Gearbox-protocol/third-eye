@@ -48,13 +48,15 @@ func NewAQFWrapper(client core.ClientI, repo ds.RepositoryI, interval int64) *AQ
 		Repo:            repo,
 		DataProcessType: ds.ViaQuery,
 	}
-	return &AQFWrapper{
+	wrapper := &AQFWrapper{
 		SyncAdapter: syncAdapter,
 		Interval:    interval,
 		mu:          &sync.Mutex{},
 		QueryFeeds:  map[string]*QueryPriceFeed{},
 		queryPFdeps: NewQueryPFDepenencies(repo, client),
 	}
+	wrapper.queryPFdeps.aqf = wrapper
+	return wrapper
 }
 
 // only called by priceoracle
@@ -121,4 +123,29 @@ func (mdl AQFWrapper) GetDepFetcher() *QueryPFDependencies {
 }
 
 func (mdl *AQFWrapper) OnLog(txLog types.Log) {
+}
+
+type local struct {
+	Feed  string
+	Token string
+}
+
+func (mdl AQFWrapper) getFeeds(blockNum int64, neededTokens map[string]bool) (result []local) {
+
+	for _, adapter := range mdl.QueryFeeds {
+		tokensForAdapter := adapter.TokensValidAtBlock(blockNum)
+		for _, token := range tokensForAdapter {
+			if neededTokens[token] {
+				result = append(result, local{
+					Feed:  adapter.GetAddress(),
+					Token: token,
+				})
+			}
+		}
+	}
+	return
+}
+
+func (mdl AQFWrapper) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
+	mdl.queryPFdeps.chainlinkPriceUpdatedAt(token, blockNums)
 }

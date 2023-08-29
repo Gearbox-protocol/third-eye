@@ -56,7 +56,12 @@ func (mdl *AQFWrapper) Query(queryTill int64) {
 		}
 		adapter.AfterSyncHook(queryTill)
 	}
-	mdl.addQueryPrices(queryFrom)
+	// db has saved prices till mdl.GetLastSync()
+	// queryFrom starts
+	if mdl.GetLastSync()+mdl.Interval != queryFrom {
+		log.Fatal("failed reduntant check, to make sure lastSync of AQFWrapper is not updated before addingQueryPrices for extra")
+	}
+	mdl.addQueryPrices(mdl.GetLastSync())
 }
 
 func (mdl *AQFWrapper) addQueryPrices(clearExtraBefore int64) {

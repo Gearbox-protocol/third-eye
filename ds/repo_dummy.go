@@ -10,6 +10,7 @@ import (
 )
 
 type DummyRepo struct {
+	PFs []*schemas.PriceFeed
 }
 
 func (DummyRepo) Init() {
@@ -69,7 +70,8 @@ func (DummyRepo) DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle) {
 func (DummyRepo) GetPrice(token string) *big.Int {
 	return nil
 }
-func (DummyRepo) AddPriceFeed(pf *schemas.PriceFeed) {
+func (r *DummyRepo) AddPriceFeed(pf *schemas.PriceFeed) {
+	r.PFs = append(r.PFs, pf)
 }
 
 // token funcs
@@ -205,9 +207,6 @@ func (DummyRepo) GetYearnFeedAddrs() []string {
 
 // has mutex lock
 func (DummyRepo) AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool) {
-}
-func (DummyRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
-	return nil
 }
 
 func (DummyRepo) LoadLastDebtSync() int64 {

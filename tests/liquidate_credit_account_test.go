@@ -1,11 +1,12 @@
 package tests
 
 import (
+	"testing"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
-	"testing"
 )
 
 func TestLiquidateCreditAccount(t *testing.T) {

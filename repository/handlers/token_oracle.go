@@ -212,7 +212,7 @@ func (repo *TokenOracleRepo) GetTokenOracles() map[core.VersionType]map[string]*
 }
 
 // if returned value is nil, it means that token oracle hasn't been added yet.
-func (repo *TokenOracleRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
-	obj := repo.tokensCurrentOracle[core.NewVersion(2)][token]
-	return obj
-}
+// func (repo *TokenOracleRepo) GetOracleForV2Token(token string) *schemas.TokenOracle {
+// 	obj := repo.tokensCurrentOracle[core.NewVersion(2)][token]
+// 	return obj
+// }

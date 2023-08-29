@@ -49,6 +49,15 @@ func NewMockRepo(repo ds.RepositoryI, client *test.TestClient,
 }
 
 func (m *MockRepo) Init(fileNames []string) {
+	inputFile, addressMap := ParseMockClientInput(m.t, m.client, fileNames)
+	for _, token := range m.client.GetToken() {
+		m.Repo.AddTokenObj(token)
+	}
+	m.AddressMap = addressMap
+	m.processInputTestFile(inputFile)
+}
+
+func ParseMockClientInput(t *testing.T, client *test.TestClient, fileNames []string) (*TestInput3Eye, core.AddressMap) {
 	filePaths := make([]string, len(fileNames))
 	for i, fileName := range fileNames {
 		filePaths[i] = fmt.Sprintf("../inputs/%s", fileName)
@@ -57,15 +66,11 @@ func (m *MockRepo) Init(fileNames []string) {
 	for i := range fileNames {
 		files[i] = NewTestInput3Eye()
 	}
-	testInput3Eye, addressMap := test.LoadTestFiles(filePaths, files, m.t)
+	testInput3Eye, addressMap := test.LoadTestFiles(filePaths, files, t)
 	//
 	inputFile := testInput3Eye.(*TestInput3Eye)
-	inputFile.AddToClient(m.client, addressMap)
-	for _, token := range m.client.GetToken() {
-		m.Repo.AddTokenObj(token)
-	}
-	m.AddressMap = addressMap
-	m.processInputTestFile(inputFile)
+	inputFile.AddToClient(client, addressMap)
+	return inputFile, addressMap
 }
 
 func (m *MockRepo) processInputTestFile(inputFile *TestInput3Eye) {
@@ -175,8 +180,16 @@ func (m *MockRepo) Check(value interface{}, fileName string) {
 	fileName = fmt.Sprintf("../inputs/%s", fileName)
 	require.JSONEq(m.t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
 }
+func Check(t *testing.T, addressMap map[string]string, value interface{}, fileName string) {
+	outputJson := test.ReplaceWithVariable(value, addressMap)
+	fileName = fmt.Sprintf("../inputs/%s", fileName)
+	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
+}
 
 func (m *MockRepo) Print(value interface{}) {
-	outputJson := test.ReplaceWithVariable(value, m.AddressMap)
-	m.t.Fatal(utils.ToJson(outputJson))
+	Print(m.t, m.AddressMap, value)
+}
+func Print(t *testing.T, addressMap map[string]string, value interface{}) {
+	outputJson := test.ReplaceWithVariable(value, addressMap)
+	t.Fatal(utils.ToJson(outputJson))
 }
