@@ -131,15 +131,16 @@ type local struct {
 }
 
 func (mdl AQFWrapper) getFeeds(blockNum int64, neededTokens map[string]bool) (result []local) {
-
 	for _, adapter := range mdl.QueryFeeds {
-		tokensForAdapter := adapter.TokensValidAtBlock(blockNum)
-		for _, token := range tokensForAdapter {
-			if neededTokens[token] {
-				result = append(result, local{
-					Feed:  adapter.GetAddress(),
-					Token: token,
-				})
+		if adapter.GetVersion() == 2 {
+			tokensForAdapter := adapter.TokensValidAtBlock(blockNum)
+			for _, token := range tokensForAdapter {
+				if neededTokens[token] {
+					result = append(result, local{
+						Feed:  adapter.GetAddress(),
+						Token: token,
+					})
+				}
 			}
 		}
 	}
