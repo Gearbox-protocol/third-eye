@@ -33,6 +33,7 @@ func NewAccountManager(addr string, discoveredAt int64, client core.ClientI, rep
 				Client:       client,
 			},
 			LastSync: discoveredAt - 1,
+			V:        core.NewVersion(1),
 		},
 		Repo: repo,
 	}

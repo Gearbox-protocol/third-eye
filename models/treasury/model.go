@@ -31,6 +31,7 @@ func NewTreasury(addr string, discoveredAt int64, client core.ClientI, repo ds.R
 				Client:       client,
 			},
 			LastSync: discoveredAt - 1,
+			V:        core.NewVersion(1),
 		},
 		Repo: repo,
 	}

@@ -39,6 +39,7 @@ func NewPoolLMRewards(addr string, syncedTill int64, client core.ClientI, repo d
 					Address:      addr,
 					Client:       client,
 				},
+				V: core.NewVersion(1),
 			},
 			Repo: repo,
 		},
