@@ -57,9 +57,9 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionTy
 	//
 	// make calls
 	calls := make([]multicall.Multicall2Call, 0, len(tokenAddrs)+len(poolForDieselRate))
-	if version == 1 {
+	if version.Eq(1) {
 		calls = append(calls, v1PriceCalls(common.HexToAddress(oracle), tokenAddrs, repo.tokens)...)
-	} else if version == 2 {
+	} else if version.Eq(2) {
 		calls = append(calls, v2PriceCalls(common.HexToAddress(oracle), tokenAddrs)...)
 	}
 	calls = append(calls, dieselCalls(poolForDieselRate)...)
@@ -68,9 +68,9 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionTy
 	result := core.MakeMultiCall(repo.client, blockNum, successRequired, calls)
 
 	// parse result
-	if version == 1 {
+	if version.Eq(1) {
 		prices = v1PriceAnswers(result[:len(tokenAddrs)])
-	} else if version == 2 {
+	} else if version.Eq(2) {
 		prices = v2PriceAnswers(result[:len(tokenAddrs)])
 	}
 	dieselRates = dieselAnswers(result[len(tokenAddrs):])

@@ -1,28 +1,28 @@
-delete from account_operations where block_num>9090306;
-delete from allowed_protocols where block_num>9090306;
-delete from allowed_tokens where block_num>9090306;
-delete from credit_manager_stats where block_num>9090306;
-delete from credit_session_snapshots where block_num>9090306;
-delete from dao_operations where block_num> 9090306;
+delete from account_operations where block_num>18029431;
+delete from allowed_protocols where block_num>18029431;
+delete from allowed_tokens where block_num>18029431;
+delete from credit_manager_stats where block_num>18029431;
+delete from credit_session_snapshots where block_num>18029431;
+delete from dao_operations where block_num> 18029431;
 
 
-delete from debts where block_num> 9090306;
-update debt_sync set last_calculated_at=9090306;
-delete from token_oracle where  block_num> 9090306;
-delete from transfer_account_allowed  where  block_num> 9090306;
-delete from no_session_transfers where  block_num> 9090306;
-delete from fast_check_params where  block_num> 9090306;
-delete from parameters where  block_num> 9090306;
-delete from pool_stats where  block_num> 9090306;
-delete from pool_ledger where  block_num> 9090306;
-delete from current_debts where block_num > 9090306;  
-delete from liquidable_accounts where block_num> 9090306;
+delete from debts where block_num> 18029431;
+update debt_sync set last_calculated_at=18029431;
+delete from token_oracle where  block_num> 18029431;
+delete from transfer_account_allowed  where  block_num> 18029431;
+delete from no_session_transfers where  block_num> 18029431;
+delete from fast_check_params where  block_num> 18029431;
+delete from parameters where  block_num> 18029431;
+delete from pool_stats where  block_num> 18029431;
+delete from pool_ledger where  block_num> 18029431;
+delete from current_debts where block_num > 18029431;  
+delete from liquidable_accounts where block_num> 18029431; -- doesn't matter if it is closed or open
 
 -- a
-update sync_adapters set last_sync = 9090306 where type in ('CreditConfigurator',  'AccountManager','CreditFilter', 'CreditManager', 'Pool') and last_sync > 9090306;
+update sync_adapters set last_sync = 18029431 where type in ('CreditConfigurator',  'AccountManager','CreditFilter', 'CreditManager', 'Pool') and last_sync > 18029431;
 -- 
-delete from credit_sessions where since> 9090306;
-update  credit_sessions set closed_at=0,liquidator='', remaining_funds='0', status=0 where closed_at> 9090306;
+delete from credit_sessions where since> 18029431;
+update  credit_sessions set closed_at=0,liquidator='', remaining_funds='0', close_transfers='{}',status=0 where closed_at> 18029431;
 
 -- the borrower is not accounted for ; i.e. transfer of acocunt is not handled and should be used carefully
 update credit_sessions set borrowed_amount=css.borrowed_amount_bi, balances=css.balances from  credit_sessions cs join (select distinct on(session_id) * from credit_session_snapshots order by session_id, block_num desc) css on css.session_id=cs.id  where cs.status=0;
@@ -53,8 +53,15 @@ update credit_managers cm set
 
 
 
+-- delete from price_feeds where block_num >  18029431;
+-- delete from token_oracle where block_num > 18029431;
+-- update sync_adapters set last_sync=18029431 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
+
+-- delete from sync_adapters where discovered_at> 18029431;
 ----
--- delete from sync_adapters where discovered_at> 9090306;
--- delete from price_feeds where block_num >  9090306;
--- delete from token_oracle where block_num > 9090306;
--- update sync_adapters set last_sync=9090306 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
+
+-- sync adapter for treasury is not updated.
+-- tokens and token_current_price, schema_migrations not are needed to be updated.
+-- faucet and operations are reduntant tables.
+-- gear_balances , no need to udpate as GearToken syncadpater is not updated.
+-- PooLMReward syncadapter is for table diesel_transfers, lm_rewards, diesel_balances.

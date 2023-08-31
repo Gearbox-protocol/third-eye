@@ -149,7 +149,7 @@ func (SyncWrapper) SetBlockToDisableOn(int64) {
 
 // /
 func (SyncWrapper) GetVersion() core.VersionType {
-	return 1
+	return core.NewVersion(1)
 }
 func (w SyncWrapper) GetLastSync() int64 {
 	return w.lastSync

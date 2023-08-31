@@ -444,7 +444,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 	// calculate profit
 	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)
 	var remainingFunds *big.Int
-	if session.Version == 2 {
+	if session.Version.Eq(2) {
 		repayAmount := new(big.Int)
 		// while close account on v2 we calculate remainingFunds from all the token transfer from the user
 		if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
@@ -519,7 +519,7 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version
 	usdcAddr := eng.repo.GetUSDCAddr()
 	tokenPrice := eng.GetTokenLastPrice(tokenAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
-	if version == 2 {
+	if version.Eq(2) {
 		return utils.GetInt64(new(big.Int).Mul(tokenPrice, amount), tokenDecimals)
 	}
 	usdcPrice := eng.GetTokenLastPrice(usdcAddr, version)
@@ -532,14 +532,13 @@ func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, version
 }
 
 func (eng *DebtEngine) GetTokenLastPrice(addr string, version core.VersionType, dontFail ...bool) *big.Int {
-	switch version {
-	case 1:
+	if version.Eq(1) {
 		if eng.tokenLastPrice[addr] != nil {
 			return eng.tokenLastPrice[addr].PriceBI.Convert()
 		} else if eng.repo.GetWETHAddr() == addr {
 			return core.WETHPrice
 		}
-	case 2:
+	} else if version.Eq(2) {
 		if eng.tokenLastPriceV2[addr] != nil {
 			return eng.tokenLastPriceV2[addr].PriceBI.Convert()
 		}

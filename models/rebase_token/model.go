@@ -34,7 +34,7 @@ func NewRebaseToken(addr string, client core.ClientI, repo ds.RepositoryI) *Reba
 	adapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			LastSync: startFrom,
-			V:        core.VersionType(1),
+			V:        core.NewVersion(1),
 			Details:  core.Json{},
 			Contract: &schemas.Contract{
 				DiscoveredAt: startFrom,

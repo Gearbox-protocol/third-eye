@@ -40,13 +40,13 @@ func (calc FarmingCalculator) addFarmingVal(debt *schemas.Debt, session *schemas
 	for token, balance := range *css.Balances {
 		if balance.IsEnabled && balance.HasBalanceMoreThanOne() && !calc.tradingTokensMap[token] {
 			var priceDecimals int8 = 8
-			if session.Version == 1 {
+			if session.Version.Eq(1) {
 				priceDecimals = 18
 			}
 			farmingVal += balance.F * utils.GetFloat64Decimal(priceStore.GetPrices(token, session.Version), priceDecimals)
 		}
 	}
-	if session.Version == 1 {
+	if session.Version.Eq(1) {
 		farmingVal = farmingVal / utils.GetFloat64Decimal(priceStore.GetPrices(calc.usdc, session.Version), 18) // convert to usd
 		// by dividing by usdc price in eth
 	}

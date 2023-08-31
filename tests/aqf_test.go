@@ -4,6 +4,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -61,7 +62,7 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 	aqf.ChainlinkPriceUpdatedAt(addressMap["Token_1"], []int64{4, 11, 26, 51, 53, 58})
 	//
 	aqf.DisableYearnFeed(addressMap["Token_4"], addressMap["YearnFeed_3"], 56)
-	aqf.AddFeedOrToken(addressMap["Token_4"], addressMap["YearnFeed_4"], ds.YearnPF, 56, 2)
+	aqf.AddFeedOrToken(addressMap["Token_4"], addressMap["YearnFeed_4"], ds.YearnPF, 56, core.NewVersion(2))
 }
 
 func reverseMap(in map[string]string) (r map[string]string) {

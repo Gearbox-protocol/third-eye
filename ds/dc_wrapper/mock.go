@@ -68,7 +68,7 @@ func (t *DCTesting) getAccountData(blockNum int64, key string) (dcv2.CreditAccou
 			Balance:   (*big.Int)(entry.Balance),
 			IsAllowed: entry.IsAllowed,
 		}
-		if obj.Version == 2 {
+		if obj.Version.Eq(2) {
 			balance.IsEnabled = entry.IsEnabled
 		} else {
 			if maskLen-ind-1 >= 0 {
