@@ -25,7 +25,7 @@ delete from credit_sessions where since> 18029431;
 update  credit_sessions set closed_at=0,liquidator='', remaining_funds='0', close_transfers='{}',status=0 where closed_at> 18029431;
 
 -- the borrower is not accounted for ; i.e. transfer of acocunt is not handled and should be used carefully
-update credit_sessions set borrowed_amount=css.borrowed_amount_bi, balances=css.balances from  credit_sessions cs join (select distinct on(session_id) * from credit_session_snapshots order by session_id, block_num desc) css on css.session_id=cs.id  where cs.status=0;
+update credit_sessions cs set borrowed_amount=css.borrowed_amount_bi, balances=css.balances from  (select distinct on(session_id) * from credit_session_snapshots order by session_id, block_num desc) css where css.session_id=cs.id  and cs.status=0;
 
 -- for creditmanager
 
@@ -65,3 +65,7 @@ update credit_managers cm set
 -- faucet and operations are reduntant tables.
 -- gear_balances , no need to udpate as GearToken syncadpater is not updated.
 -- PooLMReward syncadapter is for table diesel_transfers, lm_rewards, diesel_balances.
+
+
+ALTER DATABASE gearbox RENAME TO old_gearbox;
+ALTER DATABASE sample RENAME TO gearbox;
