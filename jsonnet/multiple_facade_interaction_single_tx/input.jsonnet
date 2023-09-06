@@ -138,7 +138,7 @@ local moreCollateral = 1000;
             expectedLiquidity: utils.bigInt(borrowedAmount + 5000, 6),
             availableLiquidity: utils.bigInt(5000, 6),
             depositAPY: utils.bigInt(0),
-            borrowAPY: utils.bigInt(0),
+            baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
             linearCumulativeIndex: utils.bigInt(1, 27),
@@ -155,8 +155,8 @@ local moreCollateral = 1000;
             borrowedAmountPlusInterest: utils.bigInt(borrowedAmount, 6),
             balances: [{
               token: '#Token_1',
-              balance: utils.bigInt(6000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(6000, 6),
+              isForbidden: false,  // changed
               isEnabled: true,
             }],
             version: 2,
@@ -186,8 +186,8 @@ local moreCollateral = 1000;
           balances: [
             {
               token: '#Token_1',
-              balance: utils.bigInt(7000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(7000, 6),
+              isForbidden: false,  // changed
               isEnabled: true,
             },
           ],
@@ -299,7 +299,7 @@ local moreCollateral = 1000;
           expectedLiquidity: utils.bigInt(borrowedAmount + 5000, 6),
           availableLiquidity: utils.bigInt(5000, 6),
           depositAPY: utils.bigInt(0),
-          borrowAPY: utils.bigInt(0),
+          baseBorrowRate: utils.bigInt(0),
           dieselRate: utils.bigInt(0),
           withdrawFee: '0',
           linearCumulativeIndex: utils.bigInt(1, 27),
@@ -317,8 +317,8 @@ local moreCollateral = 1000;
           balances: [
             {
               token: '#Token_1',
-              balance: utils.bigInt(6000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(6000, 6),
+              isForbidden: false,  // changed
               isEnabled: true,
             },
           ],

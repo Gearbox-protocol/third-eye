@@ -3,11 +3,11 @@ package pool_v2
 import (
 	"math/big"
 
-	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -68,11 +68,12 @@ func (mdl *Poolv2) onBlockChangeInternally(inputB int64) {
 	processFn(result[0])
 }
 
-func (p *Poolv2) createSnapshot(blockNum int64, state dcv2.PoolData) {
+func (p *Poolv2) createSnapshot(blockNum int64, state dc.PoolCallData) {
 	token := p.Repo.GetToken(p.State.UnderlyingToken)
-	p.State.IsWETH = state.IsWETH
-	p.State.BorrowAPYBI = (*core.BigInt)(state.BorrowAPYRAY)
-	p.State.DepositAPYBI = (*core.BigInt)(state.DepositAPYRAY)
+	p.State.IsWETH = dc.IsWETH(p.Client, state.Underlying)
+	// TODO: change borrow apy
+	p.State.BorrowAPYBI = (*core.BigInt)(state.BaseInterestRate)
+	p.State.DepositAPYBI = (*core.BigInt)(state.SupplyRate)
 	// log.Infof("Pool:%s ciRAY: %s and linearCI: %s\n", p.Address, state.CumulativeIndexRAY.String(), state.LinearCumulativeIndex.String())
 	p.Repo.AddPoolStat(&schemas.PoolStat{
 		BlockNum:        blockNum,
@@ -81,26 +82,27 @@ func (p *Poolv2) createSnapshot(blockNum int64, state dcv2.PoolData) {
 		TotalBorrowedBI: (*core.BigInt)(state.TotalBorrowed),
 		TotalBorrowed:   utils.GetFloat64Decimal(state.TotalBorrowed, token.Decimals),
 
-		ExpectedLiquidityBI:      (*core.BigInt)(state.ExpectedLiquidity),
-		ExpectedLiquidity:        utils.GetFloat64Decimal(state.ExpectedLiquidity, token.Decimals),
-		ExpectedLiquidityLimitBI: (*core.BigInt)(state.ExpectedLiquidityLimit),
+		ExpectedLiquidityBI: (*core.BigInt)(state.ExpectedLiquidity),
+		ExpectedLiquidity:   utils.GetFloat64Decimal(state.ExpectedLiquidity, token.Decimals),
+		// ExpectedLiquidityLimitBI: (*core.BigInt)(state.ExpectedLiquidityLimit),
 
 		AvailableLiquidityBI: (*core.BigInt)(state.AvailableLiquidity),
 		AvailableLiquidity:   utils.GetFloat64Decimal(state.AvailableLiquidity, token.Decimals),
 
-		DepositAPYBI: (*core.BigInt)(state.DepositAPYRAY),
+		DepositAPYBI: (*core.BigInt)(state.SupplyRate),
 		// for 4% is depositAPY is 4 that is why apy is divided by decimal 25 not 27
-		DepositAPY: utils.GetFloat64Decimal(state.DepositAPYRAY, 25),
+		DepositAPY: utils.GetFloat64Decimal(state.SupplyRate, 25),
 
-		BorrowAPYBI: (*core.BigInt)(state.BorrowAPYRAY),
-		BorrowAPY:   utils.GetFloat64Decimal(state.BorrowAPYRAY, 25),
+		BorrowAPYBI: (*core.BigInt)(state.BaseInterestRate),
+		// TODO change to base borrow rate
+		BorrowAPY: utils.GetFloat64Decimal(state.BaseInterestRate, 25),
 
 		// dieselrate is how much each diesel rate is worth in terms of underlying token
 		// that's why it is divide by 27 not 25. it is not a percentage.
 		DieselRateBI:       (*core.BigInt)(state.DieselRateRAY),
 		DieselRate:         utils.GetFloat64Decimal(state.DieselRateRAY, 27),
-		WithdrawFee:        int(state.WithdrawFee.Int64()),
+		WithdrawFee:        int(state.WithdrawFee.Convert().Int64()),
 		CumulativeIndexRAY: (*core.BigInt)(state.LinearCumulativeIndex),
 	})
-	p.dieselRate = state.DieselRateRAY
+	p.dieselRate = state.DieselRateRAY.Convert()
 }

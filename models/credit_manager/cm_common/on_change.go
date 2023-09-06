@@ -1,10 +1,10 @@
 package cm_common
 
 import (
-	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -15,7 +15,7 @@ type onChangeDetails struct {
 	lastEventBlock        int64
 	lastTxHash            string
 	lastTxHashCompleted   func(string)
-	calculateCMStat       func(int64, dcv2.CreditManagerData)
+	calculateCMStat       func(int64, dc.CMCallData)
 	onDirectTokenTransfer OnDirectTokenTransferFn
 }
 
@@ -25,7 +25,7 @@ func (details *onChangeDetails) SetLastTxHashCompleted(fn func(string)) {
 func (details *onChangeDetails) SetOnDirectTokenTransferFn(fn func(ds.RepositoryI, *schemas.TokenTransfer, *schemas.CreditSession)) {
 	details.onDirectTokenTransfer = fn
 }
-func (details *onChangeDetails) SetCalculateCMStatFn(fn func(int64, dcv2.CreditManagerData)) {
+func (details *onChangeDetails) SetCalculateCMStatFn(fn func(int64, dc.CMCallData)) {
 	details.calculateCMStat = fn
 }
 

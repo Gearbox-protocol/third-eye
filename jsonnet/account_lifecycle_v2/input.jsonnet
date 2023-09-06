@@ -142,7 +142,7 @@ local newCollateral = 1;
             expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount + 5000, 6),
             availableLiquidity: utils.bigInt(5000, 6),
             depositAPY: utils.bigInt(0),
-            borrowAPY: utils.bigInt(0),
+            baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
             linearCumulativeIndex: utils.bigInt(1, 27),
@@ -159,8 +159,8 @@ local newCollateral = 1;
             borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             balances: [{
               token: '#Token_1',
-              balance: utils.bigInt(6000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(6000, 6),
+              isForbidden: false,  // changed
               isEnabled: true,
             }],
             version: 2,
@@ -286,13 +286,13 @@ local newCollateral = 1;
           borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
-            balance: utils.bigInt(5500, 6),
-            isAllowed: true,
+            BI: utils.bigInt(5500, 6),
+            isForbidden: false,  // changed
             isEnabled: true,
           }, {
             token: '#Token_3',
-            balance: utils.bigInt(1, 18),
-            isAllowed: true,
+            BI: utils.bigInt(1, 18),
+            isForbidden: false,  // changed
             isEnabled: true,
           }],
           version: 2,
@@ -303,7 +303,7 @@ local newCollateral = 1;
           expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2 + 5500, 6),
           availableLiquidity: utils.bigInt(5000 + extraBorrowedAmount / 2, 6),
           depositAPY: utils.bigInt(0),
-          borrowAPY: utils.bigInt(0),
+          baseBorrowRate: utils.bigInt(0),
           dieselRate: utils.bigInt(0),
           withdrawFee: '0',
           linearCumulativeIndex: utils.bigInt(1, 27),
@@ -372,13 +372,13 @@ local newCollateral = 1;
           borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
-            balance: utils.bigInt(500, 6),
-            isAllowed: true,
+            BI: utils.bigInt(500, 6),
+            isForbidden: false,  // changed
             isEnabled: true,
           }, {
             token: '#Token_3',
-            balance: utils.bigInt(3, 18),
-            isAllowed: true,
+            BI: utils.bigInt(3, 18),
+            isForbidden: false,  // changed
             isEnabled: true,
           }],
           version: 2,
@@ -473,14 +473,14 @@ local newCollateral = 1;
           balances: [
             {
               token: '#Token_1',
-              balance: utils.bigInt(1500, 6),
-              isAllowed: true,
+              BI: utils.bigInt(1500, 6),
+              isForbidden: false,  // changed
               isEnabled: true,
             },
             {
               token: '#Token_3',
-              balance: utils.bigInt(3, 18),
-              isAllowed: true,
+              BI: utils.bigInt(3, 18),
+              isForbidden: false,  // changed
               isEnabled: true,
 
             },

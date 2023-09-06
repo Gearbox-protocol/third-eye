@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -161,16 +162,16 @@ func (m *MockRepo) processPrices(inputFile *TestInput3Eye) {
 func (m *MockRepo) processDCCalls(inputFile *TestInput3Eye) {
 	wrapper := m.Repo.GetDCWrapper()
 	for blockNum, block := range inputFile.Blocks {
-		calls := test.NewDCCalls()
+		calls := dc.NewDCCalls()
 		for _, poolCall := range block.Calls.Pools {
-			calls.Pools[poolCall.Addr] = poolCall
+			calls.Pools[poolCall.Addr.Hex()] = poolCall
 		}
 		for _, accountCall := range block.Calls.Accounts {
 			key := fmt.Sprintf("%s_%s", accountCall.CreditManager, accountCall.Borrower)
 			calls.Accounts[key] = accountCall
 		}
 		for _, cmCall := range block.Calls.CMs {
-			calls.CMs[cmCall.Addr] = cmCall
+			calls.CMs[cmCall.Addr.Hex()] = cmCall
 		}
 		wrapper.SetCalls(blockNum, calls)
 	}

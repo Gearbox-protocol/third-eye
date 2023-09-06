@@ -45,7 +45,7 @@ local extraBorrowedAmount = 1000;
             expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount + 1000, 6),
             availableLiquidity: utils.bigInt(6000, 6),
             depositAPY: utils.bigInt(0),
-            borrowAPY: utils.bigInt(0),
+            baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
             linearCumulativeIndex: utils.bigInt(1, 27),

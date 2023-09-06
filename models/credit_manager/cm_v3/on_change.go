@@ -3,9 +3,9 @@ package cm_v3
 import (
 	"math/big"
 
-	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v1"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -44,7 +44,7 @@ func (mdl *CMv3) OnLog(txLog types.Log) {
 
 func (mdl *CMv3) SetOnChangeFn() {
 	mdl.SetLastTxHashCompleted(mdl.lastTxHashCompleted)
-	mdl.SetCalculateCMStatFn(func(blockNum int64, state dcv2.CreditManagerData) {
+	mdl.SetCalculateCMStatFn(func(blockNum int64, state dc.CMCallData) {
 		// mdl.addProtocolAdapters(state)
 		mdl.CalculateCMStat(blockNum, state)
 	})

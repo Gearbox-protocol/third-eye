@@ -92,8 +92,8 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        AvailableLiquidity: 5000,
-        AvailableLiquidityBI: '5000000000',
+        // AvailableLiquidity: 5000,
+        // AvailableLiquidityBI: '5000000000',
         BlockNum: 4,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -120,7 +120,7 @@
             BI: '6000000000',
             F: 6000,
             ind: 0,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
           },
         },
@@ -183,7 +183,7 @@
             BI: '7000000000',
             F: 7000,
             ind: 0,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
           },
         },
@@ -330,8 +330,8 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        AvailableLiquidity: 5000,
-        AvailableLiquidityBI: '5000000000',
+        // AvailableLiquidity: 5000,
+        // AvailableLiquidityBI: '5000000000',
         BlockNum: 6,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -358,7 +358,7 @@
             BI: '6000000000',
             F: 6000,
             ind: 0,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
           },
         },

@@ -5,13 +5,13 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -364,7 +364,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	var notMatched bool
 	profile := ds.DebtProfile{CreditSessionSnapshot: sessionSnapshot, Tokens: map[string]ds.TokenDetails{}}
 	for tokenAddr, details := range *sessionSnapshot.Balances {
-		if details.IsAllowed {
+		if details.IsEnabled {
 			profile.Tokens[tokenAddr] = ds.TokenDetails{
 				Price:             eng.GetTokenLastPrice(tokenAddr, session.Version),
 				Decimals:          eng.repo.GetToken(tokenAddr).Decimals,
@@ -556,7 +556,7 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version core.VersionType, 
 	return nil
 }
 
-func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) dataCompressorv2.CreditAccountData {
+func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) dc.CreditAccountCallData {
 	call, resultFn, err := eng.repo.GetDCWrapper().GetCreditAccountData(blockNum,
 		common.HexToAddress(cmAddr),
 		common.HexToAddress(borrower),

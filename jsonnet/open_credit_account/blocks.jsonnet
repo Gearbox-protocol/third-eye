@@ -44,8 +44,8 @@
   cmStats: [
     {
       Address: '#CreditManager_1',
-      AvailableLiquidity: 1000,
-      AvailableLiquidityBI: '1000000000',
+      // AvailableLiquidity: 1000,
+      // AvailableLiquidityBI: '1000000000',
       BlockNum: 3,
       CumulativeBorrowed: 0,
       ID: 0,
@@ -72,7 +72,7 @@
           BI: '5000000000',
           F: 5000,
           isEnabled: true,
-          isAllowed: true,
+          isForbidden: false,  // changed
           ind: 0,
         },
       },

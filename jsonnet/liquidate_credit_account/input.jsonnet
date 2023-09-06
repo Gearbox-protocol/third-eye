@@ -40,17 +40,17 @@ local extraBorrowedAmount = 1000;
             borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             balances: [{
               token: '#Token_1',
-              balance: utils.bigInt(2000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(2000, 6),
+              isForbidden: false,  // changed
             }, {
               token: '#Token_3',
-              balance: utils.bigInt(3, 18),
-              isAllowed: true,
+              BI: utils.bigInt(3, 18),
+              isForbidden: false,  // changed
             }, {
               // token 2 yfi is allowed.but  its not linked to account
               token: '#Token_2',
-              balance: utils.bigInt(0.1, 18),
-              isAllowed: true,
+              BI: utils.bigInt(0.1, 18),
+              isForbidden: false,  // changed
             }],
             version: 1,
           }],
@@ -96,7 +96,7 @@ local extraBorrowedAmount = 1000;
           expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount + 1000, 6),
           availableLiquidity: utils.bigInt(6000, 6),
           depositAPY: utils.bigInt(0),
-          borrowAPY: utils.bigInt(0),
+          baseBorrowRate: utils.bigInt(0),
           dieselRate: utils.bigInt(0),
           withdrawFee: '0',
           linearCumulativeIndex: utils.bigInt(1, 27),

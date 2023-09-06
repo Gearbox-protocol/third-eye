@@ -8,21 +8,21 @@
             BI: '2000000000',
             F: 2000,
             isEnabled: true,
-            isAllowed: true,
+            isForbidden: false,  // changed
             ind: 0,
           },
           // '#Token_2': {
           //   BI: '100000000000000000',
           //   F: 0.1,
           //   isEnabled: false,
-          //   isAllowed: true,
+          //   isForbidden: false, // changed
           //   ind: 2,
           // },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
             isEnabled: true,
-            isAllowed: true,
+            isForbidden: false,  // changed
             ind: 1,
           },
         },
@@ -82,8 +82,8 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        AvailableLiquidity: 6000,
-        AvailableLiquidityBI: '6000000000',
+        // AvailableLiquidity: 6000,
+        // AvailableLiquidityBI: '6000000000',
         BlockNum: 8,
         CumulativeBorrowed: 0,
         ID: 0,

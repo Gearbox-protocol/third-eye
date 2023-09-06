@@ -17,10 +17,10 @@ type sessionDetailsForCalc struct {
 func (s sessionDetailsForCalc) GetCM() string {
 	return s.CM
 }
-func (s sessionDetailsForCalc) GetBalances() map[string]core.BalanceType {
+func (s sessionDetailsForCalc) GetBalances() core.DBBalanceFormat {
 	// credit session snapshot is not saved to db , so we can use it.
 	schemas.AdjustRebaseToken(*s.Balances, s.stETH, s.rebaseDetails)
-	return s.Balances.ToBalanceType()
+	return *s.Balances
 }
 
 func (s sessionDetailsForCalc) GetBorrowedAmount() *big.Int {

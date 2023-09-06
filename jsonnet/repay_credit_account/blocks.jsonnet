@@ -9,7 +9,7 @@
           'to',
         ],
         owner: '#User_1',
-        repayAmount: 5000000000,
+        repayAmount: '5000000000',
         to: '#User_1',
       },
       blockNum: 7,
@@ -24,8 +24,8 @@
   cmStats: [
     {
       Address: '#CreditManager_1',
-      AvailableLiquidity: 1000,
-      AvailableLiquidityBI: '1000000000',
+      // AvailableLiquidity: 1000,
+      // AvailableLiquidityBI: '1000000000',
       BlockNum: 7,
       CumulativeBorrowed: 0,
       ID: 0,

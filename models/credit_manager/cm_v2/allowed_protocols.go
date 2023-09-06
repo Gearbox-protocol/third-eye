@@ -1,17 +1,17 @@
 package cm_v2
 
 import (
-	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (mdl *CMv2) addProtocolAdapters(state dcv2.CreditManagerData) {
+func (mdl *CMv2) addProtocolAdapters(state dc.CMCallData) {
 	newProtocols := map[string]bool{}
 	for _, entry := range state.Adapters {
-		newProtocols[entry.AllowedContract.Hex()] = true
+		newProtocols[entry.TargetContract.Hex()] = true
 	}
 	mdl.allowedProtocols = newProtocols
 }

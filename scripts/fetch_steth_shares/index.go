@@ -43,12 +43,12 @@ func main() {
 		log.CheckFatal(err)
 		amt := new(big.Int).SetBytes(_v)
 		//
-		(*snapshot.Balances)[core.NULL_ADDR.Hex()] = core.CoreIntBalance{
-			IsAllowed: false,
-			IsEnabled: false,
-			BI:        (*core.BigInt)(amt),
-			F:         utils.GetFloat64Decimal(amt, 18),
-			Ind:       -1,
+		(*snapshot.Balances)[core.NULL_ADDR.Hex()] = core.DBTokenBalance{
+			IsForbidden: false,
+			IsEnabled:   false,
+			BI:          (*core.BigInt)(amt),
+			F:           utils.GetFloat64Decimal(amt, 18),
+			Ind:         -1,
 		}
 		// log.Info(ind, snapshot.BlockNum, snapshot.SessionId, utils.ToJson(snapshot.Balances))
 		err = tx.Exec("UPDATE credit_session_snapshots set balances=? WHERE id = ?", snapshot.Balances, snapshot.ID).Error

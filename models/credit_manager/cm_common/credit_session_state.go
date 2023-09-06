@@ -3,10 +3,9 @@ package cm_common
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
-	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -92,16 +91,16 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(blockNum int64, sessionI
 	}
 }
 
-func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData, closeDetails *SessionCloseDetails) {
+func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData, closeDetails *SessionCloseDetails) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	// log.Info(mdl.params, session.Version,
 	// "totalvalue", data.TotalValue, closeDetails.Status,
 	// "borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
 	amountToPool, _, _, _ := calc.CalCloseAmount(mdl.params,
-		session.Version, data.TotalValue,
+		session.Version, data.TotalValue.Convert(),
 		closeDetails.Status,
-		data.BorrowedAmountPlusInterest,
-		data.BorrowedAmount,
+		data.BorrowedAmountPlusInterest.Convert(),
+		data.BorrowedAmount.Convert(),
 	)
 	// pool repay
 	// check for avoiding db errors
@@ -113,9 +112,9 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 		amountToPool)
 
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == schemas.Repaid {
-		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue, data.RepayAmount)
+		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue.Convert(), data.RepayAmountv1v2.Convert())
 		session.RemainingFunds = (*core.BigInt)(closeDetails.RemainingFunds)
-		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmount
+		(*closeDetails.AccountOperation.Args)["repayAmount"] = data.RepayAmountv1v2
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
 	}
 
@@ -174,7 +173,7 @@ func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, bloc
 	}
 }
 
-func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, data dcv2.CreditAccountData) {
+func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
 	// create session snapshot
@@ -197,18 +196,14 @@ func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.Credi
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Balances []dataCompressorv2.TokenBalance) *core.DBBalanceFormat {
+func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Balances []core.TokenBalanceCallData) *core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
-	for ind, balance := range dcv2Balances {
-		token := balance.Token.Hex()
-		if balance.IsEnabled && balance.Balance.Cmp(new(big.Int)) > 0 {
-			dbFormat[token] = core.CoreIntBalance{
-				IsAllowed: balance.IsAllowed,
-				IsEnabled: balance.IsEnabled,
-				BI:        (*core.BigInt)(balance.Balance),
-				F:         utils.GetFloat64Decimal(balance.Balance, mdl.Repo.GetToken(token).Decimals),
-				Ind:       ind,
-			}
+	for _, balance := range dcv2Balances {
+		token := balance.Token
+		if balance.IsEnabled && balance.HasBalanceMoreThanOne() {
+			balance.F = utils.GetFloat64Decimal(balance.BI, mdl.Repo.GetToken(token).Decimals)
+			dbFormat[token] = balance.DBTokenBalance
+			//
 			if mdl.Repo.GetTokenFromSdk("stETH") == token {
 				accountData := common.HexToHash(account)
 				_v, err := core.CallFuncWithExtraBytes(
@@ -218,12 +213,12 @@ func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Ba
 				log.CheckFatal(err)
 				amt := new(big.Int).SetBytes(_v)
 				//
-				dbFormat[core.NULL_ADDR.Hex()] = core.CoreIntBalance{
-					IsAllowed: false,
-					IsEnabled: false,
-					BI:        (*core.BigInt)(amt),
-					F:         utils.GetFloat64Decimal(amt, 18),
-					Ind:       -1,
+				dbFormat[core.NULL_ADDR.Hex()] = core.DBTokenBalance{
+					IsForbidden: false,
+					IsEnabled:   false,
+					BI:          (*core.BigInt)(amt),
+					F:           utils.GetFloat64Decimal(amt, 18),
+					Ind:         -1,
 				}
 			}
 		}

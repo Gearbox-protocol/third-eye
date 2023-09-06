@@ -6,6 +6,7 @@ import (
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
@@ -26,7 +27,7 @@ type TokenDetails struct {
 	Version           core.VersionType `json:"version"`
 }
 type DebtProfile struct {
-	DCData                         *dcv2.CreditAccountData
+	DCData                         *dc.CreditAccountCallData
 	*schemas.Debt                  `json:"debt"`
 	*schemas.CreditSessionSnapshot `json:"css"`
 	RPCBalances                    []dcv2.TokenBalance     `json:"rpcBalances"`

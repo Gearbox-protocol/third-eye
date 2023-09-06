@@ -3,9 +3,9 @@ package cm_v2
 import (
 	"math/big"
 
-	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
@@ -113,7 +113,7 @@ func bytesToUInt16(data []byte) uint16 {
 
 func (mdl *CMv2) SetOnChangeFn() {
 	mdl.SetLastTxHashCompleted(mdl.lastTxHashCompleted)
-	mdl.SetCalculateCMStatFn(func(blockNum int64, state dcv2.CreditManagerData) {
+	mdl.SetCalculateCMStatFn(func(blockNum int64, state dc.CMCallData) {
 		mdl.addProtocolAdapters(state)
 		mdl.CmMVP.CalculateCMStat(blockNum, state)
 	})

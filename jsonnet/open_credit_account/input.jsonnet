@@ -111,7 +111,7 @@ local borrowedAmount = 4000;
             expectedLiquidity: utils.bigInt(borrowedAmount + 1000, 6),
             availableLiquidity: utils.bigInt(1000, 6),
             depositAPY: utils.bigInt(0),
-            borrowAPY: utils.bigInt(0),
+            baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
             linearCumulativeIndex: utils.bigInt(1, 27),
@@ -128,8 +128,8 @@ local borrowedAmount = 4000;
             borrowedAmountPlusInterest: utils.bigInt(borrowedAmount, 6),
             balances: [{
               token: '#Token_1',
-              balance: utils.bigInt(5000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(5000, 6),
+              isForbidden: false,  // changed
             }],
             version: 1,
           }],

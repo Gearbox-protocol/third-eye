@@ -1,15 +1,15 @@
 package cm_common
 
 import (
-	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dcv2.CreditManagerData) {
+func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData) {
 	//
-	mdl.State.IsWETH = state.IsWETH
+	mdl.State.IsWETH = dc.IsWETH(mdl.Client, state.Underlying)
 	//
 	bororwAmountForBlock := mdl.GetBorrowAmountForBlockAndClear()
 	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, bororwAmountForBlock)
@@ -25,11 +25,11 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dcv2.CreditMan
 		mdl.State.TotalProfitBI = core.AddCoreAndInt(mdl.State.TotalProfitBI, pnl.Profit)
 		mdl.State.TotalProfit = utils.GetFloat64Decimal(mdl.State.TotalProfitBI.Convert(), mdl.GetUnderlyingDecimal())
 	}
-	mdl.State.MinAmount = (*core.BigInt)(state.MinAmount)
-	mdl.State.MaxAmount = (*core.BigInt)(state.MaxAmount)
+	mdl.State.MinAmount = (*core.BigInt)(state.MinDebt)
+	mdl.State.MaxAmount = (*core.BigInt)(state.MaxDebt)
 
-	mdl.State.AvailableLiquidityBI = (*core.BigInt)(state.AvailableLiquidity)
-	mdl.State.AvailableLiquidity = utils.GetFloat64Decimal(state.AvailableLiquidity, mdl.GetUnderlyingDecimal())
+	// mdl.State.AvailableLiquidityBI = (*core.BigInt)(state.AvailableLiquidity)
+	// mdl.State.AvailableLiquidity = utils.GetFloat64Decimal(state.AvailableLiquidity, mdl.GetUnderlyingDecimal())
 
 	stats := &schemas.CreditManagerStat{
 		Address:  mdl.Address,
@@ -41,8 +41,9 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dcv2.CreditMan
 			TotalClosedAccounts:     mdl.State.TotalClosedAccounts,
 			TotalRepaidAccounts:     mdl.State.TotalRepaidAccounts,
 			TotalLiquidatedAccounts: mdl.State.TotalLiquidatedAccounts,
-			AvailableLiquidityBI:    core.NewBigInt(mdl.State.AvailableLiquidityBI),
-			AvailableLiquidity:      mdl.State.AvailableLiquidity,
+			// TODO: removed available liquidity from credit manager table
+			// AvailableLiquidityBI:    core.NewBigInt(mdl.State.AvailableLiquidityBI),
+			// AvailableLiquidity:      mdl.State.AvailableLiquidity,
 			// calculated in this application
 			TotalBorrowed:   mdl.State.TotalBorrowed,
 			TotalBorrowedBI: core.NewBigInt(mdl.State.TotalBorrowedBI),

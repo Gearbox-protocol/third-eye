@@ -66,8 +66,8 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        AvailableLiquidity: 1000,
-        AvailableLiquidityBI: '1000000000',
+        // AvailableLiquidity: 1000,
+        // AvailableLiquidityBI: '1000000000',
         BlockNum: 3,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -93,7 +93,7 @@
           '#Token_1': {
             BI: '6000000000',
             F: 6000,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
             ind: 0,
           },
@@ -273,8 +273,8 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        AvailableLiquidity: 1000,
-        AvailableLiquidityBI: '1000000000',
+        // AvailableLiquidity: 1000,
+        // AvailableLiquidityBI: '1000000000',
         BlockNum: 4,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -300,14 +300,14 @@
           '#Token_1': {
             BI: '6000000000',
             F: 6000,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
             ind: 0,
           },
           '#Token_3': {
             BI: '1000000000000000000',
             F: 1,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
             ind: 1,
           },
@@ -380,8 +380,8 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        AvailableLiquidity: 1000,
-        AvailableLiquidityBI: '1000000000',
+        // AvailableLiquidity: 1000,
+        // AvailableLiquidityBI: '1000000000',
         BlockNum: 5,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -407,14 +407,14 @@
           '#Token_1': {
             BI: '1000000000',
             F: 1000,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
             ind: 0,
           },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
             ind: 1,
           },
@@ -490,21 +490,21 @@
           '#Token_1': {
             BI: '2000000000',
             F: 2000,
-            isAllowed: true,
+            isForbidden: false,  // changed
             isEnabled: true,
             ind: 0,
           },
           // '#Token_2': {
           //   BI: '100000000000000000',
           //   F: 0.1,
-          //   isAllowed: true,
+          //   isForbidden: false, // changed
           //   isEnabled: false,
           //   ind: 2,
           // },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
-            isAllowed: false,
+            isForbidden: true,
             isEnabled: true,
             ind: 1,
           },
