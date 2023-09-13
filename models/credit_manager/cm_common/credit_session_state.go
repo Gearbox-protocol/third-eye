@@ -133,6 +133,9 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
+	//
+	css.AccruedInterest = data.AccruedInterest
+	css.AccruedFees = data.AccruedFees
 	// set balances
 	css.Balances = mdl.addFloatValue(session.Account, blockNum-1, data.Balances)
 	// for close credit account operation on gearbox v2

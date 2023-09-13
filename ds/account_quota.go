@@ -11,17 +11,20 @@ import (
 )
 
 type AccountQuotaMgr struct {
+	// account to token to quota details
 	accounts map[string]map[string]*schemas_v3.AccountQuotaInfo
-	entries  map[string][]*schemas_v3.AccountQuotaInfo
+	// so that credit manager can create latest quota update event
+	events map[string][]*schemas_v3.AccountQuotaInfo
 }
 
 func NewAccountQuotaMgr() *AccountQuotaMgr {
 	return &AccountQuotaMgr{
 		accounts: map[string]map[string]*schemas_v3.AccountQuotaInfo{},
-		entries:  map[string][]*schemas_v3.AccountQuotaInfo{},
+		events:   map[string][]*schemas_v3.AccountQuotaInfo{},
 	}
 }
 
+// load active credit sessions only
 func (mdl AccountQuotaMgr) InitQuotas(data []*schemas_v3.AccountQuotaInfo) {
 	for _, entry := range data {
 		account := strings.Split(entry.SessionId, "_")[0]
@@ -30,12 +33,12 @@ func (mdl AccountQuotaMgr) InitQuotas(data []*schemas_v3.AccountQuotaInfo) {
 }
 
 func (mdl AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *schemas_v3.AccountQuotaInfo {
-	l := len(mdl.entries)
+	l := len(mdl.events[account])
 	if l == 0 {
 		return nil
 	} else {
-		front := mdl.entries[account][0]
-		mdl.entries[account] = mdl.entries[account][1:]
+		front := mdl.events[account][0]
+		mdl.events[account] = mdl.events[account][1:]
 		return front
 	}
 }
@@ -54,7 +57,7 @@ func (mdl AccountQuotaMgr) AddAccountQuota(blockNum int64,
 	prevValues := mdl.accounts[account][token]
 	currentTs := keeper.GetRepo().SetAndGetBlock(blockNum).Timestamp
 	// calculate
-	currentCumIndex := GetQuptaIndexCurrent(currentTs, keeper.GetQuotas(token))
+	currentCumIndex := GetQuotaIndexCurrent(currentTs, keeper.GetQuotas(token))
 	//
 	newDetails := &schemas_v3.AccountQuotaInfo{
 		Timestamp:       currentTs,
@@ -79,7 +82,7 @@ func (mdl AccountQuotaMgr) AddAccountQuota(blockNum int64,
 	}
 
 	// updates
-	mdl.entries[account] = append(mdl.entries[account], newDetails.Copy())
+	mdl.events[account] = append(mdl.events[account], newDetails.Copy())
 	mdl.accounts[account][token] = newDetails
 	// delete if qutoa less than <=1
 	if newDetails.IsDisabled() {
@@ -89,7 +92,7 @@ func (mdl AccountQuotaMgr) AddAccountQuota(blockNum int64,
 
 // utils
 
-func GetQuptaIndexCurrent(currentTs uint64, prevDetails *schemas_v3.QuotaDetails) *core.BigInt {
+func GetQuotaIndexCurrent(currentTs uint64, prevDetails *schemas_v3.QuotaDetails) *core.BigInt {
 	prevCumIndex := prevDetails.CumQuotaIndex.Convert()
 
 	interestInPeriod := func() *big.Int {

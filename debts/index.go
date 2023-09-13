@@ -36,6 +36,7 @@ type DebtEngine struct {
 	lastRebaseDetails *schemas.RebaseDetailsForDB
 	// used for v3 calc closed Account amount
 	currentTs int64
+	v3DebtDetails
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -54,6 +55,7 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		lastParameters:         make(map[string]*schemas.Parameters),
 		isTesting:              testing,
 		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
+		v3DebtDetails:          Newv3DebtDetails(),
 	}
 }
 
@@ -84,6 +86,10 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.loadLastDebts(lastDebtSynced)
 	eng.loadParameters(lastDebtSynced)
 	eng.loadLiquidableAccounts(lastDebtSynced)
+	// v3
+	eng.loadAccounQuotaInfo(lastDebtSynced, eng.db)
+	eng.loadPoolQuotaDetails(lastDebtSynced, eng.db)
+	//
 	// process blocks for calculating debts
 	adaptersSyncedTill := eng.repo.LoadLastAdapterSync()
 	batchSize := eng.config.BatchSizeForHistory

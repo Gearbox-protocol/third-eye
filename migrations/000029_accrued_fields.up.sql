@@ -1,0 +1,1 @@
+alter credit_session_snapshots add accrued_interest varchar(80), add accrued_fees varchar(80);

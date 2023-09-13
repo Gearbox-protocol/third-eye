@@ -8,6 +8,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
+// manages the quota of all accounts using account quota manager
+// manages current quota details of all tokens in pool
 type PoolQuotaKeeper struct {
 	*ds.SyncAdapter
 	mgr          *ds.AccountQuotaMgr

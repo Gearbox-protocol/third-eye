@@ -34,7 +34,9 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	// L3 credit session snapshots
 	// L4 lt
 	// L5 pricefeeds
-	// L5 rebaseToken details for stETH
+	// L6 rebaseToken details for stETH
+	// L7 token quotas for account
+	// L8 pool quota details
 	//
 	// L1:update params
 	for _, params := range block.GetParams() {
@@ -43,6 +45,14 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	// L6: rebaseToken
 	for _, params := range block.RebaseDetailsForDB {
 		eng.lastRebaseDetails = params
+	}
+	// L7: tokenQuotas
+	for _, accountQuotas := range block.AccountQuotaInfo {
+		eng.AddAccounQuotaInfo(accountQuotas)
+	}
+	// L8: tokenQuotas
+	for _, quotaDetails := range block.QuotaDetails {
+		eng.AddPoolQuotaDetails(quotaDetails)
 	}
 
 	///////////////////////////////////

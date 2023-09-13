@@ -19,7 +19,7 @@ func (mdl PoolQuotaKeeper) updateQuotaDetails(blockNum int64, token string, newD
 	details := mdl.quotas[token]
 	if newDetails.Rate != 0 {
 		currentTs := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
-		details.CumQuotaIndex = ds.GetQuptaIndexCurrent(currentTs, details)
+		details.CumQuotaIndex = ds.GetQuotaIndexCurrent(currentTs, details)
 		details.Timestamp = currentTs
 		details.Rate = newDetails.Rate
 	}
@@ -35,12 +35,15 @@ func (mdl PoolQuotaKeeper) updateQuotaDetails(blockNum int64, token string, newD
 
 func (mdl PoolQuotaKeeper) addToken(blockNum int64, token string) {
 	details := &schemas_v3.QuotaDetails{
-		BlockNum:        blockNum,
 		PoolQuotaKeeper: mdl.Address,
-		Pool:            mdl.GetDetailsByKey("pool"),
+		BlockNum:        blockNum,
 		Token:           token,
-		CumQuotaIndex:   (*core.BigInt)(utils.GetExpInt(18)),
-		IsDirty:         true,
+		//
+		Timestamp:     mdl.Repo.SetAndGetBlock(blockNum).Timestamp,
+		Pool:          mdl.GetDetailsByKey("pool"),
+		CumQuotaIndex: (*core.BigInt)(utils.GetExpInt(18)),
+		//
+		IsDirty: true,
 	}
 	mdl.quotas[token] = details
 }
