@@ -61,12 +61,16 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 	chainId, err := dcw.client.ChainID(context.TODO())
 	log.CheckFatal(err)
 	var key string
-	if chainId.Int64() == 1 || chainId.Int64() == 5 { // or for goerli
+	if chainId.Int64() == 1 { // deprecated goerli
 		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = DCV1
-		case 1, 2: // 2 is for goerli added datacompressor v2, as datacompressor added second time
+		case 1: // goerli deprecated
+			// 2 is for goerli added datacompressor v2, as datacompressor added second time
 			key = DCV2
+		case 3: // ignore the dc 2.1 for v2.0, all data is already provided by dc2.0
+			log.AMQPMsgf("New dataCompressor(%s) added", addr)
+			return
 		}
 	} else if chainId.Int64() == 42 {
 		// 	switch len(dcw.DCBlockNum) {
