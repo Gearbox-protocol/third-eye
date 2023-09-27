@@ -70,7 +70,13 @@ func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(events []*schemas
 		multiCall := f.multiCalls[callInd]
 		sig := hex.EncodeToString(multiCall.CallData[:4])
 		switch sig {
-		case "59781034": // add collateral
+		case "59781034": // add collateral,
+			if events[eventInd].Action != "AddCollateral(address,address,uint256)" {
+				return false
+			}
+			eventInd++
+			callInd++
+		case "6d75b9ee": // add collateral extended 2.2
 			if events[eventInd].Action != "AddCollateral(address,address,uint256)" {
 				return false
 			}
@@ -100,7 +106,7 @@ func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(events []*schemas
 			}
 			eventInd++
 			callInd++
-		case "81314b59": // revert if less than // ignore for event
+		case "81314b59": // revert if less than // ignore for event // revertIfReceivedLessThan
 			callInd++
 		default: //execute order
 			// it might happen that some of the execution call are not executed so len of provided multicalls will be more than executed calls.
@@ -110,7 +116,15 @@ func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(events []*schemas
 				eventInd++
 			}
 			executeCall := 0
-			for callInd < callLen && !utils.Contains([]string{"59781034", "2b7c7b11", "2a7ba1f7", "c690908a", "23e27a64", "81314b59"},
+			for callInd < callLen && !utils.Contains([]string{
+				"59781034", // add collateral
+				"6d75b9ee", // add collateral 2.2
+				"2b7c7b11", // increase debt
+				"2a7ba1f7", // decrease debt
+				"c690908a", // enable token
+				"23e27a64", // disable token
+				"81314b59", // revertIfReceivedLessThan
+			},
 				hex.EncodeToString(f.multiCalls[callInd].CallData[:4])) {
 				executeCall++
 				callInd++
