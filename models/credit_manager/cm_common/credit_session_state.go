@@ -138,7 +138,7 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	// quota fees
 	css.QuotaFees = func() *core.BigInt {
 		if !data.Version.Eq(3) {
-			return (*core.BigInt)(new(big.Int))
+			return new(core.BigInt)
 		}
 		interestFees := new(big.Int).Quo(
 			new(big.Int).Mul(

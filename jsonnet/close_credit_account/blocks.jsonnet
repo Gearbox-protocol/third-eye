@@ -37,6 +37,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 9500,
         totalValueBI: '9500000000',
+        quotaFees: '0',
       },
     ],
     timestamp: 604800,

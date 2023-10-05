@@ -37,6 +37,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 5750,
         totalValueBI: '5750000000',
+        quotaFees: '0',
       },
     ],
     priceFeeds: [

@@ -198,6 +198,7 @@
         sessionId: '#Account_1_4_0',
         totalValue: 7000,
         totalValueBI: '7000000000',
+        quotaFees: '0',
       },
     ],
     timestamp: 432000,
