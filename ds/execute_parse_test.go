@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 )
@@ -30,7 +31,7 @@ func TestCmpLenSimpleV2(t *testing.T) {
 		[]string{"59781034"},
 		[]string{"AddCollateral(address,address,uint256)"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(2, events) {
+	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }
@@ -40,7 +41,7 @@ func TestCmpLenWith2EventsV2(t *testing.T) {
 		[]string{"59781034", "d0e30db0"},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(2, events) {
+	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }
@@ -50,7 +51,7 @@ func TestCmpLenWith2PlusRevertEventsV2(t *testing.T) {
 		[]string{"59781034", "81314b59", "c7fbf4de", "bdbeaa31"},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder", "ExecuteOrder"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(2, events) {
+	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }
@@ -61,7 +62,7 @@ func TestCmpLenTrivalRevertV2(t *testing.T) {
 		[]string{"81314b59"},
 		nil,
 	)
-	if !mainAction.SameMulticallLenAsEvents(2, events) {
+	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }

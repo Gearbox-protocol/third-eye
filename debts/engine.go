@@ -50,7 +50,7 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	for _, accountQuotas := range block.AccountQuotaInfo {
 		eng.AddAccounQuotaInfo(accountQuotas)
 	}
-	// L8: tokenQuotas
+	// L8: poolQuotasDetails
 	for _, quotaDetails := range block.QuotaDetails {
 		eng.AddPoolQuotaDetails(quotaDetails)
 	}
@@ -121,7 +121,7 @@ func (eng *DebtEngine) CalculateDebt() {
 	//
 	for _, blockNum := range blockNums {
 		block := blocks[blockNum]
-		eng.currentTs = int64(block.Timestamp)
+		eng.currentTs = block.Timestamp
 		//
 		poolsUpdated, tokensUpdated, sessionsUpdated := eng.updateLocalState(blockNum, block)
 		// get pool cumulative interest rate
@@ -339,16 +339,17 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
 	calHF, calDebt, calTotalValue, calThresholdValue, _calBorowedWithInterst := calculator.CalcAccountFields(
 		eng.currentTs,
-		session.Version,
 		blockNum,
+		cumIndexAndUToken.CumulativeIndex,
+		nil,
 		sessionDetailsForCalc{
 			CreditSessionSnapshot: sessionSnapshot,
 			CM:                    session.CreditManager,
 			rebaseDetails:         eng.lastRebaseDetails,
 			stETH:                 eng.repo.GetTokenFromSdk("stETH"),
+			underlying:            cumIndexAndUToken.Token,
+			version:               session.Version,
 		},
-		cumIndexAndUToken.CumulativeIndex,
-		cumIndexAndUToken.Token,
 		eng.lastParameters[session.CreditManager].FeeInterest,
 	)
 	// if session.ID == "0x57ed1ED84461bb2079f8575d06A6feC07F0a13B1_16159748_285" {

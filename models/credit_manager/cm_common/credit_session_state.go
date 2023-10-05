@@ -134,8 +134,22 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
 	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
 	//
-	css.AccruedInterest = data.AccruedInterest
-	css.AccruedFees = data.AccruedFees
+	css.CumulativeQuotaInterest = data.CumulativeQuotaInterest
+	// quota fees
+	css.QuotaFees = func() *core.BigInt {
+		if !data.Version.Eq(3) {
+			return (*core.BigInt)(new(big.Int))
+		}
+		interestFees := new(big.Int).Quo(
+			new(big.Int).Mul(
+				data.AccruedFees.Convert(), big.NewInt(int64(mdl.params.FeeInterest)),
+			),
+			utils.GetExpInt(4),
+		)
+		// quota fees
+		return (*core.BigInt)(new(big.Int).Sub(data.AccruedFees.Convert(), interestFees))
+	}()
+	//
 	// set balances
 	css.Balances = mdl.addFloatValue(session.Account, blockNum-1, data.Balances)
 	// for close credit account operation on gearbox v2

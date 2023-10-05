@@ -31,9 +31,9 @@ func (mdl *ContractRegister) OnLog(txLog types.Log) {
 func NewCM(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int64) ds.SyncAdapterI {
 	version := core.FetchVersion(addr, blockNum, client)
 	switch version {
-	case 1:
+	case core.NewVersion(1):
 		return cm_v1.NewCMv1(addr, client, repo, blockNum)
-	case 2:
+	case core.NewVersion(2):
 		return cm_v2.NewCMv2(addr, client, repo, blockNum)
 	default:
 		log.Fatalf("Version(%d) of cm can't be created.", version)
@@ -44,9 +44,9 @@ func NewCM(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int64
 func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int64) ds.SyncAdapterI {
 	version := core.FetchVersion(addr, blockNum, client)
 	switch version {
-	case 1, 2:
+	case core.NewVersion(1), core.NewVersion(2):
 		return pool_v2.NewPool(addr, client, repo, blockNum)
-	case 3:
+	case core.NewVersion(3):
 		return pool_v3.NewPool(addr, client, repo, blockNum)
 	default:
 		log.Fatalf("Version(%d) of pool can't be created.", version)

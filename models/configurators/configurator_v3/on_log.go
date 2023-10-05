@@ -186,8 +186,8 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 				Token:         rampDetails.Token.Hex(),
 				LtInitial:     rampDetails.LiquidationThresholdInitial,
 				LtFinal:       rampDetails.LiquidationThresholdFinal,
-				RampStart:     rampDetails.TimestampRampStart.Int64(),
-				RampEnd:       rampDetails.TimestampRampEnd.Int64(),
+				RampStart:     uint64(rampDetails.TimestampRampStart.Int64()),
+				RampEnd:       uint64(rampDetails.TimestampRampEnd.Int64()),
 			},
 		)
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{

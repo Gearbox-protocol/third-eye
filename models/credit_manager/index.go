@@ -2,6 +2,7 @@ package credit_manager
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v1"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v2"
@@ -10,11 +11,11 @@ import (
 
 func NewCMFromAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
 	switch adapter.GetVersion() {
-	case 1:
+	case core.NewVersion(1):
 		return cm_v1.NewCMv1FromAdapter(adapter)
-	case 2:
+	case core.NewVersion(2):
 		return cm_v2.NewCMv2FromAdapter(adapter)
-	case 3:
+	case core.NewVersion(3):
 		return cm_v3.NewCMv3FromAdapter(adapter)
 	}
 	panic("")

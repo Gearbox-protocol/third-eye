@@ -21,7 +21,6 @@ type DebtEngine struct {
 	tokenLastPriceV2 map[string]*schemas.PriceFeed
 	//// credit_manager -> token -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
-	tokenLTRamp            map[string]map[string]*schemas_v3.TokenLTRamp
 	poolLastInterestData   map[string]*schemas.PoolInterestData
 	debts                  []*schemas.Debt
 	tvlSnapshots           []*schemas.TvlSnapshots
@@ -34,9 +33,10 @@ type DebtEngine struct {
 	farmingCalc       *FarmingCalculator
 	lastTvlSnapshot   *schemas.TvlSnapshots
 	lastRebaseDetails *schemas.RebaseDetailsForDB
-	// used for v3 calc closed Account amount
-	currentTs int64
+	// used for v3 calc account fields
+	currentTs uint64
 	v3DebtDetails
+	tokenLTRamp map[string]map[string]*schemas_v3.TokenLTRamp
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {

@@ -54,9 +54,9 @@ func (mdl CommonCMAdapter) getEventNameFromCallv3(mainCallName string, sessionId
 
 func (mdl CommonCMAdapter) getEventNameFromCall(version core.VersionType, mainCallName string, sessionId string) string {
 	switch version {
-	case 2:
+	case core.NewVersion(2):
 		return mdl.getEventNameFromCallv2(mainCallName, sessionId)
-	case 3:
+	case core.NewVersion(3):
 		return mdl.getEventNameFromCallv3(mainCallName, sessionId)
 	default:
 		log.Fatalf("version(%d) is not called for getEventNameFromCall", version)
