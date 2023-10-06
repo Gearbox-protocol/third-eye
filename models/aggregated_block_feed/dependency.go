@@ -167,6 +167,14 @@ func getDepGraph() map[string][]string {
 		"LDOETH":       {"LDO", "WETH"},
 		"cvxLDOETH":    {"LDO", "WETH"},
 		"stkcvxLDOETH": {"LDO", "WETH"},
+
+		//
+		"crvUSDUSDC":         {"crvUSD", "USDC"},
+		"crvUSDUSDT":         {"crvUSD", "USDT"},
+		"crvUSDFRAX":         {"crvUSD", "ETH", "FRAX"},
+		"crvUSDETHCRV":       {"crvUSD", "ETH", "CRV"},
+		"cvxcrvUSDETHCRV":    {"crvUSD", "ETH", "CRV"},
+		"stkcvxcrvUSDETHCRV": {"crvUSD", "ETH", "CRV"},
 	}
 	return depGraph
 }
