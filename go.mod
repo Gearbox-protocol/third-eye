@@ -73,4 +73,4 @@ require (
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-// replace github.com/Gearbox-protocol/sdk-go v0.0.0-20231005111423-28c6d972ddab => ../sdk-go
+replace github.com/Gearbox-protocol/sdk-go v0.0.0-20231005111423-28c6d972ddab => ../sdk-go

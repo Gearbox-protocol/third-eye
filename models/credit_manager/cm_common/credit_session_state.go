@@ -142,7 +142,7 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 		}
 		interestFees := new(big.Int).Quo(
 			new(big.Int).Mul(
-				data.AccruedFees.Convert(), big.NewInt(int64(mdl.params.FeeInterest)),
+				data.AccruedInterest.Convert(), big.NewInt(int64(mdl.params.FeeInterest)),
 			),
 			utils.GetExpInt(4),
 		)

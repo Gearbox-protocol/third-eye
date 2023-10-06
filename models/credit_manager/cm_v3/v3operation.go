@@ -15,8 +15,10 @@ import (
 )
 
 func (mdl *CMv3) onOpenCreditAccountV3(txLog *types.Log, onBehalfOf, account string,
-	borrowAmount *big.Int,
-	referralCode uint16) {
+	referralCode *big.Int) {
+	// default is zero in v3
+	borrowAmount := new(big.Int)
+	//
 	mdl.CMStatsOnOpenAccount(borrowAmount)
 	//
 	cfAddr := txLog.Address.Hex()

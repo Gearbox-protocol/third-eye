@@ -28,7 +28,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		mdl.onAddCollateralV3(&txLog, addCollateralEvent.CreditAccount.Hex(),
 			addCollateralEvent.Token.Hex(),
 			addCollateralEvent.Value)
-	case core.Topic("OpenCreditAccount(address,address,address,uint256,uint16)"):
+	case core.Topic("OpenCreditAccount(address,address,address,uint256)"):
 		openCreditAccountEvent, err := mdl.facadeContractv3.ParseOpenCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack OpenCreditAccount event", err)
@@ -36,7 +36,6 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		mdl.onOpenCreditAccountV3(&txLog,
 			openCreditAccountEvent.OnBehalfOf.Hex(),
 			openCreditAccountEvent.CreditAccount.Hex(),
-			openCreditAccountEvent.Debt,
 			openCreditAccountEvent.ReferralCode)
 	case core.Topic("CloseCreditAccount(address,address,address)"):
 		closeCreditAccountEvent, err := mdl.facadeContractv3.ParseCloseCreditAccount(txLog)
