@@ -20,11 +20,11 @@ import (
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
-	case core.Topic("NewPriceFeed(address,address)"):
-		newPriceFeedEvent, err := mdl.contractETH.ParseNewPriceFeed(txLog)
-		if err != nil {
-			log.Fatal("[PriceOracle]: Cant unpack NewPriceFeed event", err)
-		}
+	case core.Topic("NewPriceFeed(address,address)"), core.Topic("NewPriceFeed(address,address,uint32,bool)"):
+		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
+		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
+
+		//
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,
@@ -32,13 +32,11 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			Contract:    mdl.Address,
 			Type:        schemas.NewPriceFeed,
 			Args: &core.Json{
-				"priceFeed": newPriceFeedEvent.PriceFeed.Hex(),
-				"token":     newPriceFeedEvent.Token.Hex(),
+				"priceFeed": oracle,
+				"token":     token,
 			},
 		})
 
-		token := newPriceFeedEvent.Token.Hex()
-		oracle := newPriceFeedEvent.PriceFeed.Hex()
 		version := mdl.GetVersion()
 		priceFeedType, bounded, err := mdl.checkPriceFeedContract(blockNum, oracle)
 		if err != nil {

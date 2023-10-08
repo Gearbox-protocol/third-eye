@@ -42,3 +42,20 @@ CREATE TABLE current_debts (
 
 ALTER TABLE ONLY current_debts
     ADD CONSTRAINT current_debts_block_num_fkey FOREIGN KEY (block_num) REFERENCES blocks(id) ON DELETE CASCADE;
+
+
+
+create user sample with encrypted password '123Sample';
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sample;
+ALTER DATABASE sample OWNER TO sample;
+ALTER SCHEMA public.* OWNER TO sample;
+update schema_migrations set version=27, dirty='f';
+--
+SELECT format(
+          'ALTER TABLE public.%I OWNER TO sample',
+          table_name
+       )
+FROM information_schema.tables
+WHERE table_schema = 'public';
+
+SELECT * FROM information_schema.tables  WHERE table_schema = 'public';

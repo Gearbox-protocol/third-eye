@@ -1,9 +1,8 @@
 package contract_register
 
 import (
-	"log"
-
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -23,6 +22,7 @@ func (mdl *ContractRegister) OnLog(txLog types.Log) {
 		mdl.Repo.AddSyncAdapter(obj)
 	case core.Topic("NewCreditManagerAdded(address)"):
 		address := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
+		log.Info("new", address)
 		cm := NewCM(address, mdl.SyncAdapter.Client, mdl.Repo, blockNum)
 		mdl.Repo.AddSyncAdapter(cm)
 	}
@@ -46,7 +46,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int
 	switch version {
 	case core.NewVersion(1), core.NewVersion(2):
 		return pool_v2.NewPool(addr, client, repo, blockNum)
-	case core.NewVersion(3):
+	case core.NewVersion(300):
 		return pool_v3.NewPool(addr, client, repo, blockNum)
 	default:
 		log.Fatalf("Version(%d) of pool can't be created.", version)

@@ -11,7 +11,7 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
 	switch adapter.GetVersion() {
 	case core.NewVersion(1), core.NewVersion(2):
 		return pool_v2.NewPoolFromAdapter(adapter)
-	case core.NewVersion(3):
+	case core.NewVersion(300):
 		return pool_v3.NewPoolFromAdapter(adapter)
 	}
 	return nil

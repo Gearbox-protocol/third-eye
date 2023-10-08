@@ -15,7 +15,7 @@ func NewCMFromAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
 		return cm_v1.NewCMv1FromAdapter(adapter)
 	case core.NewVersion(2):
 		return cm_v2.NewCMv2FromAdapter(adapter)
-	case core.NewVersion(3):
+	case core.NewVersion(300):
 		return cm_v3.NewCMv3FromAdapter(adapter)
 	}
 	panic("")

@@ -14,7 +14,7 @@ func NewConfiguratorFromAdapter(adapter *ds.SyncAdapter) ds.SyncAdapterI {
 		return credit_filter.NewCreditFilterFromAdapter(adapter)
 	case core.NewVersion(2):
 		return configurator_v2.NewConfiguratorv2FromAdapter(adapter)
-	case core.NewVersion(3):
+	case core.NewVersion(300):
 		return configurator_v3.NewConfiguratorv3FromAdapter(adapter)
 	}
 	panic("")

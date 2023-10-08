@@ -114,6 +114,9 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.AddressProvider:
 		ap := address_provider.NewAddressProviderFromAdapter(adapter)
 		if ap.Details["dc"] != nil {
+			if ap.GetVersion() == core.NewVersion(300) {
+				repo.extras.GetDCWrapper().DCAreByVersion()
+			}
 			repo.extras.GetDCWrapper().LoadMultipleDC(ap.Details["dc"])
 		}
 		return ap

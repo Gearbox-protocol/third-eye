@@ -73,7 +73,7 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(blockNum int64, sessionI
 		return
 	}
 	// get call and processFn
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(blockNum-1,
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), blockNum-1,
 		common.HexToAddress(mdl.GetAddress()),
 		common.HexToAddress(session.Borrower))
 	if err != nil {
@@ -172,7 +172,7 @@ func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, bloc
 		return multicall.Multicall2Call{}, nil
 	}
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(blockNum,
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), blockNum,
 		common.HexToAddress(mdl.GetAddress()),
 		common.HexToAddress(session.Borrower))
 	if err != nil {

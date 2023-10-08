@@ -386,7 +386,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 
 	// use data compressor if debt check is enabled
 	if eng.config.DebtDCMatching {
-		data := eng.SessionDataFromDC(blockNum, cmAddr, sessionSnapshot.Borrower)
+		data := eng.SessionDataFromDC(session.Version, blockNum, cmAddr, sessionSnapshot.Borrower)
 		utils.ToJson(data)
 		// set debt data fetched from dc
 		// if healthfactor on diff
@@ -567,8 +567,8 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version core.VersionType, 
 	return nil
 }
 
-func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) dc.CreditAccountCallData {
-	call, resultFn, err := eng.repo.GetDCWrapper().GetCreditAccountData(blockNum,
+func (eng *DebtEngine) SessionDataFromDC(version core.VersionType, blockNum int64, cmAddr, borrower string) dc.CreditAccountCallData {
+	call, resultFn, err := eng.repo.GetDCWrapper().GetCreditAccountData(version, blockNum,
 		common.HexToAddress(cmAddr),
 		common.HexToAddress(borrower),
 	)

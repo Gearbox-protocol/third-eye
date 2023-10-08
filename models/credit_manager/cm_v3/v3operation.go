@@ -55,7 +55,7 @@ func (mdl *CMv3) onOpenCreditAccountV3(txLog *types.Log, onBehalfOf, account str
 		Since:          blockNum,
 		BorrowedAmount: (*core.BigInt)(borrowAmount),
 		IsDirty:        true,
-		Version:        core.NewVersion(3),
+		Version:        core.NewVersion(300),
 	}
 	// direct token manager
 	mdl.Repo.AddCreditSession(newSession, false, txLog.TxHash.Hex(), txLog.Index)

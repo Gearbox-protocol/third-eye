@@ -22,7 +22,8 @@ func (mdl *CMv2) addProtocolAdaptersLocally() {
 		blockToFetchCMData = mdl.LastSync
 	}
 	//
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(blockToFetchCMData, common.HexToAddress(mdl.GetAddress()))
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(mdl.GetVersion(),
+		blockToFetchCMData, common.HexToAddress(mdl.GetAddress()))
 	if err != nil {
 		log.Fatal("Failed preparing credit manager data", err)
 	}

@@ -66,7 +66,7 @@ func (mdl *CMv3) InitState() {
 		Address:         mdl.Address,
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlying.Hex(),
-		Version:         core.NewVersion(3),
+		Version:         core.NewVersion(300),
 	})
 }
 

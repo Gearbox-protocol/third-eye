@@ -37,13 +37,11 @@ update credit_managers cm set
     total_liquidated_accounts=cms.total_liquidated_accounts,
     total_borrowed_bi=cms.total_borrowed_bi,
     cumulative_borrowed_bi=cms.cumulative_borrowed_bi,
-    available_liquidity_bi=cms.available_liquidity_bi,
     total_repaid_bi=cms.total_repaid_bi,
     total_losses_bi=cms.total_losses_bi,
     total_profit_bi=cms.total_profit_bi,
     total_borrowed=cms.total_borrowed,
     cumulative_borrowed=cms.cumulative_borrowed,
-    available_liquidity=cms.available_liquidity,
     total_repaid=cms.total_repaid,
     total_losses=cms.total_losses,
     total_profit=cms.total_profit,
@@ -53,9 +51,9 @@ update credit_managers cm set
 
 
 
--- delete from price_feeds where block_num >  18029431;
--- delete from token_oracle where block_num > 18029431;
--- update sync_adapters set last_sync=18029431 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
+delete from price_feeds where block_num >  18029431;
+delete from token_oracle where block_num > 18029431;
+update sync_adapters set last_sync=18029431 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
 
 -- delete from sync_adapters where discovered_at> 18029431;
 ----

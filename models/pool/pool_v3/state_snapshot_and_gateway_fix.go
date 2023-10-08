@@ -36,7 +36,7 @@ func (mdl *Poolv3) OnBlockChange(inputBlock int64) (call multicall.Multicall2Cal
 }
 
 func (mdl *Poolv3) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, func(multicall.Multicall2Result)) {
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetPoolData(inputB, common.HexToAddress(mdl.Address))
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetPoolData(mdl.GetVersion(), inputB, common.HexToAddress(mdl.Address))
 	if err != nil {
 		log.Fatal("[PoolService] Cant create call for data compressor", err)
 	}

@@ -16,7 +16,7 @@ func (kit *AdapterKit) init() {
 	// REVERT_POOL_WRAPPER
 	kit.AddLevel([]string{PoolWrapper, AccountManager, CompositeChainlinkPF})
 	// another level created bcz of poolKeeper.
-	kit.AddLevel([]string{PoolQuotaKeeper, ChainlinkPriceFeed})
+	kit.AddLevel([]string{PoolQuotaWrapper, ChainlinkPriceFeed})
 	// REVERT_CM_WRAPPER
 	kit.AddLevel([]string{CMWrapper, AggregatedQueryFeedWrapper, PoolLMRewards})
 	// REVERT_CF_WRAPPER

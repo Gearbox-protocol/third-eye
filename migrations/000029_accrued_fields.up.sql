@@ -1,1 +1,1 @@
-alter credit_session_snapshots add cum_quota_interest varchar(80), add quota_fees varchar(80);
+alter table credit_session_snapshots add cum_quota_interest varchar(80), add quota_fees varchar(80);
