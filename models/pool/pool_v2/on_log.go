@@ -55,7 +55,7 @@ func (mdl *Poolv2) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[PoolServiceModel]: Cant unpack RemoveLiquidity event", err)
 		}
-		log.Info(removeLiquidityEvent.Sender.Hex())
+		// log.Info(removeLiquidityEvent.Sender.Hex())
 		mdl.gatewayHandler.AddRemoveLiqEvent(&schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,

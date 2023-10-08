@@ -37,6 +37,7 @@ type SyncAdaptersRepo struct {
 	rollbackAllowed bool
 	mu              *sync.Mutex
 	*AdapterKitHandler
+	cfg *config.Config
 }
 
 func NewSyncAdaptersRepo(client core.ClientI, repo ds.RepositoryI, cfg *config.Config, extras *ExtrasRepo) *SyncAdaptersRepo {
@@ -47,6 +48,7 @@ func NewSyncAdaptersRepo(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 		rollbackAllowed:   cfg.Rollback,
 		mu:                &sync.Mutex{},
 		AdapterKitHandler: NewAdpterKitHandler(client, repo, cfg),
+		cfg:               cfg,
 	}
 	return obj
 }
@@ -112,11 +114,8 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.ACL:
 		return acl.NewACLFromAdapter(adapter)
 	case ds.AddressProvider:
-		ap := address_provider.NewAddressProviderFromAdapter(adapter)
+		ap := address_provider.NewAddressProviderFromAdapter(adapter, repo.cfg.AddressProviderAddrs)
 		if ap.Details["dc"] != nil {
-			if ap.GetVersion() == core.NewVersion(300) {
-				repo.extras.GetDCWrapper().DCAreByVersion()
-			}
 			repo.extras.GetDCWrapper().LoadMultipleDC(ap.Details["dc"])
 		}
 		return ap
@@ -164,6 +163,9 @@ func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.rollbackAllowed {
+		return
+	}
+	if repo.GetAdapter(newAdapterI.GetAddress()) != nil {
 		return
 	}
 	if newAdapterI.GetName() == ds.PriceOracle {

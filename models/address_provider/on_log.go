@@ -104,10 +104,13 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
 	contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
 	address := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
-	version := func() core.VersionType {
+	version := func() int16 {
 		version :=
 			new(big.Int).SetBytes(txLog.Topics[3].Bytes()).Int64()
-		return core.NewVersion(int16(version))
+		if version == 0 {
+			version = 1
+		}
+		return int16(version)
 	}()
 	blockNum := int64(txLog.BlockNumber)
 	//
@@ -125,11 +128,14 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
 				dcObj = make(map[string]interface{})
 			}
 		}
-		dcObj[fmt.Sprintf("%d", version)] = address
+		if version < 300 { // don't add dataCompressor with version 2.1
+			log.Infof("Don't add %s version %d", address, version)
+			return
+		}
+		dcObj[fmt.Sprintf("%d", blockNum)] = fmt.Sprintf("%s_%d", address, version)
 		mdl.Details["dc"] = dcObj
 		// v3
-		mdl.Repo.GetDCWrapper().DCAreByVersion()
-		mdl.Repo.GetDCWrapper().AddDataCompressor(int64(txLog.BlockNumber), address, version)
+		mdl.Repo.GetDCWrapper().AddDataCompressorByVersion(core.NewVersion(version), address)
 	case "PRICE_ORACLE":
 		mdl.addPriceOracle(blockNum, address)
 		po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)

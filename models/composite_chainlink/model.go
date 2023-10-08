@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	cpf "github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/ethereum/go-ethereum/common"
@@ -137,7 +138,7 @@ func getAddrFromRPC(client core.ClientI, targetMethod string, oracle common.Addr
 	sig := getSig(targetMethod, blockNum, chainId.Int64())
 	tokenETHPFData, err := core.CallFuncWithExtraBytes(client, sig, oracle, blockNum, nil)
 	if err != nil {
-		log.Fatalf("Oracle(%s) doesn't have valid %s: %s", oracle, targetMethod, err)
+		log.Fatalf("Oracle(%s) at blockNum %d doesn't have valid %s: %s", oracle, blockNum, targetMethod, err)
 	}
 	return common.BytesToAddress(tokenETHPFData)
 }
@@ -157,7 +158,8 @@ func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
 // 1) with targetETh and ethUSD price feed.
 // 2) with baseToUSD and targetToBase price feed.
 func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string) {
-	oldMethods := (discoveredAt <= 15997386 && chainId == 1) ||
+	// TODO anvil fork
+	oldMethods := (discoveredAt <= 15997386 && utils.Contains([]int64{1, 7878}, chainId)) ||
 		(discoveredAt <= 7966150 && chainId == 5)
 	//
 	switch targetMethod {

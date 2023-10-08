@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type blockAndOracle struct {
@@ -17,19 +19,50 @@ type blockAndOracle struct {
 type AddressProvider struct {
 	*ds.SyncAdapter
 	priceOracles []blockAndOracle `json:"-"`
+	otherAddrs   []common.Address `json:"-"`
 }
 
-func NewAddressProvider(addr string, client core.ClientI, repo ds.RepositoryI) *AddressProvider {
+func GetAddressProvider(client core.ClientI, addressProviderAddrs string) (firstAddressProvider string, otherAddrs []common.Address) {
+	minVersion := core.NewVersion(10_000)
+	for _, addr := range strings.Split(addressProviderAddrs, ",") {
+		version := core.FetchVersion(addr, 0, client)
+		if !version.MoreThan(minVersion) {
+			minVersion = version
+			firstAddressProvider = addr
+		}
+	}
+	for _, addr := range strings.Split(addressProviderAddrs, ",") {
+		if addr != firstAddressProvider {
+			otherAddrs = append(otherAddrs, common.HexToAddress(addr))
+		}
+	}
+	firstAddressProvider = common.HexToAddress(firstAddressProvider).Hex()
+	return
+}
+
+func NewAddressProvider(client core.ClientI, repo ds.RepositoryI, AddressProviderAddrs string) *AddressProvider {
+	firstAddressProvider, _ := GetAddressProvider(client, AddressProviderAddrs)
 	return NewAddressProviderFromAdapter(
-		ds.NewSyncAdapter(addr, ds.AddressProvider, -1, client, repo),
+		ds.NewSyncAdapter(firstAddressProvider, ds.AddressProvider, -1, client, repo),
+		AddressProviderAddrs,
 	)
 }
 
-func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter) *AddressProvider {
+func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, AddressProviderAddrs string) *AddressProvider {
 	obj := &AddressProvider{
 		SyncAdapter: adapter,
 	}
+	if obj.Details == nil {
+		obj.Details = core.Json{}
+	}
+	_, otherAddrProviders := GetAddressProvider(obj.Client, AddressProviderAddrs)
+	obj.Details["others"] = otherAddrProviders
+	obj.otherAddrs = otherAddrProviders
 	return obj
+}
+
+func (mdl *AddressProvider) GetAllAddrsForLogs() []common.Address {
+	return append(mdl.otherAddrs, common.HexToAddress(mdl.Address))
 }
 
 func (mdl *AddressProvider) GetDetailsByKey(strBlockNum string) string {

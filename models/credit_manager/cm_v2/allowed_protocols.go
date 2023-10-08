@@ -30,7 +30,7 @@ func (mdl *CMv2) addProtocolAdaptersLocally() {
 	results := core.MakeMultiCall(mdl.Client, blockToFetchCMData, false, []multicall.Multicall2Call{call})
 	state, err := resultFn(results[0].ReturnData)
 	if err != nil {
-		log.Fatal("Failed call", err)
+		log.Fatalf("Failed call for cm(%s)@%d version %d: %s", mdl.GetAddress(), blockToFetchCMData, mdl.GetVersion(), err)
 	}
 	mdl.addProtocolAdapters(state)
 }
