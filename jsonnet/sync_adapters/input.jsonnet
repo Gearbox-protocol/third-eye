@@ -9,7 +9,15 @@ local utils = import '../utils.libsonnet';
   },
   states: {
     otherCalls: {
-      '54fd4d50': { '#ACL_1': '1', '#ContractRegister_1': '1', '#PriceOracle_1': '1', '#Pool_1': '1', '#CreditManager_1': '1', '#CreditFilter_1': '1' },
+      '54fd4d50': {
+        '#ACL_1': '1',
+        '#ContractRegister_1': '1',
+        '#PriceOracle_1': '1',
+        '#Pool_1': '1',
+        '#CreditManager_1': '1',
+        '#CreditFilter_1': '1',
+        '#AddressProvider_1': '1',
+      },
     },
     oracles: {
       '#Oracle_1': [{

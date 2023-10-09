@@ -40,22 +40,25 @@ func GetAddressProvider(client core.ClientI, addressProviderAddrs string) (first
 	return
 }
 
-func NewAddressProvider(client core.ClientI, repo ds.RepositoryI, AddressProviderAddrs string) *AddressProvider {
-	firstAddressProvider, _ := GetAddressProvider(client, AddressProviderAddrs)
+func NewAddressProvider(client core.ClientI, repo ds.RepositoryI, apAddrs string) *AddressProvider {
+	firstAddressProvider, _ := GetAddressProvider(client, apAddrs)
 	return NewAddressProviderFromAdapter(
 		ds.NewSyncAdapter(firstAddressProvider, ds.AddressProvider, -1, client, repo),
-		AddressProviderAddrs,
+		apAddrs,
 	)
 }
 
-func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, AddressProviderAddrs string) *AddressProvider {
+func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *AddressProvider {
 	obj := &AddressProvider{
 		SyncAdapter: adapter,
 	}
 	if obj.Details == nil {
 		obj.Details = core.Json{}
 	}
-	_, otherAddrProviders := GetAddressProvider(obj.Client, AddressProviderAddrs)
+	if apAddrs == "" {
+		apAddrs = adapter.GetAddress()
+	}
+	_, otherAddrProviders := GetAddressProvider(obj.Client, apAddrs)
 	obj.Details["others"] = otherAddrProviders
 	obj.otherAddrs = otherAddrProviders
 	return obj

@@ -8,7 +8,10 @@ local borrowedAmount = 4000;
   },
   states: {
     otherCalls: {
-      '54fd4d50': { '#CreditConfigurator_2': '2' },
+      '54fd4d50': {
+        '#CreditConfigurator_2': '2',
+        '#AddressProvider_1': '1',
+      },
     },
     oracles: {
       '#Oracle_0': [{  // for v1

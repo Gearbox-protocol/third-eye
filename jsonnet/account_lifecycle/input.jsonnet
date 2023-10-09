@@ -21,6 +21,9 @@ local newCollateral = 1;
         feed: '#ChainlinkPriceFeed_2',
       }],
     },
+    otherCalls: {
+      '54fd4d50': { '#AddressProvider_1': '1' },
+    },
   },
   executeParser: {
     '5': {

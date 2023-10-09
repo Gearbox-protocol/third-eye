@@ -38,6 +38,11 @@ local moreCollateral = 1000;
       },
     },
   },
+  states: {
+    otherCalls: {
+      '54fd4d50': { '#AddressProvider_1': '1' },
+    },
+  },
   blocks: {
     // block with open and borrow more underlying asset
     '4': {

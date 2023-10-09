@@ -24,6 +24,9 @@ local borrowedAmount = 4000;
         feed: '#ChainlinkPriceFeed_4',
       }],
     },
+    otherCalls: {
+      '54fd4d50': { '#AddressProvider_1': '1' },
+    },
   },
   blocks: {
     '3': {

@@ -30,6 +30,9 @@ local extraBorrowedAmount = 1000;
         feed: '#ChainlinkPriceFeed_3',
       }],
     },
+    otherCalls: {
+      '54fd4d50': { '#AddressProvider_1': '1' },
+    },
   },
   blocks: {
     '3': {
