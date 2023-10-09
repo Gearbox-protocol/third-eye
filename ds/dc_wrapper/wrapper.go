@@ -147,7 +147,6 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 	for _, blockNum := range blockNums {
 		k := fmt.Sprintf("%d", blockNum)
 		dcAddr := dcMap[k].(string)
-		log.Info(k, blockNum, dcAddr)
 		//
 		if strings.Contains(dcAddr, "_") {
 			addrs := strings.Split(dcAddr, "_")
@@ -239,7 +238,6 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType,
 	errReturn error) {
 	//
 	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
-	log.Info(key, dcAddr)
 	switch key {
 	case DCV3:
 		data, err := core.GetAbi("DataCompressorv3").Pack("getCreditManagerData", _creditManager)

@@ -137,6 +137,9 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
 		// v3
 		mdl.Repo.GetDCWrapper().AddDataCompressorByVersion(core.NewVersion(version), address)
 	case "PRICE_ORACLE":
+		if version < 300 { // don't except v2,v2.10 or v1 priceOracle , why are already know from v1 addressProvider
+			return
+		}
 		mdl.addPriceOracle(blockNum, address)
 		po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 		mdl.Repo.AddSyncAdapter(po)

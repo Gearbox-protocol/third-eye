@@ -48,8 +48,7 @@ ALTER TABLE ONLY current_debts
 -- create user sample with encrypted password '123Sample';
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sample;
 ALTER DATABASE sample OWNER TO sample;
--- ALTER SCHEMA public.* OWNER TO sample;
-update schema_migrations set version=27, dirty='f';
+-- update schema_migrations set version=27, dirty='f';
 --
 SELECT format(
           'ALTER TABLE public.%I OWNER TO sample',
@@ -58,4 +57,4 @@ SELECT format(
 FROM information_schema.tables
 WHERE table_schema = 'public';
 
-SELECT * FROM information_schema.tables  WHERE table_schema = 'public';
+-- SELECT * FROM information_schema.tables  WHERE table_schema = 'public';
