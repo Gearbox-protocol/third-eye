@@ -12,9 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func bytesToUInt16(data []byte) uint16 {
-	return uint16(new(big.Int).SetBytes(data).Int64())
-}
 func (mdl PoolQuotaKeeper) updateQuotaDetails(blockNum int64, token string, newDetails *schemas_v3.QuotaDetails) {
 	details := mdl.quotas[token]
 	if newDetails.Rate != 0 {
@@ -53,7 +50,7 @@ func (mdl *PoolQuotaKeeper) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("SetQuotaIncreaseFee(address,uint16)"):
 		mdl.updateQuotaDetails(blockNum, common.BytesToAddress(txLog.Topics[1][:]).Hex(), &schemas_v3.QuotaDetails{
-			IncreaseFee: bytesToUInt16(txLog.Data),
+			IncreaseFee: utils.BytesToUInt16(txLog.Data),
 		})
 	case core.Topic("SetTokenLimit(address,uint96)"):
 		mdl.updateQuotaDetails(blockNum, common.BytesToAddress(txLog.Topics[1][:]).Hex(), &schemas_v3.QuotaDetails{
@@ -61,14 +58,14 @@ func (mdl *PoolQuotaKeeper) OnLog(txLog types.Log) {
 		})
 	case core.Topic("UpdateTokenQuotaRate(address,uint16)"):
 		mdl.updateQuotaDetails(blockNum, common.BytesToAddress(txLog.Topics[1][:]).Hex(), &schemas_v3.QuotaDetails{
-			Rate: bytesToUInt16(txLog.Data),
+			Rate: utils.BytesToUInt16(txLog.Data),
 		})
 	case core.Topic("AddQuotaToken(address)"):
 		mdl.addToken(blockNum, common.BytesToAddress(txLog.Topics[1][:]).Hex())
 	case core.Topic("UpdateQuota(address,address,int96)"):
 		updateQuota, err := mdl.contract.ParseUpdateQuota(txLog)
 		log.CheckFatal(err)
-		mdl.mgr.AddAccountQuota(blockNum, mdl, updateQuota)
+		mdl.mgr.AddAccountQuota(blockNum, updateQuota)
 	}
 }
 

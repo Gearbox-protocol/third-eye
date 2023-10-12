@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
+	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
 type sessionDetailsForCalc struct {
@@ -13,14 +14,9 @@ type sessionDetailsForCalc struct {
 	CM            string
 	rebaseDetails *schemas.RebaseDetailsForDB
 	stETH         string
-	underlying    string
 	// for v3
 	forQuotas v3DebtDetails
 	version   core.VersionType
-}
-
-func (s sessionDetailsForCalc) GetUnderlying() string {
-	return s.underlying
 }
 
 func (s sessionDetailsForCalc) GetCM() string {
@@ -45,12 +41,6 @@ func (s sessionDetailsForCalc) GetVersion() core.VersionType {
 func (s sessionDetailsForCalc) GetQuotaCumInterestAndFees() (*big.Int, *big.Int) {
 	return s.CumulativeQuotaInterest.Convert(), s.QuotaFees.Convert()
 }
-func (s sessionDetailsForCalc) GetQuotas() map[string]*schemas_v3.AccountQuotaInfo {
-	if !s.version.Eq(3) {
-		return nil
-	}
-	return s.forQuotas.accountQuotaToken[s.SessionId]
-}
 
 type storeForCalc struct {
 	inner *DebtEngine
@@ -68,4 +58,23 @@ func (s storeForCalc) GetLiqThreshold(ts uint64, cm, token string) *big.Int {
 		return ltRamp.GetLTForTs(ts)
 	}
 	return s.inner.allowedTokensThreshold[cm][token].Convert()
+}
+
+type poolDetailsForCalc struct {
+	cumIndexAndUToken *ds.CumIndexAndUToken
+	forQuotas         v3DebtDetails
+}
+
+func (s poolDetailsForCalc) GetUnderlying() string {
+	return s.cumIndexAndUToken.Token
+}
+
+func (s poolDetailsForCalc) getPool() string {
+	return s.cumIndexAndUToken.PoolAddr
+}
+func (s poolDetailsForCalc) GetPoolQuotaDetails() map[string]*schemas_v3.QuotaDetails {
+	return s.forQuotas.poolQuotaDetails[s.getPool()]
+}
+func (s poolDetailsForCalc) GetCumIndexNow() *big.Int {
+	return s.cumIndexAndUToken.CumulativeIndex
 }

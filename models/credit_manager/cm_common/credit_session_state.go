@@ -136,19 +136,7 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	//
 	css.CumulativeQuotaInterest = data.CumulativeQuotaInterest
 	// quota fees
-	css.QuotaFees = func() *core.BigInt {
-		if !data.Version.Eq(3) {
-			return new(core.BigInt)
-		}
-		interestFees := new(big.Int).Quo(
-			new(big.Int).Mul(
-				data.AccruedInterest.Convert(), big.NewInt(int64(mdl.params.FeeInterest)),
-			),
-			utils.GetExpInt(4),
-		)
-		// quota fees
-		return (*core.BigInt)(new(big.Int).Sub(data.AccruedFees.Convert(), interestFees))
-	}()
+	css.QuotaFees = (*core.BigInt)(data.GetQuotaFees(mdl.params.FeeInterest))
 	//
 	// set balances
 	css.Balances = mdl.addFloatValue(session.Account, blockNum-1, data.Balances)

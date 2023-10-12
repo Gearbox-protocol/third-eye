@@ -92,18 +92,6 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			Loss:           repayEvent.Loss,
 		})
 		mdl.updateBorrowRate(blockNum)
-	case core.Topic("SetInterestRateModel(address)"):
-		interestModel, err := mdl.contract.ParseSetInterestRateModel(txLog)
-		log.CheckFatal(err)
-		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
-			BlockNumber: blockNum,
-			LogID:       txLog.Index,
-			TxHash:      txLog.TxHash.Hex(),
-			Contract:    mdl.Address,
-			Type:        schemas.NewInterestRateModel,
-			Args:        &core.Json{"newInterestRateModel": interestModel.NewInterestRateModel.Hex()},
-		})
-		mdl.updateBorrowRate(blockNum)
 	case core.Topic("SetPoolQuotaKeeper(address)"):
 		poolQuotaKeeper := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 		pqk := pool_quota_keeper.NewPoolQuotaKeeper(poolQuotaKeeper, mdl.Address, int64(txLog.BlockNumber), mdl.Client, mdl.Repo)

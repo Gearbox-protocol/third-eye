@@ -87,7 +87,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.loadParameters(lastDebtSynced)
 	eng.loadLiquidableAccounts(lastDebtSynced)
 	// v3
-	eng.loadAccounQuotaInfo(lastDebtSynced, eng.db)
+	// eng.loadAccounQuotaInfo(lastDebtSynced, eng.db)
 	eng.loadPoolQuotaDetails(lastDebtSynced, eng.db)
 	//
 	// process blocks for calculating debts

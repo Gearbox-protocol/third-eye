@@ -58,15 +58,26 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 	return
 }
 
-func (mdl CommonCMAdapter) updateQuotasWithSessionId(sessionId string, mainCalls []*ds.FacadeCallNameWithMulticall) {
-	for _, call := range mainCalls {
-		for _, multicall := range call.GetMulticalls() {
-			sig := hex.EncodeToString(multicall.CallData[:4])
-			if sig == "712c10ad" { // updateQuota
-				quotaEvent := mdl.Repo.GetAccountQuotaMgr().GetUpdateQuotaEventForAccount(strings.Split(sessionId, "_")[0])
-				quotaEvent.SessionId = sessionId
-				mdl.Repo.AddAccountQuotaInfo(quotaEvent)
-			}
+func (mdl CommonCMAdapter) updateQuotasWithSessionId(sessionId string, mainCall *ds.FacadeCallNameWithMulticall) {
+	for _, multicall := range mainCall.GetMulticalls() {
+		sig := hex.EncodeToString(multicall.CallData[:4])
+		if sig == "712c10ad" { // updateQuota on v3
+			quotaEvent := mdl.Repo.GetAccountQuotaMgr().GetUpdateQuotaEventForAccount(strings.Split(sessionId, "_")[0])
+			//
+			//
+			mdl.Repo.AddAccountOperation(&schemas.AccountOperation{
+				TxHash:      quotaEvent.Raw.TxHash.Hex(),
+				BlockNumber: int64(quotaEvent.Raw.BlockNumber),
+				LogId:       quotaEvent.Raw.Index,
+				// Borrower:    session.Borrower,
+				SessionId:   sessionId,
+				Dapp:        mdl.GetCreditFacadeAddr(),
+				Action:      "UpdateQuota",
+				Args:        &core.Json{"token": quotaEvent.Token, "change": quotaEvent.QuotaChange},
+				AdapterCall: false,
+				// Transfers:   &core.Transfers{tx.Token: amount},
+			})
+			mdl.SetSessionIsUpdated(sessionId)
 		}
 	}
 }
@@ -98,6 +109,9 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
 				utils.ToJson(eventMulticalls), mainCall.String(), mainEvent.TxHash)
 		}
+		// update quota with session based on calls from tenderly and also mark sesssion as updated
+		mdl.updateQuotasWithSessionId(mainEvent.SessionId, mainCall)
+		//
 		account := strings.Split(mainEvent.SessionId, "_")[0]
 		for _, event := range eventMulticalls {
 			if event.Action == "ExecuteOrder" {
@@ -198,8 +212,12 @@ func (mdl *CommonCMAdapter) addMulticallToMainEvent(mainEvent *schemas.AccountOp
 			}
 		case "TokenEnabled(address,address)",
 			"TokenDisabled(address,address)",
+			// for v2
 			"IncreaseBorrowedAmount(address,uint256)",
-			"DecreaseBorrowedAmount(address,uint256)":
+			"DecreaseBorrowedAmount(address,uint256)",
+			// for v3
+			"IncreaseDebt(address,uint256)",
+			"DecreaseDebt(address,uint256)":
 			eventsMulticalls = append(eventsMulticalls, event)
 		default: // for all the ExecuteOrder
 			if event.AdapterCall {

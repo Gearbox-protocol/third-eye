@@ -97,7 +97,7 @@ func (repo *Repository) Init() {
 	repo.loadPool()
 	repo.LoadPoolUniqueUsers(repo.db)
 	repo.loadQuotaDetails()
-	repo.loadAccountQuotaInfo()
+	// repo.loadAccountQuotaInfo()
 	// load credit manager
 	repo.loadCreditManagers()
 	repo.loadGearBalances()

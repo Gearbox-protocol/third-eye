@@ -54,7 +54,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		if txLog.Address.Hex() == mdl.Address { // unset pause on cm, if Unpaused event is emitted only on cm address
 			mdl.State.Paused = false
 		}
-	case core.Topic("LiquidateCreditAccount(address,address,address,address,uint,uint256)"):
+	case core.Topic("LiquidateCreditAccount(address,address,address,address,uint8,uint256)"):
 		liquidateCreditAccountEvent, err := mdl.facadeContractv3.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack LiquidateCreditAccount event", err)
@@ -93,7 +93,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		}
 		mdl.onIncreaseBorrowedAmountV3(&txLog, decreaseBorrowEvent.CreditAccount.Hex(),
 			new(big.Int).Neg(decreaseBorrowEvent.Amount), "DecreaseBorrowedAmount")
-	case core.Topic("SetCreditConfigurator(address)"):
+	case core.Topic("SetCreditConfigurator(address)"): // on credit manager
 		newConfigurator := utils.ChecksumAddr(txLog.Topics[1].Hex())
 		oldConfigurator := mdl.GetDetailsByKey("configurator")
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{

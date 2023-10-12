@@ -2,7 +2,7 @@ package ds
 
 import (
 	"math/big"
-	"strings"
+	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolQuotaKeeperv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -11,28 +11,20 @@ import (
 )
 
 type AccountQuotaMgr struct {
-	// account to token to quota details
-	accounts map[string]map[string]*schemas_v3.AccountQuotaInfo
+	mu sync.Mutex
 	// so that credit manager can create latest quota update event
-	events map[string][]*schemas_v3.AccountQuotaInfo
+	events map[string][]*poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota
 }
 
 func NewAccountQuotaMgr() *AccountQuotaMgr {
 	return &AccountQuotaMgr{
-		accounts: map[string]map[string]*schemas_v3.AccountQuotaInfo{},
-		events:   map[string][]*schemas_v3.AccountQuotaInfo{},
+		events: map[string][]*poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota{},
 	}
 }
 
-// load active credit sessions only
-func (mdl AccountQuotaMgr) InitQuotas(data []*schemas_v3.AccountQuotaInfo) {
-	for _, entry := range data {
-		account := strings.Split(entry.SessionId, "_")[0]
-		mdl.accounts[account][entry.Token] = entry
-	}
-}
-
-func (mdl AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *schemas_v3.AccountQuotaInfo {
+func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota {
+	mdl.mu.Lock()
+	defer mdl.mu.Unlock()
 	l := len(mdl.events[account])
 	if l == 0 {
 		return nil
@@ -43,51 +35,13 @@ func (mdl AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *schema
 	}
 }
 
-func (mdl AccountQuotaMgr) AddAccountQuota(blockNum int64,
-	keeper PoolKeeperI,
+func (mdl *AccountQuotaMgr) AddAccountQuota(blockNum int64,
 	updateQuota *poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota) {
-	account := updateQuota.CreditAccount.Hex()
-	token := updateQuota.Token.Hex()
-	if mdl.accounts[account] == nil {
-		mdl.accounts[account] = map[string]*schemas_v3.AccountQuotaInfo{}
-	}
-	if mdl.accounts[account][token] == nil {
-		mdl.accounts[account][token] = schemas_v3.NotNilAccountQuotaInfo()
-	}
-	prevValues := mdl.accounts[account][token]
-	currentTs := keeper.GetRepo().SetAndGetBlock(blockNum).Timestamp
-	// calculate
-	currentCumIndex := GetQuotaIndexCurrent(currentTs, keeper.GetQuotas(token))
+	mdl.mu.Lock()
+	defer mdl.mu.Unlock()
 	//
-	newDetails := &schemas_v3.AccountQuotaInfo{
-		Timestamp:       currentTs,
-		BlockNum:        blockNum,
-		Token:           token,
-		PoolQuotaKeeper: keeper.GetAddress(),
-		//
-		QuotaIndex: currentCumIndex,
-		Quota:      (*core.BigInt)(new(big.Int).Add(prevValues.Quota.Convert(), updateQuota.QuotaChange)),
-		Fees: (*core.BigInt)(
-			new(big.Int).Add(
-				prevValues.Fees.Convert(),
-				GetQuotaFee(updateQuota.QuotaChange, keeper.GetQuotas(token).IncreaseFee),
-			),
-		),
-		Interest: (*core.BigInt)(
-			new(big.Int).Add(
-				prevValues.Interest.Convert(),
-				GetQuotaInterest(keeper.GetQuotas(token).CumQuotaIndex, currentCumIndex, prevValues.Quota),
-			),
-		),
-	}
-
-	// updates
-	mdl.events[account] = append(mdl.events[account], newDetails.Copy())
-	mdl.accounts[account][token] = newDetails
-	// delete if qutoa less than <=1
-	if newDetails.IsDisabled() {
-		delete(mdl.accounts[account], token)
-	}
+	account := updateQuota.CreditAccount.Hex()
+	mdl.events[account] = append(mdl.events[account], updateQuota)
 }
 
 // utils

@@ -43,19 +43,6 @@ func (repo *Repository) loadQuotaDetails() {
 	}
 }
 
-func (repo *Repository) loadAccountQuotaInfo() {
-	defer utils.Elapsed("loadAccountQuotaInfo")()
-	data := []*schemas_v3.AccountQuotaInfo{}
-	err := repo.db.Raw(`WITH all_data as (SELECT DISTINCT ON (cs.account, token) aqi.* 
-	FROM account_quota_info aqi JOIN credit_sessions cs 
-	ON cs.id = aqi.session_id WHERE cs.status=0 ORDER BY cs.account, token, block_num DESC)
-	SELECT * from all_data WHERE quota::float> 1`).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	repo.AccountQuotaMgr.InitQuotas(data)
-}
-
 func (mdl Repository) GetAccountQuotaMgr() *ds.AccountQuotaMgr {
 	return mdl.AccountQuotaMgr
 }
