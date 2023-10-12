@@ -66,7 +66,6 @@ func (p *Poolv3) createSnapshot(blockNum int64, state dc.PoolCallData) {
 	p.State.IsWETH = dc.IsWETH(p.Client, state.Underlying)
 	p.State.BorrowAPYBI = (*core.BigInt)(state.BaseInterestRate)
 	p.State.DepositAPYBI = (*core.BigInt)(state.SupplyRate)
-	// log.Infof("Pool:%s ciRAY: %s and linearCI: %s\n", p.Address, state.CumulativeIndexRAY.String(), state.LinearCumulativeIndex.String())
 	p.Repo.AddPoolStat(&schemas.PoolStat{
 		BlockNum:        blockNum,
 		Address:         p.Address,
@@ -93,6 +92,6 @@ func (p *Poolv3) createSnapshot(blockNum int64, state dc.PoolCallData) {
 		DieselRateBI:       (*core.BigInt)(state.DieselRateRAY),
 		DieselRate:         utils.GetFloat64Decimal(state.DieselRateRAY, 27),
 		WithdrawFee:        int(state.WithdrawFee.Convert().Int64()),
-		CumulativeIndexRAY: (*core.BigInt)(state.LinearCumulativeIndex),
+		CumulativeIndexRAY: (*core.BigInt)(state.CumulativeIndexRAY),
 	})
 }

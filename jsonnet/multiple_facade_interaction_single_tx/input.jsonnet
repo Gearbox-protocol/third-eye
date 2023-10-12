@@ -146,7 +146,7 @@ local moreCollateral = 1000;
             baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
-            linearCumulativeIndex: utils.bigInt(1, 27),
+            cumulativeIndex: utils.bigInt(1, 27),
           }],
           accounts: [{
             address: '#Account_1',
@@ -307,7 +307,7 @@ local moreCollateral = 1000;
           baseBorrowRate: utils.bigInt(0),
           dieselRate: utils.bigInt(0),
           withdrawFee: '0',
-          linearCumulativeIndex: utils.bigInt(1, 27),
+          cumulativeIndex: utils.bigInt(1, 27),
         }],
         accounts: [{
           address: '#Account_2',

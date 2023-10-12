@@ -85,7 +85,7 @@ local newCollateral = 1;
             baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
-            linearCumulativeIndex: utils.bigInt(1, 27),
+            cumulativeIndex: utils.bigInt(1, 27),
           }],
           cms: [{
             address: '#CreditManager_1',
