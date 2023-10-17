@@ -44,6 +44,11 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	// create a pool stat snapshot at first log of the pool
 	pool.onBlockChangeInternally(pool.DiscoveredAt)
 
+	// poolQuotaKeeper, err := core.CallFuncWithExtraBytes(client, "1ab7c7d7", common.HexToAddress(pool.Address), discoveredAt, nil)
+	// if err != nil {
+	// 	log.Fatalf("can't get pool quota keeper for %s: %s", pool.Address, err)
+	// }
+	// pool.setPoolQuotaKeeper(string(poolQuotaKeeper), discoveredAt)
 	return pool
 }
 

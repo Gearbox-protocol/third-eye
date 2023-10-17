@@ -59,6 +59,7 @@ type SyncWrapper struct {
 	lastSync       int64
 	Client         core.ClientI
 	WillSyncTill   int64
+	topics         [][]common.Hash
 }
 
 func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
@@ -68,6 +69,7 @@ func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
 		name:           name,
 		lastSync:       math.MaxInt64 - 10,
 		Client:         client,
+		topics:         [][]common.Hash{},
 	}
 }
 
@@ -95,12 +97,44 @@ func (w *SyncWrapper) GetUnderlyingAdapterAddrs() (addrs []string) {
 
 // //////////
 // //////////
-func (s SyncWrapper) Topics() [][]common.Hash {
+func (s *SyncWrapper) Topics() [][]common.Hash {
 	adapters := s.Adapters.GetAll()
 	if len(adapters) == 0 {
 		return nil
 	}
-	return adapters[0].Topics()
+	ans := [10]map[common.Hash]bool{}
+	if len(ans[0]) == 0 {
+		for _, adapter := range adapters {
+			outerTopics := adapter.Topics()
+			if len(outerTopics) != 0 {
+				for ind, innTopics := range outerTopics {
+					for _, topic := range innTopics {
+						if ans[ind] == nil {
+							ans[ind] = make(map[common.Hash]bool)
+						}
+						ans[ind][topic] = true
+					}
+				}
+			}
+		}
+		s.topics = toBigTopicArr(ans)
+	}
+	return s.topics
+}
+
+func toBigTopicArr(outerTopic [10]map[common.Hash]bool) (allTOpics [][]common.Hash) {
+	for _, innerTopic := range outerTopic {
+		if len(innerTopic) != 0 {
+			allTOpics = append(allTOpics, toTopicArr(innerTopic))
+		}
+	}
+	return
+}
+func toTopicArr(topicsM map[common.Hash]bool) (topics []common.Hash) {
+	for topic := range topicsM {
+		topics = append(topics, topic)
+	}
+	return
 }
 
 func (w *SyncWrapper) GetDataProcessType() int {

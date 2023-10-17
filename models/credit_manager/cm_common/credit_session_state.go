@@ -75,7 +75,9 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(blockNum int64, sessionI
 	// get call and processFn
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), blockNum-1,
 		common.HexToAddress(mdl.GetAddress()),
-		common.HexToAddress(session.Borrower))
+		common.HexToAddress(session.Borrower),
+		common.HexToAddress(session.Account),
+	)
 	if err != nil {
 		log.Fatalf("Failing preparing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, err)
 	}
@@ -162,7 +164,9 @@ func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, bloc
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), blockNum,
 		common.HexToAddress(mdl.GetAddress()),
-		common.HexToAddress(session.Borrower))
+		common.HexToAddress(session.Borrower),
+		common.HexToAddress(session.Account),
+	)
 	if err != nil {
 		log.Fatalf("Failing preparing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, err)
 	}

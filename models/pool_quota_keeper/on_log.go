@@ -5,7 +5,6 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
@@ -16,7 +15,7 @@ func (mdl PoolQuotaKeeper) updateQuotaDetails(blockNum int64, token string, newD
 	details := mdl.quotas[token]
 	if newDetails.Rate != 0 {
 		currentTs := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
-		details.CumQuotaIndex = ds.GetQuotaIndexCurrent(currentTs, details)
+		details.CumQuotaIndex = (*core.BigInt)(details.GetCumulativeIndexAt(currentTs))
 		details.Timestamp = currentTs
 		details.Rate = newDetails.Rate
 	}
@@ -38,7 +37,7 @@ func (mdl PoolQuotaKeeper) addToken(blockNum int64, token string) {
 		//
 		Timestamp:     mdl.Repo.SetAndGetBlock(blockNum).Timestamp,
 		Pool:          mdl.GetDetailsByKey("pool"),
-		CumQuotaIndex: (*core.BigInt)(utils.GetExpInt(18)),
+		CumQuotaIndex: (*core.BigInt)(utils.GetExpInt(27)),
 		//
 		IsDirty: true,
 	}
@@ -63,9 +62,7 @@ func (mdl *PoolQuotaKeeper) OnLog(txLog types.Log) {
 	case core.Topic("AddQuotaToken(address)"):
 		mdl.addToken(blockNum, common.BytesToAddress(txLog.Topics[1][:]).Hex())
 	case core.Topic("UpdateQuota(address,address,int96)"):
-		updateQuota, err := mdl.contract.ParseUpdateQuota(txLog)
-		log.CheckFatal(err)
-		mdl.mgr.AddAccountQuota(blockNum, updateQuota)
+		mdl.mgr.AddAccountQuota(blockNum, txLog)
 	}
 }
 

@@ -17,6 +17,8 @@ delete from pool_stats where  block_num> 18246321;
 delete from pool_ledger where  block_num> 18246321;
 delete from current_debts where block_num > 18246321;  
 delete from liquidable_accounts where block_num> 18246321; -- doesn't matter if it is closed or open
+delete from token_ltramp where block_num> 18246321; 
+delete from quota_details where block_num> 18246321; 
 
 -- a
 update sync_adapters set last_sync = 18246321 where type in ('CreditConfigurator',  'AccountManager','CreditFilter', 'CreditManager', 'Pool') and last_sync > 18246321;
@@ -56,7 +58,10 @@ delete from token_oracle where block_num > 18246321;
 update sync_adapters set last_sync=18246321 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
 update sync_adapters set last_sync=18246321 where type in ('AddressProvider',  'ACL', 'AccountFactory');
 delete from rebase_details where block_num > 18246321;
--- delete from sync_adapters where discovered_at> 18246321;
+
+
+
+update sync_adapters set last_sync=18246321 where type in ('ContractRegister', 'ACL');
 ----
 
 -- sync adapter for treasury is not updated.

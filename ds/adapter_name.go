@@ -57,7 +57,7 @@ const (
 
 func FacadeAccountMethodSigToCallName(funcSig string) string {
 	switch funcSig {
-	// common
+	// common v2/v3
 	case "liquidateCreditAccount":
 		return FacadeLiquidateCall
 	case "closeCreditAccount":

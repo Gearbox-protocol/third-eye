@@ -30,7 +30,7 @@ func NewCMv3FromAdapter(adapter *ds.SyncAdapter) *CMv3 {
 
 	// obj.addProtocolAdaptersLocally()
 	obj.GetAbi()
-	// obj.SetOnChangeFn()
+	obj.SetOnChangeFn()
 
 	obj.setv3AddrIfNotPresent()
 	// credit facade syncer

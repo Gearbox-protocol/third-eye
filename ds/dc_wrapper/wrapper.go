@@ -167,7 +167,7 @@ func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blo
 	return key, dcw.getDCAddr(discoveredAt)
 }
 
-func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType, blockNum int64, creditManager common.Address, borrower common.Address) (
+func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType, blockNum int64, creditManager common.Address, borrower common.Address, account common.Address) (
 	call multicall.Multicall2Call,
 	resultFn func([]byte) (dc.CreditAccountCallData, error),
 	errReturn error) {
@@ -175,7 +175,7 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType,
 	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
 	switch key {
 	case DCV3:
-		data, err := core.GetAbi("DataCompressorv3").Pack("getCreditAccountData", creditManager, borrower)
+		data, err := core.GetAbi("DataCompressorv3").Pack("getCreditAccountData", account, []dcv3.PriceOnDemand{})
 		call, errReturn = multicall.Multicall2Call{
 			Target:   dcAddr,
 			CallData: data,

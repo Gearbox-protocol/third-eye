@@ -87,5 +87,5 @@ func (mdl Cmv3State) GetSessionIdAndBorrower(account string, dontFail ...bool) (
 		log.Info(mdl.whosAccount)
 		log.Fatalf("session id not found for %s cm(%s)\n", account, mdl.Address)
 	}
-	return details.Borrower, details.SessionId
+	return details.SessionId, details.Borrower
 }

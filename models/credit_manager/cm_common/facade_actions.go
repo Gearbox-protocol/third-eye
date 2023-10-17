@@ -66,9 +66,9 @@ func (mdl CommonCMAdapter) updateQuotasWithSessionId(sessionId string, mainCall 
 			//
 			//
 			mdl.Repo.AddAccountOperation(&schemas.AccountOperation{
-				TxHash:      quotaEvent.Raw.TxHash.Hex(),
-				BlockNumber: int64(quotaEvent.Raw.BlockNumber),
-				LogId:       quotaEvent.Raw.Index,
+				TxHash:      quotaEvent.TxHash,
+				BlockNumber: quotaEvent.BlockNumber,
+				LogId:       quotaEvent.Index,
 				// Borrower:    session.Borrower,
 				SessionId:   sessionId,
 				Dapp:        mdl.GetCreditFacadeAddr(),
@@ -166,7 +166,10 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 
 func (mdl CommonCMAdapter) GetExecuteOrderAccountOperationFromParams(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
 	// credit manager has the execute event
-	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash, mdl.Address, executeParams)
+	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash,
+		mdl.Address,
+		executeParams,
+	)
 	for i, call := range calls {
 		params := executeParams[i]
 		// add account operation

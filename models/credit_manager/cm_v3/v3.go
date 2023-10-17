@@ -75,7 +75,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			Borrower:    borrower,
 			Dapp:        txLog.Address.Hex(),
 			LogId:       txLog.TxIndex,
-			Action:      "MultiCallStarted(address)",
+			Action:      "StartMultiCall(address,address)",
 		})
 	case core.Topic("FinishMultiCall()"):
 		mdl.MulticallMgr.End()
@@ -85,14 +85,14 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			log.Fatal("[CreditManagerModel]: Cant unpack IncreaseBorrowedAmount event", err)
 		}
 		mdl.onIncreaseBorrowedAmountV3(&txLog, increaseBorrowEvent.CreditAccount.Hex(),
-			increaseBorrowEvent.Amount, "IncreaseBorrowedAmount")
+			increaseBorrowEvent.Amount, "IncreaseDebt")
 	case core.Topic("DecreaseDebt(address,uint256)"):
 		decreaseBorrowEvent, err := mdl.facadeContractv3.ParseDecreaseDebt(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack DecreaseBorrowedAmount event", err)
 		}
 		mdl.onIncreaseBorrowedAmountV3(&txLog, decreaseBorrowEvent.CreditAccount.Hex(),
-			new(big.Int).Neg(decreaseBorrowEvent.Amount), "DecreaseBorrowedAmount")
+			new(big.Int).Neg(decreaseBorrowEvent.Amount), "DecreaseDebt")
 	case core.Topic("SetCreditConfigurator(address)"): // on credit manager
 		newConfigurator := utils.ChecksumAddr(txLog.Topics[1].Hex())
 		oldConfigurator := mdl.GetDetailsByKey("configurator")

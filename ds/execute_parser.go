@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -59,6 +60,12 @@ func (f FacadeCallNameWithMulticall) LenOfMulticalls() int {
 // handles revertIflessthan case where event is not emitted.
 // also handles cases where number of execute order events emitted is less than execute calls
 func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(version core.VersionType, events []*schemas.AccountOperation) bool {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Fatal(err, f, utils.ToJson(events))
+		}
+	}()
+
 	if f.TestLen != 0 {
 		return f.TestLen == len(events)
 	}
@@ -76,24 +83,25 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 	callInd := 0
 	callLen := len(f.multiCalls)
 	eventLen := len(events)
-	for callInd < callLen && (eventLen == 0 || eventInd < eventLen) {
+	for callInd < callLen || eventInd < eventLen {
 		multiCall := f.multiCalls[callInd]
 		sig := hex.EncodeToString(multiCall.CallData[:4])
 		switch sig {
-		case "59781034": // add collateral
+		case "59781034", // add collateral
+			"6d75b9ee": // add collateral extended 2.2
 			if events[eventInd].Action != "AddCollateral(address,address,uint256)" {
 				return false
 			}
 			eventInd++
 			callInd++
 		case "2b7c7b11": // increase debt
-			if events[eventInd].Action != "IncreaseBorrowedAmount(address,uint256)" {
+			if events[eventInd].Action != "IncreaseDebt(address,uint256)" {
 				return false
 			}
 			eventInd++
 			callInd++
 		case "2a7ba1f7": // decrease debt
-			if events[eventInd].Action != "DecreaseBorrowedAmount(address,uint256)" {
+			if events[eventInd].Action != "DecreaseDebt(address,uint256)" {
 				return false
 			}
 			eventInd++
@@ -112,6 +120,8 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 			callInd++
 		case "81314b59": // revert if less than // ignore for event
 			callInd++
+		case "82ff942c": //  TODO
+			callInd++
 		case "6631d161": // payBot
 			callInd++
 		case "0768bbfe": // setFullCheckParams
@@ -124,7 +134,7 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 			callInd++
 		case "a6181cb0": // onDemandPriceUpdate
 			callInd++
-		default: //execute order
+		default: //execute
 			// it might happen that some of the execution call are not executed so len of provided multicalls will be more than executed calls.
 			executeEvent := 0
 			for eventInd < len(events) && events[eventInd].Action == "ExecuteOrder" {
@@ -132,8 +142,10 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 				eventInd++
 			}
 			executeCall := 0
-			for callInd < callLen && !utils.Contains([]string{"59781034", "2b7c7b11", "2a7ba1f7", "c690908a", "23e27a64",
-				"81314b59", "6631d161", "0768bbfe", "565a820d", "384f69fa", "712c10ad", "a6181cb0"},
+			for callInd < callLen && !utils.Contains([]string{
+				"59781034", "6d75b9ee", "2b7c7b11", "2a7ba1f7", "c690908a", "23e27a64", "81314b59",
+				"82ff942c", // TODO find the corresponding eventId
+				"6631d161", "0768bbfe", "565a820d", "384f69fa", "712c10ad", "a6181cb0"},
 				hex.EncodeToString(f.multiCalls[callInd].CallData[:4])) {
 				executeCall++
 				callInd++
@@ -159,13 +171,8 @@ func (f *FacadeCallNameWithMulticall) v2(events []*schemas.AccountOperation) boo
 		multiCall := f.multiCalls[callInd]
 		sig := hex.EncodeToString(multiCall.CallData[:4])
 		switch sig {
-		case "59781034": // add collateral,
-			if events[eventInd].Action != "AddCollateral(address,address,uint256)" {
-				return false
-			}
-			eventInd++
-			callInd++
-		case "6d75b9ee": // add collateral extended 2.2
+		case "59781034", // add collateral,
+			"6d75b9ee": // add collateral extended 2.2
 			if events[eventInd].Action != "AddCollateral(address,address,uint256)" {
 				return false
 			}

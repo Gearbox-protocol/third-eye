@@ -7,22 +7,40 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolQuotaKeeperv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type AccountQuotaMgr struct {
 	mu sync.Mutex
 	// so that credit manager can create latest quota update event
-	events map[string][]*poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota
+	events   map[string][]*updateQuotaEvent
+	contract *poolQuotaKeeperv3.PoolQuotaKeeperv3
 }
 
-func NewAccountQuotaMgr() *AccountQuotaMgr {
+type updateQuotaEvent struct {
+	CreditAccount common.Address
+	Token         common.Address
+	QuotaChange   *big.Int
+	TxHash        string
+	Index         uint
+	BlockNumber   int64
+}
+
+func NewAccountQuotaMgr(client core.ClientI) *AccountQuotaMgr {
 	return &AccountQuotaMgr{
-		events: map[string][]*poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota{},
+		contract: func() *poolQuotaKeeperv3.PoolQuotaKeeperv3 {
+			contract, err := poolQuotaKeeperv3.NewPoolQuotaKeeperv3(core.NULL_ADDR, client)
+			log.CheckFatal(err)
+			return contract
+		}(),
+		events: map[string][]*updateQuotaEvent{},
 	}
 }
 
-func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota {
+func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *updateQuotaEvent {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	l := len(mdl.events[account])
@@ -35,27 +53,40 @@ func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *poolQ
 	}
 }
 
+func (mdl *AccountQuotaMgr) getUpdateQuotaEvent(txLog types.Log) *updateQuotaEvent {
+	updateQuota, err := mdl.contract.ParseUpdateQuota(txLog)
+	log.CheckFatal(err)
+	return &updateQuotaEvent{
+		CreditAccount: updateQuota.CreditAccount,
+		Token:         updateQuota.Token,
+		QuotaChange:   updateQuota.QuotaChange,
+		TxHash:        txLog.TxHash.Hex(),
+		Index:         txLog.TxIndex,
+		BlockNumber:   int64(txLog.BlockNumber),
+	}
+}
 func (mdl *AccountQuotaMgr) AddAccountQuota(blockNum int64,
-	updateQuota *poolQuotaKeeperv3.PoolQuotaKeeperv3UpdateQuota) {
+	txLog types.Log) {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	//
+	updateQuota := mdl.getUpdateQuotaEvent(txLog)
 	account := updateQuota.CreditAccount.Hex()
 	mdl.events[account] = append(mdl.events[account], updateQuota)
 }
 
 // utils
 
-func GetQuotaIndexCurrent(currentTs uint64, prevDetails *schemas_v3.QuotaDetails) *core.BigInt {
-	prevCumIndex := prevDetails.CumQuotaIndex.Convert()
+// func GetQuotaIndexCurrent(currentTs uint64, prevDetails *schemas_v3.QuotaDetails) *core.BigInt {
+// 	prevCumIndex := prevDetails.CumQuotaIndex.Convert()
 
-	interestInPeriod := func() *big.Int {
-		rayByPrecent := utils.GetExpInt(27 - 4)
-		interestInYear := new(big.Int).Mul(rayByPrecent, big.NewInt(int64(currentTs-prevDetails.Timestamp)*int64(prevDetails.Rate)))
-		return new(big.Int).Quo(interestInYear, big.NewInt(365*24*60*60))
-	}()
-	return (*core.BigInt)(new(big.Int).Add(interestInPeriod, prevCumIndex))
-}
+// 	interestInPeriod := func() *big.Int {
+// 		rayByPrecent := utils.GetExpInt(27 - 4)
+// 		interestInYear := new(big.Int).Mul(rayByPrecent, big.NewInt(int64(currentTs-prevDetails.Timestamp)*int64(prevDetails.Rate)))
+// 		return new(big.Int).Quo(interestInYear, big.NewInt(core.SECONDS_PER_YEAR))
+// 	}()
+// 	return (*core.BigInt)(new(big.Int).Add(interestInPeriod, prevCumIndex))
+// }
 
 func GetQuotaInterest(oldCum, newCum, quoted *core.BigInt) *big.Int {
 	cumDiff := new(big.Int).Sub(newCum.Convert(), oldCum.Convert())

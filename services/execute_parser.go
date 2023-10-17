@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacadev3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -37,18 +38,17 @@ type ExecuteParser struct {
 
 func getCMEventIds() map[common.Hash]bool {
 	ids := map[common.Hash]bool{}
-	if abiObj, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI)); err == nil {
-		for _, event := range abiObj.Events {
-			ids[event.ID] = true
-		}
-	}
-	if abiObj, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
-		for _, event := range abiObj.Events {
-			ids[event.ID] = true
+	for _, contractABI := range []string{creditManager.CreditManagerABI, // v1 has ExecuteOrder event which has same sig as  v2'ExecuteOrder and so we are able to separate transfer in  batches for ExecuteOrder
+		creditFacade.CreditFacadeABI, creditFacadev3.CreditFacadev3ABI} {
+		if abiObj, err := abi.JSON(strings.NewReader(contractABI)); err == nil {
+			for _, event := range abiObj.Events {
+				ids[event.ID] = true
+			}
 		}
 	}
 	return ids
 }
+
 func NewExecuteParser(cfg *config.Config, client core.ClientI) ds.ExecuteParserI {
 	return &ExecuteParser{
 		IgnoreCMEventIds: getCMEventIds(),
@@ -61,7 +61,9 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 		return nil
 	}
 	trace := ep.GetTxTrace(txHash, true)
-	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
+	filter := ExecuteFilter{paramsList: paramsList,
+		creditManager: common.HexToAddress(creditManagerAddr),
+	}
 	calls := filter.getExecuteCalls(trace.CallTrace)
 
 	executeTransfers := filter.getExecuteTransfers(trace.Logs, ep.IgnoreCMEventIds)

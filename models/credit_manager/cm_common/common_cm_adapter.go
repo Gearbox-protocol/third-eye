@@ -125,7 +125,9 @@ func (mdl CommonCMAdapter) CloseAccount(sessionID string, blockNum int64, txHash
 
 func (mdl CommonCMAdapter) SaveExecuteEvents(lastTxHash string, executeParams []ds.ExecuteParams) {
 	// credit manager has the execute event
-	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(lastTxHash, mdl.Address, executeParams)
+	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(lastTxHash,
+		mdl.Address,
+		executeParams)
 
 	for i, call := range calls {
 		params := executeParams[i]

@@ -46,10 +46,10 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionType, blockNum int64, successRequired bool, tokenAddrs, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
 	// base case
 	if oracle == "" {
-		for _ = range tokenAddrs {
+		for range tokenAddrs {
 			prices = append(prices, new(big.Int))
 		}
-		for _ = range poolForDieselRate {
+		for range poolForDieselRate {
 			dieselRates = append(dieselRates, new(big.Int))
 		}
 		return
@@ -59,7 +59,7 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionTy
 	calls := make([]multicall.Multicall2Call, 0, len(tokenAddrs)+len(poolForDieselRate))
 	if version.Eq(1) {
 		calls = append(calls, v1PriceCalls(common.HexToAddress(oracle), tokenAddrs, repo.tokens)...)
-	} else if version.Eq(2) {
+	} else if version.IsPriceInUSD() {
 		calls = append(calls, v2PriceCalls(common.HexToAddress(oracle), tokenAddrs)...)
 	}
 	calls = append(calls, dieselCalls(poolForDieselRate)...)
@@ -70,7 +70,7 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionTy
 	// parse result
 	if version.Eq(1) {
 		prices = v1PriceAnswers(result[:len(tokenAddrs)])
-	} else if version.Eq(2) {
+	} else if version.IsPriceInUSD() {
 		prices = v2PriceAnswers(result[:len(tokenAddrs)])
 	}
 	dieselRates = dieselAnswers(result[len(tokenAddrs):])

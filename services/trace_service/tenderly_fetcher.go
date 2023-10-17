@@ -15,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-//
 type Call struct {
 	From     string  `json:"from"`
 	To       string  `json:"to"`
@@ -127,10 +126,15 @@ func NewInternalFetcher(cfg *config.Config, client core.ClientI) InternalFetcher
 	return fetcher
 }
 
+const alchemyTraceTransactionExpectedErr = "invalid argument 0: hex string has length 0, want 64 for common.Hash"
+const anvilTraceTransactionExpectedErr = "invalid length 0, expected a (both 0x-prefixed or not) hex string or byte array containing 32 bytes"
+
 func (ep InternalFetcher) check() {
 	if !ep.useTenderlyTrace {
 		_, err := ep.parityFetcher.getData("")
-		if err != nil && !strings.Contains(err.Error(), "invalid argument 0: hex string has length 0, want 64 for common.Hash") {
+		if err != nil &&
+			!strings.Contains(err.Error(), alchemyTraceTransactionExpectedErr) && // on alchemy
+			!strings.Contains(err.Error(), anvilTraceTransactionExpectedErr) { // on anvil
 			log.CheckFatal(err)
 		}
 	}

@@ -26,7 +26,7 @@ func NewTxLogger(client core.ClientI, storeLen int64) TxLogger {
 	}
 }
 
-// works only for logs of a txHash which has executeOrder or closeCreditAccount in them
+// works only for logs of a txHash which has executeOrder or execute or closeCreditAccount in them
 func (m *TxLogger) GetLogs(blockNum int, txHash string) []Log {
 	if m.store[blockNum] == nil || m.store[blockNum][txHash] == nil {
 		m.nums = insertInSlice(m.nums, int(blockNum))
@@ -47,6 +47,9 @@ type operator struct {
 	storeCurTxHash bool
 }
 
+// it fetches all logs for a block,
+// filter all tx that have logs which are atleast one of Execute, ExecuteOrder or CloseCreditAccount
+// then it returns a map of txHash to logs
 func (m TxLogger) fetchLogs(blockNum int64) map[string][]Log {
 	//
 	txLogs, err := m.node.GetLogs(blockNum, blockNum, nil, nil)
@@ -71,6 +74,7 @@ func (m TxLogger) fetchLogs(blockNum int64) map[string][]Log {
 		logStore[newTxHash] = append(logStore[newTxHash], formattedLog)
 		//
 		valid := len(txLog.Topics) > 0 && (txLog.Topics[0] == core.Topic("ExecuteOrder(address,address)") || // executeOrder
+			txLog.Topics[0] == core.Topic("Execute(address,address)") || // executeOrder
 			txLog.Topics[0] == core.Topic("CloseCreditAccount(address,address)")) // close v2
 		op.storeCurTxHash = op.storeCurTxHash || valid
 	}

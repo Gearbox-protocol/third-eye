@@ -44,7 +44,9 @@ func (ef *ExecuteFilter) getExecuteCalls(call *trace_service.Call) []*ds.KnownCa
 	ep := ef.paramsList[ef.paramsIndex]
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		// Execute call on credit manager
-		if ef.creditManager == common.HexToAddress(call.To) && len(call.Input) >= 10 && call.Input[:10] == "0x6ce4074a" {
+		if len(call.Input) >= 10 && (                                                            //
+		(ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x6ce4074a") || // for v1 and for v2
+			(ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x09c5eabe")) { // for v3
 			dappcall := dappCall(call, ep.Protocol)
 			// this check is there as there are 2 executeOrder call in
 			// https://kovan.etherscan.io/tx/0x9aeb9ccfb3e100c3c9e6ed5a140784e910a962be36e15f244938645b21c48a96
@@ -99,7 +101,10 @@ func (ef *ExecuteFilter) getExecuteTransfers(txLogs []trace_service.Log, cmEvent
 			parsingTransfer = false
 		}
 		// ExecuteOrder
-		if eventSig == core.Topic("ExecuteOrder(address,address)") {
+		if utils.Contains([]common.Hash{
+			core.Topic("ExecuteOrder(address,address)"),
+			core.Topic("Execute(address,address)"),
+		}, eventSig) {
 			paramsIndex += 1
 			balances = make(core.Transfers)
 			parsingTransfer = true
