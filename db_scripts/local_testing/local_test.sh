@@ -1,10 +1,12 @@
+set -e 
+
 MAINNET_IP=$1
 PROXY_IP=$2
-SUERPUSER=$3
+SUPERUSER=$3
 
 FORK_BLOCK=`jq .forkBlock < <(curl https://anvil.gearbox.foundation/forks/432945bc-3620-11ee-be56-0242ac120002  )`
 
-if [ $PROXY_IP = '' ]; then 
+if [ "$PROXY_IP" = '' ]; then 
     ssh -t debian@$MAINNET_IP "bash /home/debian/db_copy.sh"
     scp debian@$MAINNET_IP:/tmp/db.sql /tmp/db.sql
 else 
@@ -18,17 +20,17 @@ if [ "$SUPERUSER" = "postgres" ]; then
 fi
 
 
-TDB="postgres://harshjain@localhost:5432/sample?sslmode=disable"
-psql -U $SUERPUSER -d postgres -c 'drop database sample'
-psql -U $SUERPUSER -d postgres -c 'create database sample'
-psql -U $SUERPUSER -d sample < /tmp/db.sql
-psql -U $SUERPUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
+TDB="postgres://$SUPERUSER@localhost:5432/sample?sslmode=disable"
+psql -U $SUPERUSER -d postgres -c 'drop database sample'
+psql -U $SUPERUSER -d postgres -c 'create database sample'
+psql -U $SUPERUSER -d sample < /tmp/db.sql
+psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
 migrate -path ./migrations/ -database "$TDB" up
 
 
-psql -U harshjain -d sample < <(cat db_scripts/local_testing/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
-psql -U $SUERPUSER -d postgres -c 'drop database tmp_sample'
-createdb -O harshjain -T sample tmp_sample
+psql -U $SUPERUSER -d sample < <(cat db_scripts/local_testing/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
+psql -U $SUPERUSER -d postgres -c 'drop database tmp_sample'
+createdb -O $SUPERUSER -T sample tmp_sample
 
 # create user sample with encrypted password '123Sample';
 # GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sample;
