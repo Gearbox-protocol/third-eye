@@ -20,16 +20,26 @@ if [ "$SUPERUSER" = "postgres" ]; then
 fi
 
 
-TDB="postgres://$SUPERUSER@localhost:5432/sample?sslmode=disable"
+if [ "$SUPERUSER" =  "debian" ]; then
+    export TDB="postgres://$SUPERUSER:123Sample@localhost:5432/sample?sslmode=disable"
+else 
+    export TDB="postgres://$SUPERUSER@localhost:5432/sample?sslmode=disable"
+fi
+
+set +e
 psql -U $SUPERUSER -d postgres -c 'drop database sample'
 psql -U $SUPERUSER -d postgres -c 'create database sample'
 psql -U $SUPERUSER -d sample < /tmp/db.sql
+set -e 
+
 psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
 migrate -path ./migrations/ -database "$TDB" up
 
 
 psql -U $SUPERUSER -d sample < <(cat db_scripts/local_testing/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
+set -e
 psql -U $SUPERUSER -d postgres -c 'drop database tmp_sample'
+set +e
 createdb -O $SUPERUSER -T sample tmp_sample
 
 # create user sample with encrypted password '123Sample';
