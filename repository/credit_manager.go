@@ -3,9 +3,11 @@ package repository
 import (
 	"reflect"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v3"
 )
 
 func (repo *Repository) loadCreditManagers() {
@@ -42,18 +44,44 @@ func (repo *Repository) loadParametersToCM() {
 
 func (repo *Repository) loadSessionIdToBorrower() {
 	data := []*schemas.CreditSession{}
-	err := repo.db.Raw(`SELECT credit_manager, id, borrower FROM credit_sessions where status=0;`).Find(&data).Error
+	err := repo.db.Raw(`SELECT credit_manager, id, borrower, account, version FROM credit_sessions where status=0;`).Find(&data).Error
 	log.CheckFatal(err)
+
+	// v1,v2
 	borrowerToSession := map[string]map[string]string{}
 	for _, cs := range data {
-		hstore := borrowerToSession[cs.CreditManager]
-		if hstore == nil {
-			borrowerToSession[cs.CreditManager] = map[string]string{}
-			hstore = borrowerToSession[cs.CreditManager]
+		if cs.Version != core.NewVersion(300) {
+			hstore := borrowerToSession[cs.CreditManager]
+			if hstore == nil {
+				borrowerToSession[cs.CreditManager] = map[string]string{}
+				hstore = borrowerToSession[cs.CreditManager]
+			}
+			hstore[cs.Borrower] = cs.ID
 		}
-		hstore[cs.Borrower] = cs.ID
 	}
 	for cm, hstore := range borrowerToSession {
+		adapter := repo.GetAdapter(cm)
+		if adapter != nil && adapter.GetName() == "CreditManager" {
+			adapter.SetUnderlyingState(hstore)
+		}
+	}
+
+	// v3
+	accountToDetails := map[string]map[string]cm_v3.AccountOwner{}
+	for _, cs := range data {
+		if cs.Version == core.NewVersion(300) {
+			hstore := accountToDetails[cs.CreditManager]
+			if hstore == nil {
+				accountToDetails[cs.CreditManager] = map[string]cm_v3.AccountOwner{}
+				hstore = accountToDetails[cs.CreditManager]
+			}
+			hstore[cs.Account] = cm_v3.AccountOwner{
+				Borrower:  cs.Borrower,
+				SessionId: cs.ID,
+			}
+		}
+	}
+	for cm, hstore := range accountToDetails {
 		adapter := repo.GetAdapter(cm)
 		if adapter != nil && adapter.GetName() == "CreditManager" {
 			adapter.SetUnderlyingState(hstore)

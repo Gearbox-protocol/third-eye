@@ -1,5 +1,6 @@
 set -e 
 
+PARENT_DIR=$(dirname $0)
 MAINNET_IP=$1
 PROXY_IP=$2
 SUPERUSER=$3
@@ -33,11 +34,11 @@ psql -U $SUPERUSER -d sample < /tmp/db.sql
 set -e 
 
 # psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
-psql -U $SUPERUSER -d sample < migrations/000016_rankings.up.sql
+psql -U $SUPERUSER -d sample < $PARENT_DIR/../../migrations/000016_rankings.up.sql
 migrate -path ./migrations/ -database "$TDB" up
 
 
-psql -U $SUPERUSER -d sample < <(cat db_scripts/local_testing/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
+psql -U $SUPERUSER -d sample < <(cat $PARENT_DIR/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
 set -e
 psql -U $SUPERUSER -d postgres -c 'drop database tmp_sample'
 set +e

@@ -23,6 +23,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
+	"github.com/Gearbox-protocol/third-eye/models/pool_quota_keeper"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
@@ -125,6 +126,8 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 		return account_factory.NewAccountFactoryFromAdapter(adapter)
 	case ds.Pool:
 		return pool.NewPoolFromAdapter(adapter)
+	case ds.PoolQuotaKeeper:
+		return pool_quota_keeper.NewPoolQuotaKeeperFromAdapter(adapter)
 	case ds.CreditManager:
 		return credit_manager.NewCMFromAdapter(adapter)
 	case ds.PriceOracle:
