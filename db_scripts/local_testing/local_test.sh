@@ -35,7 +35,7 @@ set -e
 
 # psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
 psql -U $SUPERUSER -d sample < $PARENT_DIR/../../migrations/000016_rankings.up.sql
-migrate -path ./migrations/ -database "$TDB" up
+migrate -path $PARENT_DIR/../../migrations/ -database "$TDB" up
 
 
 psql -U $SUPERUSER -d sample < <(cat $PARENT_DIR/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
