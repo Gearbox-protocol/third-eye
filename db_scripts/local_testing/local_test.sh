@@ -1,7 +1,8 @@
 MAINNET_IP=$1
 PROXY_IP=$2
 SUERPUSER=$3
-BLOCK_NUM=$4
+
+FORK_BLOCK=`jq .forkBlock < <(curl https://anvil.gearbox.foundation/forks/432945bc-3620-11ee-be56-0242ac120002  )`
 
 if [ $PROXY_IP = '' ]; then 
     ssh -t debian@$MAINNET_IP "bash /home/debian/db_copy.sh"
@@ -12,7 +13,9 @@ else
     scp root@$PROXY_IP:/tmp/db.sql /tmp/db.sql
 fi
 
-
+if [ "$SUPERUSER" = "postgres" ]; then
+    sudo su postgres
+fi
 
 
 TDB="postgres://harshjain@localhost:5432/sample?sslmode=disable"
@@ -23,7 +26,7 @@ psql -U $SUERPUSER -d sample < db_scripts/local_testing/missing_table_from_downl
 migrate -path ./migrations/ -database "$TDB" up
 
 
-psql -U harshjain -d sample < <(cat db_scripts/local_testing/reset_to_blocknum.sql | sed "s/18246321/$BLOCK_NUM/" )
+psql -U harshjain -d sample < <(cat db_scripts/local_testing/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
 psql -U $SUERPUSER -d postgres -c 'drop database tmp_sample'
 createdb -O harshjain -T sample tmp_sample
 
