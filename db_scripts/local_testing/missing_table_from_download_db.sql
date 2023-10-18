@@ -37,6 +37,10 @@ CREATE TABLE current_debts (
     profit_underlying DOUBLE PRECISION,
     collateral_usd DOUBLE PRECISION,
     collateral_underlying DOUBLE PRECISION,
+    --
+    total_value_usd double precision,
+    tf_index double precision,
+    --
     repay_amount DOUBLE PRECISION,
     repay_amount_bi varchar(80));
 

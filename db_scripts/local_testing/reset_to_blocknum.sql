@@ -4,6 +4,7 @@ delete from allowed_tokens where block_num>18246321;
 delete from credit_manager_stats where block_num>18246321;
 delete from credit_session_snapshots where block_num>18246321;
 delete from dao_operations where block_num> 18246321;
+delete from blocks where id > 18246321;
 
 
 delete from debts where block_num> 18246321;
@@ -62,6 +63,9 @@ delete from rebase_details where block_num > 18246321;
 
 
 update sync_adapters set last_sync=18246321 where type in ('ContractRegister', 'ACL');
+delete from debts where block_num > 18246321;
+delete from current_debts where block_num > 18246321;
+update debt_sync set last_calculated_at=18246321;
 ----
 
 -- sync adapter for treasury is not updated.

@@ -32,7 +32,8 @@ psql -U $SUPERUSER -d postgres -c 'create database sample'
 psql -U $SUPERUSER -d sample < /tmp/db.sql
 set -e 
 
-psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
+# psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
+psql -U $SUPERUSER -d sample < migrations/000016_rankings.up.sql
 migrate -path ./migrations/ -database "$TDB" up
 
 
