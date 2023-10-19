@@ -42,7 +42,7 @@ func (mdl *Poolv3) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, 
 	}
 	return call, func(result multicall.Multicall2Result) {
 		if !result.Success {
-			log.Fatal("[PoolService] Cant process result for data compressor", err)
+			log.Fatal("[PoolService] Cant process result for data compressor")
 		}
 		poolState, err := resultFn(result.ReturnData)
 		if err != nil {
