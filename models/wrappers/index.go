@@ -269,13 +269,14 @@ func (w *SyncWrapper) GetAllAddrsForLogs() (addrs []common.Address) {
 	return
 }
 
-func (s SyncWrapper) AfterSyncHook(syncTill int64) {
+func (s *SyncWrapper) AfterSyncHook(syncTill int64) {
 	adapters := s.Adapters.GetAll()
 	for _, cf := range adapters {
 		if !cf.IsDisabled() {
 			cf.AfterSyncHook(syncTill)
 		}
 	}
+	s.lastSync = syncTill
 }
 
 func (s *SyncWrapper) WillBeSyncedTo(blockNum int64) {
