@@ -24,6 +24,9 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 	if currency != "USDC" {
 		currencyAddr = common.HexToAddress(currency)
 	}
+	if currencyAddr.Hex() == token {
+		return amount
+	}
 	if version.IsGBv1() {
 		poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
 		log.CheckFatal(err)
