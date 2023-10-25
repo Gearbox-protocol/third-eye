@@ -336,7 +336,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	//
 	// calculating account fields
 	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
-	calHF, calDebt, calTotalValue, calThresholdValue, _calBorowedWithInterst := calculator.CalcAccountFields(
+	calHF, calTotalValue, calThresholdValue, debtDetails := calculator.CalcAccountFields(
 		eng.currentTs,
 		blockNum,
 		poolDetailsForCalc{
@@ -365,11 +365,10 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			CalHealthFactor: (*core.BigInt)(calHF),
 			CalTotalValueBI: (*core.BigInt)(calTotalValue),
 			// it has fees too for v2
-			CalDebtBI: (*core.BigInt)(calDebt),
+			CalDebtBI: (*core.BigInt)(debtDetails.Total()),
 			// used for calculating the close amount and for comparing with data compressor results as v2 doesn't have borrowedAmountWithInterest
-			CalBorrowedWithInterestBI: (*core.BigInt)(_calBorowedWithInterst),
-			CalThresholdValueBI:       (*core.BigInt)(calThresholdValue),
-			CollateralInUnderlying:    sessionSnapshot.CollateralInUnderlying,
+			CalThresholdValueBI:    (*core.BigInt)(calThresholdValue),
+			CollateralInUnderlying: sessionSnapshot.CollateralInUnderlying,
 		},
 		SessionId: sessionId,
 	}
@@ -396,7 +395,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		// set debt data fetched from dc
 		// if healthfactor on diff
 		if !CompareBalance(debt.CalTotalValueBI, (*core.BigInt)(data.TotalValue), cumIndexAndUToken) ||
-			!CompareBalance(debt.CalBorrowedWithInterestBI, (*core.BigInt)(data.BorrowedAmountPlusInterest), cumIndexAndUToken) ||
+			!CompareBalance(debt.CalDebtBI, (*core.BigInt)(data.Debt), cumIndexAndUToken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, (*core.BigInt)(data.HealthFactor)) {
 			profile.DCData = &data
 			notMatched = true
@@ -413,7 +412,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			notMatched = true
 		}
 	}
-	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken)
+	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken, debtDetails)
 	eng.farmingCalc.addFarmingVal(debt, session, eng.lastCSS[session.ID], storeForCalc{inner: eng})
 	if notMatched {
 		profile.CumIndexAndUToken = cumIndexAndUToken
@@ -449,7 +448,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 // v2 - opened accounts
 //
 //	the account might be having some underlying token balance so repayAMount = amountToPool - underlyingToken balance
-func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
+func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken, debtDetails *calc.DebtDetails) {
 	var amountToPool, calRemainingFunds *big.Int
 	sessionSnapshot := eng.lastCSS[session.ID]
 	//
@@ -460,8 +459,7 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 	// amount to pool
 	amountToPool, calRemainingFunds, _, _ = calc.CalCloseAmount(eng.lastParameters[session.CreditManager],
 		session.Version, debt.CalTotalValueBI.Convert(), status,
-		debt.CalBorrowedWithInterestBI.Convert(),
-		sessionSnapshot.BorrowedAmountBI.Convert())
+		debtDetails)
 
 	// calculate profit
 	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)

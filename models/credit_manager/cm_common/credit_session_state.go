@@ -101,8 +101,11 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	amountToPool, _, _, _ := calc.CalCloseAmount(mdl.params,
 		session.Version, data.TotalValue.Convert(),
 		closeDetails.Status,
-		data.BorrowedAmountPlusInterest.Convert(),
-		data.BorrowedAmount.Convert(),
+		calc.NewDebtDetails(
+			data.Debt.Convert(),
+			data.AccruedInterest.Convert(),
+			data.BorrowedAmount.Convert(),
+		),
 	)
 	// pool repay
 	// check for avoiding db errors

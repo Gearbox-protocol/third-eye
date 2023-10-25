@@ -32,7 +32,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
-			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
+			log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
 		}
 		return usdcAmount
 	} else { // v2 and above
@@ -40,7 +40,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
-			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
+			log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
 		}
 		return usdcAmount
 	}
