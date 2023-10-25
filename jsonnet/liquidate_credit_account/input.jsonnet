@@ -37,7 +37,8 @@ local extraBorrowedAmount = 1000;
             liquidationAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             cumulativeIndexAtOpen: utils.bigInt(1, 27),
             borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
-            borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+            accruedInterest: utils.bigInt(0, 6),
+            debt: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             balances: [{
               token: '#Token_1',
               BI: utils.bigInt(2000, 6),

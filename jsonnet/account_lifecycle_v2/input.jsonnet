@@ -161,7 +161,8 @@ local newCollateral = 1;
             repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             cumulativeIndexAtOpen: utils.bigInt(1, 27),
             borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
-            borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+            accruedInterest: utils.bigInt(0, 6),
+            debt: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             balances: [{
               token: '#Token_1',
               BI: utils.bigInt(6000, 6),
@@ -288,7 +289,8 @@ local newCollateral = 1;
           repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
           borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
-          borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
+          accruedInterest: utils.bigInt(0, 6),
+          debt: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
             BI: utils.bigInt(5500, 6),
@@ -374,7 +376,8 @@ local newCollateral = 1;
           repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
           borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
-          borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
+          accruedInterest: utils.bigInt(0, 6),
+          debt: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
             BI: utils.bigInt(500, 6),
