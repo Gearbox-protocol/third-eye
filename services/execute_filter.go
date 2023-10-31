@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/curveuint256"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
@@ -62,7 +63,7 @@ func (ef *ExecuteFilter) getExecuteCalls(call *trace_service.Call) []*ds.KnownCa
 // this is called after ExecuteOrder event is seen on credit manager for both v1 and v2
 func dappCall(call *trace_service.Call, dappAddr common.Address) *ds.KnownCall {
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) && dappAddr == common.HexToAddress(call.To) {
-		name, arguments := ParseCallData(call.Input)
+		name, arguments := ParseCallData(call.Input, call.To)
 		if arguments == nil {
 			log.Fatalf("%s %#v %#v\n", name, arguments, call)
 		}
@@ -137,6 +138,7 @@ var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdap
 	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI, wstETHv1Adapter.WstETHv1AdapterABI,
 	convexAdapter.ConvexAdapterABI, curveAdapter.CurveAdapterABI,
 	yearnv2Adapter.Yearnv2AdapterABI, universalAdapter.UniversalAdapterABI,
+	curveuint256.Curveuint256ABI,
 }
 
 var abiParsers []abi.ABI
@@ -151,8 +153,8 @@ func init() {
 	}
 }
 
-//https://ethereum.stackexchange.com/questions/29809/how-to-decode-input-data-with-abi-using-golang/100247
-func ParseCallData(input string) (string, *core.Json) {
+// https://ethereum.stackexchange.com/questions/29809/how-to-decode-input-data-with-abi-using-golang/100247
+func ParseCallData(input string, contractAddr string) (string, *core.Json) {
 	hexData, err := hex.DecodeString(input[2:])
 	if err != nil {
 		log.Fatal(err)
@@ -167,7 +169,7 @@ func ParseCallData(input string) (string, *core.Json) {
 		data := map[string]interface{}{}
 		err = method.Inputs.UnpackIntoMap(data, hexData[4:])
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err, "for", contractAddr)
 		}
 		// add order
 		var argNames []interface{}
@@ -178,6 +180,6 @@ func ParseCallData(input string) (string, *core.Json) {
 		jsonData := core.Json(data)
 		return method.Sig, &jsonData
 	}
-	log.Fatal("No method for input: ", input)
+	log.Fatal("No method for input: ", input, " for ", contractAddr)
 	return "", nil
 }
