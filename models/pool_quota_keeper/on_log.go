@@ -16,6 +16,7 @@ func (mdl PoolQuotaKeeper) updateQuotaDetails(blockNum int64, token string, newD
 	if newDetails.Rate != 0 {
 		currentTs := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
 		details.CumQuotaIndex = (*core.BigInt)(details.GetCumulativeIndexAt(currentTs))
+		// update rates and ts later
 		details.Timestamp = currentTs
 		details.Rate = newDetails.Rate
 	}
