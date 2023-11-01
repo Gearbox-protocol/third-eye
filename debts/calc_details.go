@@ -10,6 +10,7 @@ import (
 )
 
 type sessionDetailsForCalc struct {
+	addr string
 	*schemas.CreditSessionSnapshot
 	CM            string
 	rebaseDetails *schemas.RebaseDetailsForDB
@@ -17,6 +18,10 @@ type sessionDetailsForCalc struct {
 	// for v3
 	forQuotas v3DebtDetails
 	version   core.VersionType
+}
+
+func (s sessionDetailsForCalc) GetAddr() string {
+	return s.addr
 }
 
 func (s sessionDetailsForCalc) GetCM() string {

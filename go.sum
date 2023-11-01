@@ -43,10 +43,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20231025152649-9d89bc0f48e4 h1:gFdMmTGztRI5/5DM9KDwWM9e4kmewvGO/AIdNkm2X9s=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20231025152649-9d89bc0f48e4/go.mod h1:GniLx/DU7tCT+QSlKt9REqUaF748X8rbDNR4vAd1m+Y=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20231025225115-8d4a2441af5f h1:wCwnH7Utfpr6wR2FlEUK6kZoD4JR5pB9lJnWG1CBi78=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20231025225115-8d4a2441af5f/go.mod h1:GniLx/DU7tCT+QSlKt9REqUaF748X8rbDNR4vAd1m+Y=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20231101103406-a83e0672aac3 h1:GB8FojQ3jHTtMI6JG2ldhVY+uId2EhR1gcRLoW69yoY=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20231101103406-a83e0672aac3/go.mod h1:GniLx/DU7tCT+QSlKt9REqUaF748X8rbDNR4vAd1m+Y=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=

@@ -344,6 +344,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			forQuotas:         eng.v3DebtDetails,
 		},
 		sessionDetailsForCalc{
+			addr:                  session.Account,
 			CreditSessionSnapshot: sessionSnapshot,
 			CM:                    session.CreditManager,
 			rebaseDetails:         eng.lastRebaseDetails,
