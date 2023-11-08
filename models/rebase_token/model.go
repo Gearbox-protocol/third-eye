@@ -139,6 +139,5 @@ func (mdl *RebaseToken) SetUnderlyingState(state interface{}) {
 	switch v := state.(type) {
 	case *schemas.RebaseDetailsForDB:
 		mdl.prevRatio = getETHToSharesRatio(v)
-		log.Info(mdl.prevRatio)
 	}
 }

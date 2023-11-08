@@ -41,7 +41,7 @@ func (eng *v3DebtDetails) loadPoolQuotaDetails(lastDebtSync int64, db *gorm.DB) 
 	data := []*schemas_v3.QuotaDetails{}
 	query := `SELECT DISTINCT ON (token, pool) * FROM quota_details qd WHERE 
 		block_num <=? 
-		ORDER by token, session_id, block_num desc`
+		ORDER by token, pool, block_num desc`
 	err := db.Raw(query, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)

@@ -1,5 +1,8 @@
 alter table pool_ledger add shares integer, add shares_bi varchar(80), add executor varchar(42), add receiver varchar(42);
 
+-- incresae size of the token symbol in diesel_transfers
+alter table diesel_transfers ALTER COLUMN token_sym TYPE varchar(40);
+
 create table quota_details (
     block_num integer,
     pool_quota_keeper varchar(42),
