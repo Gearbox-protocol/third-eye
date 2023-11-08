@@ -16,38 +16,43 @@ import (
 )
 
 type OrderedMap struct {
-	m    map[string]ds.SyncAdapterI
-	allM map[string]ds.SyncAdapterI
-	a    []ds.SyncAdapterI
+	// this is exposed via get adapter from address
+	mainAddrToAdapter map[string]ds.SyncAdapterI
+	// for eg, cm needs logs on configurator and facade address, so when we get logs on facade they should point to original cm adapter.
+	// this is only used internal not exposed.
+	allAddrToAdapter map[string]ds.SyncAdapterI
+	// only used for getting a array of adapters
+	// used for getting list for saving adapters
+	cachedListOfAdapter []ds.SyncAdapterI
 }
 
 func NewOrderedMap() OrderedMap {
 	return OrderedMap{
-		m:    make(map[string]ds.SyncAdapterI), // adapter by its actual addr, like creditmanager uses cf , cc but it can be fetched only with creditmanager addr from outside
-		allM: make(map[string]ds.SyncAdapterI),
-		a:    make([]ds.SyncAdapterI, 0),
+		mainAddrToAdapter:   make(map[string]ds.SyncAdapterI), // adapter by its actual addr, like creditmanager uses cf , cc but it can be fetched only with creditmanager addr from outside
+		allAddrToAdapter:    make(map[string]ds.SyncAdapterI),
+		cachedListOfAdapter: make([]ds.SyncAdapterI, 0),
 	}
 }
 
 func (x OrderedMap) Get(addr string) ds.SyncAdapterI {
-	return x.m[addr]
+	return x.mainAddrToAdapter[addr]
 }
 func (x OrderedMap) GetFromLogAddr(name string) ds.SyncAdapterI {
-	return x.allM[name]
+	return x.allAddrToAdapter[name]
 }
 func (x *OrderedMap) Add(addr string, allAddrsForAdapter []common.Address, val ds.SyncAdapterI) {
 	// for
-	if x.m[addr] == nil {
-		x.a = append(x.a, val)
+	if x.mainAddrToAdapter[addr] == nil {
+		x.cachedListOfAdapter = append(x.cachedListOfAdapter, val)
 	}
 	for _, addr := range allAddrsForAdapter {
-		x.allM[addr.String()] = val
+		x.allAddrToAdapter[addr.String()] = val
 	}
-	x.m[addr] = val
+	x.mainAddrToAdapter[addr] = val
 }
 
 func (x OrderedMap) GetAll() []ds.SyncAdapterI {
-	return x.a
+	return x.cachedListOfAdapter
 }
 
 // we are creating sync wrappers to wrap , chainlink, creditfilter, credit manager and pools to reduce the number of rpc calls
