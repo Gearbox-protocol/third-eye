@@ -167,14 +167,15 @@ func (eng *DebtEngine) notifiedIfLiquidable(sessionId string, notified bool) {
 
 func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
 	data := schemas.DebtSync{}
-	query := "SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters where disabled=false"
+	query := `SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters 
+	WHERE disabled=false AND type NOT IN ('RebaseToken','Treasury','PoolLMRewards','GearToken')`
 	err := eng.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}
 	val := data.LastCalculatedAt <= 1
 	if !val {
-		log.Warn("DebtEngine disabled acitve adapters are not synchronised")
+		log.Warn("DebtEngine disabled active adapters are not synchronised")
 	}
 	return val
 }
