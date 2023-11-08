@@ -240,7 +240,8 @@ func (s SyncWrapper) onBlockChange(lastBlockNum int64) {
 				calls = append(calls, call)
 			}
 		case *pool_quota_keeper.PoolQuotaKeeper:
-			_ = 1
+			// make all the tokens update to be saved in the db.
+			v.OnBlockChange(lastBlockNum)
 		}
 	}
 	results := core.MakeMultiCall(s.Client, lastBlockNum, false, calls)

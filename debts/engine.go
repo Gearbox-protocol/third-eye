@@ -559,7 +559,7 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version core.VersionType, 
 		} else if eng.repo.GetWETHAddr() == addr {
 			return core.WETHPrice
 		}
-	} else if version.Eq(2) {
+	} else if version.Eq(2) || version.Eq(300) {
 		if eng.tokenLastPriceV2[addr] != nil {
 			return eng.tokenLastPriceV2[addr].PriceBI.Convert()
 		}
