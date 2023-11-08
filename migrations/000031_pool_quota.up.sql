@@ -11,6 +11,7 @@ create table quota_details (
     pool varchar(42),
     cum_quota_index varchar(42),
     --
+    timestamp integer,
     max_limit varchar(80),
     rate integer,
     increase_fee integer,
