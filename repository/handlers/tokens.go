@@ -142,12 +142,13 @@ func (repo *TokensRepo) GetTokens() []string {
 	return tokens
 }
 
-func (repo *TokensRepo) AddDieselToken(dieselToken, underlyingToken, pool string) {
+func (repo *TokensRepo) AddDieselToken(dieselToken, underlyingToken, pool string, version core.VersionType) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	repo.dieselTokens[dieselToken] = &schemas.UTokenAndPool{
-		UToken: underlyingToken,
-		Pool:   pool,
+		UToken:  underlyingToken,
+		Pool:    pool,
+		Version: version,
 	}
 	repo.addToken(dieselToken)
 }

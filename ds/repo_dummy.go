@@ -122,7 +122,7 @@ func (DummyRepo) GetSessions() map[string]*schemas.CreditSession {
 func (DummyRepo) GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int {
 	return nil
 }
-func (DummyRepo) AddDieselToken(dieselToken, underlyingToken, pool string) {
+func (DummyRepo) AddDieselToken(dieselToken, underlyingToken, pool string, version core.VersionType) {
 }
 func (DummyRepo) GetDieselTokens() map[string]*schemas.UTokenAndPool {
 	return nil

@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -13,12 +14,12 @@ import (
 func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
 	priceByToken := core.JsonFloatMap{}
 	var tokenForCalls []string
-	var poolForDieselRate []string
+	var poolForDieselRate []*schemas.UTokenAndPool
 	for _, token := range tokenAddrs {
 		uTokenAndPool := repo.tokens.GetDieselToken(token)
 		if uTokenAndPool != nil {
 			tokenForCalls = append(tokenForCalls, uTokenAndPool.UToken)
-			poolForDieselRate = append(poolForDieselRate, uTokenAndPool.Pool)
+			poolForDieselRate = append(poolForDieselRate, uTokenAndPool)
 		} else {
 			tokenForCalls = append(tokenForCalls, token)
 		}
@@ -43,7 +44,7 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 
 // multicall for getting price in batch
 // For only getting the prices for calculating the treasury value
-func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionType, blockNum int64, successRequired bool, tokenAddrs, poolForDieselRate []string) (prices []*big.Int, dieselRates []*big.Int) {
+func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionType, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []*schemas.UTokenAndPool) (prices []*big.Int, dieselRates []*big.Int) {
 	// base case
 	if oracle == "" {
 		for range tokenAddrs {
