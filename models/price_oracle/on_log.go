@@ -20,7 +20,7 @@ import (
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
-	case core.Topic("NewPriceFeed(address,address)"), core.Topic("NewPriceFeed(address,address,uint32,bool)"):
+	case core.Topic("NewPriceFeed(address,address)"), core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"):
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
 
