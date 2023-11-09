@@ -28,7 +28,7 @@ func (repo *Repository) loadCreditManagers() {
 }
 
 func (repo *Repository) loadParametersToCM() {
-	defer utils.Elapsed("loadCreditManagers")()
+	defer utils.Elapsed("loadParametersToCM")()
 	data := []*schemas.Parameters{}
 	err := repo.db.Raw("SELECT distinct on(credit_manager) * FROM parameters ORDER BY credit_manager, block_num DESC").Find(&data).Error
 	if err != nil {

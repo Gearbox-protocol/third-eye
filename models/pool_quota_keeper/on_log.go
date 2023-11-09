@@ -27,6 +27,7 @@ func (mdl PoolQuotaKeeper) updateQuotaDetails(blockNum int64, token string, newD
 		details.Limit = newDetails.Limit
 	}
 	details.IsDirty = true
+	details.BlockNum = blockNum
 	mdl.quotas[token] = details
 }
 
