@@ -25,7 +25,7 @@ func dieselCalls(poolForDieselRate []*schemas.UTokenAndPool) (calls []multicall.
 		var data []byte
 		// for 300
 		if pool.Version.MoreThanEq(core.NewVersion(300)) {
-			value, err := poolv3ABI.Pack("convertToAssets")
+			value, err := poolv3ABI.Pack("convertToAssets", core.RAY)
 			log.CheckFatal(err)
 			data = value
 		} else { // for v1, v2
