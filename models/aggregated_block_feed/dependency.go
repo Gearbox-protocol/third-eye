@@ -175,6 +175,16 @@ func getDepGraph() map[string][]string {
 		"crvUSDETHCRV":       {"crvUSD", "ETH", "CRV"},
 		"cvxcrvUSDETHCRV":    {"crvUSD", "ETH", "CRV"},
 		"stkcvxcrvUSDETHCRV": {"crvUSD", "ETH", "CRV"},
+
+		// due to v3 compatibility
+		"rETH_f":                  {"ETH"},
+		"cLINK":                   {"LINK"},
+		"sDAI":                    {"DAI"},
+		"YieldETH":                {},
+		"USDC_DAI_USDT":           {},
+		"B_rETH_STABLE":           {},
+		"auraB_rETH_STABLE":       {},
+		"auraB_rETH_STABLE_vault": {},
 	}
 	return depGraph
 }
@@ -193,6 +203,7 @@ func getInvertDependencyGraph(depGraph map[string][]string) map[string][]string 
 func (q *QueryPFDependencies) checkInDepGraph(token, oracle string, blockNum int64) {
 	depQueryPFSym := q.getTokenSym(token)
 	if q.depGraph[depQueryPFSym] == nil {
+		// log.Info(depQueryPFSym, blockNum)
 		log.Fatalf("Dep for query based price feed(%s) not found for token(%s) at %d", oracle, depQueryPFSym, blockNum)
 	}
 }

@@ -41,6 +41,7 @@ func IsWrapperAdapter(name string) bool {
 const (
 	UnknownPF            = "UnknownPF"
 	YearnPF              = "YearnPF"
+	SingleAssetPF        = "SingleAssetPF"
 	CurvePF              = "CurvePF"
 	ZeroPF               = "ZeroPF"
 	CompositeChainlinkPF = "CompositeChainlinkPF"
