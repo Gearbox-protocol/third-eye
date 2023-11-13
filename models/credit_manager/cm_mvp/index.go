@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	mp "github.com/Gearbox-protocol/third-eye/ds/multicall_processor"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -20,7 +21,7 @@ type CmMVP struct {
 
 func NewCMCommon(adapter *ds.SyncAdapter) *CmMVP {
 	return &CmMVP{
-		CommonCMAdapter: cm_common.NewCommonCMAdapter(adapter),
+		CommonCMAdapter: cm_common.NewCommonCMAdapter(adapter, &mp.MultiCallProcessorv2{}),
 		Sessions:        map[string]string{},
 	}
 }

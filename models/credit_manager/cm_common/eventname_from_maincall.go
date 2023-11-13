@@ -44,8 +44,8 @@ func (mdl CommonCMAdapter) getEventNameFromCallv3(mainCallName string, sessionId
 	case ds.FacadeOpenMulticallCall:
 		mdl.SetSessionIsUpdated(sessionId)
 		mainEventFromCall = "OpenCreditAccount(address,address,address,uint256)"
-	case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall:
-		mainEventFromCall = "LiquidateCreditAccount(address,address,address,address,uint,uint256)"
+	case ds.FacadeLiquidateCall:
+		mainEventFromCall = "LiquidateCreditAccount(address,address,address,address,uint256)"
 	case ds.FacadeCloseAccountCall:
 		mainEventFromCall = "CloseCreditAccount(address,address,address)"
 	}

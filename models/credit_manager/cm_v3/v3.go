@@ -27,7 +27,17 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 
 		mdl.onAddCollateralV3(&txLog, addCollateralEvent.CreditAccount.Hex(),
 			addCollateralEvent.Token.Hex(),
-			addCollateralEvent.Value)
+			addCollateralEvent.Amount)
+	case core.Topic("WithdrawCollateral(address,address,uint256,address)"):
+		addCollateralEvent, err := mdl.facadeContractv3.ParseWithdrawCollateral(txLog)
+		if err != nil {
+			log.Fatal("[CreditManagerModel]: Cant unpack AddCollateral event", err)
+		}
+
+		mdl.onWithdrawCollateralV3(&txLog, addCollateralEvent.CreditAccount.Hex(),
+			addCollateralEvent.Token.Hex(),
+			addCollateralEvent.Amount,
+			addCollateralEvent.To.Hex())
 	case core.Topic("OpenCreditAccount(address,address,address,uint256)"):
 		openCreditAccountEvent, err := mdl.facadeContractv3.ParseOpenCreditAccount(txLog)
 		if err != nil {
@@ -44,7 +54,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		}
 		mdl.onCloseCreditAccountV3(&txLog,
 			closeCreditAccountEvent.CreditAccount.Hex(), // borrower not used
-			closeCreditAccountEvent.To.Hex())
+			closeCreditAccountEvent.Borrower.Hex())
 	// for getting correct liquidation status
 	case core.Topic("Paused(address)"):
 		if txLog.Address.Hex() == mdl.Address { // set pause on cm, if Paused event is emitted only on cm address
@@ -54,15 +64,16 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		if txLog.Address.Hex() == mdl.Address { // unset pause on cm, if Unpaused event is emitted only on cm address
 			mdl.State.Paused = false
 		}
-	case core.Topic("LiquidateCreditAccount(address,address,address,address,uint8,uint256)"):
+	case core.Topic("LiquidateCreditAccount(address,address,address,address,uint256)"):
 		liquidateCreditAccountEvent, err := mdl.facadeContractv3.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack LiquidateCreditAccount event", err)
 		}
 		mdl.onLiquidateCreditAccountV3(&txLog,
 			liquidateCreditAccountEvent.CreditAccount.Hex(), // borrower not used
+			liquidateCreditAccountEvent.Liquidator.Hex(),
+			liquidateCreditAccountEvent.Borrower,
 			liquidateCreditAccountEvent.To.Hex(),
-			liquidateCreditAccountEvent.ClosureAction,
 			liquidateCreditAccountEvent.RemainingFunds,
 		)
 	case core.Topic("StartMultiCall(address,address)"):

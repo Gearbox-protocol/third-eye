@@ -23,7 +23,7 @@ import (
 // other calls => closed/liquidated
 func (mdl CommonCMAdapter) ProcessRemainingMultiCalls(version core.VersionType, lastTxHash string, nonMultiCallExecuteEvents []ds.ExecuteParams) {
 
-	facadeActions, openEventWithoutMulticall := mdl.MulticallMgr.PopMainActionsv2()
+	facadeActions, openEventWithoutMulticall := mdl.MulticallMgr.PopMainActions()
 
 	// only for v2/v2.10
 	for _, entry := range openEventWithoutMulticall {
@@ -43,7 +43,7 @@ func (mdl CommonCMAdapter) ProcessRemainingMultiCalls(version core.VersionType, 
 }
 
 func (mdl CommonCMAdapter) ProcessNonMultiCalls() (executeEvents []ds.ExecuteParams) {
-	events := mdl.MulticallMgr.PopNonMulticallEventsV2()
+	events := mdl.MulticallMgr.PopNonMulticallEvents()
 
 	for _, event := range events {
 		switch event.Action {
@@ -56,7 +56,8 @@ func (mdl CommonCMAdapter) ProcessNonMultiCalls() (executeEvents []ds.ExecutePar
 			"DecreaseBorrowedAmount(address,uint256)",
 			// v3
 			"IncreaseDebt(address,uint256)",
-			"DecreaseDebt(address,uint256)":
+			"DecreaseDebt(address,uint256)",
+			"WithdrawCollateral(address,address,uint256,address)":
 			mdl.SetSessionIsUpdated(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":

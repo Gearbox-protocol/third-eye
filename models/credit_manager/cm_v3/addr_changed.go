@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// set facade and contract address if not present
 func (mdl *CMv3) setv3AddrIfNotPresent() {
 	// set credit manager
 	cmContract, err := creditManagerv3.NewCreditManagerv3(common.HexToAddress(mdl.Address), mdl.Client)

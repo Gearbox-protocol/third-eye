@@ -108,7 +108,7 @@ func (mdl *CMv3) onCloseCreditAccountV3(txLog *types.Log, creditAccount, to stri
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil) // update session
 	session.CloseTransfers = &userTransfers
 
-	mdl.MulticallMgr.AddCloseOrLiquidateEvent(accountOperation) // add event to multicall processor
+	mdl.MulticallMgr.AddCloseEvent(accountOperation) // add event to multicall processor
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 
 	mdl.SetSessionIsClosed(sessionId, &cm_common.SessionCloseDetails{ // update closeSession map with session details
@@ -123,9 +123,12 @@ func (mdl *CMv3) onCloseCreditAccountV3(txLog *types.Log, creditAccount, to stri
 	mdl.CloseAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 }
 
-func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liquidator string, closeAction uint8, remainingFunds *big.Int) {
+func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liquidator string, borrower common.Address, remainingUnderlyingSentTo string, remainingFunds *big.Int) {
 	mdl.State.TotalLiquidatedAccounts++
 	sessionId, owner := mdl.GetSessionIdAndBorrower(creditAccount)
+	if owner != borrower.Hex() {
+		log.Fatalf("Stored borrower for account(%s) is different from the one in Liqv3 Event: %s", creditAccount, borrower)
+	}
 	blockNum := int64(txLog.BlockNumber)
 
 	//
@@ -148,17 +151,14 @@ func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liq
 	// add event to multicall processor
 	status := func() int {
 		if mdl.State.Paused {
+			return schemas.LiquidatePaused
+		}
+		if mdl.isExpired(blockNum) {
 			return schemas.LiquidateExpired
 		}
-		if closeAction == 1 {
-			return schemas.Liquidated
-		} else if closeAction == 2 {
-			return schemas.LiquidateExpired
-		}
-		log.Fatal("Wrong status")
-		return 0
+		return schemas.Liquidated
 	}()
-	mdl.MulticallMgr.AddCloseOrLiquidateEvent(accountOperation)
+	mdl.MulticallMgr.AddLiquidateEvent(accountOperation)
 	mdl.SetSessionIsClosed(sessionId, &cm_common.SessionCloseDetails{
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
@@ -170,7 +170,7 @@ func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liq
 	session.Liquidator = liquidator
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	// remove session to manager object
-	mdl.RemoveCreditAccount(owner)
+	// mdl.RemoveCreditAccount(owner)
 	mdl.CloseAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index) // for direct token transfer manager
 }
 
@@ -198,6 +198,34 @@ func (mdl *CMv3) onAddCollateralV3(txLog *types.Log, creditAccount, token string
 	}
 	mdl.MulticallMgr.AddMulticallEvent(accountOperation)
 	mdl.AddCollateralToSession(blockNum, sessionId, token, value)
+}
+
+// /////////////////////
+// Side actions that can also be used as multicall events
+// /////////////////////
+func (mdl *CMv3) onWithdrawCollateralV3(txLog *types.Log, creditAccount, token string, value *big.Int, to string) {
+	sessionId, owner := mdl.GetSessionIdAndBorrower(creditAccount)
+	blockNum := int64(txLog.BlockNumber)
+	action, args := mdl.ParseEvent("WithdrawCollateral", txLog)
+	// add account operation
+	accountOperation := &schemas.AccountOperation{
+		TxHash:      txLog.TxHash.Hex(),
+		BlockNumber: blockNum,
+		LogId:       txLog.Index,
+		Borrower:    owner,
+		SessionId:   sessionId,
+		AdapterCall: false,
+		Action:      action,
+		Args:        args,
+		Transfers: &core.Transfers{
+			token: value.Neg(nil),
+		},
+		Dapp: txLog.Address.Hex(),
+	}
+	mdl.MulticallMgr.AddMulticallEvent(accountOperation)
+	// if the liquidator multicall has withdrawCollateral this will be undo in the processmulticall part.
+	// REV_COL_LIQ_V3
+	mdl.AddCollateralToSession(blockNum, sessionId, token, value.Neg(nil))
 }
 
 // amount can be negative, if decrease borrowamount, add pool repay event

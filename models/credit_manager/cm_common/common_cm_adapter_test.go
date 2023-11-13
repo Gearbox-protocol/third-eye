@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	mp "github.com/Gearbox-protocol/third-eye/ds/multicall_processor"
 )
 
 type RepoWrapper struct {
@@ -34,7 +35,7 @@ func TestGetCollateralAmountOnOpen(t *testing.T) {
 			usdc: {Symbol: "USDC", Decimals: 6},
 		},
 	}
-	common := NewCommonCMAdapter(&ds.SyncAdapter{Repo: repo})
+	common := NewCommonCMAdapter(&ds.SyncAdapter{Repo: repo}, &mp.MultiCallProcessorv2{})
 	common.State = &schemas.CreditManagerState{
 		UnderlyingToken: weth,
 	}
