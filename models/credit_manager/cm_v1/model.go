@@ -20,7 +20,7 @@ type CMv1 struct {
 	executeParams []ds.ExecuteParams
 
 	//
-	*cm_mvp.CmMVP
+	*cm_mvp.Cmv1v2
 }
 
 func NewCMv1(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *CMv1 {
@@ -46,7 +46,7 @@ func (cm *CMv1) addCreditFilterAdapter(blockNum int64) {
 func NewCMv1FromAdapter(adapter *ds.SyncAdapter) *CMv1 {
 	//
 	obj := &CMv1{
-		CmMVP: cm_mvp.NewCMCommon(adapter),
+		Cmv1v2: cm_mvp.NewCMv1v2(adapter),
 		//
 	}
 	//

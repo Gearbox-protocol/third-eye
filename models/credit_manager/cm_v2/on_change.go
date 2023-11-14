@@ -103,7 +103,7 @@ func (mdl *CMv2) OnLog(txLog types.Log) {
 		return
 	}
 	//
-	mdl.CmMVP.PrefixOnLog(txLog)
+	mdl.Cmv1v2.PrefixOnLog(txLog)
 	mdl.checkLogV2(txLog)
 }
 
@@ -115,7 +115,7 @@ func (mdl *CMv2) SetOnChangeFn() {
 	mdl.SetLastTxHashCompleted(mdl.lastTxHashCompleted)
 	mdl.SetCalculateCMStatFn(func(blockNum int64, state dc.CMCallData) {
 		mdl.addProtocolAdapters(state)
-		mdl.CmMVP.CalculateCMStat(blockNum, state)
+		mdl.Cmv1v2.CalculateCMStat(blockNum, state)
 	})
 	mdl.SetOnDirectTokenTransferFn(mdl.getDirectTokenTransferFn())
 }

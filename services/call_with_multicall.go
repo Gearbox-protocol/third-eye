@@ -29,17 +29,20 @@ func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade co
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
 			switch call.Input[2:10] {
+			// v2
 			case "caa5c23f", // multicall
 				"5f73fbec", // closeCreditAccount
 				"82871ace", // liquidateExpiredCreditAccount
-				"5d91a0e0", // liquidateCreditAccount (v2) and liquidateCreditAccount (v3)
+				"5d91a0e0", // liquidateCreditAccount (v2)
 				"7071b7c5": // openCreditAccountMulticall
 				event, err := getCreditFacadeMainEvent(call.Input, creditFacadev2Parser)
 				if err != nil {
 					return nil, err
 				}
 				mainEvents = append(mainEvents, event)
+				// v3
 			case "ebe4107c", // multicall(address,calls)
+				"e3f46b26", // liquidateCreditAccount (v3)
 				"cfe46585", // closeCreditAccount(creditAccount,to,skipTokenMask,convertToETH,calls)
 				// "5d91a0e0", // liquidateCreditAccount
 				"92beab1d": // openCreditAccount(onBehalfOf,calls,referralCode)

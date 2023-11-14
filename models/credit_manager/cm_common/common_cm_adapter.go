@@ -27,7 +27,7 @@ type CommonCMAdapter struct {
 	DontGetSessionFromDCForTest bool
 	//
 	// calculating credit session stats
-	UpdatedSessions map[string]int
+	UpdatedSessions map[string]*SessionUpdateDetails
 	ClosedSessions  map[string]*SessionCloseDetails
 }
 
@@ -38,7 +38,7 @@ func NewCommonCMAdapter(adapter *ds.SyncAdapter, multiCallMgr mp.MulticallProces
 		PnlOnCM:      NewPnlCM(),
 		MulticallMgr: multiCallMgr,
 		//
-		UpdatedSessions: make(map[string]int),
+		UpdatedSessions: make(map[string]*SessionUpdateDetails),
 		ClosedSessions:  make(map[string]*SessionCloseDetails),
 	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 func (mdl *CMv1) OnLog(txLog types.Log) {
-	mdl.CmMVP.PrefixOnLog(txLog)
+	mdl.Cmv1v2.PrefixOnLog(txLog)
 	mdl.checkLogV1(txLog)
 }
 func (mdl *CMv1) checkLogV1(txLog types.Log) {

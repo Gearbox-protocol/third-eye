@@ -15,21 +15,21 @@ import (
 )
 
 func (mdl *CommonCMAdapter) FetchFromDCForChangedSessions(blockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
-	for sessionId := range mdl.UpdatedSessions {
+	for sessionId, updateDetails := range mdl.UpdatedSessions {
 		if mdl.ClosedSessions[sessionId] == nil {
-			call, processFn := mdl.updateSessionCallAndProcessFn(sessionId, blockNum)
+			call, processFn := mdl.updateSessionCallAndProcessFn(sessionId, blockNum, updateDetails)
 			if processFn != nil {
 				calls = append(calls, call)
 				processFns = append(processFns, processFn)
 			}
 		}
 	}
-	{
+	{ // these calls are made internally, wrapper doesn't handle then since they are on blockNum -1
 		calls := make([]multicall.Multicall2Call, 0)
 		processFns := make([]func(multicall.Multicall2Result), 0)
 		for sessionId, closeDetails := range mdl.ClosedSessions {
 			updates := mdl.UpdatedSessions[sessionId]
-			if updates != 0 {
+			if updates != nil {
 				// in this case, affected fields are data that we fetch from datacompressor:
 				//
 				// borrowAmount, for amountToPool calc to add PoolRepay[affected]
@@ -55,7 +55,7 @@ func (mdl *CommonCMAdapter) FetchFromDCForChangedSessions(blockNum int64) (calls
 			processFns[i](result)
 		}
 	}
-	mdl.UpdatedSessions = make(map[string]int)
+	mdl.UpdatedSessions = make(map[string]*SessionUpdateDetails)
 	mdl.ClosedSessions = make(map[string]*SessionCloseDetails)
 	return
 }
@@ -93,29 +93,14 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(blockNum int64, sessionI
 	}
 }
 
+// used for v1/v2 close and liquidate
+// used for v3 close
 func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData, closeDetails *SessionCloseDetails) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
-	// log.Info(mdl.params, session.Version,
-	// "totalvalue", data.TotalValue, closeDetails.Status,
-	// "borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
-	amountToPool, _, _, _ := calc.CalCloseAmount(mdl.params,
-		session.Version, data.TotalValue.Convert(),
-		closeDetails.Status,
-		calc.NewDebtDetails(
-			data.Debt.Convert(),
-			data.AccruedInterest.Convert(),
-			data.BorrowedAmount.Convert(),
-		),
-	)
-	// pool repay
-	// check for avoiding db errors
-	mdl.PoolRepay(blockNum,
-		closeDetails.LogId,
-		closeDetails.TxHash,
-		session.ID,
-		closeDetails.Borrower,
-		amountToPool)
 
+	mdl.poolRepay(blockNum, session, closeDetails, data)
+
+	// v1 repayment
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == schemas.Repaid {
 		closeDetails.RemainingFunds = new(big.Int).Sub(data.TotalValue.Convert(), data.RepayAmountv1v2.Convert())
 		session.RemainingFunds = (*core.BigInt)(closeDetails.RemainingFunds)
@@ -123,10 +108,6 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
 	}
 
-	// credit manager state
-	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, amountToPool)
-	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
-	//
 	// create session snapshot
 	css := schemas.CreditSessionSnapshot{}
 	mdl.Repo.SetBlock(blockNum - 1)
@@ -159,7 +140,7 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
 
-func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
+func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64, updateDetails *SessionUpdateDetails) (
 	multicall.Multicall2Call, func(multicall.Multicall2Result)) {
 	if mdl.DontGetSessionFromDCForTest {
 		return multicall.Multicall2Call{}, nil
@@ -181,13 +162,45 @@ func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, bloc
 		if err != nil {
 			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", blockNum, mdl.GetAddress(), session.Borrower, err)
 		}
-		mdl.updateSession(blockNum, session, dcAccountData)
+		mdl.updateSession(blockNum, session, updateDetails, dcAccountData)
 	}
 }
 
-func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData) {
+func (mdl *CommonCMAdapter) poolRepay(blockNum int64, session *schemas.CreditSession, details *SessionCloseDetails, data dc.CreditAccountCallData) {
+	// log.Info(mdl.params, session.Version,
+	// "totalvalue", data.TotalValue, closeDetails.Status,
+	// "borrow", data.BorrowedAmountPlusInterest, data.BorrowedAmount)
+	amountToPool, _, _, _ := calc.CalCloseAmount(mdl.params,
+		session.Version, data.TotalValue.Convert(),
+		details.Status,
+		calc.NewDebtDetails(
+			data.Debt.Convert(),
+			data.AccruedInterest.Convert(),
+			data.BorrowedAmount.Convert(),
+		),
+	)
+	// pool repay
+	// check for avoiding db errors
+	mdl.PoolRepay(blockNum,
+		details.LogId,
+		details.TxHash,
+		session.ID,
+		details.Borrower,
+		amountToPool)
+
+	// credit manager state
+	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, amountToPool)
+	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
+}
+func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, updateDetails *SessionUpdateDetails, data dc.CreditAccountCallData) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
+	liqv3Details := updateDetails.LiqUpdatev3Details
+	if liqv3Details != nil {
+		a := SessionCloseDetails(*liqv3Details)
+		mdl.poolRepay(blockNum, session, &a, data)
+	}
+	//
 	// create session snapshot
 	css := schemas.CreditSessionSnapshot{}
 	css.BlockNum = blockNum
