@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -81,7 +82,7 @@ func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64) {
 		switch mdl.Details["token"].(type) {
 		case map[string]interface{}:
 			obj, _ = mdl.Details["token"].(map[string]interface{})
-			ints := ConvertToListOfInt64(obj[token])
+			ints := utils.ConvertToListOfInt64(obj[token])
 			// token is already in enabled state, we are trying to add again
 			if obj[token] != nil && len(ints) == 1 {
 				log.Debugf("Token/Feed(%s/%s) previously added at %d, again added at %d", token, mdl.Address, ints[0], discoveredAt)
@@ -109,7 +110,7 @@ func parseLogArray(logs interface{}) (parsedLogs [][]interface{}) {
 			if !ok {
 				log.Fatal("failed in converting to log array element", ele)
 			}
-			parsedEle := []interface{}{obj[0].(string), ConvertToListOfInt64(obj[1])}
+			parsedEle := []interface{}{obj[0].(string), utils.ConvertToListOfInt64(obj[1])}
 			parsedLogs = append(parsedLogs, parsedEle)
 		}
 	}
@@ -122,7 +123,7 @@ func (mdl *QueryPriceFeed) DisableToken(token string, disabledAt int64) {
 	switch mdl.Details["token"].(type) {
 	case map[string]interface{}:
 		obj = mdl.Details["token"].(map[string]interface{})
-		ints := ConvertToListOfInt64(obj[token])
+		ints := utils.ConvertToListOfInt64(obj[token])
 		if len(ints) != 1 {
 			log.Fatalf("%s's enable block number for pricefeed is malformed: %v", token, ints)
 		}
@@ -139,7 +140,7 @@ func (mdl *QueryPriceFeed) TokensValidAtBlock(blockNum int64) []string {
 		tokens := []string{}
 		obj := mdl.Details["token"].(map[string]interface{})
 		for token, info := range obj {
-			ints := ConvertToListOfInt64(info)
+			ints := utils.ConvertToListOfInt64(info)
 			// when token is added to the feed, price at discoveredAt is added for that token
 			// so we can ignore that token is valid at discoveredAt, hence added one to discoveredAt
 			if ints[0]+1 <= blockNum && (len(ints) == 1 || blockNum < ints[1]) {
@@ -149,25 +150,4 @@ func (mdl *QueryPriceFeed) TokensValidAtBlock(blockNum int64) []string {
 		return tokens
 	}
 	return nil
-}
-
-func ConvertToListOfInt64(list interface{}) (parsedInts []int64) {
-	switch ints := list.(type) {
-	case []interface{}:
-		for _, _int := range ints {
-			var parsedInt int64
-			switch parsedV := _int.(type) {
-			case int64:
-				parsedInt = parsedV
-			case float64:
-				parsedInt = int64(parsedV)
-			default:
-				log.Fatalf("QueryPriceFeed token start/end block_num not in int format %v", _int)
-			}
-			parsedInts = append(parsedInts, parsedInt)
-		}
-	case []int64:
-		parsedInts = ints
-	}
-	return
 }

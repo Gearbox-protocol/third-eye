@@ -128,6 +128,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 				})
 			case "WithdrawCollateral(address,address,uint256,address)":
 				if mainEvent.Action == "LiquidateCreditAccount(address,address,address,address,uint256)" { // REV_COL_LIQ_V3: v3 liquidate reverse the collateral
+					// since liquidation the withdraw collateral is not to the account owner.
 					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,
 						(*event.Args)["token"].(common.Address).Hex(),
 						(*event.Args)["amount"].(*big.Int),

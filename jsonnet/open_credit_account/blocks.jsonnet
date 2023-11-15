@@ -33,19 +33,17 @@
   allowedTokens: [
     {
       BlockNumber: 3,
+      Configurator: '#CreditFilter_1',
       CreditManager: '#CreditManager_1',
       DisableBlock: 0,
       LiquidityThreshold: '9000',
       Token: '#Token_1',
-      Configurator: '#CreditFilter_1',
     },
   ],
   blockNum: 3,
   cmStats: [
     {
       Address: '#CreditManager_1',
-      // AvailableLiquidity: 1000,
-      // AvailableLiquidityBI: '1000000000',
       BlockNum: 3,
       CumulativeBorrowed: 0,
       ID: 0,
@@ -71,9 +69,9 @@
         '#Token_1': {
           BI: '5000000000',
           F: 5000,
-          isEnabled: true,
-          isForbidden: false,  // changed
           ind: 0,
+          isEnabled: true,
+          isForbidden: false,
         },
       },
       blockNum: 3,
@@ -84,6 +82,7 @@
       collateralInUnderlying: 1000,
       cumulativeIndexAtOpen: '1000000000000000000000000000',
       healthFactor: '11250',
+      quotaFees: '0',
       sessionId: '#Account_1_3_0',
       totalValue: 5000,
       totalValueBI: '5000000000',
@@ -92,10 +91,6 @@
   daoOperations: [
     {
       Args: {
-        liquidationDiscount: [
-          0,
-          9500,
-        ],
         feeInterest: [
           0,
           1000,
@@ -103,6 +98,10 @@
         feeLiquidation: [
           0,
           200,
+        ],
+        liquidationDiscount: [
+          0,
+          9500,
         ],
         maxAmount: [
           '0',
@@ -142,11 +141,11 @@
     {
       BlockNum: 3,
       CreditManager: '#CreditManager_1',
-      FeeInterest: 1000,
       EmergencyLiqDiscount: 0,
+      FeeInterest: 1000,
       FeeLiquidation: 200,
-      LiquidationDiscount: 9500,
       FeeLiquidationExpired: 0,
+      LiquidationDiscount: 9500,
       LiquidationDiscountExpired: 0,
       MaxAmount: '5000000000',
       MaxLeverage: '400000000',
@@ -192,10 +191,10 @@
     {
       blockNum: 3,
       feed: '#ChainlinkPriceFeed_1',
+      isPriceInUSD: false,
       price: 1e-18,
       priceBI: '1',
       roundId: 300000000000000,
-      isPriceInUSD: false,
       token: '#Token_1',
     },
   ],

@@ -27,8 +27,10 @@ type CommonCMAdapter struct {
 	DontGetSessionFromDCForTest bool
 	//
 	// calculating credit session stats
-	UpdatedSessions map[string]*SessionUpdateDetails
-	ClosedSessions  map[string]*SessionCloseDetails
+	// updated Sesssions is updated if operation is liq v3
+	updatedSessions map[string]int
+	liqv3Sessions   map[string]*SessionLiqUpdatev3Details
+	closedSessions  map[string]*SessionCloseDetails
 }
 
 func NewCommonCMAdapter(adapter *ds.SyncAdapter, multiCallMgr mp.MulticallProcessorI) *CommonCMAdapter {
@@ -38,8 +40,9 @@ func NewCommonCMAdapter(adapter *ds.SyncAdapter, multiCallMgr mp.MulticallProces
 		PnlOnCM:      NewPnlCM(),
 		MulticallMgr: multiCallMgr,
 		//
-		UpdatedSessions: make(map[string]*SessionUpdateDetails),
-		ClosedSessions:  make(map[string]*SessionCloseDetails),
+		updatedSessions: make(map[string]int),
+		liqv3Sessions:   make(map[string]*SessionLiqUpdatev3Details),
+		closedSessions:  make(map[string]*SessionCloseDetails),
 	}
 }
 

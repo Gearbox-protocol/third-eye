@@ -137,8 +137,8 @@ func getTransfersToUser(txLogs []trace_service.Log, account, underlyingToken str
 	for _, raw := range txLogs {
 		eventLog := raw.Raw
 		if eventLog.Topics[0] == core.Topic("Transfer(address,address,uint256)") { // transfer event
-			to := common.BytesToAddress(eventLog.Topics[2][:])
 			from := common.BytesToAddress(eventLog.Topics[1][:])
+			to := common.BytesToAddress(eventLog.Topics[2][:])
 			token := eventLog.Address.Hex()
 			var sign *big.Int
 			if from == users.Borrower && to.Hex() == account && token == underlyingToken {

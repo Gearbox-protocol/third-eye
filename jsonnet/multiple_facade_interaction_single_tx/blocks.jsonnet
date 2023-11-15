@@ -92,8 +92,6 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 5000,
-        // AvailableLiquidityBI: '5000000000',
         BlockNum: 4,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -120,8 +118,8 @@
             BI: '6000000000',
             F: 6000,
             ind: 0,
-            isForbidden: false,  // changed
             isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 4,
@@ -132,6 +130,7 @@
         collateralInUnderlying: 2000,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '13500',
+        quotaFees: '0',
         sessionId: '#Account_1_4_0',
         totalValue: 6000,
         totalValueBI: '6000000000',
@@ -183,8 +182,8 @@
             BI: '7000000000',
             F: 7000,
             ind: 0,
-            isForbidden: false,  // changed
             isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 5,
@@ -195,10 +194,10 @@
         collateralInUnderlying: 3000,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '15750',
+        quotaFees: '0',
         sessionId: '#Account_1_4_0',
         totalValue: 7000,
         totalValueBI: '7000000000',
-        quotaFees: '0',
       },
     ],
     timestamp: 432000,
@@ -331,8 +330,6 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 5000,
-        // AvailableLiquidityBI: '5000000000',
         BlockNum: 6,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -359,8 +356,8 @@
             BI: '6000000000',
             F: 6000,
             ind: 0,
-            isForbidden: false,  // changed
             isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 6,
@@ -371,6 +368,7 @@
         collateralInUnderlying: 2000,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '13500',
+        quotaFees: '0',
         sessionId: '#Account_2_6_4',
         totalValue: 6000,
         totalValueBI: '6000000000',

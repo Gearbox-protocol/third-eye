@@ -11,20 +11,16 @@
             'borrowAmount',
             'referralCode',
           ],
+          amount: '1000000000',
           borrowAmount: 4000000000,
           creditAccount: '#Account_1',
           onBehalfOf: '#User_1',
           referralCode: 0,
-          amount: '1000000000',
         },
         blockNum: 4,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
         logId: 0,
-        sessionId: '#Account_1_4_0',
-        transfers: {
-          '#Token_1': 4000000000,
-        },
         multicalls: [
           {
             action: 'AddCollateral(address,address,uint256)',
@@ -50,6 +46,10 @@
             txHash: '#Hash_4',
           },
         ],
+        sessionId: '#Account_1_4_0',
+        transfers: {
+          '#Token_1': 4000000000,
+        },
         txHash: '#Hash_4',
       },
       {
@@ -78,8 +78,6 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 5000,
-        // AvailableLiquidityBI: '5000000000',
         BlockNum: 4,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -105,9 +103,9 @@
           '#Token_1': {
             BI: '6000000000',
             F: 6000,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 4,
@@ -118,6 +116,7 @@
         collateralInUnderlying: 1000,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '10800',
+        quotaFees: '0',
         sessionId: '#Account_1_4_0',
         totalValue: 6000,
         totalValueBI: '6000000000',
@@ -232,19 +231,17 @@
     allowedTokens: [
       {
         BlockNumber: 5,
+        Configurator: '#CreditConfigurator_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 0,
         LiquidityThreshold: '8000',
         Token: '#Token_3',
-        Configurator: '#CreditConfigurator_1',
       },
     ],
     blockNum: 5,
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 5500,
-        // AvailableLiquidityBI: '5500000000',
         BlockNum: 5,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -270,16 +267,16 @@
           '#Token_1': {
             BI: '5500000000',
             F: 5500,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
           '#Token_3': {
             BI: '1000000000000000000',
             F: 1,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 1,
+            isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 5,
@@ -290,6 +287,7 @@
         collateralInUnderlying: 3500,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '15444',
+        quotaFees: '0',
         sessionId: '#Account_1_4_0',
         totalValue: 8000,
         totalValueBI: '8000000000',
@@ -299,8 +297,8 @@
       {
         Args: {
           creditManager: '#CreditManager_1',
-          token: '#Token_3',
           prevLiquidationThreshold: '0',
+          token: '#Token_3',
         },
         BlockNumber: 5,
         Contract: '#CreditConfigurator_1',
@@ -451,8 +449,6 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 1000,
-        // AvailableLiquidityBI: '1000000000',
         BlockNum: 6,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -478,16 +474,16 @@
           '#Token_1': {
             BI: '500000000',
             F: 500,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 1,
+            isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 6,
@@ -498,6 +494,7 @@
         collateralInUnderlying: 3500,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '14333',
+        quotaFees: '0',
         sessionId: '#Account_1_4_0',
         totalValue: 8000,
         totalValueBI: '8000000000',
@@ -547,11 +544,11 @@
     allowedTokens: [
       {
         BlockNumber: 7,
+        Configurator: '#CreditConfigurator_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 0,
         LiquidityThreshold: '9000',
         Token: '#Token_2',
-        Configurator: '#CreditConfigurator_1',
       },
     ],
     blockNum: 7,
@@ -561,23 +558,16 @@
           '#Token_1': {
             BI: '1500000000',
             F: 1500,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
-          // '#Token_2': {
-          //   BI: '100000000000000000',
-          //   F: 0.1,
-          //   isForbidden: false, // changed
-          //   isEnabled: false,
-          //   ind: 2,
-          // },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 1,
+            isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 7,
@@ -588,6 +578,7 @@
         collateralInUnderlying: 6500,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '16333',
+        quotaFees: '0',
         sessionId: '#Account_1_4_0',
         totalValue: 9000,
         totalValueBI: '9000000000',
@@ -597,8 +588,8 @@
       {
         Args: {
           creditManager: '#CreditManager_1',
-          token: '#Token_2',
           prevLiquidationThreshold: '0',
+          token: '#Token_2',
         },
         BlockNumber: 7,
         Contract: '#CreditConfigurator_1',

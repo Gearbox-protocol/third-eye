@@ -14,10 +14,13 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
+// for update actions fetch at blockNum
+// for closure and liquidation (liq except v3) fetch at blockNum-1
+// for liq v3 fetch at blockNum -1 and blockNum
 func (mdl *CommonCMAdapter) FetchFromDCForChangedSessions(blockNum int64) (calls []multicall.Multicall2Call, processFns []func(multicall.Multicall2Result)) {
-	for sessionId, updateDetails := range mdl.UpdatedSessions {
-		if mdl.ClosedSessions[sessionId] == nil {
-			call, processFn := mdl.updateSessionCallAndProcessFn(sessionId, blockNum, updateDetails)
+	for sessionId := range mdl.updatedSessions { // for liq v3 updateSessions is also updated
+		if mdl.closedSessions[sessionId] == nil {
+			call, processFn := mdl.updateSessionCallAndProcessFn(sessionId, blockNum)
 			if processFn != nil {
 				calls = append(calls, call)
 				processFns = append(processFns, processFn)
@@ -27,9 +30,9 @@ func (mdl *CommonCMAdapter) FetchFromDCForChangedSessions(blockNum int64) (calls
 	{ // these calls are made internally, wrapper doesn't handle then since they are on blockNum -1
 		calls := make([]multicall.Multicall2Call, 0)
 		processFns := make([]func(multicall.Multicall2Result), 0)
-		for sessionId, closeDetails := range mdl.ClosedSessions {
-			updates := mdl.UpdatedSessions[sessionId]
-			if updates != nil {
+		for sessionId, closeDetails := range mdl.closedSessions {
+			updates := mdl.updatedSessions[sessionId]
+			if updates != 0 {
 				// in this case, affected fields are data that we fetch from datacompressor:
 				//
 				// borrowAmount, for amountToPool calc to add PoolRepay[affected]
@@ -50,30 +53,40 @@ func (mdl *CommonCMAdapter) FetchFromDCForChangedSessions(blockNum int64) (calls
 				processFns = append(processFns, processFn)
 			}
 		}
+		{ // liq v3
+			for sessionId, liqv3Details := range mdl.liqv3Sessions {
+				call, processFn := mdl.liqv3SessionCallAndResultFn(blockNum, sessionId, liqv3Details)
+				if processFn != nil {
+					calls = append(calls, call)
+					processFns = append(processFns, processFn)
+				}
+			}
+		}
 		results := core.MakeMultiCall(mdl.Client, blockNum-1, false, calls)
 		for i, result := range results {
 			processFns[i](result)
 		}
 	}
-	mdl.UpdatedSessions = make(map[string]*SessionUpdateDetails)
-	mdl.ClosedSessions = make(map[string]*SessionCloseDetails)
+	//
+	mdl.updatedSessions = make(map[string]int)
+	mdl.liqv3Sessions = make(map[string]*SessionLiqUpdatev3Details)
+	mdl.closedSessions = make(map[string]*SessionCloseDetails)
 	return
 }
 
-func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(blockNum int64, sessionId string, closeDetails *SessionCloseDetails) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
-	mdl.State.OpenedAccountsCount--
-	// check the data before credit session was closed by minus 1.
+func (mdl *CommonCMAdapter) liqv3SessionCallAndResultFn(liquidatedAt int64, sessionId string, liqv3Details *SessionLiqUpdatev3Details) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
-	// set session fields
-	session.ClosedAt = blockNum
-	session.Status = closeDetails.Status
-	// this checks prevent getting data for credit session that exist only within a block
-	// datacompressor query will fail
-	if session.Since == session.ClosedAt {
-		return
+	// set secondary status
+	if session.TeritaryStatus == nil {
+		session.TeritaryStatus = &core.Json{"secStatus": [][]int64{}}
 	}
+	secStatus := utils.ListOfInt64List((*session.TeritaryStatus)["secStatus"])
+	secStatus = append(secStatus, []int64{liquidatedAt, int64(liqv3Details.Status)})
+	(*session.TeritaryStatus)["secStatus"] = secStatus
+	//
+	session.IsDirty = true
 	// get call and processFn
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), blockNum-1,
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), liquidatedAt-1,
 		common.HexToAddress(mdl.GetAddress()),
 		common.HexToAddress(session.Borrower),
 		common.HexToAddress(session.Account),
@@ -87,18 +100,66 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(blockNum int64, sessionI
 		}
 		dcAccountData, err := resultFn(result.ReturnData)
 		if err != nil {
-			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", blockNum, mdl.GetAddress(), session.Borrower, err)
+			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", liquidatedAt, mdl.GetAddress(), session.Borrower, err)
 		}
-		mdl.closeSession(blockNum, session, dcAccountData, closeDetails)
+		mdl.liqv3Session(liquidatedAt, session, dcAccountData, liqv3Details)
+	}
+}
+
+// data is for liquidatedAt -1
+func (mdl *CommonCMAdapter) liqv3Session(liquidatedAt int64, session *schemas.CreditSession, data dc.CreditAccountCallData, liqv3Details *SessionLiqUpdatev3Details) {
+	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
+	session.IsDirty = true
+
+	if liqv3Details != nil {
+		a := SessionCloseDetails(*liqv3Details)
+		mdl.poolRepay(liquidatedAt, session, &a, data)
+	}
+
+	mdl.createCSSnapshot(liquidatedAt-1, session, data)
+}
+
+func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionId string, closeDetails *SessionCloseDetails) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
+	mdl.State.OpenedAccountsCount--
+	// check the data before credit session was closed by minus 1.
+	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
+	// set session fields
+	session.ClosedAt = closedAt
+	session.Status = closeDetails.Status
+	session.IsDirty = true
+	// this checks prevent getting data for credit session that exist only within a block
+	// datacompressor query will fail
+	if session.Since == session.ClosedAt {
+		return
+	}
+	// get call and processFn
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), closedAt-1,
+		common.HexToAddress(mdl.GetAddress()),
+		common.HexToAddress(session.Borrower),
+		common.HexToAddress(session.Account),
+	)
+	if err != nil {
+		log.Fatalf("Failing preparing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, err)
+	}
+	return call, func(result multicall.Multicall2Result) {
+		if !result.Success {
+			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, result.ReturnData)
+		}
+		dcAccountData, err := resultFn(result.ReturnData)
+		if err != nil {
+			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", closedAt, mdl.GetAddress(), session.Borrower, err)
+		}
+		mdl.closeSession(closedAt, session, dcAccountData, closeDetails)
 	}
 }
 
 // used for v1/v2 close and liquidate
 // used for v3 close
-func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData, closeDetails *SessionCloseDetails) {
+func (mdl *CommonCMAdapter) closeSession(closedAt int64, session *schemas.CreditSession, data dc.CreditAccountCallData, closeDetails *SessionCloseDetails) {
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
+	session.IsDirty = true
 
-	mdl.poolRepay(blockNum, session, closeDetails, data)
+	mdl.poolRepay(closedAt, session, closeDetails, data)
 
 	// v1 repayment
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == schemas.Repaid {
@@ -108,10 +169,14 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 		mdl.AddAccountOperation(closeDetails.AccountOperation)
 	}
 
+	mdl.createCSSnapshot(closedAt-1, session, data)
+}
+
+func (mdl *CommonCMAdapter) createCSSnapshot(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData) {
 	// create session snapshot
 	css := schemas.CreditSessionSnapshot{}
-	mdl.Repo.SetBlock(blockNum - 1)
-	css.BlockNum = blockNum - 1
+	mdl.Repo.SetBlock(blockNum)
+	css.BlockNum = blockNum
 	css.SessionId = session.ID
 	css.CollateralInUSD = session.CollateralInUSD
 	css.CollateralInUnderlying = session.CollateralInUnderlying
@@ -125,7 +190,7 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	css.QuotaFees = (*core.BigInt)(data.GetQuotaFees(mdl.params.FeeInterest))
 	//
 	// set balances
-	css.Balances = mdl.addFloatValue(session.Account, blockNum-1, data.Balances)
+	css.Balances = mdl.addFloatValue(session.Account, blockNum, data.Balances)
 	// for close credit account operation on gearbox v2
 	// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditFacade.sol#L235
 	// there is a skipTokenMask which can be used to skip certain tokens from getting transferred to borrower
@@ -139,33 +204,6 @@ func (mdl *CommonCMAdapter) closeSession(blockNum int64, session *schemas.Credit
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
 	mdl.Repo.AddCreditSessionSnapshot(&css)
 }
-
-func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64, updateDetails *SessionUpdateDetails) (
-	multicall.Multicall2Call, func(multicall.Multicall2Result)) {
-	if mdl.DontGetSessionFromDCForTest {
-		return multicall.Multicall2Call{}, nil
-	}
-	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), blockNum,
-		common.HexToAddress(mdl.GetAddress()),
-		common.HexToAddress(session.Borrower),
-		common.HexToAddress(session.Account),
-	)
-	if err != nil {
-		log.Fatalf("Failing preparing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, err)
-	}
-	return call, func(result multicall.Multicall2Result) {
-		if !result.Success {
-			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, result.ReturnData)
-		}
-		dcAccountData, err := resultFn(result.ReturnData)
-		if err != nil {
-			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", blockNum, mdl.GetAddress(), session.Borrower, err)
-		}
-		mdl.updateSession(blockNum, session, updateDetails, dcAccountData)
-	}
-}
-
 func (mdl *CommonCMAdapter) poolRepay(blockNum int64, session *schemas.CreditSession, details *SessionCloseDetails, data dc.CreditAccountCallData) {
 	// log.Info(mdl.params, session.Version,
 	// "totalvalue", data.TotalValue, closeDetails.Status,
@@ -192,33 +230,37 @@ func (mdl *CommonCMAdapter) poolRepay(blockNum int64, session *schemas.CreditSes
 	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, amountToPool)
 	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
 }
-func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, updateDetails *SessionUpdateDetails, data dc.CreditAccountCallData) {
-	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 
-	liqv3Details := updateDetails.LiqUpdatev3Details
-	if liqv3Details != nil {
-		a := SessionCloseDetails(*liqv3Details)
-		mdl.poolRepay(blockNum, session, &a, data)
+func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
+	multicall.Multicall2Call, func(multicall.Multicall2Result)) {
+	if mdl.DontGetSessionFromDCForTest {
+		return multicall.Multicall2Call{}, nil
 	}
-	//
-	// create session snapshot
-	css := schemas.CreditSessionSnapshot{}
-	css.BlockNum = blockNum
-	css.SessionId = session.ID
-	css.CollateralInUSD = session.CollateralInUSD
-	css.CollateralInUnderlying = session.CollateralInUnderlying
-	css.Borrower = session.Borrower
-	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
-	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
-	css.TotalValue = utils.GetFloat64Decimal(data.TotalValue, mdl.GetUnderlyingDecimal())
-	// set balances of css and credit session
-	css.Balances = mdl.addFloatValue(session.Account, blockNum, data.Balances)
-	session.Balances = css.Balances
-	//
-	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
-	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
-	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
-	mdl.Repo.AddCreditSessionSnapshot(&css)
+	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditAccountData(mdl.GetVersion(), blockNum,
+		common.HexToAddress(mdl.GetAddress()),
+		common.HexToAddress(session.Borrower),
+		common.HexToAddress(session.Account),
+	)
+	if err != nil {
+		log.Fatalf("Failing preparing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, err)
+	}
+	return call, func(result multicall.Multicall2Result) {
+		if !result.Success {
+			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s: %v", mdl.GetAddress(), session.Borrower, result.ReturnData)
+		}
+		dcAccountData, err := resultFn(result.ReturnData)
+		if err != nil {
+			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", blockNum, mdl.GetAddress(), session.Borrower, err)
+		}
+		mdl.updateSession(blockNum, session, dcAccountData)
+	}
+}
+
+func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData) {
+	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
+	session.IsDirty = true
+	mdl.createCSSnapshot(blockNum, session, data)
 }
 
 func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Balances []core.TokenBalanceCallData) *core.DBBalanceFormat {

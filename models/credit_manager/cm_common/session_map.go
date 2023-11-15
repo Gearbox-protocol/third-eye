@@ -10,11 +10,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-type SessionUpdateDetails struct {
-	Count              int
-	LiqUpdatev3Details *SessionLiqUpdatev3Details
-}
-
 type SessionLiqUpdatev3Details SessionCloseDetails
 
 // credit session close details
@@ -33,26 +28,26 @@ func (x SessionCloseDetails) String() string {
 		x.Status, x.LogId, x.TxHash, x.Borrower, x.RemainingFunds)
 }
 
-func (mdl CommonCMAdapter) SetSessionIsUpdated(sessionId string, data ...*SessionLiqUpdatev3Details) {
-	if _, ok := mdl.UpdatedSessions[sessionId]; !ok {
-		mdl.UpdatedSessions[sessionId] = &SessionUpdateDetails{}
-	}
-	mdl.UpdatedSessions[sessionId].Count++
-	if len(data) > 0 {
-		if mdl.UpdatedSessions[sessionId].LiqUpdatev3Details != nil {
-			log.Fatal("can't set the liquidatev3 details for fetching dcv3 data twice", sessionId, utils.ToJson(data))
-		}
-		mdl.UpdatedSessions[sessionId].LiqUpdatev3Details = data[0]
+func (mdl CommonCMAdapter) SetSessionIsUpdated(sessionId string) {
+	mdl.updatedSessions[sessionId] += 1
+}
+func (mdl CommonCMAdapter) SetSessionIsLiqv3(sessionId string, details *SessionLiqUpdatev3Details) {
+	if mdl.liqv3Sessions[sessionId] == nil {
+		mdl.liqv3Sessions[sessionId] = details
+		mdl.updatedSessions[sessionId] += 1
+	} else {
+		log.Fatal("can't set the liquidatev3 details for fetching dcv3 data twice", sessionId, utils.ToJson(details))
 	}
 }
 
 func (mdl CommonCMAdapter) SetSessionIsClosed(sessionId string, details *SessionCloseDetails) {
-	mdl.ClosedSessions[sessionId] = details
+	mdl.closedSessions[sessionId] = details
 }
 
 // used for v2 liquidations setting expired,paused or noraml liquidation
+// SET_LIQ_STATUS_AFTER_CALL
 func (mdl CommonCMAdapter) UpdateClosedSessionStatus(sessionId string, status int) {
-	mdl.ClosedSessions[sessionId].Status = status
+	mdl.closedSessions[sessionId].Status = status
 }
 
 // collateral

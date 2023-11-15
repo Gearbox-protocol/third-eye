@@ -188,7 +188,7 @@ func Check(t *testing.T, addressMap map[string]string, value interface{}, fileNa
 	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
 }
 
-func (m *MockRepo) Print(value interface{}) {
+func (m *MockRepo) Print(value interface{}, _ string) {
 	Print(m.t, m.AddressMap, value)
 }
 func Print(t *testing.T, addressMap map[string]string, value interface{}) {

@@ -159,7 +159,7 @@ func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liq
 		return schemas.Liquidated
 	}()
 	mdl.MulticallMgr.AddLiquidateEvent(accountOperation)
-	mdl.SetSessionIsUpdated(sessionId, &cm_common.SessionLiqUpdatev3Details{
+	mdl.SetSessionIsLiqv3(sessionId, &cm_common.SessionLiqUpdatev3Details{
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,
 		Status:         status,

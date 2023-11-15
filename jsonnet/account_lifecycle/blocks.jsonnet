@@ -55,19 +55,17 @@
     allowedTokens: [
       {
         BlockNumber: 3,
+        Configurator: '#CreditFilter_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 0,
         LiquidityThreshold: '9000',
         Token: '#Token_1',
-        Configurator: '#CreditFilter_1',
       },
     ],
     blockNum: 3,
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 1000,
-        // AvailableLiquidityBI: '1000000000',
         BlockNum: 3,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -93,9 +91,9 @@
           '#Token_1': {
             BI: '6000000000',
             F: 6000,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 3,
@@ -106,6 +104,7 @@
         collateralInUnderlying: 1000,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '10800',
+        quotaFees: '0',
         sessionId: '#Account_1_3_3',
         totalValue: 6000,
         totalValueBI: '6000000000',
@@ -114,10 +113,6 @@
     daoOperations: [
       {
         Args: {
-          liquidationDiscount: [
-            0,
-            9500,
-          ],
           feeInterest: [
             0,
             1000,
@@ -125,6 +120,10 @@
           feeLiquidation: [
             0,
             200,
+          ],
+          liquidationDiscount: [
+            0,
+            9500,
           ],
           maxAmount: [
             '0',
@@ -164,11 +163,11 @@
       {
         BlockNum: 3,
         CreditManager: '#CreditManager_1',
-        FeeInterest: 1000,
         EmergencyLiqDiscount: 0,
+        FeeInterest: 1000,
         FeeLiquidation: 200,
-        LiquidationDiscount: 9500,
         FeeLiquidationExpired: 0,
+        LiquidationDiscount: 9500,
         LiquidationDiscountExpired: 0,
         MaxAmount: '5000000000',
         MaxLeverage: '400000000',
@@ -224,9 +223,9 @@
       {
         blockNum: 3,
         feed: '#ChainlinkPriceFeed_1',
+        isPriceInUSD: false,
         price: 0.0004,
         priceBI: '400000000000000',
-        isPriceInUSD: false,
         roundId: 1,
         token: '#Token_1',
       },
@@ -262,19 +261,17 @@
     allowedTokens: [
       {
         BlockNumber: 4,
+        Configurator: '#CreditFilter_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 0,
         LiquidityThreshold: '8000',
         Token: '#Token_3',
-        Configurator: '#CreditFilter_1',
       },
     ],
     blockNum: 4,
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 1000,
-        // AvailableLiquidityBI: '1000000000',
         BlockNum: 4,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -300,16 +297,16 @@
           '#Token_1': {
             BI: '6000000000',
             F: 6000,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
           '#Token_3': {
             BI: '1000000000000000000',
             F: 1,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 1,
+            isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 4,
@@ -320,6 +317,7 @@
         collateralInUnderlying: 3500,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '14800',
+        quotaFees: '0',
         sessionId: '#Account_1_3_3',
         totalValue: 8500,
         totalValueBI: '8500000000',
@@ -380,8 +378,6 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        // AvailableLiquidity: 1000,
-        // AvailableLiquidityBI: '1000000000',
         BlockNum: 5,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -407,16 +403,16 @@
           '#Token_1': {
             BI: '1000000000',
             F: 1000,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 1,
+            isEnabled: true,
+            isForbidden: false,
           },
         },
         blockNum: 5,
@@ -427,6 +423,7 @@
         collateralInUnderlying: 3500,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '13800',
+        quotaFees: '0',
         sessionId: '#Account_1_3_3',
         totalValue: 8500,
         totalValueBI: '8500000000',
@@ -476,11 +473,11 @@
     allowedTokens: [
       {
         BlockNumber: 6,
+        Configurator: '#CreditFilter_1',
         CreditManager: '#CreditManager_1',
         DisableBlock: 0,
         LiquidityThreshold: '9000',
         Token: '#Token_2',
-        Configurator: '#CreditFilter_1',
       },
     ],
     blockNum: 6,
@@ -490,23 +487,16 @@
           '#Token_1': {
             BI: '2000000000',
             F: 2000,
-            isForbidden: false,  // changed
-            isEnabled: true,
             ind: 0,
+            isEnabled: true,
+            isForbidden: false,
           },
-          // '#Token_2': {
-          //   BI: '100000000000000000',
-          //   F: 0.1,
-          //   isForbidden: false, // changed
-          //   isEnabled: false,
-          //   ind: 2,
-          // },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
-            isForbidden: true,
-            isEnabled: true,
             ind: 1,
+            isEnabled: true,
+            isForbidden: true,
           },
         },
         blockNum: 6,
@@ -517,6 +507,7 @@
         collateralInUnderlying: 6500,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '15600',
+        quotaFees: '0',
         sessionId: '#Account_1_3_3',
         totalValue: 9500,
         totalValueBI: '9500000000',
@@ -541,9 +532,9 @@
       {
         blockNum: 6,
         feed: '#ChainlinkPriceFeed_2',
+        isPriceInUSD: false,
         price: 8,
         priceBI: '8000000000000000000',
-        isPriceInUSD: false,
         roundId: 1,
         token: '#Token_2',
       },

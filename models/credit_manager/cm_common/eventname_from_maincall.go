@@ -27,7 +27,7 @@ func (mdl CommonCMAdapter) getEventNameFromCallv2(mainCallName string, sessionId
 		mdl.SetSessionIsUpdated(sessionId)
 		mainEventFromCall = "OpenCreditAccount(address,address,uint256,uint16)"
 	case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall:
-		mdl.setLiquidateStatus(sessionId, mainCallName == ds.FacadeLiquidateExpiredCall)
+		mdl.setLiquidateStatus(sessionId, mainCallName == ds.FacadeLiquidateExpiredCall) // SET_LIQ_STATUS_AFTER_CALL
 		mainEventFromCall = "LiquidateCreditAccount(address,address,address,uint256)"
 	case ds.FacadeCloseAccountCall:
 		mainEventFromCall = "CloseCreditAccount(address,address)"
