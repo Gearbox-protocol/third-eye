@@ -122,6 +122,8 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 	return
 }
 
+var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
+
 func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 
@@ -156,9 +158,27 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 				return new(big.Int).SetBytes(lowerLimit).Cmp(virtualPrice) < 0 &&
 					new(big.Int).SetBytes(upperLimit).Cmp(virtualPrice) > 0
 			}()
-			if !withinLimits {
-				return nil
+			if curvePFLatestRoundDataTimer[adapter.GetAddress()] == nil {
+				curvePFLatestRoundDataTimer[adapter.GetAddress()] = log.GetRiskMsgTimer()
 			}
+			var msg string
+			if !withinLimits {
+				msg = "virtual price is not within limits for " + adapter.GetAddress()
+			} else {
+				msg = "failing due to unknown reason maybe underlying pricefeed of curve pool token is failing for curve adapter" + adapter.GetAddress()
+			}
+			log.SendRiskAlertPerTimer(
+				log.RiskAlert{
+					Msg: msg,
+					RiskHeader: log.RiskHeader{
+						BlockNumber: blockNum,
+						EventCode:   "CURVE_LATEST_ROUNDDATA_FAIL",
+					},
+				},
+				curvePFLatestRoundDataTimer[adapter.GetAddress()],
+				86400*time.Second,
+			)
+			return nil
 		default:
 			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s)", adapter.GetDetailsByKey("pfType"), adapter.GetAddress())
 		}
