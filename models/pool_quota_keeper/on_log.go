@@ -39,7 +39,7 @@ func (mdl PoolQuotaKeeper) addToken(blockNum int64, token string) {
 		//
 		Timestamp:     mdl.Repo.SetAndGetBlock(blockNum).Timestamp,
 		Pool:          mdl.GetDetailsByKey("pool"),
-		CumQuotaIndex: (*core.BigInt)(utils.GetExpInt(27)),
+		CumQuotaIndex: (*core.BigInt)(big.NewInt(1)),
 		//
 		IsDirty: true,
 	}
