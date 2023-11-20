@@ -103,7 +103,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
 func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, bool, error) {
-	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil)
+	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
 	log.CheckFatal(err)
 	pfType := new(big.Int).SetBytes(data).Int64()
 	switch pfType {
