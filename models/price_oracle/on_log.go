@@ -98,6 +98,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle string
 					"PRICEFEED_crvUSDTWBTCWETH",
 					"PRICEFEED_LDOETH",
 					"PRICEFEED_crvUSDETHCRV",
+					"crvPlain3andSUSD price feed",
 				}, description) {
 					// https://github.com/Gearbox-protocol/integrations-v2/tree/main/contracts/oracles/curve
 					return ds.CurvePF, false, nil
