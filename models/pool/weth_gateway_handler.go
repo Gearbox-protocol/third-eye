@@ -52,7 +52,7 @@ func (g *GatewayHandler) getRemoveLiqEventsAndClear() []*schemas.PoolLedger {
 	return events
 }
 
-func (g *GatewayHandler) checkWithdrawETH(blockNum, ind int64, pool, user string) {
+func (g *GatewayHandler) checkWithdrawETH(txHash string, blockNum, ind int64, pool, user string) {
 	if g.Gateway == core.NULL_ADDR {
 		return
 	}
@@ -61,8 +61,8 @@ func (g *GatewayHandler) checkWithdrawETH(blockNum, ind int64, pool, user string
 		g.lastEntry.User = user
 	} else {
 		log.Fatalf(`WithdrawalWETH event on gateway@(%d,%d) 
-			but no matching last pool Remove Liquidity %s`,
-			blockNum, ind, utils.ToJson(g.lastEntry))
+			but no matching last pool Remove Liquidity %s. TxHash: %s`,
+			blockNum, ind, utils.ToJson(g.lastEntry), txHash)
 	}
 }
 

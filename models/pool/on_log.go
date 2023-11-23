@@ -141,10 +141,10 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 	case core.Topic("WithdrawETH(address,address)"):
 		pool := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 		user := common.BytesToAddress(txLog.Topics[2][:]).Hex()
-		ind := txLog.TxIndex - 2
+		ind := txLog.Index - 2
 		blockNum := int64(txLog.BlockNumber)
 		// for weth pool, WithdrawETH is emitted on weth gateway, so we track withdraETH on gateway for getting user
-		mdl.gatewayHandler.checkWithdrawETH(blockNum, int64(ind), pool, user)
+		mdl.gatewayHandler.checkWithdrawETH(txLog.TxHash.Hex(), blockNum, int64(ind), pool, user)
 	case core.Topic("Transfer(address,address,uint256)"):
 		from := common.BytesToAddress(txLog.Topics[1][:])
 		to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
@@ -153,9 +153,9 @@ func (mdl *Pool) OnLog(txLog types.Log) {
 		if !(from == mdl.gatewayHandler.Gateway && to != mdl.gatewayHandler.UserCantBe.Hex()) {
 			return
 		}
-		ind := txLog.TxIndex - 3
+		ind := txLog.Index - 3
 		blockNum := int64(txLog.BlockNumber)
-		mdl.gatewayHandler.checkWithdrawETH(blockNum, int64(ind), mdl.Address, to)
+		mdl.gatewayHandler.checkWithdrawETH(txLog.TxHash.Hex(), blockNum, int64(ind), mdl.Address, to)
 	}
 }
 
