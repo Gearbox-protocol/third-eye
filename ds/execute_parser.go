@@ -56,8 +56,10 @@ func (f FacadeCallNameWithMulticall) LenOfMulticalls() int {
 	return len(f.multiCalls)
 }
 
-// handles revertIflessthan case where event is not emitted.
-// also handles cases where number of execute order events emitted is less than execute calls
+// handles revertIflessthan case where event is not emitted. L1
+// handles failed tokenDisabled call. L2
+// also handles cases where number of execute order events emitted is less than execute calls // L3
+// event len can be zero in case of all failed calls, so no events.
 func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(events []*schemas.AccountOperation) bool {
 	if f.TestLen != 0 {
 		return f.TestLen == len(events)
@@ -101,15 +103,15 @@ func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(events []*schemas
 			eventInd++
 			callInd++
 		case "23e27a64": // disable token
-			if events[eventInd].Action != "TokenDisabled(address,address)" {
-				return false
+			if events[eventInd].Action == "TokenDisabled(address,address)" { // L2
+				eventInd++
 			}
-			eventInd++
+			callInd++ // disabled call can fail.
+		case "81314b59": // revert if less than // ignore for event // revertIfReceivedLessThan // L1
 			callInd++
-		case "81314b59": // revert if less than // ignore for event // revertIfReceivedLessThan
-			callInd++
-		default: //execute order
+		default: //execute order // L3
 			// it might happen that some of the execution call are not executed so len of provided multicalls will be more than executed calls.
+			// takes longest array of execute order events and calls, and compares their sizes. len events< len calls
 			executeEvent := 0
 			for eventInd < len(events) && events[eventInd].Action == "ExecuteOrder" {
 				executeEvent++
