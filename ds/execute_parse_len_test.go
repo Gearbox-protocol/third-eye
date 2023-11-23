@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
@@ -42,7 +43,7 @@ func Test_Check1(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_failed_token_disabled.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(data.Events) {
+	if !calls.SameMulticallLenAsEvents(core.NewVersion(2), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
@@ -55,7 +56,7 @@ func Test_Check2(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_event_len_0.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(data.Events) {
+	if !calls.SameMulticallLenAsEvents(core.NewVersion(2), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
