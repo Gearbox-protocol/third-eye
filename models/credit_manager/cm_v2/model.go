@@ -7,7 +7,7 @@ import (
 )
 
 type CMv2 struct {
-	*cm_mvp.CmMVP
+	*cm_mvp.Cmv1v2
 	CMv2Fields
 	//
 	allowedProtocols map[string]bool
@@ -27,7 +27,7 @@ func NewCMv2(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 func NewCMv2FromAdapter(adapter *ds.SyncAdapter) *CMv2 {
 	//
 	obj := &CMv2{
-		CmMVP:            cm_mvp.NewCMCommon(adapter),
+		Cmv1v2:           cm_mvp.NewCMv1v2(adapter),
 		CMv2Fields:       CMv2Fields{},
 		allowedProtocols: map[string]bool{},
 	}

@@ -113,7 +113,7 @@ func (mdl *CMv2) onCloseCreditAccountV2(txLog *types.Log, owner, to string) {
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil) // update session
 	session.CloseTransfers = &userTransfers
 
-	mdl.MulticallMgr.AddCloseOrLiquidateEvent(accountOperation) // add event to multicall processor
+	mdl.MulticallMgr.AddCloseEvent(accountOperation) // add event to multicall processor
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 
 	mdl.SetSessionIsClosed(sessionId, &cm_common.SessionCloseDetails{ // update closeSession map with session details
@@ -150,7 +150,7 @@ func (mdl *CMv2) onLiquidateCreditAccountV2(txLog *types.Log, owner, liquidator 
 		Dapp: txLog.Address.Hex(),
 	}
 	// add event to multicall processor
-	mdl.MulticallMgr.AddCloseOrLiquidateEvent(accountOperation)
+	mdl.MulticallMgr.AddLiquidateEvent(accountOperation)
 	mdl.SetSessionIsClosed(sessionId, &cm_common.SessionCloseDetails{
 		LogId:          txLog.Index,
 		RemainingFunds: remainingFunds,

@@ -7,20 +7,21 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	mp "github.com/Gearbox-protocol/third-eye/ds/multicall_processor"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // It is only used by v1 and v2 cm
-type CmMVP struct {
+type Cmv1v2 struct {
 	*cm_common.CommonCMAdapter
 	Sessions map[string]string // borrower to sessionId
 	//
 }
 
-func NewCMCommon(adapter *ds.SyncAdapter) *CmMVP {
-	return &CmMVP{
-		CommonCMAdapter: cm_common.NewCommonCMAdapter(adapter),
+func NewCMv1v2(adapter *ds.SyncAdapter) *Cmv1v2 {
+	return &Cmv1v2{
+		CommonCMAdapter: cm_common.NewCommonCMAdapter(adapter, &mp.MultiCallProcessorv2{}),
 		Sessions:        map[string]string{},
 	}
 }
@@ -28,7 +29,7 @@ func NewCMCommon(adapter *ds.SyncAdapter) *CmMVP {
 // get underlyigToken
 // get pool
 // set state
-func (mdl *CmMVP) CommonInitState(version core.VersionType) {
+func (mdl *Cmv1v2) CommonInitState(version core.VersionType) {
 
 	underlyingToken := func() common.Address {
 		if version.IsGBv1() {
@@ -57,7 +58,7 @@ func (mdl *CmMVP) CommonInitState(version core.VersionType) {
 }
 
 // for states
-func (mdl *CmMVP) SetUnderlyingState(obj interface{}) {
+func (mdl *Cmv1v2) SetUnderlyingState(obj interface{}) {
 	mdl.UnderlyingStateToSave = true
 	switch underlyingObj := obj.(type) {
 	case (*schemas.CreditManagerState):
@@ -73,15 +74,15 @@ func (mdl *CmMVP) SetUnderlyingState(obj interface{}) {
 	}
 }
 
-func (mdl *CmMVP) AddCreditOwnerSession(owner, sessionId string) {
+func (mdl *Cmv1v2) AddCreditOwnerSession(owner, sessionId string) {
 	mdl.Sessions[owner] = sessionId
 }
 
-func (mdl *CmMVP) RemoveCreditOwnerSession(owner string) {
+func (mdl *Cmv1v2) RemoveCreditOwnerSession(owner string) {
 	delete(mdl.Sessions, owner)
 }
 
-func (mdl *CmMVP) GetCreditOwnerSession(owner string, dontFail ...bool) string {
+func (mdl *Cmv1v2) GetCreditOwnerSession(owner string, dontFail ...bool) string {
 	sessionId := mdl.Sessions[owner]
 	if (len(dontFail) == 0 || !dontFail[0]) && sessionId == "" {
 		panic(

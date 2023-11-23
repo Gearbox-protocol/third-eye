@@ -15,6 +15,13 @@ func bytesToUInt16(data []byte) uint16 {
 	return uint16(new(big.Int).SetBytes(data).Int64())
 }
 
+func (mdl *CMv3) isExpired(blockNum int64) bool {
+	if mdl.expirationDate == 0 {
+		return false
+	}
+	return mdl.Repo.SetAndGetBlock(blockNum).Timestamp >= mdl.expirationDate
+}
+
 func (mdl *CMv3) OnLog(txLog types.Log) {
 	// creditConfigurator events for test
 	// CreditFacadeUpgraded is emitted when creditconfigurator is initialized, so we will receive it on init
@@ -24,6 +31,8 @@ func (mdl *CMv3) OnLog(txLog types.Log) {
 		case core.Topic("SetCreditFacade(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
 			mdl.setCreditFacadeSyncer(facade)
+		case core.Topic("SetExpirationDate(uint40)"):
+			mdl.expirationDate = uint64(new(big.Int).SetBytes(txLog.Data[:]).Int64())
 		case core.Topic("UpdateFees(uint16,uint16,uint16,uint16,uint16)"):
 			mdl.SetParams(&schemas.Parameters{
 				BlockNum:                   int64(txLog.BlockNumber),

@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	mp "github.com/Gearbox-protocol/third-eye/ds/multicall_processor"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -16,7 +17,7 @@ type CommonCMAdapter struct {
 	*ds.SyncAdapter
 	State                  *schemas.CreditManagerState
 	borrowedAmountForBlock *big.Int
-	MulticallMgr           *ds.MultiCallProcessor
+	MulticallMgr           mp.MulticallProcessorI
 	//
 	onChangeDetails
 	//
@@ -26,19 +27,22 @@ type CommonCMAdapter struct {
 	DontGetSessionFromDCForTest bool
 	//
 	// calculating credit session stats
-	UpdatedSessions map[string]int
-	ClosedSessions  map[string]*SessionCloseDetails
+	// updated Sesssions is updated if operation is liq v3
+	updatedSessions map[string]int
+	liqv3Sessions   map[string]*SessionLiqUpdatev3Details
+	closedSessions  map[string]*SessionCloseDetails
 }
 
-func NewCommonCMAdapter(adapter *ds.SyncAdapter) *CommonCMAdapter {
+func NewCommonCMAdapter(adapter *ds.SyncAdapter, multiCallMgr mp.MulticallProcessorI) *CommonCMAdapter {
 	return &CommonCMAdapter{
 		SyncAdapter: adapter,
 		//
 		PnlOnCM:      NewPnlCM(),
-		MulticallMgr: &ds.MultiCallProcessor{},
+		MulticallMgr: multiCallMgr,
 		//
-		UpdatedSessions: make(map[string]int),
-		ClosedSessions:  make(map[string]*SessionCloseDetails),
+		updatedSessions: make(map[string]int),
+		liqv3Sessions:   make(map[string]*SessionLiqUpdatev3Details),
+		closedSessions:  make(map[string]*SessionCloseDetails),
 	}
 }
 

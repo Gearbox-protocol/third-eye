@@ -26,16 +26,30 @@ func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedF
 func (repo *Repository) loadAccountLastSession() {
 	defer utils.Elapsed("loadAccountLastSession")()
 	data := []*ds.SessionData{}
-	err := repo.db.Raw(`SELECT t1.*,t2.*, t3.closed_tx_hash, t3.closed_log_id 
-		FROM (SELECT DISTINCT ON (account) credit_manager, since, id, closed_at, account 
+	err := repo.db.Raw(`WITH sessions AS (SELECT * FROM
+		(SELECT DISTINCT ON (account) credit_manager, version, since, id, closed_at, account 
 				FROM credit_sessions ORDER BY account, since DESC) t1 JOIN 
 			(SELECT session_id, tx_hash open_tx_hash, log_id open_log_id
-				FROM account_operations WHERE action like 'OpenCreditAccount%') t2 ON t1.id = t2.session_id
-		LEFT JOIN (SELECT session_id, tx_hash closed_tx_hash, log_id closed_log_id
-			FROM account_operations 
+				FROM account_operations WHERE action like 'OpenCreditAccount%') t2 
+		ON t1.id = t2.session_id) ` +
+		`SELECT * FROM ` + // get all data from v1/v2/v3
+		// for v1/v2
+		`(SELECT s_v2.*, t3.closed_tx_hash, t3.closed_log_id FROM (
+			(SELECT * FROM sessions WHERE version!=300) s_v2 LEFT JOIN
+				(SELECT session_id, tx_hash closed_tx_hash, log_id closed_log_id
+				FROM account_operations 
 			WHERE (action like 'CloseCreditAccount%' 
 			or action like 'LiquidateCreditAccount%' 
-			or action like 'RepayCreditAccount%')) t3 ON t1.id = t3.session_id`).Find(&data).Error
+			or action like 'RepayCreditAccount%')) t3 
+			ON s_v2.id = t3.session_id) UNION ` +
+		// for v3
+		`SELECT s_v3.*,  t4.closed_tx_hash, t4.closed_log_id FROM (
+			(SELECT * FROM sessions WHERE version=300) s_v3 LEFT JOIN
+					(SELECT session_id, tx_hash closed_tx_hash, log_id closed_log_id
+					FROM account_operations 
+				WHERE (action like 'CloseCreditAccount%' 
+				or action like 'RepayCreditAccount%')) t4 
+				ON s_v3.id = t4.session_id)) tmp`).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}

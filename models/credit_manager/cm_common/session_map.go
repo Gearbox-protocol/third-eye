@@ -10,13 +10,16 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
+type SessionLiqUpdatev3Details SessionCloseDetails
+
 // credit session close details
 type SessionCloseDetails struct {
-	RemainingFunds   *big.Int
-	Status           int
-	LogId            uint
-	TxHash           string
-	Borrower         string
+	RemainingFunds *big.Int
+	Status         int
+	LogId          uint
+	TxHash         string
+	Borrower       string
+	// used for v1 repayment , so that we can set repayment amount for repaid session accountOperation
 	AccountOperation *schemas.AccountOperation
 }
 
@@ -26,15 +29,25 @@ func (x SessionCloseDetails) String() string {
 }
 
 func (mdl CommonCMAdapter) SetSessionIsUpdated(sessionId string) {
-	// log.Info(log.DetectFunc(),sessionId, "increased")
-	mdl.UpdatedSessions[sessionId]++
+	mdl.updatedSessions[sessionId] += 1
+}
+func (mdl CommonCMAdapter) SetSessionIsLiqv3(sessionId string, details *SessionLiqUpdatev3Details) {
+	if mdl.liqv3Sessions[sessionId] == nil {
+		mdl.liqv3Sessions[sessionId] = details
+		mdl.updatedSessions[sessionId] += 1
+	} else {
+		log.Fatal("can't set the liquidatev3 details for fetching dcv3 data twice", sessionId, utils.ToJson(details))
+	}
 }
 
 func (mdl CommonCMAdapter) SetSessionIsClosed(sessionId string, details *SessionCloseDetails) {
-	mdl.ClosedSessions[sessionId] = details
+	mdl.closedSessions[sessionId] = details
 }
+
+// used for v2 liquidations setting expired,paused or noraml liquidation
+// SET_LIQ_STATUS_AFTER_CALL
 func (mdl CommonCMAdapter) UpdateClosedSessionStatus(sessionId string, status int) {
-	mdl.ClosedSessions[sessionId].Status = status
+	mdl.closedSessions[sessionId].Status = status
 }
 
 // collateral

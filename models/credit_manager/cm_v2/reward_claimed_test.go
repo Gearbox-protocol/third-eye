@@ -101,7 +101,7 @@ func TestRewardClaimed(t *testing.T) {
 		},
 	}
 	cmModel := CMv2{
-		CmMVP: cm_mvp.NewCMCommon(adapter),
+		Cmv1v2: cm_mvp.NewCMv1v2(adapter),
 		allowedProtocols: map[string]bool{
 			allowedProtocol:  true,
 			allowedProtocol2: true,

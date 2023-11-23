@@ -3,6 +3,7 @@ package cm_common
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"sort"
 	"strings"
 
@@ -11,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	mpi "github.com/Gearbox-protocol/third-eye/ds/multicall_processor"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -18,7 +20,7 @@ import (
 // this function adds multicall to mainFacadeActions
 // if that is the correct structure of operation
 func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
-	facadeActions []*ds.FacadeAccountActionv2) (result []*ds.FacadeAccountActionv2) { // facadeEvents from rpc, mainCalls from tenderly
+	facadeActions []*mpi.FacadeAccountAction) (result []*mpi.FacadeAccountAction) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
 		log.Fatalf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
 			len(mainCalls), len(facadeActions),
@@ -30,7 +32,7 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 		action := facadeActions[ind]
 		switch mainCall.Name {
 		case ds.FacadeOpenMulticallCall:
-			if action.Type != ds.GBv2FacadeOpenEvent {
+			if !action.IsOpen() {
 				log.Fatal()
 			}
 			result = append(result, action)
@@ -40,7 +42,7 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 			if mainCall.LenOfMulticalls() != 0 && len(facadeActions) > ind+1 { // combine next facadeAccountAction with current,
 				// if number of multicall reported by tenderly are more than 0 for close,expiredliquidate or liquidate calls.
 				// this first action is multicall so just take the executeOrders from it.
-				multicallToAttach := action.GetMulticallsFromFA()
+				multicallToAttach := action.GetMulticallsFromEvent()
 				action = facadeActions[ind+1]
 				action.SetMulticalls(multicallToAttach)
 				ind++
@@ -86,13 +88,13 @@ func (mdl CommonCMAdapter) updateQuotasWithSessionId(sessionId string, mainCall 
 // check multicall for facade action vs tenderly response
 // add to db
 func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionType, txHash string,
-	facadeActions []*ds.FacadeAccountActionv2,
+	facadeActions []*mpi.FacadeAccountAction,
 	mainCalls []*ds.FacadeCallNameWithMulticall,
 	nonMultiCallExecuteEvents []ds.ExecuteParams) {
 
 	executeParams := []ds.ExecuteParams{} // non multicall and multicall execute orders for a tx to be compared with call trace
-	for ind, mainAction := range facadeActions {
-		mainEvent := mainAction.Data
+	for ind, _mainAction := range facadeActions {
+		mainEvent := _mainAction.Data
 
 		mainCall := mainCalls[ind]
 		//
@@ -103,7 +105,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 			log.Fatal(msg)
 		}
 		//
-		eventMulticalls := mainAction.GetMulticallsFromFA()
+		eventMulticalls := mainEvent.MultiCall
 		if !mainCall.SameMulticallLenAsEvents(version, eventMulticalls) {
 			log.Fatalf("%s expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
@@ -114,7 +116,8 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 		//
 		account := strings.Split(mainEvent.SessionId, "_")[0]
 		for _, event := range eventMulticalls {
-			if event.Action == "ExecuteOrder" {
+			switch event.Action {
+			case "ExecuteOrder":
 				executeParams = append(executeParams, ds.ExecuteParams{
 					SessionId:     mainEvent.SessionId,
 					CreditAccount: common.HexToAddress(account),
@@ -123,11 +126,25 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 					Index:         event.LogId,
 					BlockNumber:   event.BlockNumber,
 				})
+			case "WithdrawCollateral(address,address,uint256,address)":
+				if mainEvent.Action == "LiquidateCreditAccount(address,address,address,address,uint256)" { // REV_COL_LIQ_V3: v3 liquidate reverse the collateral
+					// since liquidation the withdraw collateral is not to the account owner.
+					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,
+						(*event.Args)["token"].(common.Address).Hex(),
+						(*event.Args)["amount"].(*big.Int),
+					)
+				}
 			}
 		}
 	}
 
-	executeParams = append(executeParams, nonMultiCallExecuteEvents...)
+	mdl.executeOperations(txHash, facadeActions, executeParams, nonMultiCallExecuteEvents)
+}
+
+// process non multicall execute operations.
+// attach multicall execute operations to facade main actions
+func (mdl *CommonCMAdapter) executeOperations(txHash string, facadeActions []*mpi.FacadeAccountAction,
+	executeParams, nonMultiCallExecuteEvents []ds.ExecuteParams) {
 	sort.Slice(executeParams, func(i, j int) bool { return executeParams[i].Index < executeParams[j].Index })
 	tenderlyExecOperations := mdl.GetExecuteOrderAccountOperationFromParams(txHash, executeParams)
 
@@ -147,7 +164,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 	// called for  open_with_multicall, multicall, liquidate, close
 	var indTenderlyCall int
 	for _, mainAction := range facadeActions {
-		multicalls := mainAction.GetMulticallsFromFA()
+		multicalls := mainAction.GetMulticallsFromEvent()
 		for multicallInd, innerEvent := range multicalls {
 			if innerEvent.Action == "ExecuteOrder" {
 				if innerEvent.LogId == remainingExecOperations[indTenderlyCall].LogId { // add multicall execute order to main event
