@@ -26,6 +26,7 @@ type GBv2Multicall []struct {
 }
 type FacadeCallNameWithMulticall struct {
 	Name       string                     `json:"name"`
+	facade     string                     `json:"-"`
 	multiCalls []multicall.Multicall2Call `json:"-"`
 	TestLen    int                        `json:"len"`
 }
@@ -34,10 +35,11 @@ func (a FacadeCallNameWithMulticall) GetMulticalls() []multicall.Multicall2Call 
 	return a.multiCalls
 }
 
-func NewFacadeCallNameWithMulticall(name string, multicalls []multicall.Multicall2Call) *FacadeCallNameWithMulticall {
+func NewFacadeCallNameWithMulticall(facade, name string, multicalls []multicall.Multicall2Call) *FacadeCallNameWithMulticall {
 	return &FacadeCallNameWithMulticall{
 		Name:       name,
 		multiCalls: multicalls,
+		facade:     facade,
 	}
 }
 
@@ -79,6 +81,9 @@ func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(version core.Vers
 }
 
 func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) bool {
+	if len(f.facade) != 42 {
+		log.Fatal("facade address is missing from executeParser DS")
+	}
 	eventInd := 0
 	callInd := 0
 	callLen := len(f.multiCalls)
@@ -88,7 +93,8 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 		sig := hex.EncodeToString(multiCall.CallData[:4])
 		switch sig {
 		case "59781034", // add collateral
-			"6d75b9ee": // add collateral extended 2.2
+			"6d75b9ee", // add collateral extended 2.2
+			"438f8fcc": // AddCollateralWithPermit
 			if events[eventInd].Action != "AddCollateral(address,address,uint256)" {
 				return false
 			}
@@ -118,21 +124,21 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 			}
 			// eventInd++
 			callInd++
-		case "81314b59": // revert if less than // ignore for event
+		case "81314b59": // revert if less than  // can't find in v3
 			callInd++
-		case "82ff942c": //  TODO
-			callInd++
-		case "6631d161": // payBot
+		case "82ff942c", "2f2ca49b": // can't find in v3
 			callInd++
 		case "0768bbfe": // setFullCheckParams
 			callInd++
 		case "565a820d": // revokeAdapterAllowances
 			callInd++
-		case "384f69fa": // scheduleWithdrawal
-			callInd++
 		case "712c10ad": // updateQuota
 			callInd++
-		case "a6181cb0": // onDemandPriceUpdate
+		case "6c68e109": // onDemandPriceUpdate
+			callInd++
+		case "f42aeb00": // compareBalances
+			callInd++
+		case "1f1088a0": // withdrawcollateral
 			callInd++
 		default: //execute
 			// it might happen that some of the execution call are not executed so len of provided multicalls will be more than executed calls.
@@ -142,11 +148,7 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 				eventInd++
 			}
 			executeCall := 0
-			for callInd < callLen && !utils.Contains([]string{
-				"59781034", "6d75b9ee", "2b7c7b11", "2a7ba1f7", "c690908a", "23e27a64", "81314b59",
-				"82ff942c", // TODO find the corresponding eventId
-				"6631d161", "0768bbfe", "565a820d", "384f69fa", "712c10ad", "a6181cb0"},
-				hex.EncodeToString(f.multiCalls[callInd].CallData[:4])) {
+			for callInd < callLen && f.multiCalls[callInd].Target.Hex() != f.facade { // until multicall call that is not for facade is seen
 				executeCall++
 				callInd++
 			}

@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -15,6 +16,7 @@ import (
 type ExecuteParserLenTester struct {
 	TxHash string                      `json:"txHash"`
 	Calls  []string                    `json:"calls"`
+	Facade string                      `json:"facade"`
 	Events []*schemas.AccountOperation `json:"events"`
 }
 
@@ -33,6 +35,7 @@ func (tester ExecuteParserLenTester) GetCalls(t *testing.T) FacadeCallNameWithMu
 	}
 	return FacadeCallNameWithMulticall{
 		Name:       "test",
+		facade:     tester.Facade,
 		multiCalls: multicalls,
 	}
 }
@@ -57,6 +60,20 @@ func Test_Check2(t *testing.T) {
 
 	calls := data.GetCalls(t)
 	if !calls.SameMulticallLenAsEvents(core.NewVersion(2), data.Events) {
+		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
+			calls.LenOfMulticalls(), len(data.Events),
+			utils.ToJson(data.Events), calls.String(), data.TxHash)
+	}
+}
+
+// checks if the events len is zero, can func handle it?
+func Test_Checkv3(t *testing.T) {
+	log.SetTestLogging(t)
+	data := ExecuteParserLenTester{}
+	utils.ReadJsonAndSetInterface("execute_parser/check_v3.json", &data)
+
+	calls := data.GetCalls(t)
+	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)

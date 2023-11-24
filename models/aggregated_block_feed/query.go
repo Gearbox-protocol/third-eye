@@ -136,7 +136,8 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 			// fail on err, since we only sync for block_num which is more than discovered_at, we can assume that underlying price feed will be set for given block_num
 			_priceData, err := adapter.calculateYearnPFInternally(blockNum)
 			if err != nil {
-				log.Fatal(fmt.Errorf("can't calculate yearnfeed(%s)'s price internally: %s",
+				log.Fatal(fmt.Errorf("At %d can't calculate yearnfeed(%s)'s price internally: %s",
+					blockNum,
 					adapter.GetAddress(), err.Error()))
 			}
 			priceData = _priceData

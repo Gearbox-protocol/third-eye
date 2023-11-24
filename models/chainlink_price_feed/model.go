@@ -1,7 +1,6 @@
 package chainlink_price_feed
 
 import (
-	"encoding/json"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -79,12 +78,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		// TODO anvil fork testing
 		var err error
 		if core.GetChainId(adapter.Client) == 7878 {
-			if addrFistLogAt[adapter.Address] != nil {
-				lastLogBeforeDiscoverNum, err = addrFistLogAt[adapter.Address].(json.Number).Int64()
-				log.CheckFatal(err)
-			} else {
-				lastLogBeforeDiscoverNum = 15860883
-			}
+			lastLogBeforeDiscoverNum = obj.DiscoveredAt - 3000
 		} else {
 			lastLogBeforeDiscoverNum, err = obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
 				core.Topic("AnswerUpdated(int256,uint256,uint256)"),
@@ -100,15 +94,6 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 	}
 	obj.DataProcessType = ds.ViaMultipleLogs
 	return obj
-}
-
-var addrFistLogAt map[string]interface{}
-
-func init() {
-	// data, err := core.GetJsonnetFile("jsonnet/anvil_fork/addr_7878.jsonnet", core.JsonnetImports{})
-	// log.CheckFatal(err)
-	// //
-	// addrFistLogAt = utils.ReadJsonReader(bytes.NewBuffer([]byte(data)))
 }
 
 func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {

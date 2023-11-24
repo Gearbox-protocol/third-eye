@@ -92,12 +92,6 @@ func (p *MultiCallProcessorv3) PopMainActions() (facadeActions, openEventWithout
 	p.noOfOpens = 0
 	for _, entry := range p.facadeActions {
 		facadeActions = append(facadeActions, entry)
-		if entry.Type == GBFacadeOpenEvent && entry.Data != nil && // only for open credit accounts without multicalls // v2
-			entry.withoutMC {
-			openEventWithoutMulticall = append(openEventWithoutMulticall, entry)
-		} else {
-			facadeActions = append(facadeActions, entry)
-		}
 	}
 	return
 }

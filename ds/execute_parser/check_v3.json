@@ -1,0 +1,92 @@
+{
+    "txHash": "0x888059bf079e84ac095a9fbd489c88f84619723e734fe0f1ac1e5164874295c4",
+    "calls": [
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@2b7c7b11",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@438f8fcc",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@2f2ca49b",
+        "0x020bafa614d63087C4B3C8244F1e2c8A3859Ce4E@36f4e228",
+        "0x020bafa614d63087C4B3C8244F1e2c8A3859Ce4E@36f4e228",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@f42aeb00",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@712c10ad",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@712c10ad"
+    ],
+    "facade": "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB",
+    "events": [
+        {
+            "txHash": "0x888059bf079e84ac095a9fbd489c88f84619723e734fe0f1ac1e5164874295c4",
+            "blockNum": 18634447,
+            "logId": 5,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xCf0F6E823b300D48c0032f2650810235c0F71cf8_18634447_1",
+            "dapp": "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB",
+            "adapterCall": false,
+            "action": "IncreaseDebt(address,uint256)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "amount"
+                ],
+                "amount": "30000000000",
+                "creditAccount": "0xCf0F6E823b300D48c0032f2650810235c0F71cf8"
+            },
+            "transfers": {
+                "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "30000000000"
+            },
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x888059bf079e84ac095a9fbd489c88f84619723e734fe0f1ac1e5164874295c4",
+            "blockNum": 18634447,
+            "logId": 8,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xCf0F6E823b300D48c0032f2650810235c0F71cf8_18634447_1",
+            "dapp": "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB",
+            "adapterCall": false,
+            "action": "AddCollateral(address,address,uint256)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "token",
+                    "amount"
+                ],
+                "amount": "10000000000",
+                "creditAccount": "0xCf0F6E823b300D48c0032f2650810235c0F71cf8",
+                "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+            },
+            "transfers": {
+                "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "10000000000"
+            },
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x888059bf079e84ac095a9fbd489c88f84619723e734fe0f1ac1e5164874295c4",
+            "blockNum": 18634447,
+            "logId": 14,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xCf0F6E823b300D48c0032f2650810235c0F71cf8_18634447_1",
+            "dapp": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x888059bf079e84ac095a9fbd489c88f84619723e734fe0f1ac1e5164874295c4",
+            "blockNum": 18634447,
+            "logId": 21,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xCf0F6E823b300D48c0032f2650810235c0F71cf8_18634447_1",
+            "dapp": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        }
+    ]
+}

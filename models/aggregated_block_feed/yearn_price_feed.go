@@ -44,9 +44,12 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 
 func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) *QueryPriceFeed {
 	obj := &QueryPriceFeed{
-		SyncAdapter:     adapter,
-		mu:              &sync.Mutex{},
-		yearnPFInternal: yearnPFInternal{mainPFAddress: common.HexToAddress(adapter.Address)}, // main price feed
+		SyncAdapter: adapter,
+		mu:          &sync.Mutex{},
+		yearnPFInternal: yearnPFInternal{
+			mainPFAddress: common.HexToAddress(adapter.Address),
+			version:       adapter.GetVersion(),
+		}, // main price feed
 	}
 	obj.DataProcessType = ds.ViaQuery
 	return obj

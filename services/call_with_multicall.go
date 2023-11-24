@@ -35,7 +35,7 @@ func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade co
 				"82871ace", // liquidateExpiredCreditAccount
 				"5d91a0e0", // liquidateCreditAccount (v2)
 				"7071b7c5": // openCreditAccountMulticall
-				event, err := getCreditFacadeMainEvent(call.Input, creditFacadev2Parser)
+				event, err := getCreditFacadeMainEvent(call.To, call.Input, creditFacadev2Parser)
 				if err != nil {
 					return nil, err
 				}
@@ -46,7 +46,7 @@ func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade co
 				"cfe46585", // closeCreditAccount(creditAccount,to,skipTokenMask,convertToETH,calls)
 				// "5d91a0e0", // liquidateCreditAccount
 				"92beab1d": // openCreditAccount(onBehalfOf,calls,referralCode)
-				event, err := getCreditFacadeMainEvent(call.Input, creditFacadev3Parser)
+				event, err := getCreditFacadeMainEvent(call.To, call.Input, creditFacadev3Parser)
 				if err != nil {
 					return nil, err
 				}
@@ -71,7 +71,7 @@ func init() {
 	creditFacadev2Parser = core.GetAbi("CreditFacade")
 	creditFacadev3Parser = core.GetAbi("CreditFacadev3")
 }
-func getCreditFacadeMainEvent(input string, parser *abi.ABI) (*ds.FacadeCallNameWithMulticall, error) {
+func getCreditFacadeMainEvent(contract string, input string, parser *abi.ABI) (*ds.FacadeCallNameWithMulticall, error) {
 	hexData, err := hex.DecodeString(input[2:])
 	if err != nil {
 		return nil, err
@@ -101,6 +101,7 @@ func getCreditFacadeMainEvent(input string, parser *abi.ABI) (*ds.FacadeCallName
 		})
 	}
 	return ds.NewFacadeCallNameWithMulticall(
+		contract, // v2 and v3 it means facade
 		ds.FacadeAccountMethodSigToCallName(method.Name),
 		multicalls,
 	), nil
