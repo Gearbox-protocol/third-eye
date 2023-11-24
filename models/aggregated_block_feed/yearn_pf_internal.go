@@ -73,7 +73,8 @@ func (mdl *yearnPFInternal) setContracts(blockNum int64, client core.ClientI) er
 	if mdl.version == core.NewVersion(300) {
 		// https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/yearn/YearnPriceFeed.sol#L19
 		// https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/SingleAssetLPPriceFeed.sol#L24
-		//https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/LPPriceFeed.sol#L69C9-L69C19
+		//https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/LPPriceFeed.sol#L69C9-
+		// LPCONTRACT_LOGIC
 		lpCOntractBytes, err := core.CallFuncWithExtraBytes(client, "8acee3cf", mdl.mainPFAddress, blockNum, nil) // lpContract
 		if err != nil {
 			return err
