@@ -40,7 +40,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		version := mdl.GetVersion()
 		priceFeedType, bounded, err := mdl.checkPriceFeedContract(blockNum, oracle, token)
 		if err != nil {
-			log.Fatalf("Oracle %s, err: %s", oracle, err)
+			log.Fatalf("Oracle %s, err: %s, blockNum %d", oracle, err, blockNum)
 		}
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account
