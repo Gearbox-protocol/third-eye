@@ -134,11 +134,19 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
 	} else if adapter.GetVersion().MoreThanEq(core.NewVersion(300)) {
 		failingv3LatestRound[adapter.GetAddress()] = append(failingv3LatestRound[adapter.GetAddress()], blockNum)
-		if len(failingv3LatestRound[adapter.GetAddress()]) == 10 {
-			log.Warnf("Can't get latestRounData in AQFWrapper for %s(%s) at %v",
-				adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()],
-			)
-		} else if len(failingv3LatestRound[adapter.GetAddress()]) > 10 {
+		if core.GetChainId(mdl.Client) == 7878 {
+			if len(failingv3LatestRound[adapter.GetAddress()]) == 10 {
+				log.Warnf("Can't get latestRounData in AQFWrapper for %s(%s) at %v",
+					adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()],
+				)
+			} else if len(failingv3LatestRound[adapter.GetAddress()]) > 10 {
+				log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %v",
+					adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()])
+			}
+			//  get latestRoundData can sometimes fail for anvil
+			// exit in those cases
+			return nil
+		} else {
 			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %v",
 				adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()])
 		}
