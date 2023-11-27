@@ -18,7 +18,6 @@ type Cmv3State struct {
 	*cm_common.CommonCMAdapter
 	whosAccount      map[string]AccountOwner
 	allowedProtocols map[string]bool
-	params           *schemas.Parameters
 }
 
 func NewCmv3State(adapter *ds.SyncAdapter) Cmv3State {
@@ -27,10 +26,6 @@ func NewCmv3State(adapter *ds.SyncAdapter) Cmv3State {
 		allowedProtocols: map[string]bool{},
 		whosAccount:      map[string]AccountOwner{},
 	}
-}
-
-func (mdl *Cmv3State) SetParams(params *schemas.Parameters) {
-	mdl.params = params
 }
 
 func (mdl *Cmv3State) SetUnderlyingState(obj interface{}) {
