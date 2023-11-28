@@ -6,7 +6,6 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
@@ -123,12 +122,12 @@ func (mdl *CMv3) onCloseCreditAccountV3(txLog *types.Log, creditAccount, to stri
 	mdl.CloseAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
 }
 
-func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liquidator string, borrower common.Address, remainingUnderlyingSentTo string, remainingFunds *big.Int) {
+func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liquidator string, remainingUnderlyingSentTo string, remainingFunds *big.Int) {
 	mdl.State.TotalLiquidatedAccounts++
 	sessionId, owner := mdl.GetSessionIdAndBorrower(creditAccount)
-	if owner != borrower.Hex() {
-		log.Fatalf("Stored borrower for account(%s) is different from the one in Liqv3 Event: %s", creditAccount, borrower)
-	}
+	// if owner != borrower.Hex() {
+	// 	log.Fatalf("Stored borrower for account(%s) is different from the one in Liqv3 Event: %s", creditAccount, borrower)
+	// }
 	blockNum := int64(txLog.BlockNumber)
 
 	//
@@ -218,14 +217,14 @@ func (mdl *CMv3) onWithdrawCollateralV3(txLog *types.Log, creditAccount, token s
 		Action:      action,
 		Args:        args,
 		Transfers: &core.Transfers{
-			token: value.Neg(nil),
+			token: new(big.Int).Neg(value),
 		},
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.MulticallMgr.AddMulticallEvent(accountOperation)
 	// if the liquidator multicall has withdrawCollateral this will be undo in the processmulticall part.
 	// REV_COL_LIQ_V3
-	mdl.AddCollateralToSession(blockNum, sessionId, token, value.Neg(nil))
+	mdl.AddCollateralToSession(blockNum, sessionId, token, new(big.Int).Neg(value))
 }
 
 // amount can be negative, if decrease borrowamount, add pool repay event

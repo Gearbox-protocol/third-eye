@@ -47,7 +47,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			openCreditAccountEvent.OnBehalfOf.Hex(),
 			openCreditAccountEvent.CreditAccount.Hex(),
 			openCreditAccountEvent.ReferralCode)
-	case core.Topic("CloseCreditAccount(address,address,address)"):
+	case core.Topic("CloseCreditAccount(address,address)"):
 		closeCreditAccountEvent, err := mdl.facadeContractv3.ParseCloseCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack CloseCreditAccount event", err)
@@ -64,7 +64,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		if txLog.Address.Hex() == mdl.Address { // unset pause on cm, if Unpaused event is emitted only on cm address
 			mdl.State.Paused = false
 		}
-	case core.Topic("LiquidateCreditAccount(address,address,address,address,uint256)"):
+	case core.Topic("LiquidateCreditAccount(address,address,address,uint256)"):
 		liquidateCreditAccountEvent, err := mdl.facadeContractv3.ParseLiquidateCreditAccount(txLog)
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack LiquidateCreditAccount event", err)
@@ -72,7 +72,6 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		mdl.onLiquidateCreditAccountV3(&txLog,
 			liquidateCreditAccountEvent.CreditAccount.Hex(), // borrower not used
 			liquidateCreditAccountEvent.Liquidator.Hex(),
-			liquidateCreditAccountEvent.Borrower,
 			liquidateCreditAccountEvent.To.Hex(),
 			liquidateCreditAccountEvent.RemainingFunds,
 		)

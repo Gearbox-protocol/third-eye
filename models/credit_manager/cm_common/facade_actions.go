@@ -53,6 +53,7 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 	}
 	//
 	if ind != len(facadeActions) {
+		log.Info(utils.ToJson(facadeActions), utils.ToJson(mainCalls))
 		log.Fatalf(`Not able to completely process facade action in tx, 
 		mismatch with facade calls we got from tenderly. 
 		Len: %d, processed: %d`, len(facadeActions), ind)
@@ -127,7 +128,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 					BlockNumber:   event.BlockNumber,
 				})
 			case "WithdrawCollateral(address,address,uint256,address)":
-				if mainEvent.Action == "LiquidateCreditAccount(address,address,address,address,uint256)" { // REV_COL_LIQ_V3: v3 liquidate reverse the collateral
+				if mainEvent.Action == "LiquidateCreditAccount(address,address,address,uint256)" { // REV_COL_LIQ_V3: v3 liquidate reverse the collateral
 					// since liquidation the withdraw collateral is not to the account owner.
 					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,
 						(*event.Args)["token"].(common.Address).Hex(),
