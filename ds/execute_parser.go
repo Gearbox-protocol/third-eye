@@ -39,7 +39,7 @@ func NewFacadeCallNameWithMulticall(facade, name string, multicalls []multicall.
 	return &FacadeCallNameWithMulticall{
 		Name:       name,
 		multiCalls: multicalls,
-		facade:     facade,
+		facade:     common.HexToAddress(facade).Hex(),
 	}
 }
 

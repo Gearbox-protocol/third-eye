@@ -1,0 +1,76 @@
+{
+    "calls": [
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@2b7c7b11",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@6d75b9ee",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@2f2ca49b",
+        "0x020bafa614d63087C4B3C8244F1e2c8A3859Ce4E@36f4e228",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@f42aeb00",
+        "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@712c10ad"
+    ],
+    "txHash": "0x07edbbf51a1008f27a1f32a96119ddf6ec9e1bbb3be058ef46e43656256a559d",
+    "facade": "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB",
+    "events": [
+        {
+            "txHash": "0x07edbbf51a1008f27a1f32a96119ddf6ec9e1bbb3be058ef46e43656256a559d",
+            "blockNum": 18690033,
+            "logId": 7,
+            "borrower": "0xD2d8E34Fa5BafA8E7903baBEf5fD9101Df45CE04",
+            "sessionId": "0x76d396A2Ee3f66E1A0b31777c203b285Cc4cF7fE_18690033_3",
+            "dapp": "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB",
+            "adapterCall": false,
+            "action": "IncreaseDebt(address,uint256)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "amount"
+                ],
+                "amount": "15695012565",
+                "creditAccount": "0x76d396A2Ee3f66E1A0b31777c203b285Cc4cF7fE"
+            },
+            "transfers": {
+                "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "15695012565"
+            },
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x07edbbf51a1008f27a1f32a96119ddf6ec9e1bbb3be058ef46e43656256a559d",
+            "blockNum": 18690033,
+            "logId": 9,
+            "borrower": "0xD2d8E34Fa5BafA8E7903baBEf5fD9101Df45CE04",
+            "sessionId": "0x76d396A2Ee3f66E1A0b31777c203b285Cc4cF7fE_18690033_3",
+            "dapp": "0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB",
+            "adapterCall": false,
+            "action": "AddCollateral(address,address,uint256)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "token",
+                    "amount"
+                ],
+                "amount": "1500000000000000000",
+                "creditAccount": "0x76d396A2Ee3f66E1A0b31777c203b285Cc4cF7fE",
+                "token": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2"
+            },
+            "transfers": {
+                "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2": "1500000000000000000"
+            },
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x07edbbf51a1008f27a1f32a96119ddf6ec9e1bbb3be058ef46e43656256a559d",
+            "blockNum": 18690033,
+            "logId": 15,
+            "borrower": "0xD2d8E34Fa5BafA8E7903baBEf5fD9101Df45CE04",
+            "sessionId": "0x76d396A2Ee3f66E1A0b31777c203b285Cc4cF7fE_18690033_3",
+            "dapp": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        }
+    ]
+}
