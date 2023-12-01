@@ -113,15 +113,15 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 			eventInd++
 			callInd++
 		case "c690908a": // enable token
-			if events[eventInd].Action != "TokenEnabled(address,address)" {
-				return false
-			}
+			// if events[eventInd].Action != "TokenEnabled(address,address)" {
+			// 	return false
+			// }
 			// eventInd++
 			callInd++
 		case "23e27a64": // disable token
-			if events[eventInd].Action != "TokenDisabled(address,address)" {
-				return false
-			}
+			// if events[eventInd].Action != "TokenDisabled(address,address)" {
+			// 	return false
+			// }
 			// eventInd++
 			callInd++
 		case "81314b59": // revert if less than  // can't find in v3
@@ -139,6 +139,10 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 		case "f42aeb00": // compareBalances
 			callInd++
 		case "1f1088a0": // withdrawcollateral
+			if events[eventInd].Action != "WithdrawCollateral(address,address,uint256,address)" {
+				return false
+			}
+			eventInd++
 			callInd++
 		default: //execute
 			// it might happen that some of the execution call are not executed so len of provided multicalls will be more than executed calls.

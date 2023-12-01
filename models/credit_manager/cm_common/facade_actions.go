@@ -163,6 +163,7 @@ func (mdl *CommonCMAdapter) executeOperations(txHash string, facadeActions []*mp
 	}
 
 	// called for  open_with_multicall, multicall, liquidate, close
+	// add processed executeOrder to multicall, and multicall to the mainEvent
 	var indTenderlyCall int
 	for _, mainAction := range facadeActions {
 		multicalls := mainAction.GetMulticallsFromEvent()
@@ -231,12 +232,14 @@ func (mdl *CommonCMAdapter) addMulticallToMainEvent(mainEvent *schemas.AccountOp
 			} else {
 				mdl.Repo.AddAccountOperation(event)
 			}
-		case "TokenEnabled(address,address)",
-			"TokenDisabled(address,address)",
+		case
 			// for v2
 			"IncreaseBorrowedAmount(address,uint256)",
 			"DecreaseBorrowedAmount(address,uint256)",
+			"TokenEnabled(address,address)",
+			"TokenDisabled(address,address)",
 			// for v3
+			"WithdrawCollateral(address,address,uint256,address)",
 			"IncreaseDebt(address,uint256)",
 			"DecreaseDebt(address,uint256)":
 			eventsMulticalls = append(eventsMulticalls, event)
