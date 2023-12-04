@@ -71,7 +71,7 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 			BlockNum:             ps.BlockNum,
 			CumulativeIndexRAY:   ps.CumulativeIndexRAY,
 			AvailableLiquidityBI: ps.AvailableLiquidityBI,
-			BorrowAPYBI:          ps.BorrowAPYBI,
+			BaseBorrowAPYBI:      ps.BaseBorrowAPYBI,
 			Timestamp:            block.Timestamp,
 		})
 	}
@@ -265,7 +265,7 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 		var cumIndexNormalized *big.Int
 		if poolInterestData != nil {
 			tsDiff := new(big.Int).SetInt64(int64(ts - poolInterestData.Timestamp))
-			newInterest := new(big.Int).Mul(poolInterestData.BorrowAPYBI.Convert(), tsDiff)
+			newInterest := new(big.Int).Mul(poolInterestData.BaseBorrowAPYBI.Convert(), tsDiff)
 			newInterestPerSec := new(big.Int).Quo(newInterest, big.NewInt(3600*365*24))
 			predicate := new(big.Int).Add(newInterestPerSec, utils.GetExpInt(27))
 			cumIndex := new(big.Int).Mul(poolInterestData.CumulativeIndexRAY.Convert(), predicate)

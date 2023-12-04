@@ -72,7 +72,7 @@ func (p *Poolv2) createSnapshot(blockNum int64, state dc.PoolCallData) {
 	token := p.Repo.GetToken(p.State.UnderlyingToken)
 	p.State.IsWETH = dc.IsWETH(p.Client, state.Underlying)
 	// TODO: change borrow apy
-	p.State.BorrowAPYBI = (*core.BigInt)(state.BaseInterestRate)
+	p.State.BaseBorrowAPYBI = (*core.BigInt)(state.BaseInterestRate)
 	p.State.DepositAPYBI = (*core.BigInt)(state.SupplyRate)
 	p.Repo.AddPoolStat(&schemas.PoolStat{
 		BlockNum:        blockNum,
@@ -92,9 +92,9 @@ func (p *Poolv2) createSnapshot(blockNum int64, state dc.PoolCallData) {
 		// for 4% is depositAPY is 4 that is why apy is divided by decimal 25 not 27
 		DepositAPY: utils.GetFloat64Decimal(state.SupplyRate, 25),
 
-		BorrowAPYBI: (*core.BigInt)(state.BaseInterestRate),
+		BaseBorrowAPYBI: (*core.BigInt)(state.BaseInterestRate),
 		// TODO change to base borrow rate
-		BorrowAPY: utils.GetFloat64Decimal(state.BaseInterestRate, 25),
+		BaseBorrowAPY: utils.GetFloat64Decimal(state.BaseInterestRate, 25),
 
 		// dieselrate is how much each diesel rate is worth in terms of underlying token
 		// that's why it is divide by 27 not 25. it is not a percentage.

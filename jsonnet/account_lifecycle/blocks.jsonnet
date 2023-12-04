@@ -108,6 +108,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 6000,
         totalValueBI: '6000000000',
+        extraQuotaRAYBI: '0',
       },
     ],
     daoOperations: [
@@ -201,8 +202,8 @@
         availableLiquidity: 1000,
         availableLiquidityBI: '1000000000',
         blockNum: 3,
-        borrowAPY: 0,
-        borrowAPYBI: '0',
+        baseBorrowAPY: 0,
+        baseBorrowAPYBI: '0',
         cumulativeIndexRAY: '1000000000000000000000000000',
         depositAPY: 0,
         depositAPYBI: '0',
@@ -321,6 +322,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 8500,
         totalValueBI: '8500000000',
+        extraQuotaRAYBI: '0',
       },
     ],
     daoOperations: [
@@ -427,6 +429,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 8500,
         totalValueBI: '8500000000',
+        extraQuotaRAYBI: '0',
       },
     ],
     timestamp: 432000,
@@ -511,6 +514,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 9500,
         totalValueBI: '9500000000',
+        extraQuotaRAYBI: '0',
       },
     ],
     daoOperations: [

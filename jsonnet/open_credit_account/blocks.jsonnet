@@ -86,6 +86,7 @@
       sessionId: '#Account_1_3_0',
       totalValue: 5000,
       totalValueBI: '5000000000',
+      extraQuotaRAYBI: '0',
     },
   ],
   daoOperations: [
@@ -169,8 +170,8 @@
       availableLiquidity: 1000,
       availableLiquidityBI: '1000000000',
       blockNum: 3,
-      borrowAPY: 0,
-      borrowAPYBI: '0',
+      baseBorrowAPY: 0,
+      baseBorrowAPYBI: '0',
       cumulativeIndexRAY: '1000000000000000000000000000',
       depositAPY: 0,
       depositAPYBI: '0',
