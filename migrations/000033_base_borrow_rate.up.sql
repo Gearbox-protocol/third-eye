@@ -8,4 +8,4 @@ update pools set base_borrow_apy_bi=borrow_apy_bi;
 alter table pools drop column borrow_apy_bi;
 
 --
-alter table credit_session_snapshots add extra_quota_ray_bi varchar(80);
+alter table credit_session_snapshots add extra_quota_apy integer;

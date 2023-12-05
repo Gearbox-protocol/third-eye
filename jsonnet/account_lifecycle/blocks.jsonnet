@@ -108,7 +108,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 6000,
         totalValueBI: '6000000000',
-        extraQuotaRAYBI: '0',
+        extraQuotaAPY: 0,
       },
     ],
     daoOperations: [
@@ -322,7 +322,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 8500,
         totalValueBI: '8500000000',
-        extraQuotaRAYBI: '0',
+        extraQuotaAPY: 0,
       },
     ],
     daoOperations: [
@@ -429,7 +429,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 8500,
         totalValueBI: '8500000000',
-        extraQuotaRAYBI: '0',
+        extraQuotaAPY: 0,
       },
     ],
     timestamp: 432000,
@@ -514,7 +514,7 @@
         sessionId: '#Account_1_3_3',
         totalValue: 9500,
         totalValueBI: '9500000000',
-        extraQuotaRAYBI: '0',
+        extraQuotaAPY: 0,
       },
     ],
     daoOperations: [

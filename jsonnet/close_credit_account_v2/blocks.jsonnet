@@ -37,7 +37,7 @@
         sessionId: '#Account_1_4_0',
         totalValue: 9000,
         totalValueBI: '9000000000',
-        extraQuotaRAYBI: '0',
+        extraQuotaAPY: 0,
         quotaFees: '0',
       },
     ],
