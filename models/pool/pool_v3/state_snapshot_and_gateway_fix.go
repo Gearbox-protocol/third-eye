@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -38,15 +39,18 @@ func (mdl *Poolv3) OnBlockChange(inputBlock int64) (call multicall.Multicall2Cal
 func (mdl *Poolv3) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, func(multicall.Multicall2Result)) {
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetPoolData(mdl.GetVersion(), inputB, common.HexToAddress(mdl.Address))
 	if err != nil {
+		if err == dc_wrapper.NO_DC_FOUND_ERR {
+			return multicall.Multicall2Call{}, nil
+		}
 		log.Fatal("[PoolService] Cant create call for data compressor", err)
 	}
 	return call, func(result multicall.Multicall2Result) {
 		if !result.Success {
-			log.Fatal("[PoolService] Cant process result for data compressor", inputB, mdl.Address)
+			log.Fatal("[PoolService] Cant get data from RPC", inputB, mdl.Address)
 		}
 		poolState, err := resultFn(result.ReturnData)
 		if err != nil {
-			log.Fatal("[PoolService] Cant process result for data compressor", err, inputB)
+			log.Fatal("[PoolService] Cant process result for data compressor", err, inputB, mdl.Address, mdl.GetVersion())
 		}
 		//
 		mdl.createSnapshot(inputB, poolState)
@@ -57,8 +61,10 @@ func (mdl *Poolv3) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, 
 
 func (mdl *Poolv3) onBlockChangeInternally(inputB int64) {
 	call, processFn := mdl.getCallAndProcessFn(inputB)
-	result := core.MakeMultiCall(mdl.Client, inputB, false, []multicall.Multicall2Call{call})
-	processFn(result[0])
+	if processFn != nil {
+		result := core.MakeMultiCall(mdl.Client, inputB, false, []multicall.Multicall2Call{call})
+		processFn(result[0])
+	}
 }
 
 func (p *Poolv3) createSnapshot(blockNum int64, state dc.PoolCallData) {

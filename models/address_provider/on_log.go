@@ -135,7 +135,7 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
 		dcObj[fmt.Sprintf("%d", blockNum)] = fmt.Sprintf("%s_%d", address, version)
 		mdl.Details["dc"] = dcObj
 		// v3
-		mdl.Repo.GetDCWrapper().AddDataCompressorByVersion(core.NewVersion(version), address)
+		mdl.Repo.GetDCWrapper().AddDataCompressorByVersion(core.NewVersion(version), address, blockNum)
 	case "PRICE_ORACLE":
 		if version < 300 { // don't except v2,v2.10 or v1 priceOracle , why are already know from v1 addressProvider
 			return

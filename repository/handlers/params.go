@@ -141,14 +141,14 @@ func (repo *ParamsRepo) UpdateLimits(logID uint, txHash, creditConfigurator stri
 	//
 	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{"minAmount", "maxAmount"}, schemas.LimitsUpdated)
-	newParams := oldCMParams
+	newParams := *oldCMParams
 	newParams.MinAmount = params.MinAmount
 	newParams.MaxAmount = params.MaxAmount
 	newParams.BlockNum = params.BlockNum
 	newParams.CreditManager = params.CreditManager
 	//
-	repo.cmParams[params.CreditManager] = newParams
-	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)
+	repo.cmParams[params.CreditManager] = &newParams
+	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(&newParams)
 }
 
 func (repo *ParamsRepo) UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
@@ -162,13 +162,13 @@ func (repo *ParamsRepo) UpdateEmergencyLiqDiscount(logID uint, txHash, creditCon
 	//
 	repo.paramsDAOV2(logID, txHash, creditConfigurator, params,
 		[]string{"emergencyLiqDiscount"}, schemas.NewEmergencyLiquidationDiscount)
-	newParams := oldCMParams
+	newParams := *oldCMParams
 	newParams.EmergencyLiqDiscount = params.EmergencyLiqDiscount
 	newParams.BlockNum = params.BlockNum
 	newParams.CreditManager = params.CreditManager
 	//
-	repo.cmParams[params.CreditManager] = newParams
-	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)
+	repo.cmParams[params.CreditManager] = &newParams
+	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(&newParams)
 }
 
 func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters) {
@@ -188,7 +188,7 @@ func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string
 			"feeLiquidationExpired",
 		}, schemas.FeesUpdated)
 	//
-	newParams := oldCMParams
+	newParams := *oldCMParams
 	newParams.FeeInterest = params.FeeInterest
 	newParams.FeeLiquidation = params.FeeLiquidation
 	newParams.LiquidationDiscount = params.LiquidationDiscount
@@ -197,6 +197,6 @@ func (repo *ParamsRepo) UpdateFees(logID uint, txHash, creditConfigurator string
 	newParams.BlockNum = params.BlockNum
 	newParams.CreditManager = params.CreditManager
 	//
-	repo.cmParams[params.CreditManager] = newParams
-	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(newParams)
+	repo.cmParams[params.CreditManager] = &newParams
+	repo.blocks.SetAndGetBlock(params.BlockNum).AddParameters(&newParams)
 }
