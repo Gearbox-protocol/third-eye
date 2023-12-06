@@ -16,6 +16,7 @@ import (
 type AccountQuotaMgr struct {
 	mu sync.Mutex
 	// so that credit manager can create latest quota update event
+	// account+ txHash
 	events   map[string][]*updateQuotaEvent
 	contract *poolQuotaKeeperv3.PoolQuotaKeeperv3
 }
@@ -40,17 +41,14 @@ func NewAccountQuotaMgr(client core.ClientI) *AccountQuotaMgr {
 	}
 }
 
-func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(account string) *updateQuotaEvent {
+func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(txHash common.Hash, account string) []*updateQuotaEvent {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
-	l := len(mdl.events[account])
-	if l == 0 {
-		return nil
-	} else {
-		front := mdl.events[account][0]
-		mdl.events[account] = mdl.events[account][1:]
-		return front
-	}
+	key := account + txHash.Hex()
+	//
+	ans := mdl.events[key]
+	delete(mdl.events, key)
+	return ans
 }
 
 func (mdl *AccountQuotaMgr) getUpdateQuotaEvent(txLog types.Log) *updateQuotaEvent {
@@ -72,7 +70,8 @@ func (mdl *AccountQuotaMgr) AddAccountQuota(blockNum int64,
 	//
 	updateQuota := mdl.getUpdateQuotaEvent(txLog)
 	account := updateQuota.CreditAccount.Hex()
-	mdl.events[account] = append(mdl.events[account], updateQuota)
+	key := account + txLog.TxHash.Hex()
+	mdl.events[key] = append(mdl.events[key], updateQuota)
 }
 
 // utils
