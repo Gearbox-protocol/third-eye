@@ -93,6 +93,21 @@ func Test_CheckWithdrawCollateralv3(t *testing.T) {
 	}
 
 }
+
+func Test_CheckWithdrawCollateralFailure(t *testing.T) {
+	log.SetTestLogging(t)
+	data := ExecuteParserLenTester{}
+	utils.ReadJsonAndSetInterface("execute_parser/check_withdraw_collateral_failure.json", &data)
+
+	calls := data.GetCalls(t)
+	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
+		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
+			calls.LenOfMulticalls(), len(data.Events),
+			utils.ToJson(data.Events), calls.String(), data.TxHash)
+	}
+
+}
+
 func Test_CheckNew(t *testing.T) {
 	log.SetTestLogging(t)
 	data := ExecuteParserLenTester{}

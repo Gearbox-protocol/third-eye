@@ -46,7 +46,7 @@ func NewFacadeCallNameWithMulticall(facade, name string, multicalls []multicall.
 func (obj FacadeCallNameWithMulticall) String() string {
 	str := ""
 	for _, entry := range obj.multiCalls {
-		funcSig := hex.EncodeToString(entry.CallData[:4])
+		funcSig := hex.EncodeToString(entry.CallData)
 		str += fmt.Sprintf("%s@%s ", entry.Target, funcSig)
 	}
 	return str
@@ -139,10 +139,16 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 		case "f42aeb00": // compareBalances
 			callInd++
 		case "1f1088a0": // withdrawcollateral
-			if events[eventInd].Action != "WithdrawCollateral(address,address,uint256,address)" {
-				return false
+			if eventInd < eventLen {
+				if events[eventInd].Action != "WithdrawCollateral(address,address,uint256,address)" {
+					return false
+				}
+				eventToken := (*events[eventInd].Args)["token"]
+				if eventToken != nil &&
+					common.HexToAddress(eventToken.(string)) == common.BytesToAddress(multiCall.CallData[4:4+32]) {
+					eventInd++
+				}
 			}
-			eventInd++
 			callInd++
 		default: //execute
 			// it might happen that some of the execution call are not executed so len of provided multicalls will be more than executed calls.

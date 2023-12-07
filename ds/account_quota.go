@@ -59,7 +59,7 @@ func (mdl *AccountQuotaMgr) getUpdateQuotaEvent(txLog types.Log) *updateQuotaEve
 		Token:         updateQuota.Token,
 		QuotaChange:   updateQuota.QuotaChange,
 		TxHash:        txLog.TxHash.Hex(),
-		Index:         txLog.TxIndex,
+		Index:         txLog.Index,
 		BlockNumber:   int64(txLog.BlockNumber),
 	}
 }
