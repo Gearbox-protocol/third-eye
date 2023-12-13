@@ -44,6 +44,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		Address:         pool.Address,
 		DieselToken:     dieselToken.Hex(),
 		UnderlyingToken: underlyingToken.Hex(),
+		Version:         core.NewVersion(1),
 	})
 	// create a pool stat snapshot at first log of the pool
 	pool.onBlockChangeInternally(pool.DiscoveredAt)
