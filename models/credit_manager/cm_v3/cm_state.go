@@ -1,6 +1,7 @@
 package cm_v3
 
 import (
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -63,6 +64,13 @@ func (mdl *CMv3) InitState() {
 		PoolAddress:     poolAddr.Hex(),
 		UnderlyingToken: underlying.Hex(),
 		Version:         core.NewVersion(300),
+		Name: func() string {
+			con, err := creditManagerv3.NewCreditManagerv3(common.HexToAddress(mdl.Address), mdl.Client)
+			log.CheckFatal(err)
+			name, err := con.Name(nil)
+			log.CheckFatal(err)
+			return name
+		}(),
 	})
 }
 

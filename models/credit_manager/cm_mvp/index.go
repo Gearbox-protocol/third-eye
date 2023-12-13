@@ -49,6 +49,7 @@ func (mdl *Cmv1v2) CommonInitState(version core.VersionType) {
 	// [PoolService] on creditManager
 	log.CheckFatal(err)
 	poolAddr := common.BytesToAddress(data)
+
 	mdl.SetUnderlyingState(&schemas.CreditManagerState{
 		Address:         mdl.Address,
 		PoolAddress:     poolAddr.Hex(),

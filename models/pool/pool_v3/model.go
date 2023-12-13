@@ -41,6 +41,13 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		DieselToken:     dieselToken,
 		UnderlyingToken: underlyingToken.Hex(),
 		Version:         core.NewVersion(300),
+		Name: func() string {
+			con, err := poolv3.NewPoolv3(common.HexToAddress(addr), client)
+			log.CheckFatal(err)
+			name, err := con.Name(nil)
+			log.CheckFatal(err)
+			return name
+		}(),
 	})
 	// create a pool stat snapshot at first log of the pool
 	pool.onBlockChangeInternally(pool.DiscoveredAt)
