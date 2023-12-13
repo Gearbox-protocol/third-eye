@@ -76,7 +76,7 @@ func (mdl CommonCMAdapter) updateQuotasWithSessionId(sessionId string, txHash co
 		log.Infof("Some of the updateQuota events not emitted maybe due to 0 quotaChange. txhash: %s. events:%d, calls:%d ", txHash.Hex(), len(quotaEvents), updateQuotaCount)
 	}
 	for _, quotaEvent := range quotaEvents {
-		mdl.Repo.AddAccountOperation(&schemas.AccountOperation{
+		mdl.MulticallMgr.AddMulticallEvent(&schemas.AccountOperation{
 			TxHash:      quotaEvent.TxHash,
 			BlockNumber: quotaEvent.BlockNumber,
 			LogId:       quotaEvent.Index,
@@ -246,6 +246,7 @@ func (mdl *CommonCMAdapter) addMulticallToMainEvent(mainEvent *schemas.AccountOp
 			"TokenEnabled(address,address)",
 			"TokenDisabled(address,address)",
 			// for v3
+			"UpdateQuota",
 			"WithdrawCollateral(address,address,uint256,address)",
 			"IncreaseDebt(address,uint256)",
 			"DecreaseDebt(address,uint256)":
