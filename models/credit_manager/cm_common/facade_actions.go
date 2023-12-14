@@ -135,11 +135,26 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 					BlockNumber:   event.BlockNumber,
 				})
 			case "WithdrawCollateral(address,address,uint256,address)":
-				if mainEvent.Action == "LiquidateCreditAccount(address,address,address,uint256)" { // REV_COL_LIQ_V3: v3 liquidate reverse the collateral
+				if utils.Contains([]string{
+					"LiquidateCreditAccount(address,address,address,uint256)",
+					"CloseCreditAccount(address,address)",
+				}, mainEvent.Action) { // REV_COL_LIQ_V3: v3 liquidate reverse the collateral
+					// also revert at closeCreditAccount as collateralunderlying should be
 					// since liquidation the withdraw collateral is not to the account owner.
 					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,
 						(*event.Args)["token"].(common.Address).Hex(),
 						(*event.Args)["amount"].(*big.Int),
+					)
+				}
+			case "AddCollateral(address,address,uint256)": // for v3, remove added collateal at closure
+				version := mdl.Repo.GetCreditSession(mainEvent.SessionId)
+				if mainEvent.Action == "CloseCreditAccount(address,address)" &&
+					version.Version.MoreThanEq(core.NewVersion(300)) {
+					//
+					amount := (*event.Args)["amount"].(*big.Int)
+					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,
+						(*event.Args)["token"].(common.Address).Hex(),
+						new(big.Int).Neg(amount),
 					)
 				}
 			}
