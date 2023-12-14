@@ -13,6 +13,7 @@
           'referralCode',
         ],
         amount: 1000000000,
+        userFunds: 1000000000,
         borrowAmount: 4000000000,
         creditAccount: '#Account_1',
         onBehalfOf: '#User_1',

@@ -81,40 +81,65 @@ func (mdl CommonCMAdapter) AddCollateralToSession(blockNum int64, sessionId, tok
 	}
 }
 
-func (mdl CommonCMAdapter) AddCollateralForOpenCreditAccount(blockNum int64, mainAction *schemas.AccountOperation) {
-	collateral := mdl.GetCollateralAmount(blockNum, mainAction)
-	(*mainAction.Args)["amount"] = collateral.String()
+// only used for v2/v3
+// if mainEvent is opencreditaccount , called from facade_actions
+// if openCreditAccountWithoutMulticall called for v2
+func (mdl CommonCMAdapter) AddCollateralForOpenCreditAccount(blockNum int64, version core.VersionType, mainAction *schemas.AccountOperation) {
+	collateral := mdl.getCollateralAmountOnOpen(blockNum, mainAction)
+	(*mainAction.Args)["userFunds"] = collateral.String()
+	if version.MoreThanEq(core.NewVersion(300)) {
+		borrowedAmount := mdl.getBorrowAmountOnOpen(mainAction)
+		(*mainAction.Args)["borrowAmount"] = borrowedAmount.String()
+	}
 	mdl.Repo.UpdateCreditSession(mainAction.SessionId, map[string]interface{}{"InitialAmount": collateral})
 }
 
-// TO CHECK
-func (mdl CommonCMAdapter) GetCollateralAmount(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
-	balances := map[string]*big.Int{}
+func (mdl CommonCMAdapter) getBorrowAmountOnOpen(mainAction *schemas.AccountOperation) *big.Int {
+	borrowedAmount := new(big.Int)
 	for _, event := range mainAction.MultiCall {
-		if event.Action == "AddCollateral(address,address,uint256)" {
-			for token, amount := range *event.Transfers {
-				if balances[token] == nil {
-					balances[token] = new(big.Int)
-				}
-				balances[token] = new(big.Int).Add(balances[token], amount)
+		if event.Action == "IncreaseDebt(address,uint256)" {
+			if len(*event.Transfers) != 1 {
+				log.Fatal(mainAction.TxHash, mainAction.LogId, " has changed borrowedAmount for more than 1 token.")
+			}
+			for _, amount := range *event.Transfers {
+				borrowedAmount = new(big.Int).Add(borrowedAmount, amount)
 			}
 		}
 	}
-	tokens := make([]string, 0, len(balances)+1)
-	for token := range balances {
-		tokens = append(tokens, token)
+	return borrowedAmount
+}
+
+func (mdl CommonCMAdapter) getCollateralAmountOnOpen(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
+	userFunds := map[string]*big.Int{}
+	for _, event := range mainAction.MultiCall {
+		if event.Action == "AddCollateral(address,address,uint256)" || // v2,v3
+			event.Action == "WithdrawCollateral(address,address,uint256,address)" { // v3
+			for token, amount := range *event.Transfers {
+				if userFunds[token] == nil {
+					userFunds[token] = new(big.Int)
+				}
+				userFunds[token] = new(big.Int).Add(userFunds[token], amount)
+			}
+		}
 	}
 	underlyingToken := mdl.GetUnderlyingToken()
-	if balances[underlyingToken] == nil {
-		tokens = append(tokens, underlyingToken)
-	}
-	//
-	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
 	underlyingDecimals := mdl.GetUnderlyingDecimal()
+	//
+	prices := func() core.JsonFloatMap {
+		tokens := make([]string, 0, len(userFunds)+1)
+		for token := range userFunds {
+			tokens = append(tokens, token)
+		}
+		if userFunds[underlyingToken] == nil {
+			tokens = append(tokens, underlyingToken)
+		}
+		//
+		return mdl.Repo.GetPricesInUSD(blockNum, tokens)
+	}()
 	//
 	totalValue := new(big.Float)
 	// sigma(tokenAmount(i)*price(i)/exp(tokendecimals- underlyingToken))/price(underlying)
-	for token, amount := range balances {
+	for token, amount := range userFunds {
 		if token == underlyingToken { // directly add collateral for underlying token
 			continue
 		}
@@ -127,8 +152,8 @@ func (mdl CommonCMAdapter) GetCollateralAmount(blockNum int64, mainAction *schem
 	}
 	initialAmount, _ := new(big.Float).Quo(totalValue, big.NewFloat(prices[underlyingToken])).Int(nil)
 
-	if balances[underlyingToken] != nil { // directly add collateral for underlying token
-		initialAmount = new(big.Int).Add(initialAmount, balances[underlyingToken])
+	if userFunds[underlyingToken] != nil { // directly add collateral for underlying token
+		initialAmount = new(big.Int).Add(initialAmount, userFunds[underlyingToken])
 	}
 	if initialAmount == nil || initialAmount.Cmp(new(big.Int)) == 0 {
 		log.Fatal("Collateral for opencreditaccount v2 is zero or nil")

@@ -31,7 +31,7 @@ func (mdl CommonCMAdapter) ProcessRemainingMultiCalls(version core.VersionType, 
 		openWithoutMC := entry.Data
 		mdl.SetSessionIsUpdated(openWithoutMC.SessionId)
 		mdl.Repo.AddAccountOperation(openWithoutMC)
-		mdl.AddCollateralForOpenCreditAccount(openWithoutMC.BlockNumber, openWithoutMC)
+		mdl.AddCollateralForOpenCreditAccount(openWithoutMC.BlockNumber, core.NewVersion(2), openWithoutMC)
 	}
 	if len(facadeActions) > 0 { // account operation will only exist if there are one or more facade actions
 		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(lastTxHash, mdl.GetCreditFacadeAddr())

@@ -264,8 +264,12 @@ func (mdl *CommonCMAdapter) addMulticallToMainEvent(mainEvent *schemas.AccountOp
 	}
 	//
 	mainEvent.MultiCall = eventsMulticalls
+
 	// calculate initialAmount on open new credit creditaccount
-	if mainEvent.Action == "OpenCreditAccount(address,address,uint256,uint16)" {
-		mdl.AddCollateralForOpenCreditAccount(mainEvent.BlockNumber, mainEvent)
+	if mainEvent.Action == "OpenCreditAccount(address,address,uint256,uint16)" || // v2
+		mainEvent.Action == "OpenCreditAccount(address,address,address,uint256)" { // v3
+		mdl.AddCollateralForOpenCreditAccount(mainEvent.BlockNumber,
+			mdl.Repo.GetCreditSession(mainEvent.SessionId).Version,
+			mainEvent)
 	}
 }

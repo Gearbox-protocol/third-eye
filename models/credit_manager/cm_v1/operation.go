@@ -25,6 +25,8 @@ func (mdl *CMv1) onOpenCreditAccount(txLog *types.Log, onBehalfOf, account strin
 	blockNum := int64(txLog.BlockNumber)
 	// add account operation
 	action, args := mdl.ParseEvent("OpenCreditAccount", txLog)
+	(*args)["userFunds"] = (*args)["amount"]
+	//
 	accountOperation := &schemas.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
