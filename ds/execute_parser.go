@@ -91,6 +91,7 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 	for callInd < callLen || eventInd < eventLen {
 		multiCall := f.multiCalls[callInd]
 		sig := hex.EncodeToString(multiCall.CallData[:4])
+		// log.Info(callInd, eventInd)
 		switch sig {
 		case "59781034", // add collateral
 			"6d75b9ee", // add collateral extended 2.2
@@ -133,6 +134,9 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 		case "565a820d": // revokeAdapterAllowances
 			callInd++
 		case "712c10ad": // updateQuota
+			if eventInd < eventLen && events[eventInd].Action == "UpdateQuota" {
+				eventInd++
+			}
 			callInd++
 		case "6c68e109": // onDemandPriceUpdate
 			callInd++

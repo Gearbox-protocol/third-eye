@@ -17,11 +17,11 @@ type AccountQuotaMgr struct {
 	mu sync.Mutex
 	// so that credit manager can create latest quota update event
 	// account+ txHash
-	events   map[string][]*updateQuotaEvent
+	events   map[string][]*UpdateQuotaEvent
 	contract *poolQuotaKeeperv3.PoolQuotaKeeperv3
 }
 
-type updateQuotaEvent struct {
+type UpdateQuotaEvent struct {
 	CreditAccount common.Address
 	Token         common.Address
 	QuotaChange   *big.Int
@@ -37,24 +37,23 @@ func NewAccountQuotaMgr(client core.ClientI) *AccountQuotaMgr {
 			log.CheckFatal(err)
 			return contract
 		}(),
-		events: map[string][]*updateQuotaEvent{},
+		events: map[string][]*UpdateQuotaEvent{},
 	}
 }
 
-func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(txHash common.Hash, account string) []*updateQuotaEvent {
+func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(txHash common.Hash) []*UpdateQuotaEvent {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
-	key := account + txHash.Hex()
 	//
-	ans := mdl.events[key]
-	delete(mdl.events, key)
+	ans := mdl.events[txHash.Hex()]
+	delete(mdl.events, txHash.Hex())
 	return ans
 }
 
-func (mdl *AccountQuotaMgr) getUpdateQuotaEvent(txLog types.Log) *updateQuotaEvent {
+func (mdl *AccountQuotaMgr) getUpdateQuotaEvent(txLog types.Log) *UpdateQuotaEvent {
 	updateQuota, err := mdl.contract.ParseUpdateQuota(txLog)
 	log.CheckFatal(err)
-	return &updateQuotaEvent{
+	return &UpdateQuotaEvent{
 		CreditAccount: updateQuota.CreditAccount,
 		Token:         updateQuota.Token,
 		QuotaChange:   updateQuota.QuotaChange,
@@ -69,8 +68,7 @@ func (mdl *AccountQuotaMgr) AddAccountQuota(blockNum int64,
 	defer mdl.mu.Unlock()
 	//
 	updateQuota := mdl.getUpdateQuotaEvent(txLog)
-	account := updateQuota.CreditAccount.Hex()
-	key := account + txLog.TxHash.Hex()
+	key := txLog.TxHash.Hex()
 	mdl.events[key] = append(mdl.events[key], updateQuota)
 }
 

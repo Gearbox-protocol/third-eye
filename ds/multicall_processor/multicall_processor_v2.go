@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
 type MultiCallProcessorv2 struct {
@@ -100,7 +101,7 @@ func (p *MultiCallProcessorv2) End() {
 // - open call without multicalls
 // - open call have the multicalls in them
 // liquidated, closed and directly multicalls are separated entries
-func (p *MultiCallProcessorv2) PopMainActions() (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
+func (p *MultiCallProcessorv2) PopMainActions(_ string, _ *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
 	defer func() { p.facadeActions = nil }()
 	p.noOfOpens = 0
 	for _, entry := range p.facadeActions {

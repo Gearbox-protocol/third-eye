@@ -78,6 +78,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 	case core.Topic("StartMultiCall(address,address)"):
 		creditAccount := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 		sessionId, borrower := mdl.GetSessionIdAndBorrower(creditAccount)
+		mdl.SetSessionIsUpdated(sessionId) // it is needed for updateQuota, as we don't update session on Updatequota and updateQuota can't be emitted without StartMulticall
 		mdl.MulticallMgr.Start(txLog.TxHash.Hex(), &schemas.AccountOperation{
 			TxHash:      txLog.TxHash.Hex(),
 			BlockNumber: int64(txLog.BlockNumber),

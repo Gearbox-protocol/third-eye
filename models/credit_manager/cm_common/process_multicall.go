@@ -23,7 +23,8 @@ import (
 // other calls => closed/liquidated
 func (mdl CommonCMAdapter) ProcessRemainingMultiCalls(version core.VersionType, lastTxHash string, nonMultiCallExecuteEvents []ds.ExecuteParams) {
 
-	facadeActions, openEventWithoutMulticall := mdl.MulticallMgr.PopMainActions()
+	accountQuotaMgr := mdl.Repo.GetAccountQuotaMgr()
+	facadeActions, openEventWithoutMulticall := mdl.MulticallMgr.PopMainActions(lastTxHash, accountQuotaMgr)
 
 	// only for v2/v2.10
 	for _, entry := range openEventWithoutMulticall {
@@ -59,6 +60,7 @@ func (mdl CommonCMAdapter) ProcessNonMultiCalls() (executeEvents []ds.ExecutePar
 			"DecreaseDebt(address,uint256)",
 			"UpdateQuota",
 			"WithdrawCollateral(address,address,uint256,address)":
+			log.Info(event.Action)
 			mdl.SetSessionIsUpdated(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":

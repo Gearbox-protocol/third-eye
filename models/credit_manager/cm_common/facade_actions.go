@@ -1,7 +1,6 @@
 package cm_common
 
 import (
-	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sort"
@@ -61,37 +60,6 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 	return
 }
 
-func (mdl CommonCMAdapter) updateQuotasWithSessionId(sessionId string, txHash common.Hash, mainCall *ds.FacadeCallNameWithMulticall) {
-	quotaEvents := mdl.Repo.GetAccountQuotaMgr().GetUpdateQuotaEventForAccount(txHash, strings.Split(sessionId, "_")[0])
-	//
-	updateQuotaCount := 0
-	for _, multicall := range mainCall.GetMulticalls() {
-		sig := hex.EncodeToString(multicall.CallData[:4])
-		if sig == "712c10ad" { // updateQuota on v3
-			updateQuotaCount++
-		}
-	}
-	// add quota events to db
-	if len(quotaEvents) < updateQuotaCount {
-		log.Infof("Some of the updateQuota events not emitted maybe due to 0 quotaChange. txhash: %s. events:%d, calls:%d ", txHash.Hex(), len(quotaEvents), updateQuotaCount)
-	}
-	for _, quotaEvent := range quotaEvents {
-		mdl.MulticallMgr.AddMulticallEvent(&schemas.AccountOperation{
-			TxHash:      quotaEvent.TxHash,
-			BlockNumber: quotaEvent.BlockNumber,
-			LogId:       quotaEvent.Index,
-			// Borrower:    session.Borrower,
-			SessionId:   sessionId,
-			Dapp:        mdl.GetCreditFacadeAddr(),
-			Action:      "UpdateQuota",
-			Args:        &core.Json{"token": quotaEvent.Token, "change": quotaEvent.QuotaChange},
-			AdapterCall: false,
-			// Transfers:   &core.Transfers{tx.Token: amount},
-		})
-		mdl.SetSessionIsUpdated(sessionId)
-	}
-}
-
 // check name
 // check multicall for facade action vs tenderly response
 // add to db
@@ -119,8 +87,6 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
 				utils.ToJson(eventMulticalls), mainCall.String(), mainEvent.TxHash)
 		}
-		// update quota with session based on calls from tenderly and also mark sesssion as updated
-		mdl.updateQuotasWithSessionId(mainEvent.SessionId, common.HexToHash(txHash), mainCall)
 		//
 		account := strings.Split(mainEvent.SessionId, "_")[0]
 		for _, event := range eventMulticalls {

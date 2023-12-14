@@ -1,6 +1,9 @@
 package multicall_processor
 
-import "github.com/Gearbox-protocol/sdk-go/core/schemas"
+import (
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/third-eye/ds"
+)
 
 const (
 	// v2
@@ -45,6 +48,6 @@ type MulticallProcessorI interface {
 	AddCloseEvent(event *schemas.AccountOperation)
 	AddLiquidateEvent(event *schemas.AccountOperation)
 	PopNonMulticallEvents() []*schemas.AccountOperation
-	PopMainActions() (facadeActions, openEventWithoutMulticall []*FacadeAccountAction)
+	PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction)
 	End()
 }

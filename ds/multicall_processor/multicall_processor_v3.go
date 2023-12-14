@@ -1,9 +1,14 @@
 package multicall_processor
 
 import (
+	"sort"
+
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type MultiCallProcessorv3 struct {
@@ -87,11 +92,33 @@ func (p *MultiCallProcessorv3) End() {
 // - open call without multicalls
 // open call have the multicalls in them
 // liquidated, closed and directly multicalls are separated entries
-func (p *MultiCallProcessorv3) PopMainActions() (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
+func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
 	defer func() { p.facadeActions = nil }()
+
 	p.noOfOpens = 0
 	for _, entry := range p.facadeActions {
 		facadeActions = append(facadeActions, entry)
+	}
+
+	{
+		quotas := mgr.GetUpdateQuotaEventForAccount(common.HexToHash(txHash))
+		// update quota with session based on accountquotamgr
+		for i := len(facadeActions) - 1; i >= 0; i-- {
+			facade := facadeActions[i]
+			if utils.Contains([]string{
+				"StartMultiCall(address,address)",
+				"OpenCreditAccount(address,address,address,uint256)",
+			}, facade.Data.Action) {
+				splitInd := sort.Search(len(quotas), func(n int) bool {
+					return quotas[n].Index > facade.Data.LogId
+				})
+				addQuotasToFacade(facade, quotas[splitInd:])
+				quotas = quotas[:splitInd]
+			}
+		}
+		if len(quotas) != 0 {
+			log.Fatal(utils.ToJson(quotas), utils.ToJson(facadeActions))
+		}
 	}
 	return
 }
@@ -100,4 +127,24 @@ func (p *MultiCallProcessorv3) PopNonMulticallEvents() []*schemas.AccountOperati
 	calls := p.nonMultiCallEvents
 	p.nonMultiCallEvents = nil
 	return calls
+}
+
+func addQuotasToFacade(action *FacadeAccountAction, quotaEvents []*ds.UpdateQuotaEvent) {
+	for _, quotaEvent := range quotaEvents {
+		action.Data.MultiCall = append(action.Data.MultiCall, &schemas.AccountOperation{
+			TxHash:      quotaEvent.TxHash,
+			BlockNumber: quotaEvent.BlockNumber,
+			LogId:       quotaEvent.Index,
+			Borrower:    action.Data.Borrower,
+			SessionId:   action.Data.SessionId,
+			Dapp:        action.Data.Dapp,
+			Action:      "UpdateQuota",
+			Args:        &core.Json{"token": quotaEvent.Token, "change": (*core.BigInt)(quotaEvent.QuotaChange)},
+			AdapterCall: false,
+			// Transfers:   &core.Transfers{tx.Token: amount},
+		})
+	}
+	sort.Slice(action.Data.MultiCall, func(i, j int) bool {
+		return action.Data.MultiCall[i].LogId < action.Data.MultiCall[j].LogId
+	})
 }

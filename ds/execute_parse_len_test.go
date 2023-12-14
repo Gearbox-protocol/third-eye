@@ -120,3 +120,15 @@ func Test_CheckNew(t *testing.T) {
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
 	}
 }
+func Test_CheckKK(t *testing.T) {
+	log.SetTestLogging(t)
+	data := ExecuteParserLenTester{}
+	utils.ReadJsonAndSetInterface("execute_parser/check_update_quota.json", &data)
+
+	calls := data.GetCalls(t)
+	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
+		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
+			calls.LenOfMulticalls(), len(data.Events),
+			utils.ToJson(data.Events), calls.String(), data.TxHash)
+	}
+}
