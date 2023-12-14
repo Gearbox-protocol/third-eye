@@ -16,6 +16,7 @@ import (
 
 // GetMainCalls
 func (ep *ExecuteParser) GetMainCalls(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
+	// no need to get the logs as mainCalls doesn't deal with logs
 	trace := ep.GetTxTrace(txHash, false)
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
 	if err != nil {

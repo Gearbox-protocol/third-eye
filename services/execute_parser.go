@@ -67,6 +67,8 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	calls := filter.getExecuteCalls(trace.CallTrace)
 
 	executeTransfers := filter.getExecuteTransfers(trace.Logs, ep.IgnoreCMEventIds)
+	// log.Info(utils.ToJson(trace.Logs))
+	// log.Info(utils.ToJson(executeTransfers))
 
 	// check if parsed execute Order currently
 	if len(calls) == len(executeTransfers) {

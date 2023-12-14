@@ -78,8 +78,9 @@ func (m TxLogger) fetchLogs(blockNum int64) map[string][]Log {
 		valid := len(txLog.Topics) > 0 && utils.Contains([]common.Hash{
 			core.Topic("ExecuteOrder(address,address)"),       // executeOrder
 			core.Topic("CloseCreditAccount(address,address)"), // close v2
+			//v3
 			core.Topic("Execute(address,address)"),            // execute on v3
-			core.Topic("CloseCreditAccount(address,address)"), //execute on v3
+			core.Topic("CloseCreditAccount(address,address)"), // close on v3
 		}, txLog.Topics[0])
 		op.storeCurTxHash = op.storeCurTxHash || valid
 	}

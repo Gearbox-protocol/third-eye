@@ -68,15 +68,11 @@ func (mdl *AddressProvider) GetAllAddrsForLogs() []common.Address {
 	return append(mdl.otherAddrs, common.HexToAddress(mdl.Address))
 }
 
-func (mdl *AddressProvider) GetDetailsByKey(strBlockNum string) string {
-	blockNum, err := strconv.ParseInt(strBlockNum, 10, 64)
-	if err != nil { // if input is not number make call on the embedded struct
-		return mdl.SyncAdapter.GetDetailsByKey(strBlockNum)
-	}
+func (mdl *AddressProvider) setPriceOracle() {
 	priceOracles := mdl.getPriceOracleMap()
 	if mdl.priceOracles == nil {
-		for strBlockNum, oracle := range priceOracles {
-			oracleBlockNum, err := strconv.ParseInt(strBlockNum, 10, 64)
+		for _strBlockNum, oracle := range priceOracles {
+			oracleBlockNum, err := strconv.ParseInt(_strBlockNum, 10, 64)
 			log.CheckFatal(err)
 			mdl.priceOracles = append(mdl.priceOracles, blockAndOracle{
 				blockNum:    oracleBlockNum,
@@ -87,6 +83,15 @@ func (mdl *AddressProvider) GetDetailsByKey(strBlockNum string) string {
 			return mdl.priceOracles[i].blockNum < mdl.priceOracles[j].blockNum
 		})
 	}
+}
+
+func (mdl *AddressProvider) GetDetailsByKey(strBlockNum string) string {
+	blockNum, err := strconv.ParseInt(strBlockNum, 10, 64)
+	if err != nil { // if input is not number make call on the embedded struct
+		return mdl.SyncAdapter.GetDetailsByKey(strBlockNum)
+	}
+	//
+	mdl.setPriceOracle()
 	ind := sort.Search(len(mdl.priceOracles), func(i int) bool {
 		return mdl.priceOracles[i].blockNum > blockNum
 	})
@@ -98,6 +103,7 @@ func (mdl *AddressProvider) addPriceOracle(blockNum int64, priceOracle string) {
 	priceOraclesMap[fmt.Sprintf("%d", blockNum)] = priceOracle
 	mdl.Details["priceOracles"] = priceOraclesMap
 	//
+	mdl.setPriceOracle()
 	mdl.priceOracles = append(mdl.priceOracles, blockAndOracle{
 		blockNum:    blockNum,
 		priceOracle: priceOracle,

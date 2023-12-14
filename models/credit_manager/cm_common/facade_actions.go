@@ -187,6 +187,9 @@ func (mdl *CommonCMAdapter) executeOperations(txHash string, facadeActions []*mp
 		mainEvent := mainAction.Data
 		mdl.addMulticallToMainEvent(mainEvent, multicalls)
 		mdl.Repo.AddAccountOperation(mainEvent)
+		// if mainEvent.TxHash == "0xf8dc5214d4442e01e06d6f5057b6d7d687207d72c913d7c5d0baa4a2117b0963" {
+		// 	log.Info(utils.ToJson(mainEvent))
+		// }
 	}
 }
 
