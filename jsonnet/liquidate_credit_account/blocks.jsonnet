@@ -67,7 +67,7 @@
           ],
           liquidator: '#User_2',
           owner: '#User_1',
-          remainingFunds: 640750000,
+          remainingFunds: '640750000',
         },
         blockNum: 8,
         borrower: '#User_1',

@@ -25,7 +25,7 @@ func OnDirectTokenTransfer(repo ds.RepositoryI, tx *schemas.TokenTransfer, sessi
 		SessionId:   session.ID,
 		Dapp:        tx.Token,
 		Action:      "DirectTokenTransfer",
-		Args:        &core.Json{"amount": amount, "to": tx.To, "from": tx.From},
+		Args:        &core.Json{"amount": (*core.BigInt)(amount), "to": tx.To, "from": tx.From},
 		AdapterCall: false,
 		Transfers:   &core.Transfers{tx.Token: amount},
 	})

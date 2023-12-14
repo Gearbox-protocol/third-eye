@@ -55,7 +55,7 @@
             'remainingFunds',
           ],
           owner: '#User_1',
-          remainingFunds: 4500000000,
+          remainingFunds: '4500000000',
           to: '#User_1',
         },
         blockNum: 8,
