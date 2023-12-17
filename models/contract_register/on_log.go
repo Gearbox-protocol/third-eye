@@ -16,16 +16,6 @@ import (
 
 func (mdl *ContractRegister) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
-	if core.GetChainId(mdl.Client) != 1337 && (core.Topic("NewPoolAdded(address)") == txLog.Topics[0] ||
-		core.Topic("NewCreditManagerAdded(address)") == txLog.Topics[0]) {
-
-		address := common.HexToAddress(txLog.Topics[1].Hex())
-		version := core.FetchVersionOptimized(address, 0, mdl.Client)
-		log.Info(version)
-		if version.MoreThanEq(core.NewVersion(300)) {
-			return
-		}
-	}
 	switch txLog.Topics[0] {
 	case core.Topic("NewPoolAdded(address)"):
 		address := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
