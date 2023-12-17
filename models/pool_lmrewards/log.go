@@ -134,6 +134,9 @@ func (mdl *PoolLMRewards) addUserReward(pool, user string, reward *big.Int) {
 // PoolLMRewards has fake address so no need for adding .Address value to addrs
 func (mdl *PoolLMRewards) GetAllAddrsForLogs() (addrs []common.Address) {
 	for addr, poolAndUToken := range mdl.Repo.GetDieselTokens() {
+		if poolAndUToken.Version.MoreThanEq(core.NewVersion(300)) {
+			continue
+		}
 		addrs = append(addrs, common.HexToAddress(addr))
 		token := mdl.Repo.GetToken(addr)
 		mdl.decimalsAndPool[token.Symbol] = &_PoolAndDecimals{

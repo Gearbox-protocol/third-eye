@@ -180,10 +180,10 @@ func (e *Engine) Sync(syncTill int64) {
 func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	syncFrom := mdl.GetLastSync() + 1
+	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	if syncFrom > syncTill {
 		return
 	}
-	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	mdl.WillBeSyncedTo(syncTill)
 	//
 	addrsToFetchLogs := mdl.GetAllAddrsForLogs()
@@ -191,10 +191,8 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 		return
 	}
 	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsToFetchLogs, mdl.Topics())
+	log.CheckFatal(err)
 	log.Infof("Sync %s(%s)[addrs: %d] from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), len(addrsToFetchLogs), syncFrom, syncTill, len(txLogs))
-	if err != nil {
-		log.Fatal(err)
-	}
 	if mdl.GetDataProcessType() == ds.ViaMultipleLogs {
 		for _, txLog := range txLogs {
 			e.isEventPausedOrUnParsed(txLog)
