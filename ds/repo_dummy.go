@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
@@ -121,7 +122,7 @@ func (DummyRepo) GetSessions() map[string]*schemas.CreditSession {
 func (DummyRepo) GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int {
 	return nil
 }
-func (DummyRepo) AddDieselToken(dieselToken, underlyingToken, pool string) {
+func (DummyRepo) AddDieselToken(dieselToken, underlyingToken, pool string, version core.VersionType) {
 }
 func (DummyRepo) GetDieselTokens() map[string]*schemas.UTokenAndPool {
 	return nil
@@ -232,3 +233,7 @@ func (DummyRepo) PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI {
 func (DummyRepo) GetTokenFromSdk(string) string {
 	return ""
 }
+func (DummyRepo) AddTokenLTRamp(*schemas_v3.TokenLTRamp)   {}
+func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails) {}
+
+func (DummyRepo) GetAccountQuotaMgr() *AccountQuotaMgr { return nil }

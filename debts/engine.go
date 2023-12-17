@@ -5,13 +5,13 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -34,7 +34,8 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	// L3 credit session snapshots
 	// L4 lt
 	// L5 pricefeeds
-	// L5 rebaseToken details for stETH
+	// L6 rebaseToken details for stETH
+	// L7 pool quota details
 	//
 	// L1:update params
 	for _, params := range block.GetParams() {
@@ -44,6 +45,14 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	for _, params := range block.RebaseDetailsForDB {
 		eng.lastRebaseDetails = params
 	}
+	// L7: poolQuotasDetails
+	for _, quotaDetails := range block.QuotaDetails {
+		eng.AddPoolQuotaDetails(quotaDetails)
+	}
+	// L8: tokenQuotas
+	// for _, accountQuotas := range block.AccountQuotaInfo {
+	// 	eng.AddAccounQuotaInfo(accountQuotas)
+	// }
 
 	///////////////////////////////////
 	// calc debt conditions
@@ -62,7 +71,7 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 			BlockNum:             ps.BlockNum,
 			CumulativeIndexRAY:   ps.CumulativeIndexRAY,
 			AvailableLiquidityBI: ps.AvailableLiquidityBI,
-			BorrowAPYBI:          ps.BorrowAPYBI,
+			BaseBorrowAPYBI:      ps.BaseBorrowAPYBI,
 			Timestamp:            block.Timestamp,
 		})
 	}
@@ -83,6 +92,9 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 		// L4
 		eng.AddAllowedTokenThreshold(allowedToken)
 		tokensUpdated[allowedToken.Token] = true
+	}
+	for _, ltRamp := range block.GetTokenLTRamp() {
+		eng.AddTokenLTRamp(ltRamp)
 	}
 
 	// C3.b: updated price
@@ -108,6 +120,8 @@ func (eng *DebtEngine) CalculateDebt() {
 	//
 	for _, blockNum := range blockNums {
 		block := blocks[blockNum]
+		eng.currentTs = block.Timestamp
+		//
 		poolsUpdated, tokensUpdated, sessionsUpdated := eng.updateLocalState(blockNum, block)
 		// get pool cumulative interest rate
 		cmToPoolDetails := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
@@ -214,7 +228,7 @@ func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt in
 		}
 		urls := core.NetworkUIUrl(core.GetChainId(eng.client))
 		eng.repo.RecentMsgf(log.RiskHeader{
-			BlockNumber: closedAt - 1,
+			BlockNumber: closedAt,
 			EventCode:   "AMQP",
 		}, `Liquidation Alert:
 		CreditManager: %s/address/%s
@@ -251,7 +265,7 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 		var cumIndexNormalized *big.Int
 		if poolInterestData != nil {
 			tsDiff := new(big.Int).SetInt64(int64(ts - poolInterestData.Timestamp))
-			newInterest := new(big.Int).Mul(poolInterestData.BorrowAPYBI.Convert(), tsDiff)
+			newInterest := new(big.Int).Mul(poolInterestData.BaseBorrowAPYBI.Convert(), tsDiff)
 			newInterestPerSec := new(big.Int).Quo(newInterest, big.NewInt(3600*365*24))
 			predicate := new(big.Int).Add(newInterestPerSec, utils.GetExpInt(27))
 			cumIndex := new(big.Int).Mul(poolInterestData.CumulativeIndexRAY.Convert(), predicate)
@@ -308,6 +322,12 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	}
 	// check if data compressor and calculated values match
 	eng.liquidationCheck(debt, cmAddr, sessionSnapshot.Borrower, cumIndexAndUToken)
+	// for liq v3
+	if secStatus := session.StatusAt(blockNum); schemas.IsStatusLiquidated(secStatus) {
+		eng.ifAccountLiquidated(sessionId, cmAddr, blockNum, secStatus)
+	}
+	// for v1/v2 close and liq
+	// v3 close
 	if session.ClosedAt == blockNum+1 {
 		eng.ifAccountLiquidated(sessionId, cmAddr, session.ClosedAt, session.Status)
 		eng.addCurrentDebt(debt, cumIndexAndUToken.Decimals)
@@ -322,17 +342,22 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	//
 	// calculating account fields
 	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
-	calHF, calDebt, calTotalValue, calThresholdValue, _calBorowedWithInterst := calculator.CalcAccountFields(
-		session.Version,
+	calHF, calTotalValue, calThresholdValue, debtDetails := calculator.CalcAccountFields(
+		eng.currentTs,
 		blockNum,
+		poolDetailsForCalc{
+			cumIndexAndUToken: cumIndexAndUToken,
+			forQuotas:         eng.v3DebtDetails,
+		},
 		sessionDetailsForCalc{
+			addr:                  session.Account,
 			CreditSessionSnapshot: sessionSnapshot,
 			CM:                    session.CreditManager,
 			rebaseDetails:         eng.lastRebaseDetails,
 			stETH:                 eng.repo.GetTokenFromSdk("stETH"),
+			version:               session.Version,
+			forQuotas:             eng.v3DebtDetails,
 		},
-		cumIndexAndUToken.CumulativeIndex,
-		cumIndexAndUToken.Token,
 		eng.lastParameters[session.CreditManager].FeeInterest,
 	)
 	// if session.ID == "0x57ed1ED84461bb2079f8575d06A6feC07F0a13B1_16159748_285" {
@@ -347,18 +372,17 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			CalHealthFactor: (*core.BigInt)(calHF),
 			CalTotalValueBI: (*core.BigInt)(calTotalValue),
 			// it has fees too for v2
-			CalDebtBI: (*core.BigInt)(calDebt),
+			CalDebtBI: (*core.BigInt)(debtDetails.Total()),
 			// used for calculating the close amount and for comparing with data compressor results as v2 doesn't have borrowedAmountWithInterest
-			CalBorrowedWithInterestBI: (*core.BigInt)(_calBorowedWithInterst),
-			CalThresholdValueBI:       (*core.BigInt)(calThresholdValue),
-			CollateralInUnderlying:    sessionSnapshot.CollateralInUnderlying,
+			CalThresholdValueBI:    (*core.BigInt)(calThresholdValue),
+			CollateralInUnderlying: sessionSnapshot.CollateralInUnderlying,
 		},
 		SessionId: sessionId,
 	}
 	var notMatched bool
 	profile := ds.DebtProfile{CreditSessionSnapshot: sessionSnapshot, Tokens: map[string]ds.TokenDetails{}}
 	for tokenAddr, details := range *sessionSnapshot.Balances {
-		if details.IsAllowed {
+		if details.IsEnabled {
 			profile.Tokens[tokenAddr] = ds.TokenDetails{
 				Price:             eng.GetTokenLastPrice(tokenAddr, session.Version),
 				Decimals:          eng.repo.GetToken(tokenAddr).Decimals,
@@ -369,12 +393,16 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 
 	// use data compressor if debt check is enabled
 	if eng.config.DebtDCMatching {
-		data := eng.SessionDataFromDC(blockNum, cmAddr, sessionSnapshot.Borrower)
+		data := eng.SessionDataFromDC(session.Version, blockNum,
+			cmAddr,
+			sessionSnapshot.Borrower,
+			session.Account,
+		)
 		utils.ToJson(data)
 		// set debt data fetched from dc
 		// if healthfactor on diff
 		if !CompareBalance(debt.CalTotalValueBI, (*core.BigInt)(data.TotalValue), cumIndexAndUToken) ||
-			!CompareBalance(debt.CalBorrowedWithInterestBI, (*core.BigInt)(data.BorrowedAmountPlusInterest), cumIndexAndUToken) ||
+			!CompareBalance(debt.CalDebtBI, (*core.BigInt)(data.Debt), cumIndexAndUToken) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, (*core.BigInt)(data.HealthFactor)) {
 			profile.DCData = &data
 			notMatched = true
@@ -391,7 +419,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			notMatched = true
 		}
 	}
-	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken)
+	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken, debtDetails)
 	eng.farmingCalc.addFarmingVal(debt, session, eng.lastCSS[session.ID], storeForCalc{inner: eng})
 	if notMatched {
 		profile.CumIndexAndUToken = cumIndexAndUToken
@@ -401,117 +429,6 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		return debt, &profile
 	}
 	return debt, nil
-}
-
-// these values are calculated for the borrower not the liquidation, so the calrepayamount takes isliquidated = false
-// only for block that the account is liquidated we use isLiquidated set to true so that we can calculate the true amountToPool
-//
-// amountToPool
-// for v1,v2 amountToPool is calculated by calc.CalCloseAmount
-//
-// remainingfunds => is used for profit calculation, assets that user gets back.
-// - v1 close or liquidated -- remainingfunds is taken from event
-// - v1 repay + open -- remainingfunds is manually calculated with help of calCloseAmount in sdk-go
-// - v2 for closeCreditAccount, remainingFunds is calculated from the account transfers
-// - v2 for liquidateCreditAccount, remainingFunds is taken from event
-// - v2 for openedAccounts, totalValue - amountToPool
-//
-// repayAmount => transfer from owner to account needed to close the account
-// v1 - repayAmount = amountToPool, except the blockNum at which account is liquidated
-//   - for liquidated account repay amount is amountToPool+ calcRemainginFunds https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L999
-//   - NIT, closeAmount doesn't need repayAmount as all assets are converted to underlying token
-//     so repayAmount is zero, https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L448-L465
-//
-// v2 - close repayAmount is transferred from borrower to account as underlying token
-// v2 - for liquidation, repayAmount is zero.
-// v2 - opened accounts
-//
-//	the account might be having some underlying token balance so repayAMount = amountToPool - underlyingToken balance
-func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
-	var amountToPool, calRemainingFunds *big.Int
-	sessionSnapshot := eng.lastCSS[session.ID]
-	//
-	status := schemas.Active
-	if schemas.IsStatusLiquidated(session.Status) && session.ClosedAt == debt.BlockNumber+1 { // calc based on status if the block has liquidation
-		status = session.Status
-	}
-	// amount to pool
-	amountToPool, calRemainingFunds, _, _ = calc.CalCloseAmount(eng.lastParameters[session.CreditManager],
-		session.Version, debt.CalTotalValueBI.Convert(), status,
-		debt.CalBorrowedWithInterestBI.Convert(),
-		sessionSnapshot.BorrowedAmountBI.Convert())
-
-	// calculate profit
-	debt.AmountToPoolBI = (*core.BigInt)(amountToPool)
-	var remainingFunds *big.Int
-	if session.Version.Eq(2) {
-		repayAmount := new(big.Int)
-		// while close account on v2 we calculate remainingFunds from all the token transfer from the user
-		if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
-			prices := core.JsonFloatMap{}
-			for token, transferAmt := range *session.CloseTransfers {
-				tokenPrice := eng.GetTokenLastPrice(token, session.Version)
-				price := utils.GetFloat64Decimal(tokenPrice, 8)
-				prices[token] = price
-				if transferAmt < 0 {
-					// assuming there is only one transfer from borrower to account
-					// this transfer will be in underlyingtoken. execute_parser.go:246 and
-					// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/credit/CreditManager.sol#L359-L363
-					amt := new(big.Float).Mul(big.NewFloat(transferAmt*-1), utils.GetExpFloat(eng.repo.GetToken(token).Decimals))
-					repayAmount, _ = amt.Int(nil)
-				}
-			}
-			// remainingFunds calculation
-			// set price for underlying token
-			prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(
-				eng.GetTokenLastPrice(cumIndexAndUToken.Token, session.Version), 8)
-			remainingFunds = session.CloseTransfers.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
-		} else if session.ClosedAt == debt.BlockNumber+1 && schemas.IsStatusLiquidated(session.Status) {
-			remainingFunds = session.RemainingFunds.Convert()
-			repayAmount = new(big.Int)
-		} else {
-			// repayamount
-			// for account not closed or liquidated yet
-			// get underlying balance
-			underlying := (*eng.lastCSS[session.ID].Balances)[cumIndexAndUToken.Token]
-			underlyingBalance := new(big.Int)
-			if underlying.BI != nil {
-				underlyingBalance = underlying.BI.Convert()
-			}
-			if new(big.Int).Sub(underlyingBalance, new(big.Int).Add(amountToPool, calRemainingFunds)).Cmp(big.NewInt(1)) > 0 {
-				repayAmount = new(big.Int)
-			} else {
-				repayAmount = new(big.Int).Sub(new(big.Int).Add(amountToPool, calRemainingFunds), underlyingBalance)
-			}
-
-			// remainingfunds
-			remainingFunds = new(big.Int).Sub(debt.CalTotalValueBI.Convert(), amountToPool)
-		}
-		debt.RepayAmountBI = (*core.BigInt)(repayAmount)
-	} else {
-		if session.ClosedAt == debt.BlockNumber+1 && (session.Status == schemas.Closed || session.Status == schemas.Liquidated) {
-			remainingFunds = (*big.Int)(session.RemainingFunds)
-		} else {
-			remainingFunds = calRemainingFunds
-		}
-		if session.Status == schemas.Liquidated && session.ClosedAt == debt.BlockNumber+1 {
-			debt.RepayAmountBI = (*core.BigInt)(new(big.Int).Add(amountToPool, remainingFunds))
-		} else if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
-			debt.RepayAmountBI = (*core.BigInt)(new(big.Int))
-		} else {
-			// https://github.com/Gearbox-protocol/gearbox-contracts/blob/master/contracts/credit/CreditManager.sol#L487-L490
-			debt.RepayAmountBI = (*core.BigInt)(amountToPool)
-		}
-	}
-
-	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds, session.Version)
-	debt.ProfitInUnderlying = utils.GetFloat64Decimal(remainingFunds, cumIndexAndUToken.Decimals) - debt.CollateralInUnderlying
-	// debt.CollateralInUnderlying = sessionSnapshot.CollateralInUnderlying
-	// fields in USD
-	debt.CollateralInUSD = sessionSnapshot.CollateralInUSD
-	debt.ProfitInUSD = utils.GetFloat64Decimal(remainingFundsInUSD, 8) - sessionSnapshot.CollateralInUSD
-	debt.TotalValueInUSD = utils.GetFloat64Decimal(
-		eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert(), session.Version), 8)
 }
 
 // helper methods
@@ -538,7 +455,7 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version core.VersionType, 
 		} else if eng.repo.GetWETHAddr() == addr {
 			return core.WETHPrice
 		}
-	} else if version.Eq(2) {
+	} else if version.Eq(2) || version.Eq(300) {
 		if eng.tokenLastPriceV2[addr] != nil {
 			return eng.tokenLastPriceV2[addr].PriceBI.Convert()
 		}
@@ -550,10 +467,11 @@ func (eng *DebtEngine) GetTokenLastPrice(addr string, version core.VersionType, 
 	return nil
 }
 
-func (eng *DebtEngine) SessionDataFromDC(blockNum int64, cmAddr, borrower string) dataCompressorv2.CreditAccountData {
-	call, resultFn, err := eng.repo.GetDCWrapper().GetCreditAccountData(blockNum,
+func (eng *DebtEngine) SessionDataFromDC(version core.VersionType, blockNum int64, cmAddr, borrower, account string) dc.CreditAccountCallData {
+	call, resultFn, err := eng.repo.GetDCWrapper().GetCreditAccountData(version, blockNum,
 		common.HexToAddress(cmAddr),
 		common.HexToAddress(borrower),
+		common.HexToAddress(account),
 	)
 	if err != nil {
 		log.Fatalf("Prepaing failed. cm:%s borrower:%s blocknum:%d err:%s", cmAddr, borrower, blockNum, err)

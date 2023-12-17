@@ -3,6 +3,7 @@ package debts
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
@@ -32,6 +33,28 @@ func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *schemas.AllowedToken) {
 		eng.allowedTokensThreshold[atoken.CreditManager] = make(map[string]*core.BigInt)
 	}
 	eng.allowedTokensThreshold[atoken.CreditManager][atoken.Token] = atoken.LiquidityThreshold
+}
+
+func (eng *DebtEngine) loadLastLTRamp(lastDebtSync int64) {
+	defer utils.Elapsed("LastLTRamp()")()
+	data := []*schemas_v3.TokenLTRamp{}
+	query := `SELECT DISTINCT ON (credit_manager, token) *
+	 FROM token_ltramp WHERE block_num <= ? 
+	 ORDER BY credit_manager, token, block_num DESC;`
+	err := eng.db.Raw(query, lastDebtSync).Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, atoken := range data {
+		eng.AddTokenLTRamp(atoken)
+	}
+}
+
+func (eng *DebtEngine) AddTokenLTRamp(atoken *schemas_v3.TokenLTRamp) {
+	if eng.tokenLTRamp[atoken.CreditManager] == nil {
+		eng.tokenLTRamp[atoken.CreditManager] = make(map[string]*schemas_v3.TokenLTRamp)
+	}
+	eng.tokenLTRamp[atoken.CreditManager][atoken.Token] = atoken
 }
 
 // token price from feeds

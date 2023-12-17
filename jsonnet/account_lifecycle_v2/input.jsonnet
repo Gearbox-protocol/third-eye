@@ -62,6 +62,11 @@ local newCollateral = 1;
       },
     },
   },
+  states: {
+    otherCalls: {
+      '54fd4d50': { '#AddressProvider_1': '1' },
+    },
+  },
   blocks: {
     // block with open and borrow more underlying asset
     '4': {
@@ -142,10 +147,10 @@ local newCollateral = 1;
             expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount + 5000, 6),
             availableLiquidity: utils.bigInt(5000, 6),
             depositAPY: utils.bigInt(0),
-            borrowAPY: utils.bigInt(0),
+            baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
-            linearCumulativeIndex: utils.bigInt(1, 27),
+            cumulativeIndex: utils.bigInt(1, 27),
           }],
           accounts: [{
             address: '#Account_1',
@@ -156,11 +161,12 @@ local newCollateral = 1;
             repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             cumulativeIndexAtOpen: utils.bigInt(1, 27),
             borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
-            borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
+            accruedInterest: utils.bigInt(0, 6),
+            debt: utils.bigInt(borrowedAmount + extraBorrowedAmount, 6),
             balances: [{
               token: '#Token_1',
-              balance: utils.bigInt(6000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(6000, 6),
+              isForbidden: false,  // changed
               isEnabled: true,
             }],
             version: 2,
@@ -283,16 +289,17 @@ local newCollateral = 1;
           repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
           borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
-          borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
+          accruedInterest: utils.bigInt(0, 6),
+          debt: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
-            balance: utils.bigInt(5500, 6),
-            isAllowed: true,
+            BI: utils.bigInt(5500, 6),
+            isForbidden: false,  // changed
             isEnabled: true,
           }, {
             token: '#Token_3',
-            balance: utils.bigInt(1, 18),
-            isAllowed: true,
+            BI: utils.bigInt(1, 18),
+            isForbidden: false,  // changed
             isEnabled: true,
           }],
           version: 2,
@@ -303,10 +310,10 @@ local newCollateral = 1;
           expectedLiquidity: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2 + 5500, 6),
           availableLiquidity: utils.bigInt(5000 + extraBorrowedAmount / 2, 6),
           depositAPY: utils.bigInt(0),
-          borrowAPY: utils.bigInt(0),
+          baseBorrowRate: utils.bigInt(0),
           dieselRate: utils.bigInt(0),
           withdrawFee: '0',
-          linearCumulativeIndex: utils.bigInt(1, 27),
+          cumulativeIndex: utils.bigInt(1, 27),
         }],
         cms: [{
           address: '#CreditManager_1',
@@ -369,16 +376,17 @@ local newCollateral = 1;
           repayAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           cumulativeIndexAtOpen: utils.bigInt(1, 27),
           borrowedAmount: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
-          borrowedAmountPlusInterest: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
+          accruedInterest: utils.bigInt(0, 6),
+          debt: utils.bigInt(borrowedAmount + extraBorrowedAmount / 2, 6),
           balances: [{
             token: '#Token_1',
-            balance: utils.bigInt(500, 6),
-            isAllowed: true,
+            BI: utils.bigInt(500, 6),
+            isForbidden: false,  // changed
             isEnabled: true,
           }, {
             token: '#Token_3',
-            balance: utils.bigInt(3, 18),
-            isAllowed: true,
+            BI: utils.bigInt(3, 18),
+            isForbidden: false,  // changed
             isEnabled: true,
           }],
           version: 2,
@@ -473,14 +481,14 @@ local newCollateral = 1;
           balances: [
             {
               token: '#Token_1',
-              balance: utils.bigInt(1500, 6),
-              isAllowed: true,
+              BI: utils.bigInt(1500, 6),
+              isForbidden: false,  // changed
               isEnabled: true,
             },
             {
               token: '#Token_3',
-              balance: utils.bigInt(3, 18),
-              isAllowed: true,
+              BI: utils.bigInt(3, 18),
+              isForbidden: false,  // changed
               isEnabled: true,
 
             },

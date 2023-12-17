@@ -44,12 +44,18 @@ BEGIN
 		(t2.new_profit_underlying-t1.old_profit_underlying) * price profit_usd, t1.old_collateral_underlying*price collateral_usd,
 		(t2.new_profit_underlying-t1.old_profit_underlying) profit_underlying, t1.old_collateral_underlying collateral_underlying, 
 
-		(t2.new_profit_underlying-t1.old_profit_underlying)/(t1.old_collateral_underlying) roi FROM
+		(case when t1.old_collateral_underlying=0 then 0 else 
+		(t2.new_profit_underlying-t1.old_profit_underlying)/(t1.old_collateral_underlying) 
+		end) roi FROM
 
         (SELECT distinct on (d.session_id) d.total_value_usd old_total,
 			d.collateral_underlying old_collateral_underlying, d.profit_underlying as old_profit_underlying,
-			((cal_borrowed_amt_with_interest_bi::float8 * total_value_usd)/ cal_total_value_bi::float8) old_borrowed_amount_usd,
-			((cal_threshold_value_bi::float8 * total_value_usd)/ cal_total_value_bi::float8) old_twv_usd,
+			(case when cal_total_value_bi::float8=0  then 0 else 
+			(cal_borrowed_amt_with_interest_bi::float8 * total_value_usd)/ cal_total_value_bi::float8
+			end) old_borrowed_amount_usd,
+			(case when cal_total_value_bi::float8=0  then 0 else 
+			(cal_threshold_value_bi::float8 * total_value_usd)/ cal_total_value_bi::float8
+			end) old_twv_usd,
 			cal_health_factor old_hf, d.session_id sid
 			FROM debts d WHERE block_num >= (SELECT min(id) FROM blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
             order by d.session_id, block_num) t1

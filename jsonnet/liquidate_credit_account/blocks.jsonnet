@@ -8,21 +8,21 @@
             BI: '2000000000',
             F: 2000,
             isEnabled: true,
-            isAllowed: true,
+            isForbidden: false,  // changed
             ind: 0,
           },
           // '#Token_2': {
           //   BI: '100000000000000000',
           //   F: 0.1,
           //   isEnabled: false,
-          //   isAllowed: true,
+          //   isForbidden: false, // changed
           //   ind: 2,
           // },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,
             isEnabled: true,
-            isAllowed: true,
+            isForbidden: false,  // changed
             ind: 1,
           },
         },
@@ -37,6 +37,8 @@
         sessionId: '#Account_1_3_3',
         totalValue: 5750,
         totalValueBI: '5750000000',
+        extraQuotaAPY: 0,
+        quotaFees: '0',
       },
     ],
     priceFeeds: [
@@ -65,7 +67,7 @@
           ],
           liquidator: '#User_2',
           owner: '#User_1',
-          remainingFunds: 640750000,
+          remainingFunds: '640750000',
         },
         blockNum: 8,
         borrower: '#User_1',
@@ -82,8 +84,8 @@
     cmStats: [
       {
         Address: '#CreditManager_1',
-        AvailableLiquidity: 6000,
-        AvailableLiquidityBI: '6000000000',
+        // AvailableLiquidity: 6000,
+        // AvailableLiquidityBI: '6000000000',
         BlockNum: 8,
         CumulativeBorrowed: 0,
         ID: 0,
@@ -120,8 +122,8 @@
         availableLiquidity: 6000,
         availableLiquidityBI: '6000000000',
         blockNum: 8,
-        borrowAPY: 0,
-        borrowAPYBI: '0',
+        baseBorrowAPY: 0,
+        baseBorrowAPYBI: '0',
         cumulativeIndexRAY: '1000000000000000000000000000',
         depositAPY: 0,
         depositAPYBI: '0',

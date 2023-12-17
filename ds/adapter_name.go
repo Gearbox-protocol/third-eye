@@ -29,6 +29,9 @@ const (
 	CFWrapper                  = "CFWrapper"
 	CMWrapper                  = "CMWrapper"
 	PoolWrapper                = "PoolWrapper"
+	PoolQuotaWrapper           = "PoolQuotaWrapper"
+	// v3
+	PoolQuotaKeeper = "PoolKeeper"
 )
 
 func IsWrapperAdapter(name string) bool {
@@ -38,6 +41,7 @@ func IsWrapperAdapter(name string) bool {
 const (
 	UnknownPF            = "UnknownPF"
 	YearnPF              = "YearnPF"
+	SingleAssetPF        = "SingleAssetPF"
 	CurvePF              = "CurvePF"
 	ZeroPF               = "ZeroPF"
 	CompositeChainlinkPF = "CompositeChainlinkPF"
@@ -54,16 +58,21 @@ const (
 
 func FacadeAccountMethodSigToCallName(funcSig string) string {
 	switch funcSig {
-	case "openCreditAccountMulticall":
-		return FacadeOpenMulticallCall
+	// common v2/v3
 	case "liquidateCreditAccount":
 		return FacadeLiquidateCall
-	case "liquidateExpiredCreditAccount":
-		return FacadeLiquidateExpiredCall
 	case "closeCreditAccount":
 		return FacadeCloseAccountCall
 	case "multicall":
 		return FacadeMulticallCall
+	// v2
+	case "openCreditAccountMulticall":
+		return FacadeOpenMulticallCall
+	case "liquidateExpiredCreditAccount":
+		return FacadeLiquidateExpiredCall
+	// for v3
+	case "openCreditAccount":
+		return FacadeOpenMulticallCall
 	}
 	log.Fatal()
 	return ""

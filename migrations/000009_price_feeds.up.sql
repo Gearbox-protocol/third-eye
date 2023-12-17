@@ -20,14 +20,11 @@ CREATE TABLE token_oracle (
 
 
 CREATE TABLE token_current_price (
-    token varchar(42) PRIMARY KEY,
+    token varchar(42),
     price DOUBLE PRECISION,
     price_bi varchar(80),
-    block_num integer);
-
-alter table token_current_price add column price_source varchar(10);
-update token_current_price set price_source='chainlink';
-alter table token_current_price drop  constraint  token_current_price_pkey;
-alter table token_current_price add PRIMARY KEY (price_source, token);
+    price_source varchar(10),
+    block_num integer,
+    PRIMARY KEY (price_source, token));
 
 -- insert into token_current_price(token, price, block_num) select distinct on (token)  token, price, block_num from price_feeds order by token, block_num DESC;

@@ -8,44 +8,51 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
+	"github.com/Gearbox-protocol/third-eye/models/pool_quota_keeper"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
 type OrderedMap struct {
-	m    map[string]ds.SyncAdapterI
-	allM map[string]ds.SyncAdapterI
-	a    []ds.SyncAdapterI
+	// this is exposed via get adapter from address
+	mainAddrToAdapter map[string]ds.SyncAdapterI
+	// for eg, cm needs logs on configurator and facade address, so when we get logs on facade they should point to original cm adapter.
+	// this is only used internal not exposed.
+	allAddrToAdapter map[string]ds.SyncAdapterI
+	// only used for getting a array of adapters
+	// used for getting list for saving adapters
+	cachedListOfAdapter []ds.SyncAdapterI
 }
 
 func NewOrderedMap() OrderedMap {
 	return OrderedMap{
-		m:    make(map[string]ds.SyncAdapterI), // adapter by its actual addr, like creditmanager uses cf , cc but it can be fetched only with creditmanager addr from outside
-		allM: make(map[string]ds.SyncAdapterI),
-		a:    make([]ds.SyncAdapterI, 0),
+		mainAddrToAdapter:   make(map[string]ds.SyncAdapterI), // adapter by its actual addr, like creditmanager uses cf , cc but it can be fetched only with creditmanager addr from outside
+		allAddrToAdapter:    make(map[string]ds.SyncAdapterI),
+		cachedListOfAdapter: make([]ds.SyncAdapterI, 0),
 	}
 }
 
 func (x OrderedMap) Get(addr string) ds.SyncAdapterI {
-	return x.m[addr]
+	return x.mainAddrToAdapter[addr]
 }
 func (x OrderedMap) GetFromLogAddr(name string) ds.SyncAdapterI {
-	return x.allM[name]
+	return x.allAddrToAdapter[name]
 }
 func (x *OrderedMap) Add(addr string, allAddrsForAdapter []common.Address, val ds.SyncAdapterI) {
 	// for
-	if x.m[addr] == nil {
-		x.a = append(x.a, val)
+	if x.mainAddrToAdapter[addr] == nil {
+		x.cachedListOfAdapter = append(x.cachedListOfAdapter, val)
 	}
 	for _, addr := range allAddrsForAdapter {
-		x.allM[addr.String()] = val
+		x.allAddrToAdapter[addr.String()] = val
 	}
-	x.m[addr] = val
+	x.mainAddrToAdapter[addr] = val
 }
 
 func (x OrderedMap) GetAll() []ds.SyncAdapterI {
-	return x.a
+	return x.cachedListOfAdapter
 }
 
 // we are creating sync wrappers to wrap , chainlink, creditfilter, credit manager and pools to reduce the number of rpc calls
@@ -57,6 +64,7 @@ type SyncWrapper struct {
 	lastSync       int64
 	Client         core.ClientI
 	WillSyncTill   int64
+	topics         [][]common.Hash
 }
 
 func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
@@ -66,6 +74,7 @@ func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
 		name:           name,
 		lastSync:       math.MaxInt64 - 10,
 		Client:         client,
+		topics:         [][]common.Hash{},
 	}
 }
 
@@ -93,12 +102,44 @@ func (w *SyncWrapper) GetUnderlyingAdapterAddrs() (addrs []string) {
 
 // //////////
 // //////////
-func (s SyncWrapper) Topics() [][]common.Hash {
+func (s *SyncWrapper) Topics() [][]common.Hash {
 	adapters := s.Adapters.GetAll()
 	if len(adapters) == 0 {
 		return nil
 	}
-	return adapters[0].Topics()
+	ans := [10]map[common.Hash]bool{}
+	if len(ans[0]) == 0 {
+		for _, adapter := range adapters {
+			outerTopics := adapter.Topics()
+			if len(outerTopics) != 0 {
+				for ind, innTopics := range outerTopics {
+					for _, topic := range innTopics {
+						if ans[ind] == nil {
+							ans[ind] = make(map[common.Hash]bool)
+						}
+						ans[ind][topic] = true
+					}
+				}
+			}
+		}
+		s.topics = toBigTopicArr(ans)
+	}
+	return s.topics
+}
+
+func toBigTopicArr(outerTopic [10]map[common.Hash]bool) (allTOpics [][]common.Hash) {
+	for _, innerTopic := range outerTopic {
+		if len(innerTopic) != 0 {
+			allTOpics = append(allTOpics, toTopicArr(innerTopic))
+		}
+	}
+	return
+}
+func toTopicArr(topicsM map[common.Hash]bool) (topics []common.Hash) {
+	for topic := range topicsM {
+		topics = append(topics, topic)
+	}
+	return
 }
 
 func (w *SyncWrapper) GetDataProcessType() int {
@@ -186,13 +227,21 @@ func (s SyncWrapper) onBlockChange(lastBlockNum int64) {
 			continue
 		}
 		switch v := adapter.(type) {
-		case *pool.Pool:
-			call, processFn := v.OnBlockChange(lastBlockNum)
+		case *pool_v2.Poolv2:
 			// if process fn is not null
-			if processFn != nil {
+			if call, processFn := v.OnBlockChange(lastBlockNum); processFn != nil {
 				processFns = append(processFns, processFn)
 				calls = append(calls, call)
 			}
+		case *pool_v3.Poolv3:
+			// if process fn is not null
+			if call, processFn := v.OnBlockChange(lastBlockNum); processFn != nil {
+				processFns = append(processFns, processFn)
+				calls = append(calls, call)
+			}
+		case *pool_quota_keeper.PoolQuotaKeeper:
+			// make all the tokens update to be saved in the db.
+			v.OnBlockChange(lastBlockNum)
 		}
 	}
 	results := core.MakeMultiCall(s.Client, lastBlockNum, false, calls)
@@ -226,13 +275,14 @@ func (w *SyncWrapper) GetAllAddrsForLogs() (addrs []common.Address) {
 	return
 }
 
-func (s SyncWrapper) AfterSyncHook(syncTill int64) {
+func (s *SyncWrapper) AfterSyncHook(syncTill int64) {
 	adapters := s.Adapters.GetAll()
 	for _, cf := range adapters {
 		if !cf.IsDisabled() {
 			cf.AfterSyncHook(syncTill)
 		}
 	}
+	s.lastSync = syncTill
 }
 
 func (s *SyncWrapper) WillBeSyncedTo(blockNum int64) {

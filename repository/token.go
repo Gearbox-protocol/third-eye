@@ -24,21 +24,29 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 	if currency != "USDC" {
 		currencyAddr = common.HexToAddress(currency)
 	}
+	if currencyAddr.Hex() == token {
+		return amount
+	}
+	sig := big.NewInt(1)
+	if amount.Cmp(big.NewInt(0)) < 0 {
+		amount = new(big.Int).Neg(amount)
+		sig = big.NewInt(-1)
+	}
 	if version.IsGBv1() {
 		poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
-			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
+			log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
 		}
-		return usdcAmount
+		return new(big.Int).Mul(usdcAmount, sig)
 	} else { // v2 and above
 		poContract, err := priceOraclev2.NewPriceOraclev2(common.HexToAddress(oracle), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
-			log.Fatalf("%v %s %d %s %s", err, oracle, amount, token, currencyAddr)
+			log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
 		}
-		return usdcAmount
+		return new(big.Int).Mul(usdcAmount, sig)
 	}
 }

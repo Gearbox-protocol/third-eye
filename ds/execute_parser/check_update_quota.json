@@ -1,0 +1,108 @@
+{
+    "calls": [
+        "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b@2b7c7b110000000000000000000000000000000000000000000000000000000e6f7cec00",
+        "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b@438f8fcc000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb4800000000000000000000000000000000000000000000000000000002540be400000000000000000000000000000000000000000000000000000000006583fef8000000000000000000000000000000000000000000000000000000000000001c0db9216114ad9ef6a796d7d61849d65b6062be97d1c4fe6437adef6abe3dde9958b9853dc8cf41cb4b93f433082508f5748ab255049eaa3ae4f064c2a2b2f696",
+        "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b@2f2ca49b00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc2000000000000000000000000000000000000000000000001c293528f3283734e",
+        "0x1e425D30a2e04A31A1cedB543fC9ED85b26eb5d8@36f4e228000000000000000000000000a0b86991c6218b36c1d19d4a2e9eb0ce3606eb48000000000000000000000000dac17f958d2ee523a2206206994597c13d831ec7000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000657ad288000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        "0xB0Bb1455487412b1b32f0545341Fc6a4Ed23aaEd@32fe0e160000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000000",
+        "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b@f42aeb00",
+        "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b@712c10ad000000000000000000000000c02aaa39b223fe8d0a0e5c4f27ead9083c756cc200000000000000000000000000000000000000000000000000000012168b9bc0000000000000000000000000000000000000000000000000000000120d48c4e9"
+    ],
+    "facade": "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b",
+    "txHash": "0x016445288d4c9cabc179f52b04adfe33dda3c08fba0154409ee080a635759f24",
+    "events": [
+        {
+            "txHash": "0x016445288d4c9cabc179f52b04adfe33dda3c08fba0154409ee080a635759f24",
+            "blockNum": 18783503,
+            "logId": 5,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xe599D20f5830e5E1e72A433ca217F0b0d9F140bb_18783503_1",
+            "dapp": "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b",
+            "adapterCall": false,
+            "action": "IncreaseDebt(address,uint256)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "amount"
+                ],
+                "amount": "62000000000",
+                "creditAccount": "0xe599D20f5830e5E1e72A433ca217F0b0d9F140bb"
+            },
+            "transfers": {
+                "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "62000000000"
+            },
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x016445288d4c9cabc179f52b04adfe33dda3c08fba0154409ee080a635759f24",
+            "blockNum": 18783503,
+            "logId": 8,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xe599D20f5830e5E1e72A433ca217F0b0d9F140bb_18783503_1",
+            "dapp": "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b",
+            "adapterCall": false,
+            "action": "AddCollateral(address,address,uint256)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "token",
+                    "amount"
+                ],
+                "amount": "10000000000",
+                "creditAccount": "0xe599D20f5830e5E1e72A433ca217F0b0d9F140bb",
+                "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+            },
+            "transfers": {
+                "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "10000000000"
+            },
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x016445288d4c9cabc179f52b04adfe33dda3c08fba0154409ee080a635759f24",
+            "blockNum": 18783503,
+            "logId": 14,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xe599D20f5830e5E1e72A433ca217F0b0d9F140bb_18783503_1",
+            "dapp": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x016445288d4c9cabc179f52b04adfe33dda3c08fba0154409ee080a635759f24",
+            "blockNum": 18783503,
+            "logId": 22,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xe599D20f5830e5E1e72A433ca217F0b0d9F140bb_18783503_1",
+            "dapp": "0xf5f5B97624542D72A9E06f04804Bf81baA15e2B4",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x016445288d4c9cabc179f52b04adfe33dda3c08fba0154409ee080a635759f24",
+            "blockNum": 18783503,
+            "logId": 23,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0xe599D20f5830e5E1e72A433ca217F0b0d9F140bb_18783503_1",
+            "dapp": "0x289c4e697927Fd2797f1E1d9F3783e1E8e8E3E9b",
+            "adapterCall": false,
+            "action": "UpdateQuota",
+            "args": {
+                "change": "77687659456",
+                "token": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2"
+            },
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        }
+    ]
+}

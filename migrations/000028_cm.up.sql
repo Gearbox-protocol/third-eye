@@ -1,0 +1,1 @@
+alter table credit_managers drop column available_liquidity_bi, drop column available_liquidity;

@@ -20,6 +20,10 @@ CREATE TABLE current_debts (
     collateral_usd DOUBLE PRECISION,
     collateral_underlying DOUBLE PRECISION,
     repay_amount DOUBLE PRECISION,
+    --
+    total_value_usd double precision,
+    tf_index double precision,
+    --
     repay_amount_bi varchar(80));
 
 ALTER TABLE ONLY current_debts

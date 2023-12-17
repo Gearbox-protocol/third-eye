@@ -15,6 +15,7 @@ func NewAdminWrapper() *AdminWrapper {
 		SyncWrapper: wrappers.NewSyncWrapper(ds.AdminWrapper, nil),
 		nameToAddr:  make(map[string][]string),
 	}
+	// not using onBlockChange
 	w.ViaDataProcess = ds.ViaLog
 	return w
 }

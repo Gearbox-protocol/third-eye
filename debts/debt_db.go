@@ -11,13 +11,16 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// checks
 func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower string, token *ds.CumIndexAndUToken) {
 	lastDebt := eng.lastDebts[debt.SessionId]
+	var sendMsgAfterXBlocks int64 = 20
+
 	if lastDebt != nil {
 		if !core.IntGreaterThanEqualTo(lastDebt.CalHealthFactor, 10000) &&
 			core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) {
 			if eng.liquidableBlockTracker[debt.SessionId] != nil &&
-				(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= 20 {
+				(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= sendMsgAfterXBlocks {
 				eng.repo.RecentMsgf(log.RiskHeader{
 					BlockNumber: debt.BlockNumber,
 					EventCode:   "AMQP",
@@ -34,7 +37,6 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 			eng.addLiquidableAccount(debt.SessionId, debt.BlockNumber)
 		}
 	}
-	var sendMsgAfterXBlocks int64 = 20
 	// sent the account is liquidable notification after 20 blocks
 	if !core.IntGreaterThanEqualTo(debt.CalHealthFactor, 10000) &&
 		eng.liquidableBlockTracker[debt.SessionId] != nil &&

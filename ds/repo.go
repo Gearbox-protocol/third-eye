@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
@@ -62,7 +63,7 @@ type RepositoryI interface {
 	UpdateCreditSession(sessionId string, values map[string]interface{}) *schemas.CreditSession
 	GetSessions() map[string]*schemas.CreditSession
 	GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int
-	AddDieselToken(dieselToken, underlyingToken, pool string)
+	AddDieselToken(dieselToken, underlyingToken, pool string, version core.VersionType)
 	GetDieselTokens() map[string]*schemas.UTokenAndPool
 	// credit session snapshots funcs
 	AddCreditSessionSnapshot(css *schemas.CreditSessionSnapshot)
@@ -108,4 +109,9 @@ type RepositoryI interface {
 	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
 	//
 	GetTokenFromSdk(symbol string) string
+
+	// v3 events
+	AddTokenLTRamp(*schemas_v3.TokenLTRamp)
+	AddQuotaDetails(*schemas_v3.QuotaDetails)
+	GetAccountQuotaMgr() *AccountQuotaMgr
 }

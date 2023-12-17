@@ -13,6 +13,7 @@ func NewCFWrapper() *CFWrapper {
 	w := &CFWrapper{
 		SyncWrapper: wrappers.NewSyncWrapper(ds.CFWrapper, nil),
 	}
+	// not using onBlockChange
 	w.ViaDataProcess = ds.ViaLog
 	return w
 }

@@ -4,14 +4,14 @@
       BI: '1500000000',
       F: 1500,
       isEnabled: true,
-      isAllowed: true,
+      isForbidden: false,  // changed
       ind: 0,
     },
     '#Token_3': {
       BI: '3000000000000000000',
       F: 3,
       isEnabled: true,
-      isAllowed: true,
+      isForbidden: false,  // changed
       ind: 1,
     },
   },

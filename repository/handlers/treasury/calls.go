@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -12,13 +13,27 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func dieselCalls(poolForDieselRate []string) (calls []multicall.Multicall2Call) {
-	poolABI := core.GetAbi(ds.Pool)
-	for _, pool := range poolForDieselRate {
+func dieselCalls(poolForDieselRate []*schemas.UTokenAndPool) (calls []multicall.Multicall2Call) {
+	poolv2GetDiesleRateData := func() []byte {
+		poolABI := core.GetAbi(ds.Pool)
 		data, err := poolABI.Pack("getDieselRate_RAY")
 		log.CheckFatal(err)
+		return data
+	}()
+	poolv3ABI := core.GetAbi("Poolv3")
+	for _, pool := range poolForDieselRate {
+		var data []byte
+		// for 300
+		if pool.Version.MoreThanEq(core.NewVersion(300)) {
+			value, err := poolv3ABI.Pack("convertToAssets", core.RAY)
+			log.CheckFatal(err)
+			data = value
+		} else { // for v1, v2
+			data = poolv2GetDiesleRateData
+		}
+		// for all versions
 		calls = append(calls, multicall.Multicall2Call{
-			Target:   common.HexToAddress(pool),
+			Target:   common.HexToAddress(pool.Pool),
 			CallData: data,
 		})
 	}
@@ -26,17 +41,12 @@ func dieselCalls(poolForDieselRate []string) (calls []multicall.Multicall2Call) 
 }
 
 func dieselAnswers(entries []multicall.Multicall2Result) (dieselRates []*big.Int) {
-	poolABI := core.GetAbi(ds.Pool)
 	for _, entry := range entries {
 		dieselRate := big.NewInt(0)
-		if entry.Success {
-			if len(entry.ReturnData) != 0 {
-				value, err := poolABI.Unpack("getDieselRate_RAY", entry.ReturnData)
-				log.CheckFatal(err)
-				dieselRate = (value[0]).(*big.Int)
-			}
+		if entry.Success && len(entry.ReturnData) != 0 {
+			dieselRate = new(big.Int).SetBytes(entry.ReturnData) // all return data is 32 bytes
 		} else {
-			log.Fatal("dieselRates fetching failed")
+			log.Fatal("dieselRates fetching failed", entry.Success, len(entry.ReturnData))
 		}
 		dieselRates = append(dieselRates, dieselRate)
 	}

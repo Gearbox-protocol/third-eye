@@ -5,6 +5,14 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/aavev2LendingPool"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/aavev2WrappedAToken"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/balancerv2Vault"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/compoundv2CEther"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/compoundv2CToken"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/compoundv2ERC20"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/erc4626Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/savingMaker"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
@@ -44,7 +52,9 @@ func (ef *ExecuteFilter) getExecuteCalls(call *trace_service.Call) []*ds.KnownCa
 	ep := ef.paramsList[ef.paramsIndex]
 	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
 		// Execute call on credit manager
-		if ef.creditManager == common.HexToAddress(call.To) && len(call.Input) >= 10 && call.Input[:10] == "0x6ce4074a" {
+		if len(call.Input) >= 10 && (                                                            //
+		(ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x6ce4074a") || // for v1 and for v2
+			(ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x09c5eabe")) { // for v3
 			dappcall := dappCall(call, ep.Protocol)
 			// this check is there as there are 2 executeOrder call in
 			// https://kovan.etherscan.io/tx/0x9aeb9ccfb3e100c3c9e6ed5a140784e910a962be36e15f244938645b21c48a96
@@ -99,7 +109,10 @@ func (ef *ExecuteFilter) getExecuteTransfers(txLogs []trace_service.Log, cmEvent
 			parsingTransfer = false
 		}
 		// ExecuteOrder
-		if eventSig == core.Topic("ExecuteOrder(address,address)") {
+		if utils.Contains([]common.Hash{
+			core.Topic("ExecuteOrder(address,address)"),
+			core.Topic("Execute(address,address)"),
+		}, eventSig) {
 			paramsIndex += 1
 			balances = make(core.Transfers)
 			parsingTransfer = true
@@ -130,15 +143,28 @@ func (ef *ExecuteFilter) getExecuteTransfers(txLogs []trace_service.Log, cmEvent
 	return execEventBalances
 }
 
-var abiJSONs = []string{curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
+var abiJSONs = []string{
+	// v1
+	// curve, yearn, univ2,univ3
+	curveV1Adapter.CurveV1AdapterABI, yearnAdapter.YearnAdapterABI,
 	uniswapv2Adapter.Uniswapv2AdapterABI, uniswapv3Adapter.Uniswapv3AdapterABI,
 	iSwapRouter.ISwapRouterABI, testAdapter.TestAdapterABI,
 	// creditfacade for credit manager onlogs
 	// v2
+	// lido, convex, curve, yearnv2, universal
 	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI, wstETHv1Adapter.WstETHv1AdapterABI,
-	convexAdapter.ConvexAdapterABI, curveAdapter.CurveAdapterABI,
-	yearnv2Adapter.Yearnv2AdapterABI, universalAdapter.UniversalAdapterABI,
-	curveuint256.Curveuint256ABI,
+	convexAdapter.ConvexAdapterABI,
+	yearnv2Adapter.Yearnv2AdapterABI,
+	curveuint256.Curveuint256ABI, curveAdapter.CurveAdapterABI,
+	universalAdapter.UniversalAdapterABI,
+	// v3
+	// aave, compound, balancer, maker, erc4626
+	aavev2LendingPool.Aavev2LendingPoolABI,
+	aavev2WrappedAToken.Aavev2WrappedATokenABI,
+	balancerv2Vault.Balancerv2VaultABI,
+	compoundv2CEther.Compoundv2CEtherABI, compoundv2CToken.Compoundv2CTokenABI, compoundv2ERC20.Compoundv2ERC20ABI,
+	savingMaker.SavingMakerABI,
+	erc4626Adapter.Erc4626AdapterABI,
 }
 
 var abiParsers []abi.ABI

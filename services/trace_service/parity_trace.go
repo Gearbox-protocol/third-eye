@@ -42,18 +42,20 @@ func (app ParityFetcher) getDataOnRPC(rpc, txHash string) ([]RPCTrace, error) {
 	buf := &bytes.Buffer{}
 	buf.WriteString(params)
 	req, _ := http.NewRequest(http.MethodPost, rpc, buf)
+	req.Header.Add("Content-Type", "application/json")
+	//
 	resp, err := app.client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("While making request %s", err)
+		return nil, fmt.Errorf("while making request %s", err)
 	}
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("While reading body from response %s", err)
+		return nil, fmt.Errorf("while reading body from response %s", err)
 	}
 	traceObj := traceResp{}
 	err = json.Unmarshal(data, &traceObj)
 	if err != nil {
-		return nil, fmt.Errorf("While unmarshaling %s", err)
+		return nil, fmt.Errorf("while unmarshaling %s", err)
 	}
 	if traceObj.Error.Code != 0 {
 		return nil, fmt.Errorf(traceObj.Error.Message)

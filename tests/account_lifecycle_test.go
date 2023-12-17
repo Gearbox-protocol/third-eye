@@ -1,8 +1,9 @@
 package tests
 
 import (
-	"github.com/Gearbox-protocol/third-eye/tests/framework"
 	"testing"
+
+	"github.com/Gearbox-protocol/third-eye/tests/framework"
 )
 
 func TestLifecycleCreditAccount(t *testing.T) {

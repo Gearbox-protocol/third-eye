@@ -3,6 +3,7 @@ package debts
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -32,6 +33,10 @@ type DebtEngine struct {
 	farmingCalc       *FarmingCalculator
 	lastTvlSnapshot   *schemas.TvlSnapshots
 	lastRebaseDetails *schemas.RebaseDetailsForDB
+	// used for v3 calc account fields
+	currentTs uint64
+	v3DebtDetails
+	tokenLTRamp map[string]map[string]*schemas_v3.TokenLTRamp
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -50,6 +55,7 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		lastParameters:         make(map[string]*schemas.Parameters),
 		isTesting:              testing,
 		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
+		v3DebtDetails:          Newv3DebtDetails(),
 	}
 }
 
@@ -67,18 +73,23 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	if eng.config.DisableDebtEngine {
 		return
 	}
-	log.Info("Debt engine started")
 	// synced till
 	lastDebtSynced := eng.repo.LoadLastDebtSync()
+	log.Info("Debt engine started, from", lastDebtSynced)
 	eng.loadLastTvlSnapshot()
 	eng.loadLastCSS(lastDebtSynced)
 	eng.loadLastRebaseDetails(lastDebtSynced)
 	eng.loadTokenLastPrice(lastDebtSynced)
 	eng.loadAllowedTokenThreshold(lastDebtSynced)
+	eng.loadLastLTRamp(lastDebtSynced)
 	eng.loadPoolLastInterestData(lastDebtSynced)
 	eng.loadLastDebts(lastDebtSynced)
 	eng.loadParameters(lastDebtSynced)
 	eng.loadLiquidableAccounts(lastDebtSynced)
+	// v3
+	// eng.loadAccounQuotaInfo(lastDebtSynced, eng.db)
+	eng.loadPoolQuotaDetails(lastDebtSynced, eng.db)
+	//
 	// process blocks for calculating debts
 	adaptersSyncedTill := eng.repo.LoadLastAdapterSync()
 	batchSize := eng.config.BatchSizeForHistory
@@ -156,14 +167,15 @@ func (eng *DebtEngine) notifiedIfLiquidable(sessionId string, notified bool) {
 
 func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
 	data := schemas.DebtSync{}
-	query := "SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters where disabled=false"
+	query := `SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters 
+	WHERE disabled=false AND type NOT IN ('RebaseToken','Treasury','PoolLMRewards','GearToken')`
 	err := eng.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}
 	val := data.LastCalculatedAt <= 1
 	if !val {
-		log.Warn("DebtEngine disabled acitve adapters are not synchronised")
+		log.Warn("DebtEngine disabled active adapters are not synchronised")
 	}
 	return val
 }

@@ -1,0 +1,108 @@
+{
+    "txHash": "0x5cc3432901603f897693243870e48874bd92682d8ef78d2fa80f3eb41cc777dc",
+    "calls": [
+        "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e@2f2ca49b",
+        "0xA35FB622dEF46c7f5CF727e0EaBA87C78C477B3b@b25547d5",
+        "0x188B3C789c229a48edeb3200b31c754457371540@7dce4a8c",
+        "0xD5F32464493FBaA6CFd8379732453964D1cAf068@36f4e228",
+        "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e@f42aeb00",
+        "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e@712c10ad",
+        "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e@2a7ba1f7",
+        "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e@1f1088a0000000000000000000000000A0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+    ],
+    "facade": "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e",
+    "events": [
+        {
+            "txHash": "0x5cc3432901603f897693243870e48874bd92682d8ef78d2fa80f3eb41cc777dc",
+            "blockNum": 18689951,
+            "logId": 13,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0x234eb9FB55F80CA1573F89A7a8B21B27fe6729A5_18689710_1",
+            "dapp": "0x2ad92A7aE036a038ff02B96c88de868ddf3f8190",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x5cc3432901603f897693243870e48874bd92682d8ef78d2fa80f3eb41cc777dc",
+            "blockNum": 18689951,
+            "logId": 17,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0x234eb9FB55F80CA1573F89A7a8B21B27fe6729A5_18689710_1",
+            "dapp": "0xEd279fDD11cA84bEef15AF5D39BB4d4bEE23F0cA",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x5cc3432901603f897693243870e48874bd92682d8ef78d2fa80f3eb41cc777dc",
+            "blockNum": 18689951,
+            "logId": 24,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0x234eb9FB55F80CA1573F89A7a8B21B27fe6729A5_18689710_1",
+            "dapp": "0xE592427A0AEce92De3Edee1F18E0157C05861564",
+            "adapterCall": true,
+            "action": "ExecuteOrder",
+            "args": null,
+            "transfers": null,
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x5cc3432901603f897693243870e48874bd92682d8ef78d2fa80f3eb41cc777dc",
+            "blockNum": 18689951,
+            "logId": 29,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0x234eb9FB55F80CA1573F89A7a8B21B27fe6729A5_18689710_1",
+            "dapp": "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e",
+            "adapterCall": false,
+            "action": "DecreaseDebt(address,uint256)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "amount"
+                ],
+                "amount": "115792089237316195423570985008687907853269984665640564039457584007913129639935",
+                "creditAccount": "0x234eb9FB55F80CA1573F89A7a8B21B27fe6729A5"
+            },
+            "transfers": {
+                "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "-115792089237316195423570985008687907853269984665640564039457584007913129639935"
+            },
+            "MainAction": null,
+            "multicalls": null
+        },
+        {
+            "txHash": "0x5cc3432901603f897693243870e48874bd92682d8ef78d2fa80f3eb41cc777dc",
+            "blockNum": 18689951,
+            "logId": 31,
+            "borrower": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+            "sessionId": "0x234eb9FB55F80CA1573F89A7a8B21B27fe6729A5_18689710_1",
+            "dapp": "0xA558422397eB6cdF4d10520b4669CcAaECA1D34e",
+            "adapterCall": false,
+            "action": "WithdrawCollateral(address,address,uint256,address)",
+            "args": {
+                "_order": [
+                    "creditAccount",
+                    "token",
+                    "amount",
+                    "to"
+                ],
+                "amount": 10978240419,
+                "creditAccount": "0x234eb9FB55F80CA1573F89A7a8B21B27fe6729A5",
+                "to": "0xf13df765f3047850Cede5aA9fDF20a12A75f7F70",
+                "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+            },
+            "transfers": {
+                "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48": "-10978240419"
+            },
+            "MainAction": null,
+            "multicalls": null
+        }
+    ]
+}

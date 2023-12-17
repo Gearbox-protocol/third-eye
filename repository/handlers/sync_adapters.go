@@ -16,12 +16,14 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/composite_chainlink"
+	"github.com/Gearbox-protocol/third-eye/models/configurators"
+	"github.com/Gearbox-protocol/third-eye/models/configurators/credit_filter"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
-	"github.com/Gearbox-protocol/third-eye/models/credit_filter"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
+	"github.com/Gearbox-protocol/third-eye/models/pool_quota_keeper"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
@@ -36,6 +38,7 @@ type SyncAdaptersRepo struct {
 	rollbackAllowed bool
 	mu              *sync.Mutex
 	*AdapterKitHandler
+	cfg *config.Config
 }
 
 func NewSyncAdaptersRepo(client core.ClientI, repo ds.RepositoryI, cfg *config.Config, extras *ExtrasRepo) *SyncAdaptersRepo {
@@ -46,6 +49,7 @@ func NewSyncAdaptersRepo(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 		rollbackAllowed:   cfg.Rollback,
 		mu:                &sync.Mutex{},
 		AdapterKitHandler: NewAdpterKitHandler(client, repo, cfg),
+		cfg:               cfg,
 	}
 	return obj
 }
@@ -111,7 +115,7 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.ACL:
 		return acl.NewACLFromAdapter(adapter)
 	case ds.AddressProvider:
-		ap := address_provider.NewAddressProviderFromAdapter(adapter)
+		ap := address_provider.NewAddressProviderFromAdapter(adapter, repo.cfg.AddressProviderAddrs)
 		if ap.Details["dc"] != nil {
 			repo.extras.GetDCWrapper().LoadMultipleDC(ap.Details["dc"])
 		}
@@ -122,8 +126,10 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 		return account_factory.NewAccountFactoryFromAdapter(adapter)
 	case ds.Pool:
 		return pool.NewPoolFromAdapter(adapter)
+	case ds.PoolQuotaKeeper:
+		return pool_quota_keeper.NewPoolQuotaKeeperFromAdapter(adapter)
 	case ds.CreditManager:
-		return credit_manager.NewCreditManagerFromAdapter(adapter)
+		return credit_manager.NewCMFromAdapter(adapter)
 	case ds.PriceOracle:
 		return price_oracle.NewPriceOracleFromAdapter(adapter)
 	case ds.ChainlinkPriceFeed:
@@ -143,7 +149,7 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.AccountManager:
 		return account_manager.NewAccountManagerFromAdapter(adapter)
 	case ds.CreditConfigurator:
-		return credit_filter.NewCreditFilterFromAdapter(adapter)
+		return configurators.NewConfiguratorFromAdapter(adapter)
 	case ds.CreditFilter:
 		if adapter.Details["creditManager"] != nil {
 			cmAddr := adapter.Details["creditManager"].(string)
@@ -160,6 +166,9 @@ func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.rollbackAllowed {
+		return
+	}
+	if repo.GetAdapter(newAdapterI.GetAddress()) != nil {
 		return
 	}
 	if newAdapterI.GetName() == ds.PriceOracle {

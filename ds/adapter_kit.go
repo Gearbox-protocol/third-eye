@@ -14,7 +14,9 @@ func (kit *AdapterKit) init() {
 	// REVERT_ADMIN_WRAPPER: ACL, AccountFactory, GearToken, ContractRegister, RebaseToken
 	kit.AddLevel([]string{PriceOracle, AdminWrapper, RebaseToken})
 	// REVERT_POOL_WRAPPER
-	kit.AddLevel([]string{PoolWrapper, AccountManager, ChainlinkPriceFeed, CompositeChainlinkPF})
+	kit.AddLevel([]string{PoolWrapper, AccountManager, CompositeChainlinkPF})
+	// another level created bcz of poolKeeper.
+	kit.AddLevel([]string{PoolQuotaWrapper, ChainlinkPriceFeed})
 	// REVERT_CM_WRAPPER
 	kit.AddLevel([]string{CMWrapper, AggregatedQueryFeedWrapper, PoolLMRewards})
 	// REVERT_CF_WRAPPER
@@ -24,6 +26,7 @@ func (kit *AdapterKit) init() {
 	//   Another reason being to get all the yearnPriceFeed in single go.
 	// - CreditManager => CreditFilter/CreditConfigurator for creation only.
 	// - AccountFactory => AccountManager => CreditManager; factory gets the accounts address to accountmanager for getting
+	// pool => poolKeeper => CreditManager for credit sessions with multicall updateQuota
 	//   all token transfers, in CreditManager filter transfer related to events on creditmanager
 	// - Pool -> CreditManager; for getting the session for borrow/repay event on Pool
 	// - Treasury dependent on pools, so it is last

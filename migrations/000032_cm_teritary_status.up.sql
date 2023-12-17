@@ -1,0 +1,1 @@
+alter table credit_sessions add teritary_status jsonb;

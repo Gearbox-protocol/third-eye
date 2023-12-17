@@ -1,16 +1,14 @@
 package services
 
 import (
-	"encoding/hex"
 	"fmt"
 	"os"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacade"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacadev3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManager"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -40,18 +38,17 @@ type ExecuteParser struct {
 
 func getCMEventIds() map[common.Hash]bool {
 	ids := map[common.Hash]bool{}
-	if abiObj, err := abi.JSON(strings.NewReader(creditFacade.CreditFacadeABI)); err == nil {
-		for _, event := range abiObj.Events {
-			ids[event.ID] = true
-		}
-	}
-	if abiObj, err := abi.JSON(strings.NewReader(creditManager.CreditManagerABI)); err == nil {
-		for _, event := range abiObj.Events {
-			ids[event.ID] = true
+	for _, contractABI := range []string{creditManager.CreditManagerABI, // v1 has ExecuteOrder event which has same sig as  v2'ExecuteOrder and so we are able to separate transfer in  batches for ExecuteOrder
+		creditFacade.CreditFacadeABI, creditFacadev3.CreditFacadev3ABI} {
+		if abiObj, err := abi.JSON(strings.NewReader(contractABI)); err == nil {
+			for _, event := range abiObj.Events {
+				ids[event.ID] = true
+			}
 		}
 	}
 	return ids
 }
+
 func NewExecuteParser(cfg *config.Config, client core.ClientI) ds.ExecuteParserI {
 	return &ExecuteParser{
 		IgnoreCMEventIds: getCMEventIds(),
@@ -64,10 +61,14 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 		return nil
 	}
 	trace := ep.GetTxTrace(txHash, true)
-	filter := ExecuteFilter{paramsList: paramsList, creditManager: common.HexToAddress(creditManagerAddr)}
+	filter := ExecuteFilter{paramsList: paramsList,
+		creditManager: common.HexToAddress(creditManagerAddr),
+	}
 	calls := filter.getExecuteCalls(trace.CallTrace)
 
 	executeTransfers := filter.getExecuteTransfers(trace.Logs, ep.IgnoreCMEventIds)
+	// log.Info(utils.ToJson(trace.Logs))
+	// log.Info(utils.ToJson(executeTransfers))
 
 	// check if parsed execute Order currently
 	if len(calls) == len(executeTransfers) {
@@ -86,84 +87,6 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 // ////////////////////////
 // parser functions for v2
 // ////////////////////////
-// GetMainCalls
-func (ep *ExecuteParser) GetMainCalls(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
-	trace := ep.GetTxTrace(txHash, false)
-	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
-	if err != nil {
-		log.Fatal(err.Error(), "for txHash", txHash)
-	}
-	return data
-}
-
-func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade common.Address) ([]*ds.FacadeCallNameWithMulticall, error) {
-	mainEvents := []*ds.FacadeCallNameWithMulticall{}
-	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
-		if creditFacade == common.HexToAddress(call.To) && len(call.Input) >= 10 {
-			switch call.Input[2:10] {
-			case "caa5c23f", // multicall
-				"5f73fbec", // closeCreditAccount
-				"82871ace", // liquidateExpiredCreditAccount
-				"5d91a0e0", // liquidateCreditAccount
-				"7071b7c5": // openCreditAccountMulticall
-				event, err := getCreditFacadeMainEvent(call.Input)
-				if err != nil {
-					return nil, err
-				}
-				mainEvents = append(mainEvents, event)
-			}
-		} else {
-			for _, c := range call.Calls {
-				data, err := ep.getMainEvents(c, creditFacade)
-				if err != nil {
-					return nil, err
-				}
-				mainEvents = append(mainEvents, data...)
-			}
-		}
-	}
-	return mainEvents, nil
-}
-
-var creditFacadeParser *abi.ABI
-
-func init() {
-	creditFacadeParser = core.GetAbi("CreditFacade")
-}
-func getCreditFacadeMainEvent(input string) (*ds.FacadeCallNameWithMulticall, error) {
-	hexData, err := hex.DecodeString(input[2:])
-	if err != nil {
-		return nil, err
-	}
-	method, err := creditFacadeParser.MethodById(hexData[:4])
-	if err != nil {
-		return nil, err
-	}
-	// unpack in the map
-	data := map[string]interface{}{}
-	err = method.Inputs.UnpackIntoMap(data, hexData[4:])
-	if err != nil {
-		log.Fatal(err)
-	}
-	calls, ok := data["calls"].([]struct {
-		Target   common.Address `json:"target"`
-		CallData []uint8        `json:"callData"`
-	})
-	if !ok {
-		log.Fatal("calls type is different the creditFacade multicall: ", reflect.TypeOf(data["calls"]))
-	}
-	multicalls := []multicall.Multicall2Call{}
-	for _, call := range calls {
-		multicalls = append(multicalls, multicall.Multicall2Call{
-			Target:   call.Target,
-			CallData: call.CallData,
-		})
-	}
-	return ds.NewFacadeCallNameWithMulticall(
-		ds.FacadeAccountMethodSigToCallName(method.Name),
-		multicalls,
-	), nil
-}
 
 // GetTransfersAtClosev2
 // currently only valid for closeCreditAccount v2
@@ -216,8 +139,8 @@ func getTransfersToUser(txLogs []trace_service.Log, account, underlyingToken str
 	for _, raw := range txLogs {
 		eventLog := raw.Raw
 		if eventLog.Topics[0] == core.Topic("Transfer(address,address,uint256)") { // transfer event
-			to := common.BytesToAddress(eventLog.Topics[2][:])
 			from := common.BytesToAddress(eventLog.Topics[1][:])
+			to := common.BytesToAddress(eventLog.Topics[2][:])
 			token := eventLog.Address.Hex()
 			var sign *big.Int
 			if from == users.Borrower && to.Hex() == account && token == underlyingToken {

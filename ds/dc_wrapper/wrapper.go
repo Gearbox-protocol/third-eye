@@ -5,35 +5,52 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	dcv3 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/test"
+	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
+type addressAndBlock struct {
+	address common.Address
+	block   int64
+}
 type DataCompressorWrapper struct {
 	mu *sync.RWMutex
 	// blockNumbers of dc in asc order
 	DCBlockNum         []int64
 	BlockNumToName     map[int64]string
 	discoveredAtToAddr map[int64]common.Address
+	// for v3 version to address
+	versionToAddress map[core.VersionType]addressAndBlock
+	byVersion        bool
+	// for v1
+	creditManagerToFilter map[common.Address]common.Address
 	//
-	v1DC    *MainnetDC
 	testing *DCTesting
 
 	client core.ClientI
 }
 
+func (dcw *DataCompressorWrapper) DCAreByVersion() {
+	dcw.byVersion = true
+}
+
 var DCV1 = "DCV1"
 var DCV2 = "DCV2"
 var TESTING = "TESTING"
+var DCV3 = "DCV3"
+var NODC = "NODC"
+var NO_DC_FOUND_ERR = fmt.Errorf("No data compressor found")
 
 func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 	return &DataCompressorWrapper{
@@ -41,27 +58,29 @@ func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 		BlockNumToName:     make(map[int64]string),
 		discoveredAtToAddr: make(map[int64]common.Address),
 		client:             client,
-		v1DC:               NewMainnetDC(client),
+		// for v1
+		creditManagerToFilter: make(map[common.Address]common.Address),
 		testing: &DCTesting{
-			calls:  map[int64]*test.DCCalls{},
+			calls:  map[int64]*dc.DCCalls{},
 			client: client,
 		},
+		versionToAddress: map[core.VersionType]addressAndBlock{},
 	}
 }
 
 // testing
-func (dcw *DataCompressorWrapper) SetCalls(blockNum int64, calls *test.DCCalls) {
+func (dcw *DataCompressorWrapper) SetCalls(blockNum int64, calls *dc.DCCalls) {
 	dcw.testing.calls[blockNum] = calls
 }
 
-func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string) {
+func (dcw *DataCompressorWrapper) addDataCompressorByBlock(blockNum int64, addr string) {
 	if len(dcw.DCBlockNum) > 0 && dcw.DCBlockNum[len(dcw.DCBlockNum)-1] >= blockNum {
 		log.Fatalf("Current dc added at :%v, new dc:%s added at %d  ", dcw.DCBlockNum, addr, blockNum)
 	}
 	chainId, err := dcw.client.ChainID(context.TODO())
 	log.CheckFatal(err)
 	var key string
-	if chainId.Int64() == 1 { // deprecated goerli
+	if chainId.Int64() == 1 || chainId.Int64() == 7878 { //anvil fork and mainnet
 		switch len(dcw.DCBlockNum) {
 		case 0:
 			key = DCV1
@@ -102,7 +121,19 @@ func (dcw *DataCompressorWrapper) addDataCompressor(blockNum int64, addr string)
 func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
-	dcw.addDataCompressor(blockNum, addr)
+	dcw.addDataCompressorByBlock(blockNum, addr)
+}
+func (dcw *DataCompressorWrapper) AddDataCompressorByVersion(version core.VersionType, addr string, blockNum int64) {
+	dcw.mu.Lock()
+	defer dcw.mu.Unlock()
+	dcw.addDataCompressorByVersion(version, addr, blockNum)
+}
+
+func (dcw *DataCompressorWrapper) addDataCompressorByVersion(version core.VersionType, addr string, discoveredAt int64) {
+	dcw.versionToAddress[version] = addressAndBlock{
+		address: common.HexToAddress(addr),
+		block:   discoveredAt,
+	}
 }
 
 func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
@@ -112,6 +143,7 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 	if !ok {
 		log.Fatalf("Converting address provider() details for dc to map failed %v", multiDCs)
 	}
+
 	var blockNums []int64
 	for k := range dcMap {
 		blockNum, err := strconv.ParseInt(k, 10, 64)
@@ -123,28 +155,55 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
 	for _, blockNum := range blockNums {
 		k := fmt.Sprintf("%d", blockNum)
-		dcAddr := dcMap[k]
-		dcw.addDataCompressor(blockNum, dcAddr.(string))
+		dcAddr := dcMap[k].(string)
+		//
+		if strings.Contains(dcAddr, "_") {
+			addrs := strings.Split(dcAddr, "_")
+			version, err := strconv.ParseInt(addrs[1], 10, 64)
+			log.CheckFatal(err)
+			dcw.addDataCompressorByVersion(core.NewVersion(int16(version)), addrs[0], blockNum)
+		} else {
+			dcw.addDataCompressorByBlock(blockNum, dcAddr)
+		}
 	}
 }
 
-func (dcw *DataCompressorWrapper) GetCreditAccountData(blockNum int64, creditManager common.Address, borrower common.Address) (
+func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blockNum int64) (string, common.Address) {
+	if version.MoreThanEq(core.NewVersion(300)) {
+		if blockNum < dcw.versionToAddress[version].block {
+			return NODC, core.NULL_ADDR
+		}
+		return DCV3, dcw.versionToAddress[version].address
+	}
+	key, discoveredAt := dcw.getDataCompressorIndex(blockNum)
+	return key, dcw.getDCAddr(discoveredAt)
+}
+
+func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType, blockNum int64, creditManager common.Address, borrower common.Address, account common.Address) (
 	call multicall.Multicall2Call,
-	resultFn func([]byte) (dcv2.CreditAccountData, error),
+	resultFn func([]byte) (dc.CreditAccountCallData, error),
 	errReturn error) {
 	//
-	key, discoveredAt := dcw.getDataCompressorIndex(blockNum)
+	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
 	switch key {
+	case NODC:
+		errReturn = NO_DC_FOUND_ERR
+	case DCV3:
+		data, err := core.GetAbi("DataCompressorv3").Pack("getCreditAccountData", account, []dcv3.PriceOnDemand{})
+		call, errReturn = multicall.Multicall2Call{
+			Target:   dcAddr,
+			CallData: data,
+		}, err
 	case DCV2:
 		data, err := core.GetAbi("DataCompressorV2").Pack("getCreditAccountData", creditManager, borrower)
 		call, errReturn = multicall.Multicall2Call{
-			Target:   dcw.getDCAddr(discoveredAt),
+			Target:   dcAddr,
 			CallData: data,
 		}, err
 	case DCV1:
 		data, err := core.GetAbi("DataCompressorMainnet").Pack("getCreditAccountDataExtended", creditManager, borrower)
 		call, errReturn = multicall.Multicall2Call{
-			Target:   dcw.getDCAddr(discoveredAt),
+			Target:   dcAddr,
 			CallData: data,
 		}, err
 	case TESTING:
@@ -156,22 +215,31 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(blockNum int64, creditMan
 	default:
 		panic(fmt.Sprintf("data compressor number %s not found for credit account data extended", key))
 	}
-	resultFn = func(bytes []byte) (dcv2.CreditAccountData, error) {
+	resultFn = func(bytes []byte) (dc.CreditAccountCallData, error) {
 		switch key {
+		case NODC:
+			log.Fatal("No data compressor found for credit account data")
+		case DCV3:
+			out, err := core.GetAbi("DataCompressorv3").Unpack("getCreditAccountData", bytes)
+			if err != nil {
+				return dc.CreditAccountCallData{}, err
+			}
+			accountData := *abi.ConvertType(out[0], new(dcv3.CreditAccountData)).(*dcv3.CreditAccountData)
+			return dc.GetAccountDataFromDCCall(dcw.client, core.NULL_ADDR, blockNum, accountData)
 		case DCV2:
 			out, err := core.GetAbi("DataCompressorV2").Unpack("getCreditAccountData", bytes)
 			if err != nil {
-				return dcv2.CreditAccountData{}, err
+				return dc.CreditAccountCallData{}, err
 			}
 			accountData := *abi.ConvertType(out[0], new(dcv2.CreditAccountData)).(*dcv2.CreditAccountData)
-			return accountData, nil
+			return dc.GetAccountDataFromDCCall(dcw.client, core.NULL_ADDR, blockNum, accountData)
 		case DCV1:
 			out, err := core.GetAbi("DataCompressorMainnet").Unpack("getCreditAccountDataExtended", bytes)
 			if err != nil {
-				return dcv2.CreditAccountData{}, err
+				return dc.CreditAccountCallData{}, err
 			}
 			accountData := *abi.ConvertType(out[0], new(mainnet.DataTypesCreditAccountDataExtended)).(*mainnet.DataTypesCreditAccountDataExtended)
-			return dcw.v1DC.getCreditAccountData(blockNum, accountData)
+			return dc.GetAccountDataFromDCCall(dcw.client, dcw.creditManagerToFilter[creditManager], blockNum, accountData)
 		case TESTING:
 			return dcw.testing.getAccountData(blockNum, fmt.Sprintf("%s_%s", creditManager, borrower))
 		}
@@ -180,23 +248,31 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(blockNum int64, creditMan
 	return
 }
 
-func (dcw *DataCompressorWrapper) GetCreditManagerData(blockNum int64, _creditManager common.Address) (
+func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType, blockNum int64, _creditManager common.Address) (
 	call multicall.Multicall2Call,
-	resultFn func([]byte) (dcv2.CreditManagerData, error),
+	resultFn func([]byte) (dc.CMCallData, error),
 	errReturn error) {
 	//
-	key, discoveredAt := dcw.getDataCompressorIndex(blockNum)
+	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
 	switch key {
+	case NODC:
+		errReturn = NO_DC_FOUND_ERR
+	case DCV3:
+		data, err := core.GetAbi("DataCompressorv3").Pack("getCreditManagerData", _creditManager)
+		call, errReturn = multicall.Multicall2Call{
+			Target:   dcAddr,
+			CallData: data,
+		}, err
 	case DCV2:
 		data, err := core.GetAbi("DataCompressorV2").Pack("getCreditManagerData", _creditManager)
 		call, errReturn = multicall.Multicall2Call{
-			Target:   dcw.getDCAddr(discoveredAt),
+			Target:   dcAddr,
 			CallData: data,
 		}, err
 	case DCV1:
 		data, err := core.GetAbi("DataCompressorMainnet").Pack("getCreditManagerData", _creditManager, _creditManager)
 		call, errReturn = multicall.Multicall2Call{
-			Target:   dcw.getDCAddr(discoveredAt),
+			Target:   dcAddr,
 			CallData: data,
 		}, err
 	case TESTING:
@@ -207,22 +283,31 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(blockNum int64, _creditMa
 		}, err
 	}
 	//
-	resultFn = func(bytes []byte) (dcv2.CreditManagerData, error) {
+	resultFn = func(bytes []byte) (dc.CMCallData, error) {
 		switch key {
+		case NODC:
+			log.Fatal("No data compressor found for credit manager data")
+		case DCV3:
+			out, err := core.GetAbi("DataCompressorv3").Unpack("getCreditManagerData", bytes)
+			if err != nil {
+				return dc.CMCallData{}, err
+			}
+			cmData := *abi.ConvertType(out[0], new(dcv3.CreditManagerData)).(*dcv3.CreditManagerData)
+			return dc.GetCMDataFromDCCall(cmData)
 		case DCV2:
 			out, err := core.GetAbi("DataCompressorV2").Unpack("getCreditManagerData", bytes)
 			if err != nil {
-				return dcv2.CreditManagerData{}, err
+				return dc.CMCallData{}, err
 			}
 			cmData := *abi.ConvertType(out[0], new(dcv2.CreditManagerData)).(*dcv2.CreditManagerData)
-			return cmData, nil
+			return dc.GetCMDataFromDCCall(cmData)
 		case DCV1:
 			out, err := core.GetAbi("DataCompressorMainnet").Unpack("getCreditManagerData", bytes)
 			if err != nil {
-				return dcv2.CreditManagerData{}, err
+				return dc.CMCallData{}, err
 			}
 			cmData := *abi.ConvertType(out[0], new(mainnet.DataTypesCreditManagerData)).(*mainnet.DataTypesCreditManagerData)
-			return getCMDataV1(cmData), nil
+			return dc.GetCMDataFromDCCall(cmData)
 		case TESTING:
 			return dcw.testing.getCMData(blockNum, _creditManager.Hex())
 		}
@@ -231,23 +316,31 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(blockNum int64, _creditMa
 	return
 }
 
-func (dcw *DataCompressorWrapper) GetPoolData(blockNum int64, _pool common.Address) (
+func (dcw *DataCompressorWrapper) GetPoolData(version core.VersionType, blockNum int64, _pool common.Address) (
 	call multicall.Multicall2Call,
-	resultFn func([]byte) (dcv2.PoolData, error),
+	resultFn func([]byte) (dc.PoolCallData, error),
 	errReturn error) {
 	//
-	key, discoveredAt := dcw.getDataCompressorIndex(blockNum)
+	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
 	switch key {
+	case NODC:
+		errReturn = NO_DC_FOUND_ERR
+	case DCV3:
+		data, err := core.GetAbi("DataCompressorv3").Pack("getPoolData", _pool)
+		call, errReturn = multicall.Multicall2Call{
+			Target:   dcAddr,
+			CallData: data,
+		}, err
 	case DCV2:
 		data, err := core.GetAbi("DataCompressorV2").Pack("getPoolData", _pool)
 		call, errReturn = multicall.Multicall2Call{
-			Target:   dcw.getDCAddr(discoveredAt),
+			Target:   dcAddr,
 			CallData: data,
 		}, err
 	case DCV1:
 		data, err := core.GetAbi("DataCompressorMainnet").Pack("getPoolData", _pool)
 		call, errReturn = multicall.Multicall2Call{
-			Target:   dcw.getDCAddr(discoveredAt),
+			Target:   dcAddr,
 			CallData: data,
 		}, err
 	case TESTING:
@@ -260,22 +353,31 @@ func (dcw *DataCompressorWrapper) GetPoolData(blockNum int64, _pool common.Addre
 		panic(fmt.Sprintf("data compressor number %s not found for pool data", key))
 	}
 	//
-	resultFn = func(bytes []byte) (dcv2.PoolData, error) {
+	resultFn = func(bytes []byte) (dc.PoolCallData, error) {
 		switch key {
+		case NODC:
+			log.Fatal("No data compressor found for pool data")
+		case DCV3:
+			out, err := core.GetAbi("DataCompressorv3").Unpack("getPoolData", bytes)
+			if err != nil {
+				return dc.PoolCallData{}, err
+			}
+			poolData := *abi.ConvertType(out[0], new(dcv3.PoolData)).(*dcv3.PoolData)
+			return dc.GetPoolDataFromDCCall(poolData)
 		case DCV2:
 			out, err := core.GetAbi("DataCompressorV2").Unpack("getPoolData", bytes)
 			if err != nil {
-				return dcv2.PoolData{}, err
+				return dc.PoolCallData{}, err
 			}
 			poolData := *abi.ConvertType(out[0], new(dcv2.PoolData)).(*dcv2.PoolData)
-			return poolData, nil
+			return dc.GetPoolDataFromDCCall(poolData)
 		case DCV1:
 			out, err := core.GetAbi("DataCompressorMainnet").Unpack("getPoolData", bytes)
 			if err != nil {
-				return dcv2.PoolData{}, err
+				return dc.PoolCallData{}, err
 			}
 			poolData := *abi.ConvertType(out[0], new(mainnet.DataTypesPoolData)).(*mainnet.DataTypesPoolData)
-			return getPoolDataV1(poolData), nil
+			return dc.GetPoolDataFromDCCall(poolData)
 		case TESTING:
 			return dcw.testing.getPoolData(blockNum, _pool.Hex())
 		}
@@ -304,7 +406,7 @@ func (dcw *DataCompressorWrapper) getDataCompressorIndex(blockNum int64) (name s
 func (dcw *DataCompressorWrapper) AddCreditManagerToFilter(cmAddr, cfAddr string) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
-	dcw.v1DC.AddCreditManagerToFilter(cmAddr, cfAddr)
+	dcw.creditManagerToFilter[common.HexToAddress(cmAddr)] = common.HexToAddress(cfAddr)
 }
 
 func (dcw *DataCompressorWrapper) getDCAddr(discoveredAt int64) common.Address {

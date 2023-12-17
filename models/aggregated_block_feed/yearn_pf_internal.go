@@ -18,6 +18,7 @@ type yearnPFInternal struct {
 	yVaultAddr           common.Address //for yearn manual price calculation
 	underlyingPFContract *priceFeed.PriceFeed
 	decimalDivider       *big.Int
+	version              core.VersionType
 }
 
 func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, version core.VersionType) (*schemas.PriceFeed, error) {
@@ -69,11 +70,23 @@ func (mdl *yearnPFInternal) setContracts(blockNum int64, client core.ClientI) er
 	log.CheckFatal(err)
 
 	// set the yvault contract
-	yVaultAddrBytes, err := core.CallFuncWithExtraBytes(client, "33303f8e", mdl.mainPFAddress, blockNum, nil) // yVault
-	if err != nil {
-		return err
+	if mdl.version == core.NewVersion(300) {
+		// https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/yearn/YearnPriceFeed.sol#L19
+		// https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/SingleAssetLPPriceFeed.sol#L24
+		//https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/LPPriceFeed.sol#L69C9-
+		// LPCONTRACT_LOGIC
+		lpCOntractBytes, err := core.CallFuncWithExtraBytes(client, "8acee3cf", mdl.mainPFAddress, blockNum, nil) // lpContract
+		if err != nil {
+			return err
+		}
+		mdl.yVaultAddr = common.BytesToAddress(lpCOntractBytes)
+	} else {
+		yVaultAddrBytes, err := core.CallFuncWithExtraBytes(client, "33303f8e", mdl.mainPFAddress, blockNum, nil) // yVault
+		if err != nil {
+			return err
+		}
+		mdl.yVaultAddr = common.BytesToAddress(yVaultAddrBytes)
 	}
-	mdl.yVaultAddr = common.BytesToAddress(yVaultAddrBytes)
 	//
 
 	// set the decimals

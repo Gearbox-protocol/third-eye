@@ -114,7 +114,8 @@ func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.A
 	//
 	chainId, err2 := mdl.Client.ChainID(context.TODO())
 	log.CheckFatal(err2)
-	if chainId.Int64() == 1 {
+	// TODO anvil fork
+	if chainId.Int64() == 1 || chainId.Int64() == 7878 {
 		// get phaseAggregator on the boundedFeed
 		newPhaseAgg, err := mdl.contractETH.PhaseAggregators(opts, phaseId, false)
 		log.CheckFatal(err)

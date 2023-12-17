@@ -19,6 +19,9 @@ local borrowedAmount = 4000;
         feed: '#ChainlinkPriceFeed_2',
       }],
     },
+    otherCalls: {
+      '54fd4d50': { '#AddressProvider_1': '1' },
+    },
   },
   blocks: {
     '3': {
@@ -111,10 +114,10 @@ local borrowedAmount = 4000;
             expectedLiquidity: utils.bigInt(borrowedAmount + 1000, 6),
             availableLiquidity: utils.bigInt(1000, 6),
             depositAPY: utils.bigInt(0),
-            borrowAPY: utils.bigInt(0),
+            baseBorrowRate: utils.bigInt(0),
             dieselRate: utils.bigInt(0),
             withdrawFee: '0',
-            linearCumulativeIndex: utils.bigInt(1, 27),
+            cumulativeIndex: utils.bigInt(1, 27),
           }],
           accounts: [{
             address: '#Account_1',
@@ -125,11 +128,12 @@ local borrowedAmount = 4000;
             repayAmount: utils.bigInt(borrowedAmount, 6),
             cumulativeIndexAtOpen: utils.bigInt(1, 27),
             borrowedAmount: utils.bigInt(borrowedAmount, 6),
-            borrowedAmountPlusInterest: utils.bigInt(borrowedAmount, 6),
+            debt: utils.bigInt(borrowedAmount, 6),
+            accruedInterest: utils.bigInt(0, 6),
             balances: [{
               token: '#Token_1',
-              balance: utils.bigInt(5000, 6),
-              isAllowed: true,
+              BI: utils.bigInt(5000, 6),
+              isForbidden: false,  // changed
             }],
             version: 1,
           }],

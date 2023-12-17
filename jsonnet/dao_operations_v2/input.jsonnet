@@ -8,7 +8,10 @@ local borrowedAmount = 4000;
   },
   states: {
     otherCalls: {
-      '54fd4d50': { '#CreditConfigurator_2': '2' },
+      '54fd4d50': {
+        '#CreditConfigurator_2': '2',
+        '#AddressProvider_1': '1',
+      },
     },
     oracles: {
       '#Oracle_0': [{  // for v1
@@ -44,6 +47,7 @@ local borrowedAmount = 4000;
         others: {
           '2f7a1881': { '#CreditManager_1': '#CreditFacade_1' },
           f9aa028a: { '#CreditManager_1': '#CreditConfigurator_1' },
+          '54fd4d50': { '#CreditConfigurator_2': '2' },
         },
       },
     },
@@ -150,7 +154,7 @@ local borrowedAmount = 4000;
           // credit manager on usdc
           address: '#CreditConfigurator_1',
           topics: [
-            'PriceOracleUpdated(address)',
+            'PriceOracleUpgraded(address)',
             '#PriceOracle_2',
           ],
           txHash: '!#Hash_9',

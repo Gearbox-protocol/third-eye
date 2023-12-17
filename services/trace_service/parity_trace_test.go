@@ -24,3 +24,19 @@ func _TestParityFetcher(t *testing.T) {
 	utils.ReadJsonAndSetInterface("../../inputs/execute_parser_transfers/get_transfers.json", &input)
 	require.JSONEq(t, utils.ToJson(input.TenderlyTrace), utils.ToJson(tenderlyTrace))
 }
+func TestParityFetcherAnvil(t *testing.T) {
+	t.Skip()
+	rpc := "https://anvil.gearbox.foundation/forks/432945bc-3620-11ee-be56-0242ac120002"
+	txHash := "0x34c7296cffba97fb68e281677228ea9ef7fa307c7e42f4a918e76eac5c3318d8"
+	fetcher := NewParityFetcher(rpc)
+	rpcTrace, err := fetcher.getData(txHash)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(utils.ToJson(rpcTrace))
+	tenderlyTrace := convertToTenderlyTrace(rpcTrace, txHash)
+	t.Log(utils.ToJson(tenderlyTrace))
+	// input := TenderlySampleTestInput{}
+	// utils.ReadJsonAndSetInterface("../../inputs/execute_parser_transfers/get_transfers.json", &input)
+	// require.JSONEq(t, utils.ToJson(input.TenderlyTrace), utils.ToJson(tenderlyTrace))
+}

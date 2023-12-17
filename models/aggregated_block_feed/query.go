@@ -123,33 +123,51 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 }
 
 var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
+var failingv3LatestRound = map[string][]int64{}
 
 func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 
 	if entry.Success {
+		failingv3LatestRound[adapter.GetAddress()] = nil
 		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
 		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
+	} else if adapter.GetVersion().MoreThanEq(core.NewVersion(300)) {
+		// failingv3LatestRound[adapter.GetAddress()] = append(failingv3LatestRound[adapter.GetAddress()], blockNum)
+		if core.GetChainId(mdl.Client) == 7878 {
+			// if len(failingv3LatestRound[adapter.GetAddress()]) == 10 {
+			// 	log.Warnf("Can't get latestRounData in AQFWrapper for %s(%s) at %v . %v",
+			// 		adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()],
+			// 		adapter.Details,
+			// 	)
+			// } else if len(failingv3LatestRound[adapter.GetAddress()]) > 10 {
+			// 	log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %v. %v",
+			// 		adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()],
+			// 		adapter.Details)
+			// }
+			//  get latestRoundData can sometimes fail for anvil
+			// exit in those cases
+			return nil
+		} else {
+			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %v",
+				adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()])
+		}
 	} else {
 		switch adapter.GetDetailsByKey("pfType") {
 		case ds.YearnPF:
 			// fail on err, since we only sync for block_num which is more than discovered_at, we can assume that underlying price feed will be set for given block_num
 			_priceData, err := adapter.calculateYearnPFInternally(blockNum)
 			if err != nil {
-				log.Fatal(fmt.Errorf("can't calculate yearnfeed(%s)'s price internally: %s",
+				log.Fatal(fmt.Errorf("At %d can't calculate yearnfeed(%s)'s price internally: %s",
+					blockNum,
 					adapter.GetAddress(), err.Error()))
 			}
 			priceData = _priceData
 		case ds.CurvePF:
 			// if virtualprice of pool for this oracle is not within lowerBound and upperBound , ignore the price
 			oracleAddr := common.HexToAddress(adapter.GetAddress())
-			virtualPrice := func() *big.Int {
-				curvePool, err := core.CallFuncWithExtraBytes(mdl.Client, "218751b2", oracleAddr, blockNum, nil) // curvePool from curvev1Adapter abi
-				log.CheckFatal(err)
-				virtualPrice, err := core.CallFuncWithExtraBytes(mdl.Client, "bb7b8b80", common.BytesToAddress(curvePool), blockNum, nil) // getVirtualPrice
-				log.CheckFatal(err)
-				return new(big.Int).SetBytes(virtualPrice)
-			}()
+			virtualPrice := GetCurveVirtualPrice(blockNum, oracleAddr, adapter.GetVersion(), mdl.Client)
+			//
 			withinLimits := func() bool {
 				lowerLimit, err := core.CallFuncWithExtraBytes(mdl.Client, "a384d6ff", oracleAddr, blockNum, nil) // lowerBound
 				log.CheckFatal(err)
@@ -180,7 +198,7 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 			)
 			return nil
 		default:
-			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s)", adapter.GetDetailsByKey("pfType"), adapter.GetAddress())
+			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %d", adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), blockNum)
 		}
 	}
 	priceFeeds := []*schemas.PriceFeed{}

@@ -8,6 +8,17 @@ local utils = import '../utils.libsonnet';
     tokens: '../inputs/mocks/tokens.json',
   },
   states: {
+    otherCalls: {
+      '54fd4d50': {
+        '#ACL_1': '1',
+        '#ContractRegister_1': '1',
+        '#PriceOracle_1': '1',
+        '#Pool_1': '1',
+        '#CreditManager_1': '1',
+        '#CreditFilter_1': '1',
+        '#AddressProvider_1': '1',
+      },
+    },
     oracles: {
       '#Oracle_1': [{
         oracle: '#Oracle_1',
@@ -136,10 +147,10 @@ local utils = import '../utils.libsonnet';
           expectedLiquidity: utils.bigInt(6000, 6),
           availableLiquidity: utils.bigInt(6000, 6),
           depositAPY: utils.bigInt(0),
-          borrowAPY: utils.bigInt(0),
+          baseBorrowRate: utils.bigInt(0),
           dieselRate: utils.bigInt(0),
           withdrawFee: '0',
-          linearCumulativeIndex: utils.bigInt(1, 27),
+          cumulativeIndex: utils.bigInt(1, 27),
         }],
       },
     },
@@ -267,10 +278,10 @@ local utils = import '../utils.libsonnet';
           expectedLiquidity: utils.bigInt(6000, 6),
           availableLiquidity: utils.bigInt(6000, 6),
           depositAPY: utils.bigInt(0),
-          borrowAPY: utils.bigInt(0),
+          baseBorrowRate: utils.bigInt(0),
           dieselRate: utils.bigInt(0),
           withdrawFee: '0',
-          linearCumulativeIndex: utils.bigInt(1, 27),
+          cumulativeIndex: utils.bigInt(1, 27),
         }],
       },
     },

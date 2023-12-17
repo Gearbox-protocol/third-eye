@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/admin_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/cf_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/cm_wrapper"
+	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_quota_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_wrapper"
 )
 
@@ -19,6 +20,8 @@ type AdapterKitHandler struct {
 	cfWrapper           *cf_wrapper.CFWrapper
 	cmWrapper           *cm_wrapper.CMWrapper
 	poolWrapper         *pool_wrapper.PoolWrapper
+	// v3
+	poolQuotaWrapper *pool_quota_wrapper.PoolQuotaWrapper
 }
 
 func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.Config) *AdapterKitHandler {
@@ -29,6 +32,8 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 		cfWrapper:           cf_wrapper.NewCFWrapper(),
 		poolWrapper:         pool_wrapper.NewPoolWrapper(client),
 		cmWrapper:           cm_wrapper.NewCMWrapper(client),
+		// v3
+		poolQuotaWrapper: pool_quota_wrapper.NewPoolQuotaWrapper(client),
 	}
 	//
 	obj.kit.Add(obj.aggregatedBlockFeed)
@@ -36,6 +41,7 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 	obj.kit.Add(obj.cfWrapper)
 	obj.kit.Add(obj.cmWrapper)
 	obj.kit.Add(obj.poolWrapper)
+	obj.kit.Add(obj.poolQuotaWrapper)
 	//
 	return obj
 }
@@ -60,6 +66,9 @@ func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 		// REVERT_POOL_WRAPPER
 	case ds.Pool:
 		handler.poolWrapper.AddSyncAdapter(adapterI)
+		// v3
+	case ds.PoolQuotaKeeper:
+		handler.poolQuotaWrapper.AddSyncAdapter(adapterI)
 	default:
 		handler.kit.Add(adapterI)
 	}
@@ -82,6 +91,10 @@ func (repo *AdapterKitHandler) GetAdapter(addr string) ds.SyncAdapterI {
 		}
 		// REVERT_POOL_WRAPPER
 		if adapter := repo.poolWrapper.GetAdapter(addr); adapter != nil {
+			return adapter
+		}
+		// v3
+		if adapter := repo.poolQuotaWrapper.GetAdapter(addr); adapter != nil {
 			return adapter
 		}
 		// check if adapter is under aggregated block feed
@@ -107,6 +120,8 @@ func (repo AdapterKitHandler) GetAdaptersFromWrapper() (adapters []ds.SyncAdapte
 	adapters = append(adapters, repo.cmWrapper.GetAdapters()...)
 	// REVERT_POOL_WRAPPER
 	adapters = append(adapters, repo.poolWrapper.GetAdapters()...)
+	//
+	adapters = append(adapters, repo.poolQuotaWrapper.GetAdapters()...)
 	return
 }
 

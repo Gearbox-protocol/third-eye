@@ -6,6 +6,7 @@
         "0x34EE4eed88BCd2B5cDC3eF9A9DD0582EE538E541@c690908a",
         "0x34EE4eed88BCd2B5cDC3eF9A9DD0582EE538E541@c690908a"
     ],
+    "facade": "0x34EE4eed88BCd2B5cDC3eF9A9DD0582EE538E541",
     "events": [
         {
             "MainAction": null,

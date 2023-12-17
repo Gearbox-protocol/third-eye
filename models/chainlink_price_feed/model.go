@@ -74,15 +74,22 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 	}
 	// get the last log before the chainlink feed is added to price oracle.
 	if includeLastLogBeforeDiscover {
-		if lastLogBeforeDiscoverNum, err := obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
-			core.Topic("AnswerUpdated(int256,uint256,uint256)"),
-		}); err != nil {
-			log.Fatalf("%s for chainlink(%s) discovered_at %d", err, adapter.GetAddress(), obj.DiscoveredAt)
+		var lastLogBeforeDiscoverNum int64
+		// TODO anvil fork testing
+		var err error
+		if core.GetChainId(adapter.Client) == 7878 {
+			lastLogBeforeDiscoverNum = obj.DiscoveredAt - 3000
 		} else {
-			if lastLogBeforeDiscoverNum != 0 {
-				obj.LastSync = lastLogBeforeDiscoverNum - 1
-				obj.FirstLogAt = lastLogBeforeDiscoverNum
+			lastLogBeforeDiscoverNum, err = obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
+				core.Topic("AnswerUpdated(int256,uint256,uint256)"),
+			})
+			if err != nil {
+				log.Fatalf("%s for chainlink(%s) discovered_at %d", err, adapter.GetAddress(), obj.DiscoveredAt)
 			}
+		}
+		if lastLogBeforeDiscoverNum != 0 {
+			obj.LastSync = lastLogBeforeDiscoverNum - 1
+			obj.FirstLogAt = lastLogBeforeDiscoverNum
 		}
 	}
 	obj.DataProcessType = ds.ViaMultipleLogs
