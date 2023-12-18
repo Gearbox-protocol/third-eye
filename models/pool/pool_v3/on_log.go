@@ -65,7 +65,7 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
 			Pool:        mdl.Address,
-			Event:       "AddLiquidity",
+			Event:       "RemoveLiquidity",
 			//
 			Executor: withdrawal.Sender.Hex(),
 			User:     withdrawal.Owner.Hex(),
