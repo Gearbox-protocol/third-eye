@@ -1,1 +1,0 @@
-alter table current_debts add total_value_usd double precision, add tf_index double precision;
