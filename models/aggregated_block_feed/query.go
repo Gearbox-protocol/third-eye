@@ -123,34 +123,19 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 }
 
 var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
-var failingv3LatestRound = map[string][]int64{}
 
 func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 
 	if entry.Success {
-		failingv3LatestRound[adapter.GetAddress()] = nil
 		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
 		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
 	} else if adapter.GetVersion().MoreThanEq(core.NewVersion(300)) {
-		// failingv3LatestRound[adapter.GetAddress()] = append(failingv3LatestRound[adapter.GetAddress()], blockNum)
 		if core.GetChainId(mdl.Client) == 7878 {
-			// if len(failingv3LatestRound[adapter.GetAddress()]) == 10 {
-			// 	log.Warnf("Can't get latestRounData in AQFWrapper for %s(%s) at %v . %v",
-			// 		adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()],
-			// 		adapter.Details,
-			// 	)
-			// } else if len(failingv3LatestRound[adapter.GetAddress()]) > 10 {
-			// 	log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %v. %v",
-			// 		adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()],
-			// 		adapter.Details)
-			// }
-			//  get latestRoundData can sometimes fail for anvil
-			// exit in those cases
 			return nil
 		} else {
-			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %v",
-				adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), failingv3LatestRound[adapter.GetAddress()])
+			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %d",
+				adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), blockNum)
 		}
 	} else {
 		switch adapter.GetDetailsByKey("pfType") {
