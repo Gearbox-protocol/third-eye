@@ -1,7 +1,9 @@
 package ds
 
 import (
+	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -9,6 +11,26 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
+
+type PriceInUSDType bool
+
+func (z *PriceInUSDType) MarshalJSON() ([]byte, error) {
+	return []byte(fmt.Sprintf("%v", *z)), nil
+}
+
+func (z *PriceInUSDType) UnmarshalJSON(b []byte) error {
+	str := strings.Trim(string(b), "\"")
+	*z = (str == "true")
+	return nil
+
+}
+func (z PriceInUSDType) MarshalText() (text []byte, err error) {
+	return z.MarshalJSON()
+}
+
+func (s *PriceInUSDType) UnmarshalText(text []byte) error {
+	return s.UnmarshalJSON(text)
+}
 
 type EngineI interface {
 	SyncHandler()
@@ -36,7 +58,7 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	GetTokenOracles() map[core.VersionType]map[string]*schemas.TokenOracle
+	GetTokenOracles() map[PriceInUSDType]map[string]*schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
 	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool)
 	//

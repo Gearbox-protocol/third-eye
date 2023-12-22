@@ -16,7 +16,7 @@ import (
 
 type TokenOracleRepo struct {
 	// version  to token to oracle
-	tokensCurrentOracle map[core.VersionType]map[string]*schemas.TokenOracle // done
+	tokensCurrentOracle map[ds.PriceInUSDType]map[string]*schemas.TokenOracle // done
 	mu                  *sync.Mutex
 	adapters            *SyncAdaptersRepo
 	blocks              *BlocksRepo
@@ -27,7 +27,7 @@ type TokenOracleRepo struct {
 
 func NewTokenOracleRepo(adapters *SyncAdaptersRepo, blocks *BlocksRepo, repo ds.RepositoryI, client core.ClientI) *TokenOracleRepo {
 	return &TokenOracleRepo{
-		tokensCurrentOracle: make(map[core.VersionType]map[string]*schemas.TokenOracle),
+		tokensCurrentOracle: make(map[ds.PriceInUSDType]map[string]*schemas.TokenOracle),
 		mu:                  &sync.Mutex{},
 		adapters:            adapters,
 		blocks:              blocks,
@@ -42,8 +42,8 @@ func (repo *TokenOracleRepo) LoadCurrentTokenOracle(db *gorm.DB) {
 	defer utils.Elapsed("loadCurrentTokenOracle")()
 	data := []*schemas.TokenOracle{}
 	query := `SELECT token_oracle.* FROM token_oracle
-	JOIN (SELECT max(block_num) AS bn, token FROM token_oracle GROUP BY token) AS max_to
-	ON max_to.bn = token_oracle.block_num AND max_to.token = token_oracle.token`
+	JOIN (SELECT max(block_num) AS bn, token FROM token_oracle GROUP BY token, version) AS max_to
+	ON max_to.bn = token_oracle.block_num AND max_to.token = token_oracle.token order by block_num`
 	err := db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -66,18 +66,20 @@ func (repo *TokenOracleRepo) loadZeroPFs(db *gorm.DB) {
 }
 
 func (repo *TokenOracleRepo) addTokenCurrentOracle(oracle *schemas.TokenOracle) {
-	if repo.tokensCurrentOracle[oracle.Version] == nil {
-		repo.tokensCurrentOracle[oracle.Version] = map[string]*schemas.TokenOracle{}
+	priceInUSD := ds.PriceInUSDType(oracle.Version.IsPriceInUSD())
+	if repo.tokensCurrentOracle[priceInUSD] == nil {
+		repo.tokensCurrentOracle[priceInUSD] = map[string]*schemas.TokenOracle{}
 	}
-	repo.tokensCurrentOracle[oracle.Version][oracle.Token] = oracle
+	repo.tokensCurrentOracle[priceInUSD][oracle.Token] = oracle
 }
 
 // if same feed is active for current token and version
 func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.TokenOracle) bool {
 	feedType := newTokenOracle.FeedType
-	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
-		repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token] != nil {
-		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
+	newPriceInUSD := ds.PriceInUSDType(newTokenOracle.Version.IsPriceInUSD())
+	if repo.tokensCurrentOracle[newPriceInUSD] != nil &&
+		repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token]
 
 		if oldTokenOracle.Feed == newTokenOracle.Feed {
 			log.Debugf("Same %s(%s) added for token(%s)", feedType, newTokenOracle.Feed, newTokenOracle.Token)
@@ -88,9 +90,10 @@ func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.T
 }
 
 func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOracle *schemas.TokenOracle) {
-	if repo.tokensCurrentOracle[newTokenOracle.Version] != nil &&
-		repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token] != nil {
-		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Version][newTokenOracle.Token]
+	newPriceInUSD := ds.PriceInUSDType(newTokenOracle.Version.IsPriceInUSD())
+	if repo.tokensCurrentOracle[newPriceInUSD] != nil &&
+		repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token]
 		oldFeed := oldTokenOracle.Feed
 
 		adapter := repo.adapters.GetAdapter(oldFeed)
@@ -207,7 +210,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 	}
 }
 
-func (repo *TokenOracleRepo) GetTokenOracles() map[core.VersionType]map[string]*schemas.TokenOracle {
+func (repo *TokenOracleRepo) GetTokenOracles() map[ds.PriceInUSDType]map[string]*schemas.TokenOracle {
 	return repo.tokensCurrentOracle
 }
 

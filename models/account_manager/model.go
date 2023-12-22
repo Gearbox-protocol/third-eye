@@ -15,6 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+// for getting directtoken transfer
+// AddAccount is called from account factory
+// AddAccountTokenTransfer sets the data in the ds.DirectTransferManager
 type AccountManager struct {
 	*ds.SyncAdapter
 	node          *pkg.Node
@@ -89,7 +92,9 @@ func (mdl *AccountManager) Query(queryTill int64) {
 	}
 	logs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
 	log.Infof("len of logs: %d", len(logs))
-	log.CheckFatal(err)
+	if err != nil {
+		log.Fatal(err, "range ", queryFrom, queryTill, "tokenAddrs", tokenAddrs, "accountHashes", mdl.AccountHashes)
+	}
 	for _, log := range logs {
 		mdl.OnLog(log)
 	}
