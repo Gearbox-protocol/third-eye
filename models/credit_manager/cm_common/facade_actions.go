@@ -108,7 +108,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 					// also revert at closeCreditAccount as collateralunderlying should be
 					// since liquidation the withdraw collateral is not to the account owner.
 					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,
-						(*event.Args)["token"].(string),
+						toAddressHex((*event.Args)["token"]),
 						(*event.Args)["amount"].(*core.BigInt).Convert(),
 					)
 				}
@@ -119,7 +119,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 					//
 					amount := (*event.Args)["amount"].(*core.BigInt).Convert()
 					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,
-						(*event.Args)["token"].(common.Address).Hex(),
+						toAddressHex((*event.Args)["token"]),
 						new(big.Int).Neg(amount),
 					)
 				}
@@ -128,6 +128,16 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 	}
 
 	mdl.executeOperations(txHash, facadeActions, executeParams, nonMultiCallExecuteEvents)
+}
+func toAddressHex(addr interface{}) string {
+	switch v := addr.(type) {
+	case common.Address:
+		return v.Hex()
+	case string:
+		return common.HexToAddress(v).Hex()
+	}
+	log.Fatal("unknon type")
+	return ""
 }
 
 // process non multicall execute operations.
