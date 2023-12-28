@@ -17,16 +17,3 @@ create table quota_details (
     increase_fee integer,
     PRIMARY KEY (block_num, pool_quota_keeper, token)
 );
-
-create table account_quota_info (
-    block_num integer,
-    session_id varchar(100),
-    token varchar(42),
-    pool_quota_keeper varchar(42),
-    --
-    quota_index varchar(80),
-    quota varchar(80),
-    fees varchar(80),
-    interest varchar(80),
-    PRIMARY KEY (block_num, session_id, token)
-);

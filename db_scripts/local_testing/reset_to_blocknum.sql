@@ -22,7 +22,7 @@ delete from token_ltramp where block_num> 18246321;
 delete from quota_details where block_num> 18246321; 
 
 -- a
-update sync_adapters set last_sync = 18246321 where type in ('CreditConfigurator',  'AccountManager','CreditFilter', 'CreditManager', 'Pool') and last_sync > 18246321;
+update sync_adapters set last_sync = 18246321 where type in ('CreditConfigurator',  'AccountManager','CreditFilter', 'CreditManager', 'Pool', 'PoolKeeper') and last_sync > 18246321;
 -- 
 delete from credit_sessions where since> 18246321;
 update  credit_sessions set closed_at=0,liquidator='', remaining_funds='0', close_transfers='{}',status=0 where closed_at> 18246321;

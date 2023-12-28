@@ -49,10 +49,6 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	for _, quotaDetails := range block.QuotaDetails {
 		eng.AddPoolQuotaDetails(quotaDetails)
 	}
-	// L8: tokenQuotas
-	// for _, accountQuotas := range block.AccountQuotaInfo {
-	// 	eng.AddAccounQuotaInfo(accountQuotas)
-	// }
 
 	///////////////////////////////////
 	// calc debt conditions
