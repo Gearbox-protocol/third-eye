@@ -32,7 +32,7 @@ func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo) *PrevPriceSt
 		currentPrices:  map[string]*schemas.TokenCurrentPrice{},
 		mu:             &sync.Mutex{},
 	}
-	if chainId.Int64() == 1 {
+	if chainId.Int64() == 1 || chainId.Int64() == 7878 {
 		store.spotOracle = ds.SetOneInchUpdater(client, tokensRepo)
 	}
 	return store
