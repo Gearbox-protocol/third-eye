@@ -9,7 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -33,8 +33,7 @@ func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo) *PrevPriceSt
 		mu:             &sync.Mutex{},
 	}
 	if chainId.Int64() == 1 {
-		store.spotOracle = priceFetcher.New1InchOracle(client, chainId.Int64(),
-			common.HexToAddress("0x07D91f5fb9Bf7798734C3f606dB065549F6893bb"), tokensRepo)
+		store.spotOracle = ds.SetOneInchUpdater(client, tokensRepo)
 	}
 	return store
 }

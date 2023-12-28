@@ -1,0 +1,1 @@
+alter table credit_sessions add entry_price double precision, add close_price double precision;

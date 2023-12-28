@@ -2,10 +2,13 @@ package cm_common
 
 import (
 	"math/big"
+	"strconv"
+	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -150,6 +153,10 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionI
 			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", closedAt, mdl.GetAddress(), session.Borrower, err)
 		}
 		mdl.closeSession(closedAt, session, dcAccountData, closeDetails)
+		// set close price for v3
+		if session.Version.MoreThanEq(core.NewVersion(300)) {
+			mdl.Repo.GetCreditSession(sessionId).ClosePrice = ds.GetOneInchUpdater().GetCurrentPriceAtBlockNum(closedAt-1, *session.Balances, mdl.GetUnderlyingToken())
+		}
 	}
 }
 
@@ -172,6 +179,7 @@ func (mdl *CommonCMAdapter) closeSession(closedAt int64, session *schemas.Credit
 	mdl.createCSSnapshot(closedAt-1, session, data)
 }
 
+// for liquidatev3 it is called at blockNum -1 due to `liqv3Sessions` and then at blockNum due to `updatedSessions`
 func (mdl *CommonCMAdapter) createCSSnapshot(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData) {
 	// create session snapshot
 	css := schemas.CreditSessionSnapshot{}
@@ -255,7 +263,18 @@ func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, bloc
 			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", blockNum, mdl.GetAddress(), session.Borrower, err)
 		}
 		mdl.updateSession(blockNum, session, dcAccountData)
+		// set entry price for v3
+		if session.Since == blockNum && session.Version.MoreThanEq(core.NewVersion(300)) {
+			mdl.Repo.GetCreditSession(sessionId).EntryPrice = ds.GetOneInchUpdater().GetCurrentPriceAtBlockNum(blockNum, *session.Balances, mdl.GetUnderlyingToken())
+		}
 	}
+}
+
+func sessionIdToSince(sessionId string) int64 {
+	_since := strings.Split(sessionId, "_")[1]
+	since, err := strconv.ParseInt(_since, 10, 64)
+	log.CheckFatal(err)
+	return since
 }
 
 func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData) {
