@@ -93,12 +93,16 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 		})
 		amount := new(big.Int).Sub(new(big.Int).Add(repayEvent.BorrowedAmount, repayEvent.Profit), repayEvent.Loss)
 		mdl.repayEvents = append(mdl.repayEvents, &schemas.PoolLedger{
-			LogId:       txLog.Index,
 			BlockNumber: blockNum,
-			TxHash:      txLog.TxHash.Hex(),
-			Executor:    repayEvent.CreditManager.Hex(),
-			AmountBI:    (*core.BigInt)(amount),
-			Amount:      utils.GetFloat64Decimal(amount, mdl.getDecimals()),
+			Pool:        mdl.Address,
+			//
+			LogId:    txLog.Index,
+			Executor: repayEvent.CreditManager.Hex(),
+			TxHash:   txLog.TxHash.Hex(),
+			Event:    "Repay",
+			//
+			AmountBI: (*core.BigInt)(amount),
+			Amount:   utils.GetFloat64Decimal(amount, mdl.getDecimals()),
 		})
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("SetPoolQuotaKeeper(address)"):
