@@ -15,13 +15,13 @@ import (
 
 // https://docs.alchemy.com/reference/trace-api
 type ParityFetcher struct {
-	rpc    []string
+	rpcs   []string
 	client http.Client
 }
 
 func NewParityFetcher(rpc string) *ParityFetcher {
 	return &ParityFetcher{
-		rpc:    strings.Split(rpc, ","),
+		rpcs:   strings.Split(rpc, ","),
 		client: http.Client{},
 	}
 }
@@ -68,7 +68,7 @@ func (app ParityFetcher) getDataOnRPC(rpc, txHash string) ([]RPCTrace, error) {
 
 func (app ParityFetcher) getData(txhash string) ([]RPCTrace, error) {
 	var errs utils.Errors
-	for _, rpc := range app.rpc {
+	for _, rpc := range app.rpcs {
 		data, err := app.getDataOnRPC(rpc, txhash)
 		if err == nil {
 			return data, nil
@@ -78,10 +78,12 @@ func (app ParityFetcher) getData(txhash string) ([]RPCTrace, error) {
 	return nil, errs
 }
 
-func (app ParityFetcher) getTxTrace(txHash string) *TenderlyTrace {
+func (app ParityFetcher) getTxTrace(txHash string) (*TenderlyTrace, error) {
 	rpcTrace, err := app.getData(txHash)
-	log.CheckFatal(err)
-	return convertToTenderlyTrace(rpcTrace, txHash)
+	if err != nil {
+		return nil, err
+	}
+	return convertToTenderlyTrace(rpcTrace, txHash), nil
 }
 
 type RPCTrace struct {

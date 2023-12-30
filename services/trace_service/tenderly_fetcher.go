@@ -132,7 +132,7 @@ const anvilTraceTransactionExpectedErr = "invalid length 0, expected a (both 0x-
 func (ep InternalFetcher) check() {
 	if !ep.useTenderlyTrace {
 		_, err := ep.parityFetcher.getData("")
-		if err != nil &&
+		if err != nil && // if err is different that paritytrace unknown then fail.
 			!strings.Contains(err.Error(), alchemyTraceTransactionExpectedErr) && // on alchemy
 			!strings.Contains(err.Error(), anvilTraceTransactionExpectedErr) { // on anvil
 			log.CheckFatal(err)
@@ -144,7 +144,12 @@ func (ep InternalFetcher) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *Te
 	if ep.useTenderlyTrace {
 		trace = ep.tenderlyFetcher.getTxTrace(txHash)
 	} else {
-		trace = ep.parityFetcher.getTxTrace(txHash)
+		var err error
+		trace, err = ep.parityFetcher.getTxTrace(txHash)
+		if err != nil {
+			log.Info("fallback on tenderly due to", err, " for ", txHash)
+			trace = ep.tenderlyFetcher.getTxTrace(txHash)
+		}
 	}
 	//
 	if canLoadLogsFromRPC && len(trace.Logs) == 0 {

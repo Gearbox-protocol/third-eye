@@ -93,7 +93,7 @@ func (mdl *AccountManager) Query(queryTill int64) {
 	logs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
 	log.Infof("len of logs: %d", len(logs))
 	if err != nil {
-		log.Fatal(err, "range ", queryFrom, queryTill, "tokenAddrs", tokenAddrs, "accountHashes", mdl.AccountHashes)
+		log.Fatal(err, "range ", queryFrom, queryTill, "tokenAddrs", len(tokenAddrs), "accountHashes", len(mdl.AccountHashes))
 	}
 	for _, log := range logs {
 		mdl.OnLog(log)
