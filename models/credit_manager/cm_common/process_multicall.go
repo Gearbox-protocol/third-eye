@@ -60,7 +60,6 @@ func (mdl CommonCMAdapter) ProcessNonMultiCalls() (executeEvents []ds.ExecutePar
 			"DecreaseDebt(address,uint256)",
 			"UpdateQuota",
 			"WithdrawCollateral(address,address,uint256,address)":
-			log.Info(event.Action)
 			mdl.SetSessionIsUpdated(event.SessionId)
 			mdl.Repo.AddAccountOperation(event)
 		case "ExecuteOrder":

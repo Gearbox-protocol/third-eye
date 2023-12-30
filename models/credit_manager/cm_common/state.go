@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
@@ -20,6 +21,7 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData)
 	// pnl on repay
 	pnl := mdl.PnlOnCM.Get(blockNum)
 	if pnl != nil {
+		log.Info(blockNum, utils.ToJson(pnl))
 		if mdl.State.TotalRepaidBI == nil {
 			mdl.State.TotalRepaidBI = (*core.BigInt)(new(big.Int))
 		}
@@ -27,6 +29,8 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData)
 			new(big.Int).Add(mdl.State.TotalRepaidBI.Convert(), pnl.BorrowedAmount),
 			new(big.Int).Sub(pnl.Profit, pnl.Loss),
 		))
+		mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
+		//
 		mdl.State.TotalBorrowedBI = core.SubCoreAndInt(mdl.State.TotalBorrowedBI, pnl.BorrowedAmount)
 		mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
 		mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, pnl.Loss)

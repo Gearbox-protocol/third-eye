@@ -97,8 +97,8 @@
         TotalLosses: 0,
         TotalLossesBI: '0',
         TotalOpenedAccounts: 1,
-        TotalProfit: 0,
-        TotalProfitBI: '0',
+        TotalProfit: 109.25,
+        TotalProfitBI: '109250000',
         TotalRepaid: 5109.25,  // has feeliquidation
         TotalRepaidAccounts: 0,
         TotalRepaidBI: '5109250000',

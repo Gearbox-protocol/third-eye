@@ -246,6 +246,23 @@ local moreCollateral = 1000;
           txHash: '!#Hash_2',
         },
         {
+          // credit filter on usdc
+          address: '#Pool_1',
+          topics: [
+            'Repay(address,uint256,uint256,uint256)',
+            '#CreditManager_1',
+          ],
+          data: [
+            // borrowedamount
+            utils.bigIntTopic(4000, 6),
+            // profit
+            utils.bigIntTopic(0, 0),
+            // loss
+            utils.bigIntTopic(0, 0),
+          ],
+          txHash: '!#Hash_2',
+        },
+        {
           // open account without multicall
           address: '#CreditFacade_1',
           topics: [

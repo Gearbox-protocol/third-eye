@@ -83,7 +83,7 @@ local extraBorrowedAmount = 1000;
             // borrowedamount
             utils.bigIntTopic(5000, 6),
             // profit
-            utils.bigIntTopic(0, 0),
+            utils.bigIntTopic(109250000, 0),
             // loss
             utils.bigIntTopic(0, 0),
           ],
