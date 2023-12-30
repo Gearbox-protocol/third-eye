@@ -10,6 +10,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
@@ -132,11 +133,16 @@ const anvilTraceTransactionExpectedErr = "invalid length 0, expected a (both 0x-
 func (ep InternalFetcher) check() {
 	if !ep.useTenderlyTrace {
 		_, err := ep.parityFetcher.getData("")
-		if err != nil && // if err is different that paritytrace unknown then fail.
-			!strings.Contains(err.Error(), alchemyTraceTransactionExpectedErr) && // on alchemy
-			!strings.Contains(err.Error(), anvilTraceTransactionExpectedErr) { // on anvil
-			log.CheckFatal(err)
+		endpointsSupportTrace := 0
+		if err != nil {
+			for _, err := range err.(utils.Errors) {
+				if strings.Contains(err.Error(), alchemyTraceTransactionExpectedErr) || // on alchemy
+					strings.Contains(err.Error(), anvilTraceTransactionExpectedErr) { // anvil {
+					endpointsSupportTrace += 1
+				}
+			}
 		}
+		log.Info("Endpoints that support parity trace_transaction: ", endpointsSupportTrace)
 	}
 }
 func (ep InternalFetcher) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *TenderlyTrace {
