@@ -1,6 +1,8 @@
 package cm_common
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
@@ -18,6 +20,13 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData)
 	// pnl on repay
 	pnl := mdl.PnlOnCM.Get(blockNum)
 	if pnl != nil {
+		if mdl.State.TotalRepaidBI == nil {
+			mdl.State.TotalRepaidBI = (*core.BigInt)(new(big.Int))
+		}
+		mdl.State.TotalRepaidBI = (*core.BigInt)(new(big.Int).Add(
+			new(big.Int).Add(mdl.State.TotalRepaidBI.Convert(), pnl.BorrowedAmount),
+			new(big.Int).Sub(pnl.Profit, pnl.Loss),
+		))
 		mdl.State.TotalBorrowedBI = core.SubCoreAndInt(mdl.State.TotalBorrowedBI, pnl.BorrowedAmount)
 		mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
 		mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, pnl.Loss)

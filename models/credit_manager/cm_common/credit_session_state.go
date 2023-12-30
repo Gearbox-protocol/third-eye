@@ -114,11 +114,6 @@ func (mdl *CommonCMAdapter) liqv3Session(liquidatedAt int64, session *schemas.Cr
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	session.IsDirty = true
 
-	if liqv3Details != nil {
-		a := SessionCloseDetails(*liqv3Details)
-		mdl.poolRepay(liquidatedAt, session, &a, data)
-	}
-
 	mdl.createCSSnapshot(liquidatedAt-1, session, data)
 }
 
@@ -166,7 +161,9 @@ func (mdl *CommonCMAdapter) closeSession(closedAt int64, session *schemas.Credit
 	session.BorrowedAmount = (*core.BigInt)(data.BorrowedAmount)
 	session.IsDirty = true
 
-	mdl.poolRepay(closedAt, session, closeDetails, data)
+	if !session.Version.MoreThanEq(core.NewVersion(300)) {
+		mdl.poolRepay(closedAt, session, closeDetails, data)
+	}
 
 	// v1 repayment
 	if closeDetails.RemainingFunds == nil && closeDetails.Status == schemas.Repaid {
@@ -235,9 +232,6 @@ func (mdl *CommonCMAdapter) poolRepay(blockNum int64, session *schemas.CreditSes
 		details.Borrower,
 		amountToPool)
 
-	// credit manager state
-	mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, amountToPool)
-	mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
 }
 
 func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (

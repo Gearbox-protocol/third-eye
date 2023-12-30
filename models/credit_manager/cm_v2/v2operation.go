@@ -7,7 +7,6 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 	"github.com/ethereum/go-ethereum/common"
@@ -221,8 +220,6 @@ func (mdl *CMv2) onIncreaseBorrowedAmountV2(txLog *types.Log, borrower string, a
 	if amount.Sign() == -1 {
 		repayAmount := new(big.Int).Neg(amount)
 		// manager state
-		mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, repayAmount)
-		mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
 		mdl.PoolRepay(blockNum, txLog.Index, txLog.TxHash.Hex(), sessionId, borrower, repayAmount)
 	} else {
 		mdl.PoolBorrow(txLog, sessionId, borrower, amount)

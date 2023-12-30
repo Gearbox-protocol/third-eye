@@ -6,9 +6,11 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -170,6 +172,7 @@ func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liq
 	session.RemainingFunds = (*core.BigInt)(remainingFunds)
 	// remove session to manager object
 	// mdl.RemoveCreditAccount(owner)
+	mdl.poolRepayv3(txLog.TxHash.Hex(), sessionId, owner)
 	mdl.CloseAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index) // for direct token transfer manager
 }
 
@@ -253,18 +256,25 @@ func (mdl *CMv3) onIncreaseBorrowedAmountV3(txLog *types.Log, creditAccount stri
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.MulticallMgr.AddMulticallEvent(accountOperation)
-	if amount.Sign() == -1 {
-		repayAmount := new(big.Int).Neg(amount)
-		// manager state
-		mdl.State.TotalRepaidBI = core.AddCoreAndInt(mdl.State.TotalRepaidBI, repayAmount)
-		mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
-		mdl.PoolRepay(blockNum, txLog.Index, txLog.TxHash.Hex(), sessionId, borrower, repayAmount)
-	} else {
+	if amount.Sign() == 1 {
 		mdl.PoolBorrow(txLog, sessionId, borrower, amount)
+	} else {
+		mdl.poolRepayv3(txLog.TxHash.Hex(), sessionId, borrower)
 	}
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
 	return nil
+}
+
+func (mdl *CMv3) poolRepayv3(txHash, sessionId, borrower string) {
+	poolv3 := mdl.Repo.GetAdapter(mdl.State.PoolAddress).(*pool_v3.Poolv3)
+	poolLedgerEvent := poolv3.GetRepayEvent()
+	if txHash != poolLedgerEvent.TxHash {
+		log.Fatalf("PoolLeger event(%s) from poolv3 doesn't match txHash of decreaseDebt or liquidateCreditAccount(%s)", utils.ToJson(poolLedgerEvent), txHash)
+	}
+	poolLedgerEvent.User = borrower
+	poolLedgerEvent.SessionId = sessionId
+	mdl.Repo.AddPoolLedger(poolLedgerEvent)
 }
 
 func (mdl *CMv3) AddExecuteParamsV3(txLog *types.Log,

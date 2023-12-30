@@ -18,6 +18,13 @@ type Poolv3 struct {
 	lastEventBlock int64
 	State          *schemas.PoolState
 	gatewayHandler pool_common.GatewayHandler
+	repayEvents    []*schemas.PoolLedger
+}
+
+func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
+	ans := pool.repayEvents[0]
+	pool.repayEvents = pool.repayEvents[1:]
+	return ans
 }
 
 func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *Poolv3 {
