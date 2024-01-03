@@ -78,7 +78,7 @@ func (mdl *CMv2) checkLogV2(txLog types.Log) {
 			Action:      "MultiCallStarted(address)",
 		})
 	case core.Topic("MultiCallFinished()"):
-		mdl.MulticallMgr.End()
+		mdl.MulticallMgr.End(txLog.Index)
 	case core.Topic("IncreaseBorrowedAmount(address,uint256)"):
 		increaseBorrowEvent, err := mdl.facadeContractv2.ParseIncreaseBorrowedAmount(txLog)
 		if err != nil {

@@ -80,7 +80,7 @@ func (mdl *CommonCMAdapter) FetchFromDCForChangedSessions(blockNum int64) (calls
 func (mdl *CommonCMAdapter) liqv3SessionCallAndResultFn(liquidatedAt int64, sessionId string, liqv3Details *SessionLiqUpdatev3Details) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	// set secondary status
-	if session.TeritaryStatus == nil {
+	if session.TeritaryStatus == nil || *session.TeritaryStatus == nil {
 		session.TeritaryStatus = &core.Json{"secStatus": [][]int64{}}
 	}
 	secStatus := utils.ListOfInt64List((*session.TeritaryStatus)["secStatus"])

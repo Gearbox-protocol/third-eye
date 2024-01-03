@@ -5,7 +5,6 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
@@ -21,7 +20,6 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData)
 	// pnl on repay
 	pnl := mdl.PnlOnCM.Get(blockNum)
 	if pnl != nil {
-		log.Info(blockNum, utils.ToJson(pnl))
 		if mdl.State.TotalRepaidBI == nil {
 			mdl.State.TotalRepaidBI = (*core.BigInt)(new(big.Int))
 		}

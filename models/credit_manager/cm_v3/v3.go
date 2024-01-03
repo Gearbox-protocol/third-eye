@@ -89,7 +89,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			Action:      "StartMultiCall(address,address)",
 		})
 	case core.Topic("FinishMultiCall()"):
-		mdl.MulticallMgr.End()
+		mdl.MulticallMgr.End(txLog.Index)
 	case core.Topic("IncreaseDebt(address,uint256)"):
 		increaseBorrowEvent, err := mdl.facadeContractv3.ParseIncreaseDebt(txLog)
 		if err != nil {

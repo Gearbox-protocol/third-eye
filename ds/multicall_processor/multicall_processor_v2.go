@@ -85,7 +85,7 @@ func (p *MultiCallProcessorv2) AddLiquidateEvent(event *schemas.AccountOperation
 	})
 }
 
-func (p *MultiCallProcessorv2) End() {
+func (p *MultiCallProcessorv2) End(logId uint) {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
 	}

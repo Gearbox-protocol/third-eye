@@ -76,13 +76,14 @@ func (p *MultiCallProcessorv3) AddLiquidateEvent(event *schemas.AccountOperation
 	})
 }
 
-func (p *MultiCallProcessorv3) End() {
+func (p *MultiCallProcessorv3) End(logId uint) {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
 	}
 	lastMainAction := p.lastMainAction()
 	if lastMainAction != nil {
 		lastMainAction.ended = true
+		lastMainAction.logId = logId
 	}
 	p.running = false
 }
@@ -107,7 +108,7 @@ func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuot
 			facade := facadeActions[i]
 			if utils.Contains([]string{
 				"StartMultiCall(address,address)",
-				"OpenCreditAccount(address,address,address,uint256)",
+				"OpenCreditAccount(address,address,address,uint256)", // if open is added then startMulticall event is not present.
 			}, facade.Data.Action) {
 				splitInd := sort.Search(len(quotas), func(n int) bool {
 					return quotas[n].Index > facade.Data.LogId
@@ -131,18 +132,20 @@ func (p *MultiCallProcessorv3) PopNonMulticallEvents() []*schemas.AccountOperati
 
 func addQuotasToFacade(action *FacadeAccountAction, quotaEvents []*ds.UpdateQuotaEvent) {
 	for _, quotaEvent := range quotaEvents {
-		action.Data.MultiCall = append(action.Data.MultiCall, &schemas.AccountOperation{
-			TxHash:      quotaEvent.TxHash,
-			BlockNumber: quotaEvent.BlockNumber,
-			LogId:       quotaEvent.Index,
-			Borrower:    action.Data.Borrower,
-			SessionId:   action.Data.SessionId,
-			Dapp:        action.Data.Dapp,
-			Action:      "UpdateQuota",
-			Args:        &core.Json{"token": quotaEvent.Token, "change": (*core.BigInt)(quotaEvent.QuotaChange)},
-			AdapterCall: false,
-			// Transfers:   &core.Transfers{tx.Token: amount},
-		})
+		if action.logId == 0 || action.logId > quotaEvent.Index { // if there is a liquidation event then at closure there is updatequota emitted outside of the start/end multicall events on facade. So, we need to ignore that updateQuota event.
+			action.Data.MultiCall = append(action.Data.MultiCall, &schemas.AccountOperation{
+				TxHash:      quotaEvent.TxHash,
+				BlockNumber: quotaEvent.BlockNumber,
+				LogId:       quotaEvent.Index,
+				Borrower:    action.Data.Borrower,
+				SessionId:   action.Data.SessionId,
+				Dapp:        action.Data.Dapp,
+				Action:      "UpdateQuota",
+				Args:        &core.Json{"token": quotaEvent.Token, "change": (*core.BigInt)(quotaEvent.QuotaChange)},
+				AdapterCall: false,
+				// Transfers:   &core.Transfers{tx.Token: amount},
+			})
+		}
 	}
 	sort.Slice(action.Data.MultiCall, func(i, j int) bool {
 		return action.Data.MultiCall[i].LogId < action.Data.MultiCall[j].LogId

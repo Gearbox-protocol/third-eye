@@ -22,6 +22,7 @@ type FacadeAccountAction struct {
 	withoutMC bool
 	// end if MulticallFinished is emitted / addcollateral is emitted after openCreditAccountWithoutMulticall
 	ended bool
+	logId uint
 }
 
 type (
@@ -49,5 +50,5 @@ type MulticallProcessorI interface {
 	AddLiquidateEvent(event *schemas.AccountOperation)
 	PopNonMulticallEvents() []*schemas.AccountOperation
 	PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction)
-	End()
+	End(logId uint)
 }
