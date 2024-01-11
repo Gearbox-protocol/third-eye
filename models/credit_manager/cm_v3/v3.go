@@ -85,7 +85,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			SessionId:   sessionId,
 			Borrower:    borrower,
 			Dapp:        txLog.Address.Hex(),
-			LogId:       txLog.TxIndex,
+			LogId:       txLog.Index,
 			Action:      "StartMultiCall(address,address)",
 		})
 	case core.Topic("FinishMultiCall()"):

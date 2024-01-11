@@ -58,7 +58,7 @@
         blockNum: 4,
         borrower: '#User_1',
         dapp: '#CreditFacade_1',
-        logId: 0,
+        logId: 5,
         multicalls: [
           {
             action: 'AddCollateral(address,address,uint256)',
