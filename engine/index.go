@@ -106,7 +106,7 @@ func (e *Engine) SyncHandler() {
 		latestBlockNum = e.GetLatestFinalizedBlock(4)
 		e.SyncAndFlush(latestBlockNum)
 		log.Infof("Synced till %d sleeping for 5 mins", latestBlockNum)
-		time.Sleep(5 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
+		time.Sleep(30 * time.Second) // on kovan 5 blocks in 1 min , sleep for 5 mins
 	}
 }
 
