@@ -18,7 +18,7 @@ func (kit *AdapterKit) init() {
 	// another level created bcz of poolKeeper.
 	kit.AddLevel([]string{PoolQuotaWrapper, ChainlinkPriceFeed})
 	// REVERT_CM_WRAPPER
-	kit.AddLevel([]string{CMWrapper, AggregatedQueryFeedWrapper, PoolLMRewards})
+	kit.AddLevel([]string{CMWrapper, AggregatedQueryFeedWrapper, LMRewardsv2, LMRewardsv3})
 	// REVERT_CF_WRAPPER
 	kit.AddLevel([]string{CFWrapper, CreditConfigurator, Treasury})
 	// - we are dropping the uni check, so the dependency is reversed.
@@ -32,7 +32,7 @@ func (kit *AdapterKit) init() {
 	// - Treasury dependent on pools, so it is last
 	// - acl, PriceOracle and geartoken are independent
 	// - creditconfigurator and core.CreditFilter are same dependent on creditmanager
-	// - pool -> dieseltokens -> PoolLMRewards
+	// - pool -> dieseltokens -> LMRewardsv2 and LMRewardsv3
 }
 
 func (kit *AdapterKit) AddLevel(lvl []string) {

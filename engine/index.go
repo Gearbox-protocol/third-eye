@@ -13,7 +13,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
-	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
+	lmrewardsv2 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v2"
+	lmrewardsv3 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v3"
 	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/ethereum/go-ethereum/common"
@@ -78,9 +79,12 @@ func (e *Engine) getLastSyncedTill() int64 {
 		obj := address_provider.NewAddressProvider(e.Client, e.repo, e.config.AddressProviderAddrs)
 		e.repo.AddSyncAdapter(obj)
 		// pool LM rewards
-		poolLMRewardObj := pool_lmrewards.NewPoolLMRewards("0x000000000000000000000000000000000000beef", obj.FirstLogAt-1, e.Client, e.repo)
+		lmrewardsv2Obj := lmrewardsv2.NewLMRewardsv2("0x00000000000000000000000000000000000beef2", obj.FirstLogAt-1, e.Client, e.repo)
+		e.repo.AddSyncAdapter(lmrewardsv2Obj)
+		lmrewardsv3Obj := lmrewardsv3.NewLMRewardsv3("0x00000000000000000000000000000000000beef3", obj.FirstLogAt-1, e.Client, e.repo)
+		e.repo.AddSyncAdapter(lmrewardsv3Obj)
+		//
 		e.addstETHToken()
-		e.repo.AddSyncAdapter(poolLMRewardObj)
 
 		return obj.GetLastSync()
 	} else {

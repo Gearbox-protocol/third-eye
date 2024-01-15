@@ -22,7 +22,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
-	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
+	lmrewardsv2 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v2"
+	lmrewardsv3 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v3"
 	"github.com/Gearbox-protocol/third-eye/models/pool_quota_keeper"
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
@@ -120,8 +121,10 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 			repo.extras.GetDCWrapper().LoadMultipleDC(ap.Details["dc"])
 		}
 		return ap
-	case ds.PoolLMRewards:
-		return pool_lmrewards.NewPoolLMRewardsFromAdapter(adapter)
+	case ds.LMRewardsv2:
+		return lmrewardsv2.NewLMRewardsv2FromAdapter(adapter)
+	case ds.LMRewardsv3:
+		return lmrewardsv3.NewLMRewardsv3FromAdapter(adapter)
 	case ds.AccountFactory:
 		return account_factory.NewAccountFactoryFromAdapter(adapter)
 	case ds.Pool:

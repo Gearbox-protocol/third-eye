@@ -8,13 +8,12 @@ import (
 func (repo *Repository) LoadLastDebtSync() int64 {
 	data := schemas.DebtSync{}
 	query := `SELECT max(b) as last_calculated_at from 
-		(select min(firstlog_at) as b from sync_Adapters where type!='PoolLMRewards' 
+		(select min(firstlog_at) as b from sync_Adapters
+		WHERE type NOT IN ('RebaseToken','Treasury','LMRewardsv2','LMRewardsv3','GearToken')
 		union 
 		select max(last_calculated_at) as b FROM debt_sync) tmp`
 	err := repo.db.Raw(query).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.CheckFatal(err)
 	// last debt sync starts from the discover at of address provider to the last debt block stored in debt_sync table
 	if data.LastCalculatedAt != 0 {
 		return data.LastCalculatedAt

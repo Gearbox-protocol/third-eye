@@ -316,6 +316,18 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType,
 	return
 }
 
+func (dcw *DataCompressorWrapper) GetPoolListv3(blockNum int64) ([]dcv3.PoolData, bool) {
+	version := core.NewVersion(300)
+	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
+	if key != DCV3 {
+		return nil, false
+	}
+	con, err := dcv3.NewDataCompressorv3(dcAddr, dcw.client)
+	log.CheckFatal(err)
+	poolList, err := con.GetPoolsV3List(nil)
+	log.CheckFatal(err)
+	return poolList, true
+}
 func (dcw *DataCompressorWrapper) GetPoolData(version core.VersionType, blockNum int64, _pool common.Address) (
 	call multicall.Multicall2Call,
 	resultFn func([]byte) (dc.PoolCallData, error),

@@ -49,7 +49,7 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 // injected in the app itself
 // are aggregatedBlockFeed, cfWrapper
 //
-// whereas adapter with fake address are AccountManager, and PoolLMRewards and CompositeChainlinkPF
+// whereas adapter with fake address are AccountManager, and LMRewardsv2 and CompositeChainlinkPF
 func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 	switch adapterI.GetName() {
 	case ds.QueryPriceFeed:
