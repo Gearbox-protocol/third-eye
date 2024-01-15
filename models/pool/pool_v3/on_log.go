@@ -25,6 +25,8 @@ func (mdl Poolv3) getDecimals() int8 {
 func (mdl *Poolv3) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
+	case core.Topic("UpdateTokenQuotaRate(address,uint256)"):
+		mdl.updateBorrowRate(blockNum)
 	case core.Topic("SetInterestRateModel(address)"):
 		interestRateModel := common.BytesToAddress(txLog.Topics[1][:])
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
@@ -107,7 +109,7 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("SetPoolQuotaKeeper(address)"):
 		poolQuotaKeeper := common.BytesToAddress(txLog.Topics[1][:]).Hex()
-		mdl.setPoolQuotaKeeper(poolQuotaKeeper, blockNum)
+		mdl.setPoolKeeperAdapter(poolQuotaKeeper, blockNum)
 	case core.Topic("AddCreditManager(address)"):
 		newCreditManager := common.BytesToAddress(txLog.Topics[1][:])
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
@@ -150,7 +152,8 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 	}
 }
 
-func (mdl Poolv3) setPoolQuotaKeeper(poolQuotaKeeper string, blockNum int64) {
+func (mdl Poolv3) setPoolKeeperAdapter(poolQuotaKeeper string, blockNum int64) {
 	pqk := pool_quota_keeper.NewPoolQuotaKeeper(poolQuotaKeeper, mdl.Address, blockNum, mdl.Client, mdl.Repo)
+	mdl.poolKeeper = poolQuotaKeeper
 	mdl.Repo.AddSyncAdapter(pqk)
 }

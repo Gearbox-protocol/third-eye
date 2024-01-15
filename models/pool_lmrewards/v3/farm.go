@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
@@ -73,6 +72,5 @@ func (farm *Farmv3) calcFarmedPerToken(currentTs uint64) *big.Int {
 		)
 		fpt = new(big.Int).Add(fpt, _fpt)
 	}
-	log.Info(farm.TotalSupply.Convert(), "total_supply")
 	return fpt
 }

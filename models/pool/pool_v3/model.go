@@ -19,6 +19,8 @@ type Poolv3 struct {
 	State          *schemas.PoolState
 	gatewayHandler pool_common.GatewayHandler
 	repayEvents    []*schemas.PoolLedger
+	//
+	poolKeeper string
 }
 
 func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
@@ -56,6 +58,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 			return name
 		}(),
 	})
+
 	// create a pool stat snapshot at first log of the pool
 	pool.onBlockChangeInternally(pool.DiscoveredAt)
 
@@ -65,6 +68,15 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	// }
 	// pool.setPoolQuotaKeeper(string(poolQuotaKeeper), discoveredAt)
 	return pool
+}
+
+func (mdl *Poolv3) setPoolQuotaKeeper() {
+	if mdl.poolKeeper != "" {
+		return
+	}
+	poolKeeper, err := mdl.contract.PoolQuotaKeeper(nil)
+	log.CheckFatal(err)
+	mdl.poolKeeper = poolKeeper.Hex()
 }
 
 func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
@@ -79,6 +91,8 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 			return contract
 		}(),
 	}
+	obj.setPoolQuotaKeeper()
+	//
 	return obj
 }
 
@@ -95,6 +109,7 @@ func (mdl Poolv3) Topics() [][]common.Hash {
 			core.Topic("SetPoolQuotaKeeper(address)"),
 			core.Topic("AddCreditManager(address)"),
 			core.Topic("SetWithdrawFee(uint256)"),
+			core.Topic("UpdateTokenQuotaRate(address,uint256)"),
 			// for weth gateway
 			core.Topic("WithdrawETH(address,address)"),
 			// for wsteth gateway, this event is on stETH token
@@ -108,6 +123,10 @@ func (mdl Poolv3) GetAllAddrsForLogs() (addrs []common.Address) {
 	if mdl.gatewayHandler.Gateway == core.NULL_ADDR {
 		return
 	}
-	addrs = append(addrs, mdl.gatewayHandler.Gateway, mdl.gatewayHandler.Token)
+	addrs = append(addrs,
+		mdl.gatewayHandler.Gateway,
+		mdl.gatewayHandler.Token,
+		common.HexToAddress(mdl.poolKeeper),
+	)
 	return
 }

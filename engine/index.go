@@ -104,13 +104,13 @@ func (e *Engine) SyncHandler() {
 	// only do batch sync if latestblock is far from currently synced block
 	if lastSyncedTill+e.batchSizeForHistory <= latestBlockNum {
 		syncedTill := e.syncLoop(lastSyncedTill, latestBlockNum)
-		log.Infof("Synced till %d sleeping for 5 mins", syncedTill)
+		log.Infof("Synced till %d", syncedTill)
 	}
 	for {
 		latestBlockNum = e.GetLatestFinalizedBlock(4)
 		e.SyncAndFlush(latestBlockNum)
-		log.Infof("Synced till %d sleeping for 5 mins", latestBlockNum)
-		time.Sleep(30 * time.Second) // on kovan 5 blocks in 1 min , sleep for 5 mins
+		log.Infof("Synced till %d sleeping for 2 mins", latestBlockNum)
+		time.Sleep(2 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
 	}
 }
 
