@@ -5,6 +5,7 @@ import "github.com/Gearbox-protocol/sdk-go/core"
 type LMReward struct {
 	User   string       `gorm:"primaryKey;column:user_address"`
 	Pool   string       `gorm:"primaryKey;column:pool"`
+	Farm   string       `gorm:"-"`
 	Reward *core.BigInt `gorm:"column:reward"`
 }
 

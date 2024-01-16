@@ -14,6 +14,9 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 	currentTs := mdl.Repo.SetAndGetBlock(int64(txLog.BlockNumber)).Timestamp
 	switch txLog.Topics[0] {
 	case core.Topic("Transfer(address,address,uint256)"):
+		if mdl.farms[farmAddr] == nil {
+			return
+		}
 		from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 		to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
 		amount := new(big.Int).SetBytes(txLog.Data)
@@ -43,7 +46,8 @@ func (mdl *LMRewardsv3) getFarmsv3() {
 		poolAndFarms := []*Farmv3{}
 		for _, pool := range pools {
 			for _, zapper := range pool.Zappers {
-				if _, ok := addrToSym[zapper.TokenOut]; !ok && zapper.TokenIn == pool.Underlying {
+				// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
+				if _, ok := addrToSym[zapper.TokenOut]; !ok && zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
 					poolAndFarms = append(poolAndFarms, &Farmv3{
 						Farm:        zapper.TokenOut.Hex(),
 						Pool:        pool.Addr.Hex(),
