@@ -100,4 +100,5 @@ func (p *Poolv3) createSnapshot(blockNum int64, state dc.PoolCallData) {
 		WithdrawFee:        int(state.WithdrawFee.Convert().Int64()),
 		CumulativeIndexRAY: (*core.BigInt)(state.CumulativeIndexRAY),
 	})
+
 }

@@ -88,7 +88,8 @@ func (repo *Repository) Init() {
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
 	// load poolLMrewards
-	repo.loadLMRewardDetails()
+	repo.loadLMRewardDetailsv2()
+	repo.loadLMRewardDetailsv3()
 	repo.loadLastRebaseDetails()
 	//
 	// for disabling previous token oracle if new oracle is set

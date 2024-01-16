@@ -24,7 +24,8 @@ func (repo *Repository) Flush(syncTill int64) error {
 	repo.TokensRepo.Save(tx)
 
 	repo.SyncAdaptersRepo.Save(tx)
-	repo.saveLMRewardDetails(tx) // save LM reward  and diesel token balances of users
+	repo.saveLMRewardDetailsv2(tx) // save LM reward  and diesel token balances of users
+	repo.saveLMRewardDetailsv3(tx, syncTill)
 
 	repo.SessionRepo.Save(tx)
 
@@ -34,6 +35,10 @@ func (repo *Repository) Flush(syncTill int64) error {
 
 	// save current treasury snapshot
 	repo.TreasuryRepo.Save(tx)
+
+	// fix pool v2 ledger
+	repo.GetPoolWrapper().UpdatePoolv2Ledger(tx)
+	//
 	info := tx.Commit()
 	log.CheckFatal(info.Error)
 	return nil

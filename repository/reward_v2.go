@@ -5,28 +5,29 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
+	lmrewardsv2 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v2"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (repo *Repository) loadLMRewardDetails() {
-	defer utils.Elapsed("loadLMRewardDetails")()
-	adapterAddrs := repo.GetAdapterAddressByName(ds.PoolLMRewards)
+func (repo *Repository) loadLMRewardDetailsv2() {
+	defer utils.Elapsed("loadLMRewardDetailsv2")()
+	adapterAddrs := repo.GetAdapterAddressByName(ds.LMRewardsv2)
 	if len(adapterAddrs) == 0 {
 		return
 	}
 	// load poolLMRewardadapter
 	adapterAddr := adapterAddrs[0]
-	adapter := repo.GetAdapter(adapterAddr).(*pool_lmrewards.PoolLMRewards)
+	adapter := repo.GetAdapter(adapterAddr).(*lmrewardsv2.LMRewardsv2)
 	// lm rewards
 	rewardData := []pool_lmrewards.LMReward{}
-	err := repo.db.Raw(`SELECT * FROM lm_rewards`).Find(&rewardData).Error
+	err := repo.db.Raw(`SELECT * FROM lm_rewards where pool in (SELECT address FROM pools where _version!=300)`).Find(&rewardData).Error
 	if err != nil {
 		log.Fatal(err)
 	}
 	adapter.LoadLMRewards(rewardData)
 	//
-	dBalanceData := []pool_lmrewards.DieselBalance{}
+	dBalanceData := []lmrewardsv2.DieselBalance{}
 	err = repo.db.Raw(`SELECT * FROM diesel_balances`).Find(&dBalanceData).Error
 	if err != nil {
 		log.Fatal(err)
@@ -34,9 +35,9 @@ func (repo *Repository) loadLMRewardDetails() {
 	adapter.LoadDieselBalances(dBalanceData)
 }
 
-func (repo Repository) saveLMRewardDetails(tx *gorm.DB) {
-	adapterAddr := repo.GetAdapterAddressByName(ds.PoolLMRewards)[0]
-	adapter := repo.GetAdapter(adapterAddr).(*pool_lmrewards.PoolLMRewards)
+func (repo Repository) saveLMRewardDetailsv2(tx *gorm.DB) {
+	adapterAddr := repo.GetAdapterAddressByName(ds.LMRewardsv2)[0]
+	adapter := repo.GetAdapter(adapterAddr).(*lmrewardsv2.LMRewardsv2)
 	//
 
 	if rewards := adapter.GetLMRewards(); len(rewards) != 0 {

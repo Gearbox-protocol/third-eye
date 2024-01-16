@@ -1,4 +1,4 @@
-package pool_lmrewards
+package v2
 
 import (
 	"math/big"
@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
 )
 
 type DieselBalance struct {
@@ -19,7 +20,7 @@ func (DieselBalance) TableName() string {
 	return "diesel_balances"
 }
 
-func (mdl PoolLMRewards) GetDieselBalances() (dieselBalances []DieselBalance) {
+func (mdl LMRewardsv2) GetDieselBalances() (dieselBalances []DieselBalance) {
 	if !mdl.hasDataToSave {
 		return
 	}
@@ -37,7 +38,7 @@ func (mdl PoolLMRewards) GetDieselBalances() (dieselBalances []DieselBalance) {
 	return dieselBalances
 }
 
-func (mdl PoolLMRewards) LoadDieselBalances(dieselBalances []DieselBalance) {
+func (mdl LMRewardsv2) LoadDieselBalances(dieselBalances []DieselBalance) {
 	for _, dieselBalance := range dieselBalances {
 		if _, ok := mdl.dieselBalances[dieselBalance.Diesel]; !ok {
 			mdl.dieselBalances[dieselBalance.Diesel] = map[string]*big.Int{}
@@ -46,23 +47,13 @@ func (mdl PoolLMRewards) LoadDieselBalances(dieselBalances []DieselBalance) {
 	}
 }
 
-type LMReward struct {
-	User   string       `gorm:"primaryKey;column:user_address"`
-	Pool   string       `gorm:"primaryKey;column:pool"`
-	Reward *core.BigInt `gorm:"column:reward"`
-}
-
-func (LMReward) TableName() string {
-	return "lm_rewards"
-}
-
-func (mdl PoolLMRewards) GetLMRewards() (rewards []LMReward) {
+func (mdl LMRewardsv2) GetLMRewards() (rewards []pool_lmrewards.LMReward) {
 	if !mdl.hasDataToSave {
 		return
 	}
 	for pool, rewardForUsers := range mdl.rewards {
 		for user, reward := range rewardForUsers {
-			rewards = append(rewards, LMReward{
+			rewards = append(rewards, pool_lmrewards.LMReward{
 				User:   user,
 				Pool:   pool,
 				Reward: (*core.BigInt)(reward),
@@ -72,11 +63,11 @@ func (mdl PoolLMRewards) GetLMRewards() (rewards []LMReward) {
 	return rewards
 }
 
-func (mdl *PoolLMRewards) SyncComplete() {
+func (mdl *LMRewardsv2) SyncComplete() {
 	mdl.hasDataToSave = false
 }
 
-func (mdl PoolLMRewards) LoadLMRewards(rewards []LMReward) {
+func (mdl LMRewardsv2) LoadLMRewards(rewards []pool_lmrewards.LMReward) {
 	for _, reward := range rewards {
 		if mdl.rewards[reward.Pool] == nil {
 			mdl.rewards[reward.Pool] = map[string]*big.Int{}
@@ -85,7 +76,7 @@ func (mdl PoolLMRewards) LoadLMRewards(rewards []LMReward) {
 	}
 }
 
-func (mdl *PoolLMRewards) totalSuppliesToDetails() {
+func (mdl *LMRewardsv2) totalSuppliesToDetails() {
 	supplies := core.Json{}
 	for tokenSym, totalSupply := range mdl.totalSupplies {
 		supplies[tokenSym] = (*core.BigInt)(totalSupply)
@@ -106,7 +97,7 @@ func toBigInt(x interface{}) *big.Int {
 	}
 	return nil
 }
-func (mdl *PoolLMRewards) detailsToTotalSupplies() {
+func (mdl *LMRewardsv2) detailsToTotalSupplies() {
 	supplies := map[string]*big.Int{}
 	for tokenSym, totalSupply := range mdl.Details {
 		supplies[tokenSym] = toBigInt(totalSupply)

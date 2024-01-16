@@ -20,7 +20,7 @@ const (
 	Treasury           = "Treasury"
 	AccountManager     = "AccountManager"
 	CreditConfigurator = "CreditConfigurator"
-	PoolLMRewards      = "PoolLMRewards"
+	LMRewardsv2        = "LMRewardsv2"
 	//
 	RebaseToken = "RebaseToken"
 	// Wrapper
@@ -32,7 +32,11 @@ const (
 	PoolQuotaWrapper           = "PoolQuotaWrapper"
 	// v3
 	PoolQuotaKeeper = "PoolKeeper"
+	LMRewardsv3     = "LMRewardsv3"
 )
+
+// beef2 -- v2LMRewards
+// beef3 -- v3LMRewards
 
 func IsWrapperAdapter(name string) bool {
 	return strings.HasSuffix(name, "Wrapper")

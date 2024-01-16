@@ -1,4 +1,4 @@
-package pool_lmrewards
+package v2
 
 import (
 	"testing"
@@ -68,7 +68,7 @@ func TestRewardCalc(t *testing.T) {
 		addrs = append(addrs, common.HexToAddress(addr))
 	}
 	//
-	obj := NewPoolLMRewards(core.NULL_ADDR.Hex(), 13810899, client, repo)
+	obj := NewLMRewardsv2(core.NULL_ADDR.Hex(), 13810899, client, repo)
 	obj.GetAllAddrsForLogs()
 	//
 	var till int64 = 16925064

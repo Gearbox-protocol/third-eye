@@ -1,4 +1,4 @@
-package pool_lmrewards
+package v2
 
 import (
 	"math/big"
@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *PoolLMRewards) GetAddrsForLogs() (addrs []common.Address) {
+func (mdl *LMRewardsv2) GetAddrsForLogs() (addrs []common.Address) {
 	addrs = append(addrs, common.HexToAddress(mdl.Address))
 	return addrs
 }
@@ -21,12 +21,12 @@ func (mdl *PoolLMRewards) GetAddrsForLogs() (addrs []common.Address) {
 
 //
 
-func (mdl *PoolLMRewards) Topics() [][]common.Hash {
+func (mdl *LMRewardsv2) Topics() [][]common.Hash {
 	return [][]common.Hash{{core.Topic("Transfer(address,address,uint256)")}}
 }
 
 // onlog for transfer token events only, which is provided by Topics() func
-func (mdl *PoolLMRewards) OnLog(txLog types.Log) {
+func (mdl *LMRewardsv2) OnLog(txLog types.Log) {
 	// conditions to return
 	amount, ok := new(big.Int).SetString(common.BytesToHash(txLog.Data).Hex()[2:], 16)
 	if !ok {
@@ -75,11 +75,11 @@ func (mdl *PoolLMRewards) OnLog(txLog types.Log) {
 	}
 }
 
-func (mdl PoolLMRewards) addDieselTransfer(dt *schemas.DieselTransfer) {
+func (mdl LMRewardsv2) addDieselTransfer(dt *schemas.DieselTransfer) {
 	mdl.Repo.AddDieselTransfer(dt)
 }
 
-func (mdl PoolLMRewards) addBalance(tokenSym, user string, amount *big.Int) {
+func (mdl LMRewardsv2) addBalance(tokenSym, user string, amount *big.Int) {
 	if mdl.dieselBalances[tokenSym] == nil {
 		mdl.dieselBalances[tokenSym] = map[string]*big.Int{}
 	}
@@ -90,7 +90,7 @@ func (mdl PoolLMRewards) addBalance(tokenSym, user string, amount *big.Int) {
 }
 
 // inclusive of from and to
-func (mdl PoolLMRewards) calculateRewards(from, to int64) {
+func (mdl LMRewardsv2) calculateRewards(from, to int64) {
 	snapshots := pkg.GetRewardPerToken(mdl.chainId, from, to)
 
 	snapStart := from
@@ -121,7 +121,7 @@ func (mdl PoolLMRewards) calculateRewards(from, to int64) {
 	}
 }
 
-func (mdl *PoolLMRewards) addUserReward(pool, user string, reward *big.Int) {
+func (mdl *LMRewardsv2) addUserReward(pool, user string, reward *big.Int) {
 	if mdl.rewards[pool] == nil {
 		mdl.rewards[pool] = map[string]*big.Int{}
 	}
@@ -131,8 +131,8 @@ func (mdl *PoolLMRewards) addUserReward(pool, user string, reward *big.Int) {
 	)
 }
 
-// PoolLMRewards has fake address so no need for adding .Address value to addrs
-func (mdl *PoolLMRewards) GetAllAddrsForLogs() (addrs []common.Address) {
+// LMRewardsv2 has fake address so no need for adding .Address value to addrs
+func (mdl *LMRewardsv2) GetAllAddrsForLogs() (addrs []common.Address) {
 	for addr, poolAndUToken := range mdl.Repo.GetDieselTokens() {
 		if poolAndUToken.Version.MoreThanEq(core.NewVersion(300)) {
 			continue

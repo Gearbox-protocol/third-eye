@@ -1,4 +1,4 @@
-package pool_lmrewards
+package v2
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
-type PoolLMRewards struct {
+type LMRewardsv2 struct {
 	*ds.SyncAdapter
 	pendingCalcBlock int64
 	chainId          int64
@@ -29,13 +29,13 @@ type _PoolAndDecimals struct {
 	pool     string
 }
 
-func NewPoolLMRewards(addr string, syncedTill int64, client core.ClientI, repo ds.RepositoryI) *PoolLMRewards {
-	return NewPoolLMRewardsFromAdapter(
+func NewLMRewardsv2(addr string, syncedTill int64, client core.ClientI, repo ds.RepositoryI) *LMRewardsv2 {
+	return NewLMRewardsv2FromAdapter(
 		&ds.SyncAdapter{
 			SyncAdapterSchema: &schemas.SyncAdapterSchema{
 				LastSync: syncedTill,
 				Contract: &schemas.Contract{
-					ContractName: ds.PoolLMRewards,
+					ContractName: ds.LMRewardsv2,
 					Address:      addr,
 					Client:       client,
 				},
@@ -46,10 +46,10 @@ func NewPoolLMRewards(addr string, syncedTill int64, client core.ClientI, repo d
 	)
 }
 
-func NewPoolLMRewardsFromAdapter(adapter *ds.SyncAdapter) *PoolLMRewards {
+func NewLMRewardsv2FromAdapter(adapter *ds.SyncAdapter) *LMRewardsv2 {
 	chainId, err := adapter.Client.ChainID(context.Background())
 	log.CheckFatal(err)
-	obj := &PoolLMRewards{
+	obj := &LMRewardsv2{
 		SyncAdapter:      adapter,
 		pendingCalcBlock: adapter.LastSync + 1,
 		chainId:          chainId.Int64(),
@@ -63,7 +63,7 @@ func NewPoolLMRewardsFromAdapter(adapter *ds.SyncAdapter) *PoolLMRewards {
 	return obj
 }
 
-func (mdl *PoolLMRewards) AfterSyncHook(syncedTill int64) {
+func (mdl *LMRewardsv2) AfterSyncHook(syncedTill int64) {
 	mdl.calculateRewards(mdl.pendingCalcBlock, syncedTill)
 	mdl.pendingCalcBlock = syncedTill + 1
 	//
