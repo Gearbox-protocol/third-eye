@@ -61,7 +61,7 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 			reward := user.GetPoints(farm, currentTs)
 			rewards = append(rewards, &pool_lmrewards.LMReward{
 				User:   user.Account,
-				Pool:   user.Farm,
+				Pool:   farm.Pool,
 				Reward: (*core.BigInt)(reward),
 			})
 		}
