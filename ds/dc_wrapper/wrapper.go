@@ -178,6 +178,14 @@ func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blo
 	key, discoveredAt := dcw.getDataCompressorIndex(blockNum)
 	return key, dcw.getDCAddr(discoveredAt)
 }
+func (dcw *DataCompressorWrapper) GetLatestv3DC() (common.Address, bool) {
+	version := core.NewVersion(300)
+	dc, ok := dcw.versionToAddress[version]
+	if !ok {
+		return core.NULL_ADDR, false
+	}
+	return dc.address, true
+}
 
 func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType, blockNum int64, creditManager common.Address, borrower common.Address, account common.Address) (
 	call multicall.Multicall2Call,
@@ -316,10 +324,9 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType,
 	return
 }
 
-func (dcw *DataCompressorWrapper) GetPoolListv3(blockNum int64) ([]dcv3.PoolData, bool) {
-	version := core.NewVersion(300)
-	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
-	if key != DCV3 {
+func (dcw *DataCompressorWrapper) GetPoolListv3() ([]dcv3.PoolData, bool) {
+	dcAddr, found := dcw.GetLatestv3DC()
+	if !found {
 		return nil, false
 	}
 	con, err := dcv3.NewDataCompressorv3(dcAddr, dcw.client)

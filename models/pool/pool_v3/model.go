@@ -20,7 +20,9 @@ type Poolv3 struct {
 	gatewayHandler pool_common.GatewayHandler
 	repayEvents    []*schemas.PoolLedger
 	//
-	poolKeeper string
+	addLiquidityEvent *schemas.PoolLedger
+	updatesForPoolv2  []UpdatePoolLedger
+	removeLiqUpdate   *UpdatePoolLedger
 }
 
 func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
@@ -62,21 +64,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	// create a pool stat snapshot at first log of the pool
 	pool.onBlockChangeInternally(pool.DiscoveredAt)
 
-	// poolQuotaKeeper, err := core.CallFuncWithExtraBytes(client, "1ab7c7d7", common.HexToAddress(pool.Address), discoveredAt, nil)
-	// if err != nil {
-	// 	log.Fatalf("can't get pool quota keeper for %s: %s", pool.Address, err)
-	// }
-	// pool.setPoolQuotaKeeper(string(poolQuotaKeeper), discoveredAt)
 	return pool
-}
-
-func (mdl *Poolv3) setPoolQuotaKeeper() {
-	if mdl.poolKeeper != "" {
-		return
-	}
-	poolKeeper, err := mdl.contract.PoolQuotaKeeper(nil)
-	log.CheckFatal(err)
-	mdl.poolKeeper = poolKeeper.Hex()
 }
 
 func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
@@ -92,6 +80,7 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 		}(),
 	}
 	obj.setPoolQuotaKeeper()
+	obj.setZapper()
 	//
 	return obj
 }
@@ -110,9 +99,7 @@ func (mdl Poolv3) Topics() [][]common.Hash {
 			core.Topic("AddCreditManager(address)"),
 			core.Topic("SetWithdrawFee(uint256)"),
 			core.Topic("UpdateTokenQuotaRate(address,uint256)"),
-			// for weth gateway
-			core.Topic("WithdrawETH(address,address)"),
-			// for wsteth gateway, this event is on stETH token
+			// for farmedUSDCv3
 			core.Topic("Transfer(address,address,uint256)"),
 		},
 	}
@@ -120,13 +107,18 @@ func (mdl Poolv3) Topics() [][]common.Hash {
 
 func (mdl Poolv3) GetAllAddrsForLogs() (addrs []common.Address) {
 	addrs = append(addrs, mdl.SyncAdapter.GetAllAddrsForLogs()...)
+	if mdl.getPoolKeeper() != "" {
+		addrs = append(addrs, common.HexToAddress(mdl.getPoolKeeper()))
+	}
+	if mdl.getFarmedUSDCv3() != "" {
+		addrs = append(addrs, common.HexToAddress(mdl.getFarmedUSDCv3()))
+	}
 	if mdl.gatewayHandler.Gateway == core.NULL_ADDR {
 		return
 	}
 	addrs = append(addrs,
 		mdl.gatewayHandler.Gateway,
 		mdl.gatewayHandler.Token,
-		common.HexToAddress(mdl.poolKeeper),
 	)
 	return
 }

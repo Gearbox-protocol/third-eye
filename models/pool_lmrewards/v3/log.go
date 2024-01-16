@@ -37,7 +37,7 @@ func (mdl *LMRewardsv3) getFarmsv3() {
 	if len(mdl.farms) != 0 { // already set
 		return
 	}
-	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3(mdl.LastSync)
+	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
 	if found && len(mdl.farms) == 0 {
 		addrToSym := core.GetAddrToSymbolByChainId(core.GetChainId(mdl.Client))
 		poolAndFarms := []*Farmv3{}

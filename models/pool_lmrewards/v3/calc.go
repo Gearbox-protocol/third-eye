@@ -29,6 +29,9 @@ func (mdl *LMRewardsv3) performTransfer(farmAddr, from, to string, amount *big.I
 	}
 	//
 	diesel := mdl.Repo.GetToken(mdl.farms[farmAddr].DieselToken)
+	// if to == "0x2E67A94b39c1946D100D85Ba724c116a652515B9" {
+	// 	log.Fatal("", diesel.Decimals)
+	// }
 	if !fromZero {
 		if mdl.users[from] == nil {
 			mdl.users[from] = &UserLMDetails{

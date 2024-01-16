@@ -25,6 +25,10 @@ func (mdl Poolv3) getDecimals() int8 {
 func (mdl *Poolv3) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
+	case core.Topic("Transfer(address,address,uint256)"):
+		if txLog.Address.Hex() == mdl.getFarmedUSDCv3() {
+			mdl.updateFarmedv3(txLog)
+		}
 	case core.Topic("UpdateTokenQuotaRate(address,uint256)"):
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("SetInterestRateModel(address)"):
@@ -42,7 +46,7 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 	case core.Topic("Deposit(address,address,uint256,uint256)"):
 		deposit, err := mdl.contract.ParseDeposit(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddPoolLedger(&schemas.PoolLedger{
+		event := &schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
@@ -55,14 +59,19 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			Shares:      utils.GetFloat64Decimal(deposit.Shares, mdl.getDecimals()),
 			AmountBI:    (*core.BigInt)(deposit.Assets),
 			Amount:      utils.GetFloat64Decimal(deposit.Shares, mdl.getDecimals()),
-		})
+		}
+		if deposit.Sender.Hex() != mdl.getZapUnderlying() || deposit.Sender.Hex() != mdl.getdUSDC() {
+			mdl.Repo.AddPoolLedger(event)
+		} else {
+			mdl.changeAddressOnAddLiq(event)
+		}
 		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, deposit.Assets, blockNum, txLog.TxHash.Hex(), "deposit")
 		mdl.updateBorrowRate(blockNum)
 		// while processing withdrawal event, add to receiver and sub from User
 	case core.Topic("Withdraw(address,address,address,uint256,uint256)"):
 		withdrawal, err := mdl.contract.ParseWithdraw(txLog)
 		log.CheckFatal(err)
-		mdl.Repo.AddPoolLedger(&schemas.PoolLedger{
+		event := &schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
 			TxHash:      txLog.TxHash.Hex(),
@@ -77,7 +86,13 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			Shares:   utils.GetFloat64Decimal(withdrawal.Assets, mdl.getDecimals()),
 			AmountBI: (*core.BigInt)(withdrawal.Assets),
 			Amount:   utils.GetFloat64Decimal(withdrawal.Shares, mdl.getDecimals()),
-		})
+		}
+		if withdrawal.Sender.Hex() != mdl.getZapUnderlying() || withdrawal.Sender.Hex() != mdl.getdUSDC() {
+			mdl.Repo.AddPoolLedger(event)
+		} else {
+			mdl.changeAddressOnRemoveLiq(event)
+		}
+		//
 		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, withdrawal.Assets, blockNum, txLog.TxHash.Hex(), "withdraw")
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Borrow(address,address,uint256)"):
@@ -154,6 +169,6 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 
 func (mdl Poolv3) setPoolKeeperAdapter(poolQuotaKeeper string, blockNum int64) {
 	pqk := pool_quota_keeper.NewPoolQuotaKeeper(poolQuotaKeeper, mdl.Address, blockNum, mdl.Client, mdl.Repo)
-	mdl.poolKeeper = poolQuotaKeeper
+	mdl.setDetailsByKey("PoolKeeper", poolQuotaKeeper)
 	mdl.Repo.AddSyncAdapter(pqk)
 }

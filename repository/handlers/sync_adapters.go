@@ -28,6 +28,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
 	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
+	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_wrapper"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -188,6 +189,9 @@ func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 
 func (repo *SyncAdaptersRepo) GetKit() *ds.AdapterKit {
 	return repo.kit
+}
+func (repo *SyncAdaptersRepo) GetPoolWrapper() *pool_wrapper.PoolWrapper {
+	return repo.poolWrapper
 }
 
 ////////////////////
