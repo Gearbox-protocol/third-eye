@@ -4,6 +4,8 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func (mdl *LMRewardsv3) updateFarmedPerToken(farmAddr string, currentTs uint64) {
@@ -29,12 +31,17 @@ func (mdl *LMRewardsv3) performTransfer(farmAddr, from, to string, amount *big.I
 	}
 	//
 	diesel := mdl.Repo.GetToken(mdl.farms[farmAddr].DieselToken)
-	// if to == "0x2E67A94b39c1946D100D85Ba724c116a652515B9" {
-	// 	log.Fatal("", diesel.Decimals)
-	// }
+	if to == "0x2E67A94b39c1946D100D85Ba724c116a652515B9" {
+		log.Info("", diesel.Decimals)
+	}
+
+	if mdl.users[common.HexToAddress(farmAddr)] == nil {
+		mdl.users[common.HexToAddress(farmAddr)] = map[string]*UserLMDetails{}
+	}
+	farmAndItsUsers := mdl.users[common.HexToAddress(farmAddr)]
 	if !fromZero {
-		if mdl.users[from] == nil {
-			mdl.users[from] = &UserLMDetails{
+		if farmAndItsUsers[from] == nil {
+			farmAndItsUsers[from] = &UserLMDetails{
 				Correction: (*core.BigInt)(new(big.Int)),
 				BalancesBI: (*core.BigInt)(new(big.Int)),
 				Account:    from,
@@ -42,11 +49,11 @@ func (mdl *LMRewardsv3) performTransfer(farmAddr, from, to string, amount *big.I
 				DieselSym:  diesel.Symbol,
 			}
 		}
-		mdl.users[from].SubBalances(amount, diesel.Decimals)
+		farmAndItsUsers[from].SubBalances(amount, diesel.Decimals)
 	}
 	if !toZero {
-		if mdl.users[to] == nil {
-			mdl.users[to] = &UserLMDetails{
+		if farmAndItsUsers[to] == nil {
+			farmAndItsUsers[to] = &UserLMDetails{
 				Correction: (*core.BigInt)(new(big.Int)),
 				BalancesBI: (*core.BigInt)(new(big.Int)),
 				Account:    to,
@@ -54,7 +61,7 @@ func (mdl *LMRewardsv3) performTransfer(farmAddr, from, to string, amount *big.I
 				DieselSym:  diesel.Symbol,
 			}
 		}
-		mdl.users[to].AddBalances(amount, diesel.Decimals)
+		farmAndItsUsers[to].AddBalances(amount, diesel.Decimals)
 	}
 }
 func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.Int, currentTs uint64) {
@@ -65,6 +72,7 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 	toZero := to == core.NULL_ADDR.Hex()
 
 	farm := mdl.farms[farmAddr]
+	farmAndItsUsers := mdl.users[common.HexToAddress(farmAddr)]
 	if amount.Sign() > 0 && from != to {
 		if fromZero || toZero {
 			mdl.updateFarmedPerToken(farmAddr, currentTs)
@@ -73,10 +81,10 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 		//
 		diff := new(big.Int).Mul(amount, farm.calcFarmedPerToken(currentTs))
 		if !fromZero {
-			mdl.users[from].SubCorrection(diff)
+			farmAndItsUsers[from].SubCorrection(diff)
 		}
 		if !toZero {
-			mdl.users[to].AddCorrection(diff)
+			farmAndItsUsers[to].AddCorrection(diff)
 		}
 	}
 }

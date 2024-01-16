@@ -3,6 +3,8 @@ package v3
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -17,9 +19,12 @@ func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
 		}
 		mdl.farms = farms
 	case []*UserLMDetails:
-		users := map[string]*UserLMDetails{}
+		users := map[common.Address]map[string]*UserLMDetails{}
 		for _, user := range ans {
-			users[user.Account] = user
+			if users[common.HexToAddress(user.Farm)] == nil {
+				users[common.HexToAddress(user.Farm)] = map[string]*UserLMDetails{}
+			}
+			users[common.HexToAddress(user.Farm)][user.Account] = user
 		}
 		mdl.users = users
 	default:
@@ -37,10 +42,12 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 
 	//
 	users := []*UserLMDetails{}
-	for _, entry := range mdl.users {
-		if entry.updated {
-			users = append(users, entry)
-			entry.updated = false
+	for _, farmAndItsUsers := range mdl.users {
+		for _, entry := range farmAndItsUsers {
+			if entry.updated {
+				users = append(users, entry)
+				entry.updated = false
+			}
 		}
 	}
 	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(users, 500).Error
@@ -48,14 +55,16 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 
 	//
 	rewards := []*pool_lmrewards.LMReward{}
-	for _, user := range mdl.users {
-		farm := mdl.farms[user.Farm]
-		reward := user.GetPoints(farm, currentTs)
-		rewards = append(rewards, &pool_lmrewards.LMReward{
-			User:   user.Account,
-			Pool:   user.Farm,
-			Reward: (*core.BigInt)(reward),
-		})
+	for _, farmAndItsUsers := range mdl.users {
+		for _, user := range farmAndItsUsers {
+			farm := mdl.farms[user.Farm]
+			reward := user.GetPoints(farm, currentTs)
+			rewards = append(rewards, &pool_lmrewards.LMReward{
+				User:   user.Account,
+				Pool:   user.Farm,
+				Reward: (*core.BigInt)(reward),
+			})
+		}
 	}
 	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(rewards, 500).Error
 	log.CheckFatal(err)

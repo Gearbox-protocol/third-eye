@@ -7,8 +7,13 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/ethereum/go-ethereum/common"
 )
 
+// farmingPool https://etherscan.io/address/0x9ef444a6d7f4a5adcd68fd5329aa5240c90e14d2#code
+// farmAccounting
+// userAccounting
+// farmingLib
 type UserLMDetails struct {
 	Correction *core.BigInt `gorm:"column:correction"`
 	BalancesBI *core.BigInt `gorm:"column:balances_bi"`
@@ -52,7 +57,8 @@ func (details *UserLMDetails) SubCorrection(amount *big.Int) {
 type LMRewardsv3 struct {
 	*ds.SyncAdapter
 	farms map[string]*Farmv3
-	users map[string]*UserLMDetails
+	// farmv3 to user to balance
+	users map[common.Address]map[string]*UserLMDetails
 }
 
 func NewLMRewardsv3(addr string, syncedTill int64, client core.ClientI, repo ds.RepositoryI) *LMRewardsv3 {
