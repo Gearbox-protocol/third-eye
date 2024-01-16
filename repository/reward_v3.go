@@ -30,7 +30,11 @@ func (repo *Repository) loadLMRewardDetailsv3() {
 }
 
 func (repo Repository) saveLMRewardDetailsv3(tx *gorm.DB, syncTill int64) {
-	adapterAddr := repo.GetAdapterAddressByName(ds.LMRewardsv3)[0]
+	adapters := repo.GetAdapterAddressByName(ds.LMRewardsv3)
+	if len(adapters) == 0 {
+		return
+	}
+	adapterAddr := adapters[0]
 	adapter := repo.GetAdapter(adapterAddr).(*lmrewardsv3.LMRewardsv3)
 	//
 	currentTs := repo.SetAndGetBlock(syncTill).Timestamp
