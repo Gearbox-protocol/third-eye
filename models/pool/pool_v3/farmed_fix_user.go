@@ -43,7 +43,7 @@ func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 			Type:     "RemoveLiquidity",
 		})
 	}
-	if from == mdl.getZapUnderlying() || from == mdl.getZapPoolv2() { // usdc-farmedUSDCv3, dUSDC-farmedUSDCv3
+	if mdl.checkIfZapAddr(from) { // usdc-farmedUSDCv3, dUSDC-farmedUSDCv3, ETH-farmedETHv3
 		if txHash != mdl.addLiquidityEvent.TxHash ||
 			blockNum != mdl.addLiquidityEvent.BlockNumber ||
 			shares.Cmp(mdl.addLiquidityEvent.SharesBI.Convert()) != 0 ||
@@ -55,7 +55,7 @@ func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 		mdl.addLiquidityEvent = nil
 	}
 
-	if to == mdl.getZapUnderlying() || to == mdl.getZapPoolv2() {
+	if mdl.checkIfZapAddr(to) {
 		mdl.removeLiqUpdate = &UpdatePoolLedger{
 			Zapper:   to,
 			User:     from,

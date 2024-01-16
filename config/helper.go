@@ -20,7 +20,7 @@ func NewConfig() *Config {
 
 	var config Config
 
-	filenames := []string{".env", "../.env"}
+	filenames := []string{".env", "../.env", "../../.env"}
 
 	for _, filename := range filenames {
 		cwd, err := os.Getwd()

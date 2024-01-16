@@ -60,10 +60,10 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			AmountBI:    (*core.BigInt)(deposit.Assets),
 			Amount:      utils.GetFloat64Decimal(deposit.Shares, mdl.getDecimals()),
 		}
-		if deposit.Sender.Hex() != mdl.getZapUnderlying() && deposit.Sender.Hex() != mdl.getZapPoolv2() {
-			mdl.Repo.AddPoolLedger(event)
-		} else {
+		if mdl.checkIfZapAddr(deposit.Sender.Hex()) {
 			mdl.changeAddressOnAddLiq(event)
+		} else {
+			mdl.Repo.AddPoolLedger(event)
 		}
 		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, deposit.Assets, blockNum, txLog.TxHash.Hex(), "deposit")
 		mdl.updateBorrowRate(blockNum)
@@ -87,10 +87,10 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			AmountBI: (*core.BigInt)(withdrawal.Assets),
 			Amount:   utils.GetFloat64Decimal(withdrawal.Shares, mdl.getDecimals()),
 		}
-		if withdrawal.Sender.Hex() != mdl.getZapUnderlying() && withdrawal.Sender.Hex() != mdl.getZapPoolv2() {
-			mdl.Repo.AddPoolLedger(event)
-		} else {
+		if mdl.checkIfZapAddr(withdrawal.Sender.Hex()) {
 			mdl.changeAddressOnRemoveLiq(event)
+		} else {
+			mdl.Repo.AddPoolLedger(event)
 		}
 		//
 		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, withdrawal.Assets, blockNum, txLog.TxHash.Hex(), "withdraw")

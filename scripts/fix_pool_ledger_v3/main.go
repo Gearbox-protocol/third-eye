@@ -65,6 +65,10 @@ func main() {
 	client := ethclient.NewEthClient(cfg)
 	r := NewRepo(client)
 
+	{
+		err := db.Exec(`UPDATE sync_adapters set details='{}' where type='Pool' and version=300`).Error
+		log.CheckFatal(err)
+	}
 	var adapters []*ds.SyncAdapter
 	err := db.Raw(`SELECT * from sync_adapters where type='Pool' and version=300`).Find(&adapters).Error
 	log.CheckFatal(err)
@@ -104,6 +108,9 @@ func main() {
 			}})
 		log.CheckFatal(err)
 		for _, txLog := range txLogs {
+			// if txLog.BlockNumber == 18814974 {
+			// 	log.Info("here")
+			// }
 			log.Info(pool.GetAddress(), txLog.BlockNumber)
 			pool.OnLog(txLog)
 		}
