@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
-	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -31,9 +30,6 @@ func (mdl *LMRewardsv3) performTransfer(farmAddr, from, to string, amount *big.I
 	}
 	//
 	diesel := mdl.Repo.GetToken(mdl.farms[farmAddr].DieselToken)
-	if to == "0x2E67A94b39c1946D100D85Ba724c116a652515B9" {
-		log.Info("", diesel.Decimals)
-	}
 
 	if mdl.users[common.HexToAddress(farmAddr)] == nil {
 		mdl.users[common.HexToAddress(farmAddr)] = map[string]*UserLMDetails{}
