@@ -86,7 +86,6 @@ func TestRewardCalc(t *testing.T) {
 			obj.OnLog(txLog)
 		}
 		obj.AfterSyncHook(batchEnd)
-		log.Info(batchEnd)
 	}
 	user := common.HexToAddress("0x3b2367e13a5835570e82f81c3f7aff5d32a4470b").Hex()
 	userReward := obj.rewards["0x86130bDD69143D8a4E5fc50bf4323D48049E98E4"][user] // pool and user

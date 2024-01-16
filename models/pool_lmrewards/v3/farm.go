@@ -32,7 +32,7 @@ func (Farmv3) TableName() string {
 func (farm *Farmv3) startFarming(reward *big.Int, newPeriod, currentTs uint64) {
 	lastEndTs := farm.EndTs
 	if lastEndTs > currentTs {
-		finishedRewards := new(big.Int).Quo(farm.farmedSinceCheckpointScaled(currentTs), _SCALE)
+		finishedRewards := new(big.Int).Quo(farm.farmedSinceCheckpointScaled(currentTs, farm.EndTs-farm.Period), _SCALE)
 		remainingFunds := new(big.Int).Sub(farm.Reward.Convert(), finishedRewards)
 		reward = new(big.Int).Add(reward, remainingFunds)
 	}
@@ -47,11 +47,11 @@ func (farm *Farmv3) stopFarming(reward *big.Int, currentTs uint64) {
 	farm.Reward = (*core.BigInt)(new(big.Int))
 }
 
-func (farm *Farmv3) farmedSinceCheckpointScaled(currentTs uint64) *big.Int {
+func (farm *Farmv3) farmedSinceCheckpointScaled(currentTs uint64, checkpoint uint64) *big.Int {
 	if farm.Period == 0 {
 		return big.NewInt(0)
 	}
-	elapsed := utils.Min(currentTs, farm.EndTs) - (farm.EndTs - farm.Period)
+	elapsed := utils.Min(currentTs, farm.EndTs) - utils.Min(checkpoint, farm.EndTs)
 	num := new(big.Int).Mul(
 		new(big.Int).Mul(big.NewInt(int64(elapsed)), farm.Reward.Convert()),
 		_SCALE,
@@ -67,7 +67,7 @@ func (farm *Farmv3) calcFarmedPerToken(currentTs uint64) *big.Int {
 	fpt := farm.Fpt.Convert()
 	if farm.TotalSupply.Convert().Sign() != 0 {
 		_fpt := new(big.Int).Quo(
-			farm.farmedSinceCheckpointScaled(currentTs),
+			farm.farmedSinceCheckpointScaled(currentTs, farm.Checkpoint),
 			farm.TotalSupply.Convert(),
 		)
 		fpt = new(big.Int).Add(fpt, _fpt)

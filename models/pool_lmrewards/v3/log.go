@@ -11,7 +11,8 @@ import (
 // https://etherscan.io/address/0x9ef444a6d7f4a5adcd68fd5329aa5240c90e14d2#code farmingPool
 func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 	farmAddr := txLog.Address.Hex()
-	currentTs := mdl.Repo.SetAndGetBlock(int64(txLog.BlockNumber)).Timestamp
+	blockNum := int64(txLog.BlockNumber)
+	currentTs := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
 	switch txLog.Topics[0] {
 	case core.Topic("Transfer(address,address,uint256)"):
 		if mdl.farms[farmAddr] == nil {
@@ -20,10 +21,11 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 		from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 		to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
 		amount := new(big.Int).SetBytes(txLog.Data)
-		mdl.updateBalances(farmAddr, from, to, amount, currentTs)
+		mdl.updateBalances(farmAddr, from, to, amount, currentTs, blockNum)
+		mdl.check(blockNum, currentTs, farmAddr, from, to)
 	case core.Topic("RewardUpdated(uint256,uint256)"):
 		// sol:updateFarmedPerToken
-		mdl.updateFarmedPerToken(farmAddr, currentTs)
+		mdl.updateFarmedPerToken(farmAddr, currentTs, blockNum)
 		// farmInfo.startFarming
 		farm := mdl.farms[farmAddr]
 		reward := new(big.Int).SetBytes(txLog.Data[:32])

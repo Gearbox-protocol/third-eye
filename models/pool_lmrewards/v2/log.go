@@ -113,7 +113,6 @@ func (mdl LMRewardsv2) calculateRewards(from, to int64) {
 					reward = new(big.Int).Quo(userRewardNorm, mdl.totalSupplies[dieselSym])
 				}
 				mdl.addUserReward(pool, user, reward)
-				// log.Info(snapStart, snapEnd+1, balance, rewardPerBlock, mdl.totalSupplies[dieselSym], mdl.rewards[pool][user])
 				// update start
 			}
 		}
