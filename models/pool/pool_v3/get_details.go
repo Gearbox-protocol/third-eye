@@ -40,7 +40,7 @@ func (mdl *Poolv3) getZapPoolv2() string {
 }
 
 func (mdl *Poolv3) setZapper() {
-	if mdl.GetDetailsByKey("farmedUSDCv3") != "" { // if zapper already set
+	if mdl.Details != nil && mdl.Details["farmedUSDCv3"] != nil { // if zapper already set
 		return
 	}
 	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
@@ -76,7 +76,7 @@ func (mdl *Poolv3) setZapper() {
 	dieselTokenToPool := mdl.Repo.GetDieselTokens()
 	pool, ok := dieselTokenToPool[mdl.GetDetailsByKey("dUSDC")]
 	if !ok {
-		log.Fatal("Can't get poolv2 from poolv3 ", mdl.Address)
+		log.Fatalf("Can't get poolv2(dieselToken: %s) from poolv3: %s ", mdl.GetDetailsByKey("dUSDC"), mdl.Address)
 	}
 	mdl.setDetailsByKey("poolv2", pool.Pool)
 }

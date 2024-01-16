@@ -18,14 +18,14 @@ type UpdatePoolLedger struct {
 	User     string
 	BlockNum int64
 	TxHash   string
-	Amount   *big.Int
+	Shares   *big.Int
 	Type     string
 }
 
 func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 	from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 	to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
-	amount := new(big.Int).SetBytes(txLog.Data[:])
+	shares := new(big.Int).SetBytes(txLog.Data[:])
 	txHash := txLog.TxHash.Hex()
 	blockNum := int64(txLog.BlockNumber)
 
@@ -40,30 +40,29 @@ func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 			Pool:     mdl.getPoolv2(),
 			BlockNum: blockNum,
 			TxHash:   txHash,
-			Type:     "AddLiquidity",
+			Type:     "RemoveLiquidity",
 		})
 	}
-
 	if from == mdl.getZapUnderlying() || from == mdl.getZapPoolv2() { // usdc-farmedUSDCv3, dUSDC-farmedUSDCv3
 		if txHash != mdl.addLiquidityEvent.TxHash ||
 			blockNum != mdl.addLiquidityEvent.BlockNumber ||
-			amount.Cmp(mdl.addLiquidityEvent.AmountBI.Convert()) != 0 ||
+			shares.Cmp(mdl.addLiquidityEvent.SharesBI.Convert()) != 0 ||
 			from != mdl.addLiquidityEvent.User {
-			log.Fatal(utils.ToJson(mdl.addLiquidityEvent), "addLiquidityEvent", "txHash", txHash, "blockNum", blockNum, "amount", amount)
+			log.Fatal(utils.ToJson(mdl.addLiquidityEvent), "addLiquidityEvent", "txHash", txHash, "blockNum", blockNum, "shares", shares)
 		}
 		mdl.addLiquidityEvent.User = to
 		mdl.Repo.AddPoolLedger(mdl.addLiquidityEvent)
 		mdl.addLiquidityEvent = nil
 	}
 
-	if to == mdl.getZapPoolv2() || to == mdl.getZapPoolv2() {
+	if to == mdl.getZapUnderlying() || to == mdl.getZapPoolv2() {
 		mdl.removeLiqUpdate = &UpdatePoolLedger{
 			Zapper:   to,
 			User:     from,
 			Pool:     mdl.Address,
 			BlockNum: blockNum,
 			TxHash:   txHash,
-			Amount:   amount,
+			Shares:   shares,
 		}
 	}
 	if to == mdl.getZapPoolv2() {
@@ -73,7 +72,7 @@ func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 			Pool:     mdl.getPoolv2(),
 			BlockNum: blockNum,
 			TxHash:   txHash,
-			Type:     "RemoveLiquidity",
+			Type:     "AddLiquidity",
 		})
 	}
 }
@@ -93,12 +92,12 @@ func (mdl *Poolv3) changeAddressOnRemoveLiq(event *schemas.PoolLedger) {
 	}
 	txHash := mdl.removeLiqUpdate.TxHash
 	blockNum := mdl.removeLiqUpdate.BlockNum
-	amount := mdl.removeLiqUpdate.Amount
+	shares := mdl.removeLiqUpdate.Shares
 	if txHash != event.TxHash ||
 		blockNum != event.BlockNumber ||
-		amount.Cmp(event.AmountBI.Convert()) != 0 ||
+		shares.Cmp(event.SharesBI.Convert()) != 0 ||
 		mdl.removeLiqUpdate.Zapper != event.User {
-		log.Fatal(utils.ToJson(mdl.removeLiqUpdate), "removeLiqUpdate", "txHash", txHash, "blockNum", blockNum, "amount", amount)
+		log.Fatal(utils.ToJson(mdl.removeLiqUpdate), "removeLiqUpdate", "txHash", event.TxHash, "blockNum", event.BlockNumber, "shares", event.SharesBI, "user", event.User)
 	}
 	if mdl.addLiquidityEvent != nil {
 		log.Fatal(utils.ToJson(mdl.addLiquidityEvent), "addLiquidityEvent is not nil", "pool", mdl.Address, "event", event)
@@ -106,7 +105,7 @@ func (mdl *Poolv3) changeAddressOnRemoveLiq(event *schemas.PoolLedger) {
 	//
 	//
 	event.User = mdl.removeLiqUpdate.User
-	mdl.Repo.AddPoolLedger(mdl.addLiquidityEvent)
+	mdl.Repo.AddPoolLedger(event)
 	mdl.removeLiqUpdate = nil
 }
 
@@ -115,11 +114,14 @@ func (mdl *Poolv3) UpdatePoolv2Ledger(tx *gorm.DB) {
 		if update.Type == "" {
 			continue
 		}
-		x := tx.Exec(`UPDATE pool_ledger set user_address=? WHERE block_num=? AND type = ? AND user in (?, ?)`,
-			update.User, update.BlockNum, update.Type, update.User, update.Zapper)
+		x := tx.Exec(`UPDATE pool_ledger set user_address=? WHERE block_num=? AND event = ? AND tx_hash=? AND user_address in (?, ?)`,
+			update.User, update.BlockNum, update.Type, update.TxHash, update.User, update.Zapper)
+		log.CheckFatal(x.Error)
+		//
+
 		if x.RowsAffected != 1 {
+			log.Infof("SEELCT * from pool_ledger WHERE block_num=%d AND event = '%s' AND tx_hash='%s' AND user_address in ('%s', '%s')", update.BlockNum, update.Type, update.TxHash, update.User, update.Zapper)
 			log.Fatal("Can't update for", utils.ToJson(update))
 		}
-		log.CheckFatal(x.Error)
 	}
 }
