@@ -22,9 +22,9 @@ fi
 
 
 if [ "$SUPERUSER" =  "debian" ]; then
-    export TDB="postgres://$SUPERUSER:123Sample@localhost:5432/sample?sslmode=disable"
+    export SAMPLE_DB="postgres://$SUPERUSER:123Sample@localhost:5432/sample?sslmode=disable"
 else 
-    export TDB="postgres://$SUPERUSER@localhost:5432/sample?sslmode=disable"
+    export SAMPLE_DB="postgres://$SUPERUSER@localhost:5432/sample?sslmode=disable"
 fi
 
 set +e
@@ -35,13 +35,13 @@ set -e
 
 # psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
 psql -U $SUPERUSER -d sample < $PARENT_DIR/../../migrations/000016_rankings.up.sql
-migrate -path $PARENT_DIR/../../migrations/ -database "$TDB" up
+migrate -path $PARENT_DIR/../../migrations/ -database "$SAMPLE_DB" up
 
 
 psql -U $SUPERUSER -d sample < <(cat $PARENT_DIR/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
-set -e
-psql -U $SUPERUSER -d postgres -c 'drop database tmp_sample'
 set +e
+psql -U $SUPERUSER -d postgres -c 'drop database tmp_sample'
+set -e
 createdb -O $SUPERUSER -T sample tmp_sample
 
 # create user sample with encrypted password '123Sample';

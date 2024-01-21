@@ -4,10 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
-	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,11 +22,6 @@ type Metrics struct {
 }
 
 func newMetEngine(eng ds.EngineI, _cfg *config.Config) {
-	port, err := strconv.ParseInt(_cfg.Port, 10, 64)
-	log.CheckFatal(err)
-	if port == 0 {
-		return
-	}
 	//
 	mux := http.NewServeMux()
 	startedAt := time.Now().UTC()
@@ -66,13 +60,5 @@ func newMetEngine(eng ds.EngineI, _cfg *config.Config) {
 		fmt.Fprint(hw, string(d))
 	})
 
-	srv := http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: mux,
-	}
-
-	go func() {
-		log.Infof("Starting prometheus at :%d", port)
-		srv.ListenAndServe()
-	}()
+	utils.ServerFromMux(mux, _cfg.Port)
 }

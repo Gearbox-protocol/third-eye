@@ -180,12 +180,16 @@ func (m *MockRepo) processDCCalls(inputFile *TestInput3Eye) {
 func (m *MockRepo) Check(value interface{}, fileName string) {
 	outputJson := test.ReplaceWithVariable(value, m.AddressMap)
 	fileName = fmt.Sprintf("../inputs/%s", fileName)
-	require.JSONEq(m.t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
+	expected, err := utils.ReadFile(fileName)
+	require.NoError(m.t, err)
+	require.JSONEq(m.t, string(expected), utils.ToJson(outputJson))
 }
 func Check(t *testing.T, addressMap map[string]string, value interface{}, fileName string) {
 	outputJson := test.ReplaceWithVariable(value, addressMap)
 	fileName = fmt.Sprintf("../inputs/%s", fileName)
-	require.JSONEq(t, string(utils.ReadFile(fileName)), utils.ToJson(outputJson))
+	expected, err := utils.ReadFile(fileName)
+	require.NoError(t, err)
+	require.JSONEq(t, string(expected), utils.ToJson(outputJson))
 }
 
 func (m *MockRepo) Print(value interface{}, _ string) {

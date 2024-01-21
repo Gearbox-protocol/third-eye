@@ -54,7 +54,10 @@ func (testInput *TestInput3Eye) GetSyncAdapter(addressMap core.AddressMap, t *te
 }
 
 func addAddressSetJson(filePath string, obj interface{}, addressMap core.AddressMap, t *testing.T) {
-	var mock core.Json = utils.ReadJson(filePath)
+	var mock core.Json
+	var err error
+	mock, err = utils.ReadJson(filePath)
+	log.CheckFatal(err)
 	mock.ParseAddress(t, addressMap)
 	// log.Info(utils.ToJson(mock))
 	b, err := json.Marshal(mock)
