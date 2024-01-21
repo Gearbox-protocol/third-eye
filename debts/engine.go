@@ -232,7 +232,7 @@ func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt in
 		Borrower: %s
 		LiquidatedAt: %d 
 		Liquidable since: %d
-		web: %s/accounts/history/%s`,
+		web: %s/accounts/%s`,
 			urls.ExplorerUrl, cmAddr,
 			urls.ExplorerUrl, eng.GetLiquidationTx(sessionId),
 			sessionSnapshot.Borrower,
