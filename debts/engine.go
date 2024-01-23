@@ -397,15 +397,15 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		utils.ToJson(data)
 		// set debt data fetched from dc
 		// if healthfactor on diff
-		if !CompareBalance(debt.CalTotalValueBI, (*core.BigInt)(data.TotalValue), cumIndexAndUToken) ||
-			!CompareBalance(debt.CalDebtBI, (*core.BigInt)(data.Debt), cumIndexAndUToken) ||
+		if IsChangeMoreThanFraction(debt.CalTotalValueBI, (*core.BigInt)(data.TotalValue), big.NewFloat(0.0001)) ||
+			IsChangeMoreThanFraction(debt.CalDebtBI, (*core.BigInt)(data.Debt), big.NewFloat(0.0001)) ||
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, (*core.BigInt)(data.HealthFactor)) {
 			profile.DCData = &data
 			notMatched = true
 		}
 		// even if data compressor matching is disabled check the calc values  with session data at block where last credit snapshot was taken
 	} else if sessionSnapshot.BlockNum == blockNum {
-		if !CompareBalance(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, cumIndexAndUToken) ||
+		if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.0001)) ||
 			// hf value calculated are on different side of 1
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor) ||
 			// if healhFactor diff by 4 %

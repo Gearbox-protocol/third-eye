@@ -1,6 +1,8 @@
 package debts
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
@@ -203,7 +205,10 @@ func (eng *DebtEngine) GetDebts() core.Json {
 	return obj
 }
 
-func CompareBalance(a, b *core.BigInt, token *ds.CumIndexAndUToken) bool {
-	precision := utils.GetPrecision(token.Symbol)
-	return utils.AlmostSameBigInt(a.Convert(), b.Convert(), token.Decimals-precision)
+func IsChangeMoreThanFraction(a, b *core.BigInt, diff *big.Float) bool {
+	if a.Cmp(b) > 0 {
+		return IsChangeMoreThanFraction(b, a, diff)
+	}
+	// b < a
+	return utils.DiffMoreThanFraction(a.Convert(), b.Convert(), diff)
 }
