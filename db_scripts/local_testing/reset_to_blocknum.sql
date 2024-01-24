@@ -66,6 +66,9 @@ update sync_adapters set last_sync=18246321 where type in ('ContractRegister', '
 delete from debts where block_num > 18246321;
 delete from current_debts where block_num > 18246321;
 update debt_sync set last_calculated_at=18246321;
+
+
+delete from closed_trading_sessions;
 ----
 
 -- sync adapter for treasury is not updated.
