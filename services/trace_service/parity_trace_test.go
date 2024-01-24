@@ -26,7 +26,7 @@ func _TestParityFetcher(t *testing.T) {
 }
 func TestParityFetcherAnvil(t *testing.T) {
 	t.Skip()
-	rpc := "https://anvil.gearbox.foundation/forks/432945bc-3620-11ee-be56-0242ac120002"
+	rpc := "https://anvil.gearbox.foundation/rpc/432945bc-3620-11ee-be56-0242ac120002"
 	txHash := "0x34c7296cffba97fb68e281677228ea9ef7fa307c7e42f4a918e76eac5c3318d8"
 	fetcher := NewParityFetcher(rpc)
 	rpcTrace, err := fetcher.getData(txHash)
