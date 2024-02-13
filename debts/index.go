@@ -167,10 +167,11 @@ func (eng *DebtEngine) notifiedIfLiquidable(sessionId string, notified bool) {
 	liquidableAccount.Updated = true
 }
 
+// QueryPriceFeed is updated only till the lastFetchedBlock, not the syncTill that is provided to the aqfwrapper's aftersynchook from engine/index.go in the syncmodel. So, ignore that for updating the debts.
 func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
 	data := schemas.DebtSync{}
 	query := `SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters 
-	WHERE disabled=false AND type NOT IN ('RebaseToken','Treasury','LMRewardsv2','LMRewardsv3','GearToken')`
+	WHERE disabled=false AND type NOT IN ('QueryPriceFeed','RebaseToken','Treasury','LMRewardsv2','LMRewardsv3','GearToken')`
 	err := eng.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
