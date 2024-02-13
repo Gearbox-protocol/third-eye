@@ -50,17 +50,6 @@ func (mdl CommonCMAdapter) UpdateClosedSessionStatus(sessionId string, status in
 	mdl.closedSessions[sessionId].Status = status
 }
 
-//	func main() {
-//		var f map[string]string
-//		var s *map[string]string = &f
-//		if s != nil {
-//			fmt.Println("s is not nil")
-//		}
-//		if *s == nil {
-//		fmt.Println("val s is pointing to is nil")
-//		}
-//	}
-//
 // collateral
 func (mdl CommonCMAdapter) AddCollateralToSession(blockNum int64, sessionId, token string, amount *big.Int) {
 	if !mdl.Repo.IsDieselToken(token) && mdl.Repo.GetGearTokenAddr() != token {

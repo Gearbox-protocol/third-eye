@@ -18,56 +18,62 @@ import (
 	// "fmt"
 )
 
+func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
+	queryFrom := mdl.GetLastSync() + mdl.Interval
+	if queryFrom > toSinceTill {
+		return mdl.GetLastSync()
+	}
+	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, toSinceTill)
+	// for concurrency
+	concurrentThreads := 6
+	ch := make(chan int, concurrentThreads)
+	wg := &sync.WaitGroup{}
+	//
+	// timer with query of block
+	rounds := 0
+	loopStartTime := time.Now()
+	roundStartTime := time.Now()
+
+	blockNum := mdl.GetLastSync() + mdl.Interval
+	for ; blockNum <= toSinceTill; blockNum += mdl.Interval {
+		mdl.queryPFdeps.aggregatedFetchedBlocks =
+			append(mdl.queryPFdeps.aggregatedFetchedBlocks, blockNum)
+		ch <- 1
+		wg.Add(1)
+		go mdl.queryAsync(blockNum, ch, wg)
+		if rounds%100 == 0 {
+			timeLeft := (time.Since(loopStartTime).Seconds() * float64(toSinceTill-blockNum)) /
+				float64(blockNum-mdl.GetLastSync())
+			timeLeft /= 60
+			log.Infof("Synced %d in %d rounds(%fs): TimeLeft %f mins", blockNum, rounds, time.Since(roundStartTime).Seconds(), timeLeft)
+			roundStartTime = time.Now()
+		}
+		rounds++
+	}
+	wg.Wait()
+	return blockNum - mdl.Interval
+}
+
 // update all queryAdapter only if for the lastBlockNumber as we have fetched prices for that block.
 // not update for toSinceTill.  if the interval is more than the syncCycle in engin/index.go, the queryAdpater lastsync will be updated but the prices will not be fetched
 func (mdl *AQFWrapper) Query(toSinceTill int64) {
 	if len(mdl.QueryFeeds) == 0 {
 		return
 	}
-	concurrentThreads := 6
-	ch := make(chan int, concurrentThreads)
-	// msg
-	queryFrom := mdl.GetLastSync() + mdl.Interval
-	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, toSinceTill)
-	// timer with query of block
-	lastblockNum := queryFrom
-	{
-		rounds := 0
-		loopStartTime := time.Now()
-		roundStartTime := time.Now()
-		wg := &sync.WaitGroup{}
-		for blockNum := lastblockNum; blockNum <= toSinceTill; blockNum += mdl.Interval {
-			mdl.queryPFdeps.aggregatedFetchedBlocks =
-				append(mdl.queryPFdeps.aggregatedFetchedBlocks, blockNum)
-			ch <- 1
-			wg.Add(1)
-			go mdl.queryAsync(blockNum, ch, wg)
-			if rounds%100 == 0 {
-				timeLeft := (time.Since(loopStartTime).Seconds() * float64(toSinceTill-blockNum)) /
-					float64(blockNum-mdl.GetLastSync())
-				timeLeft /= 60
-				log.Infof("Synced %d in %d rounds(%fs): TimeLeft %f mins", blockNum, rounds, time.Since(roundStartTime).Seconds(), timeLeft)
-				roundStartTime = time.Now()
-			}
-			rounds++
-			lastblockNum = blockNum
-		}
-		wg.Wait()
-	}
+
+	syncedTill := mdl.fetchAllPrices(toSinceTill)
+	//
 	// set last_sync on querypricefeed
 	for _, adapter := range mdl.QueryFeeds {
 		// yearn price feed can't be disabled from v2
-		if lastblockNum <= adapter.GetLastSync() || adapter.IsDisabled() {
+		if syncedTill <= adapter.GetLastSync() || adapter.IsDisabled() {
 			continue
 		}
-		adapter.AfterSyncHook(lastblockNum)
+		adapter.AfterSyncHook(syncedTill)
 	}
-	// db has saved prices till mdl.GetLastSync()
-	// queryFrom starts
-	if mdl.GetLastSync()+mdl.Interval != queryFrom {
-		log.Fatal("failed reduntant check, to make sure lastSync of AQFWrapper is not updated before addingQueryPrices for extra")
-	}
-	mdl.addQueryPrices(mdl.GetLastSync())
+	mdl.addQueryPrices(mdl.GetLastSync()) // use previous lastSync for getting extra prices
+	//
+	mdl.LastSync = syncedTill
 }
 
 func (mdl *AQFWrapper) addQueryPrices(clearExtraBefore int64) {

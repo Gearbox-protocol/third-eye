@@ -66,7 +66,6 @@ func (mdl *AQFWrapper) AddYearnFeed(adapter ds.SyncAdapterI) {
 		log.Fatal("Failed in parsing yearn feed for aggregated yearn feed")
 	}
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
-	// log.Info(adapter.GetAddress(), "added to aggregatedpricefeed has last_sync", adapter.GetLastSync())
 	mdl.QueryFeeds[adapter.GetAddress()] = yearnFeed
 }
 
@@ -152,4 +151,9 @@ func (mdl AQFWrapper) getFeeds(blockNum int64, neededTokens map[string]bool) (re
 
 func (mdl AQFWrapper) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
 	mdl.queryPFdeps.chainlinkPriceUpdatedAt(token, blockNums)
+}
+
+func (mdl AQFWrapper) AfterSyncHook(blockNum int64) {
+	// don't do any thing as the lastSync should not be updated from outside.
+	// It is  the min of the lastsync of all the interally managed queryPriceFeeds
 }
