@@ -130,17 +130,20 @@ type local struct {
 	Token string
 }
 
+// no need to check version of feed, as while adding from chainlink we make sure that the version is more than 1
+// and  we can't have version 2 and 3 feed active at the same time.
 func (mdl AQFWrapper) getFeeds(blockNum int64, neededTokens map[string]bool) (result []local) {
 	for _, adapter := range mdl.QueryFeeds {
-		if adapter.GetVersion().Eq(2) {
-			tokensForAdapter := adapter.TokensValidAtBlock(blockNum)
-			for _, token := range tokensForAdapter {
-				if neededTokens[token] {
-					result = append(result, local{
-						Feed:  adapter.GetAddress(),
-						Token: token,
-					})
-				}
+		if !adapter.GetVersion().MoreThan(core.NewVersion(1)) {
+			continue
+		}
+		tokensForAdapter := adapter.TokensValidAtBlock(blockNum)
+		for _, token := range tokensForAdapter {
+			if neededTokens[token] {
+				result = append(result, local{
+					Feed:  adapter.GetAddress(),
+					Token: token,
+				})
 			}
 		}
 	}

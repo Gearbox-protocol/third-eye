@@ -24,10 +24,10 @@ func (mdl RebaseToken) getStateAt(blockNum int64) *schemas.RebaseTokenDetails {
 		RebaseDetailsForDB: schemas.RebaseDetailsForDB{
 			TotalShares: (*core.BigInt)(totalShares),
 		},
-		DepositBalance:    (*core.BigInt)(mdl.getStorageAt(blockNum, "0xed310af23f61f96daefbcd140b306c0bdbf8c178398299741687b90e794772b0")),
-		DepositValidators: mdl.getStorageAt(blockNum, "0xe6e35175eb53fc006520a2a9c3e9711a7c00de6ff2c32dd31df8c5a24cac1b5c").Int64(),
-		CLBalance:         (*core.BigInt)(mdl.getStorageAt(blockNum, "0xa66d35f054e68143c18f32c990ed5cb972bb68a68f500cd2dd3a16bbf3686483")),
-		CLValidators:      mdl.getStorageAt(blockNum, "0x9f70001d82b6ef54e9d3725b46581c3eb9ee3aa02b941b6aa54d678a9ca35b10").Int64(),
+		DepositBalance:    (*core.BigInt)(mdl.getStorageAt(blockNum, depositedBalanceKey)), // users balances
+		DepositValidators: mdl.getStorageAt(blockNum, depositedValidatorKey).Int64(),       // used in validators
+		CLBalance:         (*core.BigInt)(mdl.getStorageAt(blockNum, clBalanceKey)),        // waiting to be used in validators
+		CLValidators:      mdl.getStorageAt(blockNum, validatorsKey).Int64(),               // new validators in wait
 	}
 	if calc.GetPostTotalEther().Cmp(poolEth) != 0 {
 		log.Fatalf("poolTotal Eth(%d) calculated is different from call fetched %d", calc.GetPostTotalEther(), poolEth)
