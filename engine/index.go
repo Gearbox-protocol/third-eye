@@ -194,6 +194,7 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 	if len(addrsToFetchLogs) == 0 {
 		return
 	}
+
 	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsToFetchLogs, mdl.Topics())
 	log.CheckFatal(err)
 	log.Infof("Sync %s(%s)[addrs: %d] from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), len(addrsToFetchLogs), syncFrom, syncTill, len(txLogs))

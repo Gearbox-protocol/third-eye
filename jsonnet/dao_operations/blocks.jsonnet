@@ -3,6 +3,7 @@
     Args: {
       priceFeed: '#Oracle_4',
       token: '#Token_4',
+      reserve: false,
     },
     BlockNumber: 3,
     Contract: '#PriceOracle_1',

@@ -22,23 +22,26 @@ func (x *OnLogsChecker) AddPriceFeed(pf *schemas.PriceFeed) {
 }
 func TestOnLogs(t *testing.T) {
 	validPf := &schemas.PriceFeed{
-		Feed:        utils.RandomAddr(),
-		Token:       utils.RandomAddr(),
-		BlockNumber: 1,
-		PriceBI:     (*core.BigInt)(big.NewInt(222)),
-		RoundId:     3,
+		Feed:            utils.RandomAddr(),
+		Token:           utils.RandomAddr(),
+		BlockNumber:     1,
+		PriceBI:         (*core.BigInt)(big.NewInt(222)),
+		RoundId:         3,
+		MergedPFVersion: schemas.MergedPFVersion(schemas.V2PF),
 	}
 	repo := &OnLogsChecker{}
 	obj := &ChainlinkPriceFeed{SyncAdapter: &ds.SyncAdapter{
 		Repo: repo,
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{
-				Address: validPf.Feed,
+				Address:      validPf.Feed,
+				DiscoveredAt: 1,
 			},
 			V:       core.NewVersion(1),
-			Details: core.Json{"token": validPf.Token},
+			Details: core.Json{"token": validPf.Token, "mergedPFVersion": validPf.MergedPFVersion},
 		},
-	}}
+	}, mergedPFManager: &ds.MergedPFManager{}}
+	obj.mergedPFManager.Load(obj.Details, obj.DiscoveredAt)
 	txLogs := []types.Log{
 		{
 			BlockNumber: 1,
@@ -63,6 +66,7 @@ func TestOnLogs(t *testing.T) {
 	if len(repo.pfs) != 1 ||
 		repo.pfs[0].BlockNumber != validPf.BlockNumber ||
 		repo.pfs[0].Feed != validPf.Feed ||
+		repo.pfs[0].MergedPFVersion != validPf.MergedPFVersion ||
 		repo.pfs[0].RoundId != validPf.RoundId ||
 		repo.pfs[0].PriceBI.Cmp(validPf.PriceBI) != 0 {
 		t.Fatal(utils.ToJson(repo.pfs))

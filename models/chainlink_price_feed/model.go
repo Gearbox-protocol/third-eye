@@ -13,8 +13,9 @@ import (
 
 type ChainlinkPriceFeed struct {
 	*ds.SyncAdapter
-	Token   string
-	MainAgg *ChainlinkMainAgg
+	Token           string
+	MainAgg         *ChainlinkMainAgg
+	mergedPFManager *ds.MergedPFManager
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
@@ -93,6 +94,8 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		}
 	}
 	obj.DataProcessType = ds.ViaMultipleLogs
+	obj.mergedPFManager = &ds.MergedPFManager{}
+	obj.mergedPFManager.Load(obj.Details, obj.DiscoveredAt)
 	return obj
 }
 
@@ -116,6 +119,7 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 		}, mdl.upperLimit().Cmp(new(big.Int)) != 0) // if upperLImit is not zero, then the price is bounded by upperLimit
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
+	mdl.mergedPFManager.Save(&mdl.Details)
 }
 
 func (mdl *ChainlinkPriceFeed) upperLimit() *big.Int {

@@ -6,6 +6,7 @@
       details: {
         token: { '#Token_2': [1, 50], '#Token_3': [1, 50], '#Token_4': [1, 50] },  // removed at 50
         pfType: 'YearnPF',
+        mergedPFVersion: 2,
       },
       lastSync: 1,
       version: 2,
@@ -16,6 +17,7 @@
       details: {
         token: { '#Token_2': [50], '#Token_3': [50], '#Token_4': [50] },
         pfType: 'YearnPF',
+        mergedPFVersion: 2,
       },
       lastSync: 1,
       version: 2,

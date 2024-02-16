@@ -35,6 +35,9 @@ func (obj *DetailsDS) Load(in core.Json, version core.VersionType) {
 	if obj.Tokens == nil {
 		obj.Tokens = map[string]map[schemas.PFVersion][]int64{}
 	}
+	if len(obj.Reduntant) != 0 && (obj.MergedPFVersion == nil || *obj.MergedPFVersion == 0) {
+		log.Fatal("For reduntant, mergedPFVersion should be set", utils.ToJson(obj.Reduntant), obj.MergedPFVersion)
+	}
 	for token, blockNums := range obj.Reduntant {
 		if obj.Tokens[token] == nil {
 			obj.Tokens[token] = map[schemas.PFVersion][]int64{}

@@ -113,7 +113,7 @@ func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 		RoundId:         0,
 		PriceBI:         (*core.BigInt)(answerBI),
 		Price:           utils.GetFloat64Decimal(answerBI, 8),
-		MergedPFVersion: mdl.GetMergedPFVersion(),
+		MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum),
 	}
 	mdl.Repo.AddPriceFeed(priceFeed)
 }
@@ -122,36 +122,13 @@ func (mdl *CompositeChainlinkPF) OnLog(types.Log) {
 
 }
 
-func (mdl CompositeChainlinkPF) GetMergedPFVersion() schemas.MergedPFVersion {
-	if mdl.Details["mergedPFVersion"] != nil {
-		if v, ok := mdl.Details["mergedPFVersion"].(int8); ok {
-			return schemas.MergedPFVersion(v)
-		}
-		if v, ok := mdl.Details["mergedPFVersion"].(float64); ok {
-			return schemas.MergedPFVersion(v)
-		}
-		return schemas.MergedPFVersion(mdl.Details["mergedPFVersion"].(schemas.MergedPFVersion))
-	}
-	log.Fatal(utils.ToJson(mdl.Details))
-	return schemas.MergedPFVersion(0)
-}
-func (mdl CompositeChainlinkPF) AddToken(token string, pfVersion schemas.PFVersion) {
-	if mdl.Details["token"] != nil {
-		if mdl.Details["token"].(string) != token {
-			log.Fatal("stored token for chainlink is different from new added token", mdl.Details["token"].(string), token)
-		}
-	}
-	mdl.Details["mergedPFVersion"] = mdl.GetMergedPFVersion() | schemas.MergedPFVersion(pfVersion)
+func (mdl *CompositeChainlinkPF) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
+	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
 }
 
 func (mdl CompositeChainlinkPF) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
-	if mdl.Details["token"] != nil {
-		if mdl.Details["token"].(string) != token {
-			log.Fatal("stored token for chainlink is different from new added token", mdl.Details["token"].(string), token)
-		}
-	}
-	final := mdl.GetMergedPFVersion() ^ schemas.MergedPFVersion(pfVersion)
-	mdl.Details["mergedPFVersion"] = final
+	mdl.mergedPFManager.DisableToken(token, blockNum, pfVersion)
+	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum)
 	if final == 0 {
 		mdl.SetBlockToDisableOn(blockNum)
 	}

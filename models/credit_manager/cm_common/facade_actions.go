@@ -104,7 +104,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 				if utils.Contains([]string{
 					"LiquidateCreditAccount(address,address,address,uint256)",
 					"CloseCreditAccount(address,address)",
-				}, mainEvent.Action) { // REV_COL_LIQ_V3: v3 liquidate reverse the collateral
+				}, mainEvent.Action) { // REV_COL_LIQ_V3: v3 liquidate reserve the collateral
 					// also revert at closeCreditAccount as collateralunderlying should be
 					// since liquidation the withdraw collateral is not to the account owner.
 					mdl.AddCollateralToSession(event.BlockNumber, event.SessionId,

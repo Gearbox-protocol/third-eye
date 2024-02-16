@@ -105,10 +105,10 @@ func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOrac
 			log.Error("Adapter not found for", oldFeed, utils.ToJson(oldTokenOracle))
 		} else if adapter.GetName() != ds.QueryPriceFeed {
 			if mdl, ok := adapter.(*chainlink_price_feed.ChainlinkPriceFeed); ok {
-				mdl.DisableToken(oldTokenOracle.Token, oldTokenOracle.BlockNumber, pfVersion)
+				mdl.DisableToken(oldTokenOracle.Token, newTokenOracle.BlockNumber, pfVersion)
 			}
 			if mdl, ok := adapter.(*composite_chainlink.CompositeChainlinkPF); ok {
-				mdl.DisableToken(oldTokenOracle.Token, oldTokenOracle.BlockNumber, pfVersion)
+				mdl.DisableToken(oldTokenOracle.Token, newTokenOracle.BlockNumber, pfVersion)
 			}
 		} else {
 			repo.adapters.GetAggregatedFeed().DisableYearnFeed(
@@ -190,7 +190,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
 		//
 		if adapter := repo.adapters.GetAdapter(obj.Address); adapter != nil {
-			adapter.(*chainlink_price_feed.ChainlinkPriceFeed).AddToken(newTokenOracle.Token, pfVersion)
+			adapter.(*chainlink_price_feed.ChainlinkPriceFeed).AddToken(newTokenOracle.Token, newTokenOracle.BlockNumber, pfVersion)
 			return
 		}
 		// SPECIAL CASE
@@ -219,7 +219,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
 
 		if adapter := repo.adapters.GetAdapter(obj.Address); adapter != nil {
-			adapter.(*composite_chainlink.CompositeChainlinkPF).AddToken(newTokenOracle.Token, pfVersion)
+			adapter.(*composite_chainlink.CompositeChainlinkPF).AddToken(newTokenOracle.Token, newTokenOracle.BlockNumber, pfVersion)
 			return
 		}
 		repo.adapters.AddSyncAdapter(obj)

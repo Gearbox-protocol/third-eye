@@ -43,7 +43,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			Args: &core.Json{
 				"priceFeed": oracle,
 				"token":     token,
-				"reverse":   isReverse,
+				"reserve":   isReverse,
 			},
 		})
 

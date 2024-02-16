@@ -22,6 +22,7 @@ type CompositeChainlinkPF struct {
 	TokenETHPrice    *big.Int
 	ETHUSDPrice      *big.Int
 	decimalsOfBasePF int8
+	mergedPFManager  *ds.MergedPFManager
 }
 
 // compositeChainlink price feed has token base  oracle and base usd oracle for calculating the price of token in usd.
@@ -97,6 +98,9 @@ func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChain
 	compositeMdl.MainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("target"))
 	compositeMdl.DataProcessType = ds.ViaMultipleLogs
 	compositeMdl.setPrices(adapter.LastSync)
+	//
+	compositeMdl.mergedPFManager = &ds.MergedPFManager{}
+	compositeMdl.mergedPFManager.Load(compositeMdl.Details, compositeMdl.DiscoveredAt)
 	return compositeMdl
 }
 
@@ -154,6 +158,7 @@ func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 
 
 func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
+	mdl.mergedPFManager.Save(&mdl.Details)
 }
 
 // there are two type of composite oracle

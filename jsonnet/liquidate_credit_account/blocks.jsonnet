@@ -47,7 +47,7 @@
         feed: '#ChainlinkPriceFeed_1',
         price: 0.0008,
         priceBI: '800000000000000',
-        isPriceInUSD: false,
+        mergedPFVersion: 1,
         roundId: 2,
         token: '#Token_1',
       },

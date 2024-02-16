@@ -48,6 +48,7 @@
       details: {
         oracle: '#Oracle_0',
         token: '#Token_1',
+        mergedPFVersion: 1,
       },
       lastSync: 2,
       version: 1,
@@ -94,6 +95,7 @@
       details: {
         oracle: '#Oracle_1',
         token: '#Token_1',
+        mergedPFVersion: 2,
       },
       lastSync: 2,
       version: 2,
@@ -105,6 +107,7 @@
       details: {
         oracle: '#Oracle_2',
         token: '#Token_2',
+        mergedPFVersion: 2,
       },
       lastSync: 2,
       version: 2,
@@ -115,6 +118,7 @@
       details: {
         oracle: '#Oracle_3',
         token: '#Token_3',
+        mergedPFVersion: 2,
       },
       lastSync: 2,
       version: 2,
