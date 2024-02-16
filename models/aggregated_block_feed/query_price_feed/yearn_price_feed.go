@@ -31,9 +31,8 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 				Client:       client,
 			},
 			Details: map[string]interface{}{
-				"tokens":    map[string]map[schemas.PFVersion][]int64{token: {pfVersion: {discoveredAt}}},
-				"pfType":    pfType,
-				"pfVersion": map[string]int64{"token": int64(pfVersion)},
+				"tokens": map[string]map[schemas.PFVersion][]int64{token: {pfVersion: {discoveredAt}}},
+				"pfType": pfType,
 			},
 			LastSync: discoveredAt,
 			V:        pfVersion.ToVersion(),
@@ -133,6 +132,6 @@ func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) sch
 }
 
 func (mdl *QueryPriceFeed) AfterSyncHook(b int64) {
-	mdl.DetailsDS.Save()
+	mdl.Details = mdl.DetailsDS.Save()
 	mdl.SyncAdapter.AfterSyncHook(b)
 }

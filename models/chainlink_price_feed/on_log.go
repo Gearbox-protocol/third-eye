@@ -31,6 +31,10 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			if txLogInd+1 < len(txLogs) && int64(txLogs[txLogInd+1].BlockNumber) == blockNum {
 				continue
 			}
+			if mdl.Token == "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" &&
+				mdl.Address == "0x37bC7498f4FF12C19678ee8fE19d713b87F6a9e6" && blockNum > 17217055 { // as there is already another chainlink activated 0xE62B71cf983019BFf55bC83B48601ce8419650CC
+				continue
+			}
 			//
 			roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
 			if err != nil {

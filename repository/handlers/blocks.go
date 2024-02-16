@@ -171,6 +171,7 @@ func (repo *BlocksRepo) Clear() {
 
 // setter
 func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
+
 	if pf.MergedPFVersion == 0 {
 		log.Fatal(utils.ToJson(pf))
 	}

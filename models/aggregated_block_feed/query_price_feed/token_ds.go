@@ -11,11 +11,12 @@ import (
 )
 
 type DetailsDS struct {
-	PFType          string                                   `json:"pfType"`
-	Reduntant       map[string][]int64                       `json:"token,omitempty"` // token enabled and disabled at block numbers
-	Tokens          map[string]map[schemas.PFVersion][]int64 `json:"tokens"`          // token enabled and disabled at block numbers
-	Logs            [][]interface{}                          `json:"logs"`
-	MergedPFVersion *schemas.MergedPFVersion                 `json:"mergedPFVersion,omitempty"`
+	PFType string                                   `json:"pfType"`
+	Tokens map[string]map[schemas.PFVersion][]int64 `json:"tokens"` // token enabled and disabled at block numbers
+	Logs   [][]interface{}                          `json:"logs"`
+	// redunantt
+	Reduntant       map[string][]int64       `json:"token,omitempty"` // token enabled and disabled at block numbers
+	MergedPFVersion *schemas.MergedPFVersion `json:"mergedPFVersion,omitempty"`
 }
 
 //	func NewDetailsDS(pfType string, token string, discoveredAt int64, pfVersion schemas.PFVersion) *DetailsDS {

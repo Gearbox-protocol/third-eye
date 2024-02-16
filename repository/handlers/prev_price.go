@@ -40,7 +40,8 @@ func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo) *PrevPriceSt
 func (repo *PrevPriceStore) loadPrevPriceFeed(db *gorm.DB) {
 	defer utils.Elapsed("loadPrevPriceFeed")()
 	data := []*schemas.PriceFeed{}
-	err := db.Raw("SELECT distinct on(token, merged_pf_version) * FROM price_feeds ORDER BY token, merged_pf_version, block_num DESC").Find(&data).Error
+	err := db.Raw(`SELECT * FROM 
+		(SELECT distinct on(token, merged_pf_version) * FROM price_feeds ORDER BY token, merged_pf_version, block_num DESC) t ORDER BY block_num`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, pf := range data {
 		repo.isPFAdded(pf, false)

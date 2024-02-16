@@ -141,7 +141,8 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionI
 	}
 	return call, func(result multicall.Multicall2Result) {
 		if !result.Success {
-			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v", mdl.GetAddress(), session.Borrower, closedAt-1, result.ReturnData)
+			key, dc := mdl.Repo.GetDCWrapper().GetKeyAndAddress(session.Version, closedAt-1)
+			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v, dc: %s(%s)", mdl.GetAddress(), session.Borrower, closedAt-1, result.ReturnData, key, dc)
 		}
 		dcAccountData, err := resultFn(result.ReturnData)
 		if err != nil {
