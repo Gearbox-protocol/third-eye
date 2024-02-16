@@ -4,11 +4,12 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -43,7 +44,7 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 	// set feed to token
 	if syncAdapterObj != nil {
 		for _, adapter := range syncAdapterObj.Adapters {
-			aqf.AddYearnFeed(aggregated_block_feed.NewQueryPriceFeedFromAdapter(adapter))
+			aqf.AddYearnFeed(query_price_feed.NewQueryPriceFeedFromAdapter(adapter))
 		}
 	}
 	log.Info(addressMap)
@@ -61,8 +62,8 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 	aqf.GetDepFetcher().TokenSymMap = tokenSymMap
 	aqf.ChainlinkPriceUpdatedAt(addressMap["Token_1"], []int64{4, 11, 26, 51, 53, 58})
 	//
-	aqf.DisableYearnFeed(addressMap["Token_4"], addressMap["YearnFeed_3"], 56)
-	aqf.AddFeedOrToken(addressMap["Token_4"], addressMap["YearnFeed_4"], ds.YearnPF, 56, core.NewVersion(2))
+	aqf.DisableYearnFeed(addressMap["Token_4"], addressMap["YearnFeed_3"], 56, schemas.V2PF)
+	aqf.AddFeedOrToken(addressMap["Token_4"], addressMap["YearnFeed_4"], ds.YearnPF, 56, schemas.V2PF)
 }
 
 func reverseMap(in map[string]string) (r map[string]string) {

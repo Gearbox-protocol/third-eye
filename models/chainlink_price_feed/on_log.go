@@ -46,14 +46,15 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				answerBI = upperLimit
 			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
+			pfVersion := schemas.VersionToPFVersion(mdl.GetVersion(), schemas.GetReservefromDetails(mdl.Details))
 			priceFeed = &schemas.PriceFeed{
-				BlockNumber:  blockNum,
-				Token:        mdl.Token,
-				Feed:         mdl.Address,
-				RoundId:      roundId,
-				PriceBI:      (*core.BigInt)(answerBI),
-				Price:        utils.GetFloat64Decimal(answerBI, mdl.GetVersion().Decimals()),
-				IsPriceInUSD: mdl.GetVersion().IsPriceInUSD(),
+				BlockNumber:     blockNum,
+				Token:           mdl.Token,
+				Feed:            mdl.Address,
+				RoundId:         roundId,
+				PriceBI:         (*core.BigInt)(answerBI),
+				Price:           utils.GetFloat64Decimal(answerBI, pfVersion.Decimals()),
+				MergedPFVersion: mdl.GetMergedPFVersion(),
 			}
 			mdl.Repo.AddPriceFeed(priceFeed)
 			blockNums = append(blockNums, blockNum)
@@ -64,4 +65,39 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 		mdl.Repo.ChainlinkPriceUpdatedAt(mdl.Token, blockNums)
 	}
 
+}
+
+func (mdl ChainlinkPriceFeed) GetMergedPFVersion() schemas.MergedPFVersion {
+	if mdl.Details["mergedPFVersion"] != nil {
+		if v, ok := mdl.Details["mergedPFVersion"].(int8); ok {
+			return schemas.MergedPFVersion(v)
+		}
+		if v, ok := mdl.Details["mergedPFVersion"].(float64); ok {
+			return schemas.MergedPFVersion(v)
+		}
+		return schemas.MergedPFVersion(mdl.Details["mergedPFVersion"].(schemas.MergedPFVersion))
+	}
+	log.Fatal("Can't get mergedPFVersion", utils.ToJson(mdl.Details))
+	return schemas.MergedPFVersion(0)
+}
+func (mdl ChainlinkPriceFeed) AddToken(token string, pfVersion schemas.PFVersion) {
+	if mdl.Details["token"] != nil {
+		if mdl.Details["token"].(string) != token {
+			log.Fatal("stored token for chainlink is different from new added token", mdl.Details["token"].(string), token)
+		}
+	}
+	mdl.Details["mergedPFVersion"] = mdl.GetMergedPFVersion() | schemas.MergedPFVersion(pfVersion)
+}
+
+func (mdl ChainlinkPriceFeed) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
+	if mdl.Details["token"] != nil {
+		if mdl.Details["token"].(string) != token {
+			log.Fatal("stored token for chainlink is different from new added token", mdl.Details["token"].(string), token)
+		}
+	}
+	final := mdl.GetMergedPFVersion() ^ schemas.MergedPFVersion(pfVersion)
+	mdl.Details["mergedPFVersion"] = final
+	if final == 0 {
+		mdl.SetBlockToDisableOn(blockNum)
+	}
 }

@@ -58,7 +58,9 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
+	a := []*schemas.PriceFeed{}
 	for _, block := range repo.GetBlocks() {
+		a = append(a, block.PriceFeeds...)
 		blocksToSync = append(blocksToSync, block)
 	}
 	// clauses not needed here
@@ -71,8 +73,14 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 
 // external funcs
 func (repo *BlocksRepo) GetPrice(token string) *big.Int {
-	if details := repo.prevStore.currentPrices[token]; details != nil {
-		return details.PriceBI.Convert()
+	store := repo.prevStore.prevPriceFeeds[schemas.V3PF_MAIN]
+	if store != nil {
+		return store[token].PriceBI.Convert()
+	}
+
+	store = repo.prevStore.prevPriceFeeds[schemas.V2PF]
+	if store != nil {
+		return store[token].PriceBI.Convert()
 	}
 	return nil
 }
@@ -163,7 +171,10 @@ func (repo *BlocksRepo) Clear() {
 
 // setter
 func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
-	if repo.prevStore.canAddPF(pf) {
+	if pf.MergedPFVersion == 0 {
+		log.Fatal(utils.ToJson(pf))
+	}
+	if repo.prevStore.isPFAdded(pf, true) {
 		repo.SetAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 	}
 }

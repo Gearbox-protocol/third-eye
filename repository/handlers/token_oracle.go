@@ -16,7 +16,7 @@ import (
 
 type TokenOracleRepo struct {
 	// version  to token to oracle
-	tokensCurrentOracle map[ds.PriceInUSDType]map[string]*schemas.TokenOracle // done
+	tokensCurrentOracle map[schemas.PFVersion]map[string]*schemas.TokenOracle // done
 	mu                  *sync.Mutex
 	adapters            *SyncAdaptersRepo
 	blocks              *BlocksRepo
@@ -27,7 +27,7 @@ type TokenOracleRepo struct {
 
 func NewTokenOracleRepo(adapters *SyncAdaptersRepo, blocks *BlocksRepo, repo ds.RepositoryI, client core.ClientI) *TokenOracleRepo {
 	return &TokenOracleRepo{
-		tokensCurrentOracle: make(map[ds.PriceInUSDType]map[string]*schemas.TokenOracle),
+		tokensCurrentOracle: make(map[schemas.PFVersion]map[string]*schemas.TokenOracle),
 		mu:                  &sync.Mutex{},
 		adapters:            adapters,
 		blocks:              blocks,
@@ -41,9 +41,7 @@ func NewTokenOracleRepo(adapters *SyncAdaptersRepo, blocks *BlocksRepo, repo ds.
 func (repo *TokenOracleRepo) LoadCurrentTokenOracle(db *gorm.DB) {
 	defer utils.Elapsed("loadCurrentTokenOracle")()
 	data := []*schemas.TokenOracle{}
-	query := `SELECT token_oracle.* FROM token_oracle
-	JOIN (SELECT max(block_num) AS bn, token FROM token_oracle GROUP BY token, version) AS max_to
-	ON max_to.bn = token_oracle.block_num AND max_to.token = token_oracle.token order by block_num`
+	query := `SELECT distinct on (token, version, reserve) * FROM token_oracle order by token, version, reserve, block_num desc;`
 	err := db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -66,20 +64,21 @@ func (repo *TokenOracleRepo) loadZeroPFs(db *gorm.DB) {
 }
 
 func (repo *TokenOracleRepo) addTokenCurrentOracle(oracle *schemas.TokenOracle) {
-	priceInUSD := ds.PriceInUSDType(oracle.Version.IsPriceInUSD())
-	if repo.tokensCurrentOracle[priceInUSD] == nil {
-		repo.tokensCurrentOracle[priceInUSD] = map[string]*schemas.TokenOracle{}
+	pfVersion := schemas.VersionToPFVersion(oracle.Version, oracle.Reserve)
+	if repo.tokensCurrentOracle[pfVersion] == nil {
+		repo.tokensCurrentOracle[pfVersion] = map[string]*schemas.TokenOracle{}
 	}
-	repo.tokensCurrentOracle[priceInUSD][oracle.Token] = oracle
+	repo.tokensCurrentOracle[pfVersion][oracle.Token] = oracle
 }
 
 // if same feed is active for current token and version
 func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.TokenOracle) bool {
 	feedType := newTokenOracle.FeedType
-	newPriceInUSD := ds.PriceInUSDType(newTokenOracle.Version.IsPriceInUSD())
-	if repo.tokensCurrentOracle[newPriceInUSD] != nil &&
-		repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token] != nil {
-		oldTokenOracle := repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token]
+	pfVersion := schemas.VersionToPFVersion(newTokenOracle.Version, newTokenOracle.Reserve)
+	//
+	if repo.tokensCurrentOracle[pfVersion] != nil &&
+		repo.tokensCurrentOracle[pfVersion][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[pfVersion][newTokenOracle.Token]
 
 		if oldTokenOracle.Feed == newTokenOracle.Feed {
 			log.Debugf("Same %s(%s) added for token(%s)", feedType, newTokenOracle.Feed, newTokenOracle.Token)
@@ -90,10 +89,11 @@ func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.T
 }
 
 func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOracle *schemas.TokenOracle) {
-	newPriceInUSD := ds.PriceInUSDType(newTokenOracle.Version.IsPriceInUSD())
-	if repo.tokensCurrentOracle[newPriceInUSD] != nil &&
-		repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token] != nil {
-		oldTokenOracle := repo.tokensCurrentOracle[newPriceInUSD][newTokenOracle.Token]
+	pfVersion := schemas.VersionToPFVersion(newTokenOracle.Version, newTokenOracle.Reserve)
+	//
+	if repo.tokensCurrentOracle[pfVersion] != nil &&
+		repo.tokensCurrentOracle[pfVersion][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[pfVersion][newTokenOracle.Token]
 		oldFeed := oldTokenOracle.Feed
 
 		adapter := repo.adapters.GetAdapter(oldFeed)
@@ -104,9 +104,15 @@ func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOrac
 		} else if adapter == nil {
 			log.Error("Adapter not found for", oldFeed, utils.ToJson(oldTokenOracle))
 		} else if adapter.GetName() != ds.QueryPriceFeed {
-			adapter.SetBlockToDisableOn(newTokenOracle.BlockNumber)
+			if mdl, ok := adapter.(*chainlink_price_feed.ChainlinkPriceFeed); ok {
+				mdl.DisableToken(oldTokenOracle.Token, oldTokenOracle.BlockNumber, pfVersion)
+			}
+			if mdl, ok := adapter.(*composite_chainlink.CompositeChainlinkPF); ok {
+				mdl.DisableToken(oldTokenOracle.Token, oldTokenOracle.BlockNumber, pfVersion)
+			}
 		} else {
-			repo.adapters.GetAggregatedFeed().DisableYearnFeed(newTokenOracle.Token, oldFeed, newTokenOracle.BlockNumber)
+			repo.adapters.GetAggregatedFeed().DisableYearnFeed(
+				newTokenOracle.Token, oldFeed, newTokenOracle.BlockNumber, pfVersion)
 		}
 	}
 	// set current state of oracle for token.
@@ -135,8 +141,9 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 	if newTokenOracle.Feed == "0xBc1c306920309F795fB5A740083eCBf5057349e9" && newTokenOracle.BlockNumber == 15371802 {
 		return
 	}
+	pfVersion := schemas.VersionToPFVersion(newTokenOracle.Version, newTokenOracle.Reserve)
 	switch newTokenOracle.FeedType {
-	case ds.CurvePF, ds.SingleAssetPF, ds.YearnPF, ds.ZeroPF, ds.AlmostZeroPF:
+	case ds.CurvePF, ds.SingleAssetPF, ds.YearnPF, ds.ZeroPF, ds.AlmostZeroPF, ds.RedStonePF:
 		if repo.alreadyActiveFeedForToken(newTokenOracle) {
 			return
 		}
@@ -148,13 +155,13 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 				priceBI = big.NewInt(100)
 			}
 			repo.blocks.AddPriceFeed(&schemas.PriceFeed{
-				BlockNumber:  newTokenOracle.BlockNumber,
-				Token:        newTokenOracle.Token,
-				Feed:         newTokenOracle.Oracle,
-				RoundId:      0,
-				PriceBI:      (*core.BigInt)(priceBI),
-				Price:        utils.GetFloat64Decimal(priceBI, newTokenOracle.Version.Decimals()),
-				IsPriceInUSD: newTokenOracle.Version.IsPriceInUSD(),
+				BlockNumber:     newTokenOracle.BlockNumber,
+				Token:           newTokenOracle.Token,
+				Feed:            newTokenOracle.Oracle,
+				RoundId:         0,
+				PriceBI:         (*core.BigInt)(priceBI),
+				Price:           utils.GetFloat64Decimal(priceBI, pfVersion.Decimals()),
+				MergedPFVersion: schemas.MergedPFVersion(pfVersion), // for 0 and almost zero pf
 			})
 			repo.zeroPFs[newTokenOracle.Oracle] = true // oracle and feed are same for non-chainlink price feed
 		} else {
@@ -163,16 +170,16 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 				newTokenOracle.Oracle,
 				newTokenOracle.FeedType,
 				newTokenOracle.BlockNumber,
-				newTokenOracle.Version,
+				pfVersion,
 			)
 		}
 	case ds.ChainlinkPriceFeed:
 		obj := chainlink_price_feed.NewChainlinkPriceFeed(
+			repo.client, repo.repo,
 			newTokenOracle.Token,
 			newTokenOracle.Oracle,
 			newTokenOracle.BlockNumber,
-			repo.client, repo.repo,
-			newTokenOracle.Version,
+			schemas.MergedPFVersion(pfVersion),
 			bounded,
 		)
 		newTokenOracle.Feed = obj.Address
@@ -181,6 +188,11 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 			return
 		}
 		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
+		//
+		if adapter := repo.adapters.GetAdapter(obj.Address); adapter != nil {
+			adapter.(*chainlink_price_feed.ChainlinkPriceFeed).AddToken(newTokenOracle.Token, pfVersion)
+			return
+		}
 		// SPECIAL CASE
 		// on goerli, there are two v2 priceoracles added
 		// on first priceoracle cvx token is 0x9683a59Ad8D7B5ac3eD01e4cff1D1A2a51A8f1c0
@@ -198,19 +210,25 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 			newTokenOracle.BlockNumber,
 			repo.client, repo.repo,
 			newTokenOracle.Version,
+			newTokenOracle.Reserve,
 		)
 		//
 		if repo.alreadyActiveFeedForToken(newTokenOracle) {
 			return
 		}
 		repo.disablePrevAdapterAndAddNewTokenOracle(newTokenOracle)
+
+		if adapter := repo.adapters.GetAdapter(obj.Address); adapter != nil {
+			adapter.(*composite_chainlink.CompositeChainlinkPF).AddToken(newTokenOracle.Token, pfVersion)
+			return
+		}
 		repo.adapters.AddSyncAdapter(obj)
 	default:
 		log.Fatal(newTokenOracle.FeedType, "not handled")
 	}
 }
 
-func (repo *TokenOracleRepo) GetTokenOracles() map[ds.PriceInUSDType]map[string]*schemas.TokenOracle {
+func (repo *TokenOracleRepo) GetTokenOracles() map[schemas.PFVersion]map[string]*schemas.TokenOracle {
 	return repo.tokensCurrentOracle
 }
 

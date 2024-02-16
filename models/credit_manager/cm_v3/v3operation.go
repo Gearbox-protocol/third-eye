@@ -66,7 +66,7 @@ func (mdl *CMv3) onCloseCreditAccountV3(txLog *types.Log, creditAccount, to stri
 	mdl.State.TotalClosedAccounts++ // update totalclosedStats
 	sessionId, owner := mdl.GetSessionIdAndBorrower(creditAccount)
 	cfAddr := txLog.Address.Hex()
-	blockNum := int64(txLog.BlockNumber)
+	closedAt := int64(txLog.BlockNumber)
 
 	//////////
 	// get token transfer when account was closed
@@ -82,7 +82,7 @@ func (mdl *CMv3) onCloseCreditAccountV3(txLog *types.Log, creditAccount, to stri
 		tokens = append(tokens, token)
 	}
 	tokens = append(tokens, mdl.GetUnderlyingToken())
-	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
+	prices := mdl.Repo.GetPricesInUSD(closedAt, tokens)
 	remainingFunds := (userTransfers.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
 	//////////
@@ -91,7 +91,7 @@ func (mdl *CMv3) onCloseCreditAccountV3(txLog *types.Log, creditAccount, to stri
 	(*args)["remainingFunds"] = (*core.BigInt)(remainingFunds)
 	accountOperation := &schemas.AccountOperation{ // add account operation
 		TxHash:      txLog.TxHash.Hex(),
-		BlockNumber: blockNum,
+		BlockNumber: closedAt,
 		LogId:       txLog.Index,
 		Borrower:    owner,
 		SessionId:   sessionId,
@@ -121,7 +121,7 @@ func (mdl *CMv3) onCloseCreditAccountV3(txLog *types.Log, creditAccount, to stri
 	})
 
 	mdl.RemoveCreditAccount(creditAccount) // remove session to manager object
-	mdl.CloseAccount(sessionId, blockNum, txLog.TxHash.Hex(), txLog.Index)
+	mdl.CloseAccount(sessionId, closedAt, txLog.TxHash.Hex(), txLog.Index)
 }
 
 func (mdl *CMv3) onLiquidateCreditAccountV3(txLog *types.Log, creditAccount, liquidator string, remainingUnderlyingSentTo string, remainingFunds *big.Int) {

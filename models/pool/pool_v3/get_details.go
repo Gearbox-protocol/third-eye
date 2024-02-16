@@ -75,6 +75,7 @@ func (mdl *Poolv3) setZapper() {
 	// 2. dUSDC-farmedUSDCv3
 	// 3. ETH-farmedETHv3
 	syms := core.GetSymToAddrByChainId(core.GetChainId(mdl.Client))
+	farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 	var ETHAddr common.Address
 	if poolToCheck.Underlying == syms.Tokens["WETH"] {
 		ETHAddr = syms.Tokens["ETH"]
@@ -82,7 +83,7 @@ func (mdl *Poolv3) setZapper() {
 
 	// out = farmedUSDCv3, dUSDCv3
 	for _, zapper := range poolToCheck.Zappers {
-		if zapper.TokenIn == poolToCheck.Underlying && zapper.TokenOut != poolToCheck.DieselToken { // tokenIn = USDC, tokenOut != dUSDCv3
+		if zapper.TokenIn == poolToCheck.Underlying && farmingPools[zapper.TokenOut] != "" { // tokenIn = USDC,  tokenOut is farming Pool(!= dUSDCv3)
 			mdl.setDetailsByKey("USDC-farmedUSDCv3", zapper.Zapper.Hex())
 			mdl.setDetailsByKey("farmedUSDCv3", zapper.TokenOut.Hex())
 		}

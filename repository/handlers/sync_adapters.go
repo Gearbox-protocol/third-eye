@@ -13,7 +13,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/account_manager"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/composite_chainlink"
 	"github.com/Gearbox-protocol/third-eye/models/configurators"
@@ -141,7 +141,7 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.CompositeChainlinkPF:
 		return composite_chainlink.NewCompositeChainlinkPFFromAdapter(adapter)
 	case ds.QueryPriceFeed:
-		return aggregated_block_feed.NewQueryPriceFeedFromAdapter(adapter)
+		return query_price_feed.NewQueryPriceFeedFromAdapter(adapter)
 	case ds.ContractRegister:
 		return contract_register.NewContractRegisterFromAdapter(adapter)
 	case ds.GearToken:

@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -203,8 +204,7 @@ func getInvertDependencyGraph(depGraph map[string][]string) map[string][]string 
 func (q *QueryPFDependencies) checkInDepGraph(token, oracle string, blockNum int64) {
 	depQueryPFSym := q.getTokenSym(token)
 	if q.depGraph[depQueryPFSym] == nil {
-		// log.Info(depQueryPFSym, blockNum)
-		log.Fatalf("Dep for query based price feed(%s) not found for token(%s) at %d", oracle, depQueryPFSym, blockNum)
+		log.Infof("Warn: Dep for query based price feed(%s) not found for token(%s) at %d", oracle, depQueryPFSym, blockNum)
 	}
 }
 
@@ -266,11 +266,11 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 		} else {
 			// if failed check and pfType of the queryPrice is YearnPF
 			adapterI := q.repo.GetAdapter(details.Feed)
-			if adapter, ok := adapterI.(*QueryPriceFeed); !ok {
+			if adapter, ok := adapterI.(*query_price_feed.QueryPriceFeed); !ok {
 				log.Fatal("Conversion of adapter to queryPriceFeed failed ", details.Feed)
 			} else if adapter.GetDetailsByKey("pfType") == ds.YearnPF {
 				// if underlying price feed address is null, then don't set price
-				if _newPrice, err := adapter.calculateYearnPFInternally(blockNum); err == nil {
+				if _newPrice, err := adapter.CalculateYearnPFInternally(blockNum); err == nil {
 					newPrice = _newPrice
 				}
 			}
@@ -280,6 +280,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 			newPrice.Token = details.Token
 			newPrice.Feed = details.Feed
 			newPrice.BlockNumber = blockNum
+			newPrice.MergedPFVersion = details.MergedPFVersion
 			newPrices = append(newPrices, newPrice)
 		}
 	}
