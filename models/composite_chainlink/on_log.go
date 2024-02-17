@@ -113,7 +113,7 @@ func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 		RoundId:         0,
 		PriceBI:         (*core.BigInt)(answerBI),
 		Price:           utils.GetFloat64Decimal(answerBI, 8),
-		MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum),
+		MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address),
 	}
 	mdl.Repo.AddPriceFeed(priceFeed)
 }
@@ -128,7 +128,7 @@ func (mdl *CompositeChainlinkPF) AddToken(token string, blockNum int64, pfVersio
 
 func (mdl CompositeChainlinkPF) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
 	mdl.mergedPFManager.DisableToken(token, blockNum, pfVersion)
-	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum)
+	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address)
 	if final == 0 {
 		mdl.SetBlockToDisableOn(blockNum)
 	}

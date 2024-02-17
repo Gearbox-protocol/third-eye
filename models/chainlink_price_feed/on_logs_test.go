@@ -36,12 +36,13 @@ func TestOnLogs(t *testing.T) {
 			Contract: &schemas.Contract{
 				Address:      validPf.Feed,
 				DiscoveredAt: 1,
+				FirstLogAt:   1,
 			},
 			V:       core.NewVersion(1),
 			Details: core.Json{"token": validPf.Token, "mergedPFVersion": validPf.MergedPFVersion},
 		},
 	}, mergedPFManager: &ds.MergedPFManager{}}
-	obj.mergedPFManager.Load(obj.Details, obj.DiscoveredAt)
+	obj.mergedPFManager.Load(obj.Details, obj.FirstLogAt)
 	txLogs := []types.Log{
 		{
 			BlockNumber: 1,

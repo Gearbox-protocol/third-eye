@@ -95,7 +95,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 	}
 	obj.DataProcessType = ds.ViaMultipleLogs
 	obj.mergedPFManager = &ds.MergedPFManager{}
-	obj.mergedPFManager.Load(obj.Details, obj.DiscoveredAt)
+	obj.mergedPFManager.Load(obj.Details, obj.FirstLogAt)
 	return obj
 }
 

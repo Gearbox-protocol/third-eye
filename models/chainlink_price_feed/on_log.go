@@ -58,7 +58,7 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				RoundId:         roundId,
 				PriceBI:         (*core.BigInt)(answerBI),
 				Price:           utils.GetFloat64Decimal(answerBI, pfVersion.Decimals()),
-				MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum),
+				MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address),
 			}
 			mdl.Repo.AddPriceFeed(priceFeed)
 			blockNums = append(blockNums, blockNum)
@@ -77,7 +77,7 @@ func (mdl *ChainlinkPriceFeed) AddToken(token string, blockNum int64, pfVersion 
 
 func (mdl ChainlinkPriceFeed) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
 	mdl.mergedPFManager.DisableToken(token, blockNum, pfVersion)
-	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum)
+	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address)
 	if final == 0 {
 		mdl.SetBlockToDisableOn(blockNum)
 	}

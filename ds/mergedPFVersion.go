@@ -61,16 +61,16 @@ func (mdl *MergedPFManager) Load(details core.Json, discoveredAt int64) {
 
 func (mdl MergedPFManager) Save(details *core.Json) {
 	(*details)["mergedPFVersion"] = mdl
-	log.Info((*details)["mergedPFVersion"])
+	// log.Info(utils.ToJson((*details)["mergedPFVersion"]))
 }
 
-func (mdl MergedPFManager) GetMergedPFVersion(blockNum int64) schemas.MergedPFVersion {
+func (mdl MergedPFManager) GetMergedPFVersion(blockNum int64, syncAdapterAddr string) schemas.MergedPFVersion {
 	for _, entry := range mdl {
 		if entry.BlockNumber <= blockNum {
 			return entry.MergedPFVersion
 		}
 	}
-	log.Fatal("Can't get mergedPFVersion", mdl)
+	log.Fatal("Can't get mergedPFVersion", mdl, blockNum, syncAdapterAddr)
 	return schemas.MergedPFVersion(0)
 }
 func (mdl *MergedPFManager) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {

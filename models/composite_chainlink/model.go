@@ -100,7 +100,7 @@ func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChain
 	compositeMdl.setPrices(adapter.LastSync)
 	//
 	compositeMdl.mergedPFManager = &ds.MergedPFManager{}
-	compositeMdl.mergedPFManager.Load(compositeMdl.Details, compositeMdl.DiscoveredAt)
+	compositeMdl.mergedPFManager.Load(compositeMdl.Details, compositeMdl.FirstLogAt)
 	return compositeMdl
 }
 
