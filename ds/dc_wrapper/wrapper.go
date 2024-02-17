@@ -168,9 +168,10 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 
 func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blockNum int64) (string, common.Address) {
 	if version.MoreThanEq(core.NewVersion(300)) {
-		for _, entry := range dcw.versionToAddress[version] {
-			if entry.block <= blockNum {
-				return DCV3, entry.address
+		arr := dcw.versionToAddress[version]
+		for i := len(arr) - 1; i >= 0; i-- {
+			if arr[i].block <= blockNum {
+				return DCV3, arr[i].address
 			}
 		}
 		return NODC, core.NULL_ADDR
