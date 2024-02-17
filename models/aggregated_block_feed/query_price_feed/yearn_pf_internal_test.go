@@ -1,4 +1,4 @@
-package aggregated_block_feed
+package query_price_feed
 
 import (
 	"sync"
@@ -33,7 +33,7 @@ func TestInternalyearnPrice(t *testing.T) {
 			version:       core.NewVersion(300),
 		}, // main price feed
 	}
-	pf, err := obj.calculateYearnPFInternally(18631514)
+	pf, err := obj.CalculateYearnPFInternally(18631514)
 	log.CheckFatal(err)
 	log.Info(utils.ToJson(pf))
 }

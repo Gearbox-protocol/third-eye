@@ -31,18 +31,13 @@ type DataCompressorWrapper struct {
 	BlockNumToName     map[int64]string
 	discoveredAtToAddr map[int64]common.Address
 	// for v3 version to address
-	versionToAddress map[core.VersionType]addressAndBlock
-	byVersion        bool
+	versionToAddress map[core.VersionType][]addressAndBlock
 	// for v1
 	creditManagerToFilter map[common.Address]common.Address
 	//
 	testing *DCTesting
 
 	client core.ClientI
-}
-
-func (dcw *DataCompressorWrapper) DCAreByVersion() {
-	dcw.byVersion = true
 }
 
 var DCV1 = "DCV1"
@@ -64,7 +59,7 @@ func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 			calls:  map[int64]*dc.DCCalls{},
 			client: client,
 		},
-		versionToAddress: map[core.VersionType]addressAndBlock{},
+		versionToAddress: map[core.VersionType][]addressAndBlock{},
 	}
 }
 
@@ -130,10 +125,13 @@ func (dcw *DataCompressorWrapper) AddDataCompressorByVersion(version core.Versio
 }
 
 func (dcw *DataCompressorWrapper) addDataCompressorByVersion(version core.VersionType, addr string, discoveredAt int64) {
-	dcw.versionToAddress[version] = addressAndBlock{
+	dcw.versionToAddress[version] = append(dcw.versionToAddress[version], addressAndBlock{
 		address: common.HexToAddress(addr),
 		block:   discoveredAt,
-	}
+	})
+	sort.Slice(dcw.versionToAddress[version], func(i, j int) bool {
+		return dcw.versionToAddress[version][i].block < dcw.versionToAddress[version][j].block
+	})
 }
 
 func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
@@ -170,21 +168,24 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 
 func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blockNum int64) (string, common.Address) {
 	if version.MoreThanEq(core.NewVersion(300)) {
-		if blockNum < dcw.versionToAddress[version].block {
-			return NODC, core.NULL_ADDR
+		for _, entry := range dcw.versionToAddress[version] {
+			if entry.block <= blockNum {
+				return DCV3, entry.address
+			}
 		}
-		return DCV3, dcw.versionToAddress[version].address
+		return NODC, core.NULL_ADDR
 	}
 	key, discoveredAt := dcw.getDataCompressorIndex(blockNum)
 	return key, dcw.getDCAddr(discoveredAt)
 }
 func (dcw *DataCompressorWrapper) GetLatestv3DC() (common.Address, bool) {
 	version := core.NewVersion(300)
-	dc, ok := dcw.versionToAddress[version]
-	if !ok {
+	if len(dcw.versionToAddress[version]) == 0 {
 		return core.NULL_ADDR, false
 	}
-	return dc.address, true
+	//
+	dcs := dcw.versionToAddress[version]
+	return dcs[len(dcs)-1].address, true
 }
 
 func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType, blockNum int64, creditManager common.Address, borrower common.Address, account common.Address) (

@@ -1,4 +1,4 @@
-package aggregated_block_feed
+package query_price_feed
 
 import (
 	"fmt"
@@ -21,6 +21,7 @@ type yearnPFInternal struct {
 	version              core.VersionType
 }
 
+// only used in v1 and v2 for calculating price if latestRoudnData execution is Reverted
 func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, version core.VersionType) (*schemas.PriceFeed, error) {
 	if mdl.underlyingPFContract == nil {
 		if err := mdl.setContracts(blockNum, client); err != nil {
@@ -47,11 +48,12 @@ func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, 
 		new(big.Int).Mul(pricePerShare, roundData.Answer),
 		mdl.decimalDivider,
 	)
+	pfVersion := schemas.VersionToPFVersion(version, false)
 	return &schemas.PriceFeed{
-		RoundId:      roundData.RoundId.Int64(),
-		PriceBI:      (*core.BigInt)(newAnswer),
-		Price:        utils.GetFloat64Decimal(newAnswer, version.Decimals()),
-		IsPriceInUSD: version.IsPriceInUSD(),
+		RoundId:         roundData.RoundId.Int64(),
+		PriceBI:         (*core.BigInt)(newAnswer),
+		Price:           utils.GetFloat64Decimal(newAnswer, pfVersion.Decimals()),
+		MergedPFVersion: schemas.MergedPFVersion(pfVersion), // only used for v1,v2 so can convert from pfVersion to MergedPFVersion
 	}, nil
 }
 

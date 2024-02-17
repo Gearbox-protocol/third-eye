@@ -13,6 +13,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	// "fmt"
@@ -98,6 +99,11 @@ func (mdl *AQFWrapper) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGrou
 func (mdl *AQFWrapper) updateQueryPrices(pfs []*schemas.PriceFeed) {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
+	for _, pf := range pfs {
+		if pf.MergedPFVersion == 0 {
+			log.Fatalf("MergedPFVersion is 0 for %s", pf)
+		}
+	}
 	mdl.queryFeedPrices = append(mdl.queryFeedPrices, pfs...)
 }
 
@@ -115,7 +121,7 @@ func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
 	return queryFeedPrices
 }
 
-func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*QueryPriceFeed) {
+func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*query_price_feed.QueryPriceFeed) {
 	priceFeedABI := core.GetAbi("PriceFeed")
 	//
 	for _, adapter := range mdl.QueryFeeds {
@@ -136,7 +142,7 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 
 var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
 
-func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
+func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_feed.QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 
 	if entry.Success {
@@ -153,7 +159,7 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 		switch adapter.GetDetailsByKey("pfType") {
 		case ds.YearnPF:
 			// fail on err, since we only sync for block_num which is more than discovered_at, we can assume that underlying price feed will be set for given block_num
-			_priceData, err := adapter.calculateYearnPFInternally(blockNum)
+			_priceData, err := adapter.CalculateYearnPFInternally(blockNum)
 			if err != nil {
 				log.Fatal(fmt.Errorf("At %d can't calculate yearnfeed(%s)'s price internally: %s",
 					blockNum,
@@ -199,11 +205,12 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *QueryPriceFeed,
 		}
 	}
 	priceFeeds := []*schemas.PriceFeed{}
-	for _, token := range adapter.TokensValidAtBlock(blockNum) {
+	for _, entry := range adapter.TokensValidAtBlock(blockNum) {
 		priceDataCopy := priceData.Clone()
 		//
 		priceDataCopy.BlockNumber = blockNum
-		priceDataCopy.Token = token
+		priceDataCopy.Token = entry.Token
+		priceDataCopy.MergedPFVersion = entry.MergedPFVersion
 		priceDataCopy.Feed = adapter.GetAddress()
 		//
 		priceFeeds = append(priceFeeds, priceDataCopy)
@@ -228,9 +235,8 @@ func parseRoundData(returnData []byte, isPriceInUSD bool, feed string) *schemas.
 		decimals = 8 // for usd
 	}
 	return &schemas.PriceFeed{
-		RoundId:      roundData.RoundId.Int64(),
-		PriceBI:      (*core.BigInt)(roundData.Answer),
-		Price:        utils.GetFloat64Decimal(roundData.Answer, decimals),
-		IsPriceInUSD: isPriceInUSD, // for 2 and above the prices are in usd
+		RoundId: roundData.RoundId.Int64(),
+		PriceBI: (*core.BigInt)(roundData.Answer),
+		Price:   utils.GetFloat64Decimal(roundData.Answer, decimals),
 	}
 }

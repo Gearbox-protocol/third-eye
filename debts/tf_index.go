@@ -36,6 +36,7 @@ func (calc FarmingCalculator) addFarmingVal(debt *schemas.Debt, session *schemas
 	if calc.testing || session.Status != schemas.Active {
 		return
 	}
+	pfVersion := schemas.VersionToPFVersion(session.Version, false)
 	var farmingVal float64 = 0
 	for token, balance := range *css.Balances {
 		if balance.IsEnabled && balance.HasBalanceMoreThanOne() && !calc.tradingTokensMap[token] {
@@ -43,11 +44,11 @@ func (calc FarmingCalculator) addFarmingVal(debt *schemas.Debt, session *schemas
 			if session.Version.Eq(1) {
 				priceDecimals = 18
 			}
-			farmingVal += balance.F * utils.GetFloat64Decimal(priceStore.GetPrices(token, session.Version), priceDecimals)
+			farmingVal += balance.F * utils.GetFloat64Decimal(priceStore.GetPrices(token, pfVersion), priceDecimals)
 		}
 	}
 	if session.Version.Eq(1) {
-		farmingVal = farmingVal / utils.GetFloat64Decimal(priceStore.GetPrices(calc.usdc, session.Version), 18) // convert to usd
+		farmingVal = farmingVal / utils.GetFloat64Decimal(priceStore.GetPrices(calc.usdc, pfVersion), 18) // convert to usd
 		// by dividing by usdc price in eth
 	}
 	// farming val is zero for closed accounts

@@ -44,12 +44,12 @@ func (mdl *LMRewardsv3) getFarmsv3() {
 	}
 	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
 	if found && len(mdl.farms) == 0 {
-		addrToSym := core.GetAddrToSymbolByChainId(core.GetChainId(mdl.Client))
+		farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 		poolAndFarms := []*Farmv3{}
 		for _, pool := range pools {
 			for _, zapper := range pool.Zappers {
 				// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
-				if _, ok := addrToSym[zapper.TokenOut]; !ok && zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
+				if _, ok := farmingPools[zapper.TokenOut]; ok && zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
 					poolAndFarms = append(poolAndFarms, &Farmv3{
 						Farm:        zapper.TokenOut.Hex(),
 						Pool:        pool.Addr.Hex(),

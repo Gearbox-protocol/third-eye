@@ -61,6 +61,7 @@
         oracle: '#Oracle_1',
         token: '#Token_1',
         dieselToken: '#DieselToken_1',
+        mergedPFVersion: 1,
       },
       lastSync: 2,
       version: 1,
@@ -80,6 +81,7 @@
       details: {
         oracle: '#Oracle_2',
         token: '#Token_2',
+        mergedPFVersion: 1,
       },
       lastSync: 2,
       version: 1,

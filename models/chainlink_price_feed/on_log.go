@@ -31,6 +31,10 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			if txLogInd+1 < len(txLogs) && int64(txLogs[txLogInd+1].BlockNumber) == blockNum {
 				continue
 			}
+			if mdl.Token == "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" &&
+				mdl.Address == "0x37bC7498f4FF12C19678ee8fE19d713b87F6a9e6" && blockNum > 17217055 { // as there is already another chainlink activated 0xE62B71cf983019BFf55bC83B48601ce8419650CC
+				continue
+			}
 			//
 			roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
 			if err != nil {
@@ -46,14 +50,15 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 				answerBI = upperLimit
 			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
+			pfVersion := schemas.VersionToPFVersion(mdl.GetVersion(), schemas.GetReservefromDetails(mdl.Details))
 			priceFeed = &schemas.PriceFeed{
-				BlockNumber:  blockNum,
-				Token:        mdl.Token,
-				Feed:         mdl.Address,
-				RoundId:      roundId,
-				PriceBI:      (*core.BigInt)(answerBI),
-				Price:        utils.GetFloat64Decimal(answerBI, mdl.GetVersion().Decimals()),
-				IsPriceInUSD: mdl.GetVersion().IsPriceInUSD(),
+				BlockNumber:     blockNum,
+				Token:           mdl.Token,
+				Feed:            mdl.Address,
+				RoundId:         roundId,
+				PriceBI:         (*core.BigInt)(answerBI),
+				Price:           utils.GetFloat64Decimal(answerBI, pfVersion.Decimals()),
+				MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum),
 			}
 			mdl.Repo.AddPriceFeed(priceFeed)
 			blockNums = append(blockNums, blockNum)
@@ -64,4 +69,16 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 		mdl.Repo.ChainlinkPriceUpdatedAt(mdl.Token, blockNums)
 	}
 
+}
+
+func (mdl *ChainlinkPriceFeed) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
+	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
+}
+
+func (mdl ChainlinkPriceFeed) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
+	mdl.mergedPFManager.DisableToken(token, blockNum, pfVersion)
+	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum)
+	if final == 0 {
+		mdl.SetBlockToDisableOn(blockNum)
+	}
 }

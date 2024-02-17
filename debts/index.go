@@ -14,13 +14,12 @@ import (
 )
 
 type DebtEngine struct {
-	repo             ds.RepositoryI
-	db               *gorm.DB
-	client           core.ClientI
-	config           *config.Config
-	lastCSS          map[string]*schemas.CreditSessionSnapshot
-	tokenLastPrice   map[string]*schemas.PriceFeed
-	tokenLastPriceV2 map[string]*schemas.PriceFeed
+	repo           ds.RepositoryI
+	db             *gorm.DB
+	client         core.ClientI
+	config         *config.Config
+	lastCSS        map[string]*schemas.CreditSessionSnapshot
+	tokenLastPrice map[schemas.PFVersion]map[string]*schemas.PriceFeed
 	//// credit_manager -> token -> liquidity threshold
 	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*schemas.PoolInterestData
@@ -48,8 +47,7 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		client:                 client,
 		config:                 config,
 		lastCSS:                make(map[string]*schemas.CreditSessionSnapshot),
-		tokenLastPrice:         make(map[string]*schemas.PriceFeed),
-		tokenLastPriceV2:       make(map[string]*schemas.PriceFeed),
+		tokenLastPrice:         make(map[schemas.PFVersion]map[string]*schemas.PriceFeed),
 		allowedTokensThreshold: make(map[string]map[string]*core.BigInt),
 		poolLastInterestData:   make(map[string]*schemas.PoolInterestData),
 		lastDebts:              make(map[string]*schemas.Debt),

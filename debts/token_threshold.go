@@ -61,9 +61,7 @@ func (eng *DebtEngine) AddTokenLTRamp(atoken *schemas_v3.TokenLTRamp) {
 func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 	defer utils.Elapsed("Debt(loadTokenLastPrice)")()
 	data := []*schemas.PriceFeed{}
-	query := `SELECT pf.* FROM price_feeds pf
-	JOIN (SELECT max(block_num) b, token, price_in_usd FROM price_feeds WHERE block_num <= ? GROUP BY token, price_in_usd) AS max_pf
-	ON max_pf.b = pf.block_num and pf.token=max_pf.token and max_pf.price_in_usd=pf.price_in_usd`
+	query := `SELECT distinct on (token, merged_pf_version) * FROM price_feeds WHERE block_num <= ? ORDER BY token, merged_pf_version, block_num DESC;`
 	err := eng.db.Raw(query, lastDebtSync, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
@@ -74,9 +72,10 @@ func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 }
 
 func (eng *DebtEngine) AddTokenLastPrice(pf *schemas.PriceFeed) {
-	if !pf.IsPriceInUSD {
-		eng.tokenLastPrice[pf.Token] = pf
-	} else {
-		eng.tokenLastPriceV2[pf.Token] = pf
+	for _, pfVersion := range pf.MergedPFVersion.MergedPFVersionToList() {
+		if eng.tokenLastPrice[pfVersion] == nil {
+			eng.tokenLastPrice[pfVersion] = make(map[string]*schemas.PriceFeed)
+		}
+		eng.tokenLastPrice[pfVersion][pf.Token] = pf
 	}
 }

@@ -22,11 +22,12 @@ type CompositeChainlinkPF struct {
 	TokenETHPrice    *big.Int
 	ETHUSDPrice      *big.Int
 	decimalsOfBasePF int8
+	mergedPFManager  *ds.MergedPFManager
 }
 
 // compositeChainlink price feed has token base  oracle and base usd oracle for calculating the price of token in usd.
 // address is set as identifier(random), as same oracle can be added for different tokens.
-func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *CompositeChainlinkPF {
+func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, reserve bool) *CompositeChainlinkPF {
 	oracleAddr := common.HexToAddress(oracle)
 	tokenETHPF := getAddrFromRPC(client, "targetETH", oracleAddr, discoveredAt)
 	// get decimals
@@ -52,15 +53,17 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 				Client:       client,
 			},
 			Details: map[string]interface{}{
-				"oracle":   oracle,
-				"token":    token,
-				"decimals": decimalsToBasePF,
+				"oracle":          oracle,
+				"token":           token,
+				"decimals":        decimalsToBasePF,
+				"mergedPFVersion": schemas.MergedPFVersion(schemas.VersionToPFVersion(version, reserve)),
 				"secAddrs": map[string]interface{}{
 					"target":      tokenETHPF.Hex(),
 					"base":        ethUSDPF.Hex(),
 					"targetPhase": mainPhaseAgg.Hex(),
 					"basePhase":   basePhaseAgg.Hex(),
 				}},
+
 			// since last_sync is set to discoveredAt not discoveredAt-1, setPrice will get tokenBase and baseUSD price at discoveredAt
 			// so the db entry that is added at addPriceToDB will have the correct price while creating new compositeChainlinkPF
 			LastSync: discoveredAt,
@@ -95,6 +98,9 @@ func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChain
 	compositeMdl.MainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("target"))
 	compositeMdl.DataProcessType = ds.ViaMultipleLogs
 	compositeMdl.setPrices(adapter.LastSync)
+	//
+	compositeMdl.mergedPFManager = &ds.MergedPFManager{}
+	compositeMdl.mergedPFManager.Load(compositeMdl.Details, compositeMdl.DiscoveredAt)
 	return compositeMdl
 }
 
@@ -152,6 +158,7 @@ func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 
 
 func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
+	mdl.mergedPFManager.Save(&mdl.Details)
 }
 
 // there are two type of composite oracle

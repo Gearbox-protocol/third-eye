@@ -47,6 +47,7 @@ const (
 	YearnPF              = "YearnPF"
 	SingleAssetPF        = "SingleAssetPF"
 	CurvePF              = "CurvePF"
+	RedStonePF           = "RedStonePF"
 	ZeroPF               = "ZeroPF"
 	CompositeChainlinkPF = "CompositeChainlinkPF"
 	AlmostZeroPF         = "AlmostZeroPF"

@@ -13,14 +13,15 @@ import (
 
 type ChainlinkPriceFeed struct {
 	*ds.SyncAdapter
-	Token   string
-	MainAgg *ChainlinkMainAgg
+	Token           string
+	MainAgg         *ChainlinkMainAgg
+	mergedPFManager *ds.MergedPFManager
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on 'vm execution error' or 'execution reverted'.
 // if oracle and adress are same we try to get the pricefeed.
-func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, bounded bool) *ChainlinkPriceFeed {
+func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, token, oracle string, discoveredAt int64, mergedPFVersion schemas.MergedPFVersion, bounded bool) *ChainlinkPriceFeed {
 	var upperLimit string
 	if bounded {
 		returnData, err := core.CallFuncWithExtraBytes(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound
@@ -36,9 +37,9 @@ func NewChainlinkPriceFeed(token, oracle string, discoveredAt int64, client core
 				ContractName: ds.ChainlinkPriceFeed,
 				Client:       client,
 			},
-			Details:  map[string]interface{}{"oracle": oracle, "token": token},
+			Details:  map[string]interface{}{"oracle": oracle, "token": token, "mergedPFVersion": mergedPFVersion},
 			LastSync: discoveredAt - 1,
-			V:        version,
+			V:        mergedPFVersion.MergedPFVersionToList()[0].ToVersion(),
 		},
 		Repo: repo,
 	}
@@ -93,6 +94,8 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		}
 	}
 	obj.DataProcessType = ds.ViaMultipleLogs
+	obj.mergedPFManager = &ds.MergedPFManager{}
+	obj.mergedPFManager.Load(obj.Details, obj.DiscoveredAt)
 	return obj
 }
 
@@ -111,10 +114,12 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 			Feed:        mdl.MainAgg.Addr.Hex(), // feed is same as oracle
 			BlockNumber: discoveredAt,
 			Version:     mdl.GetVersion(),
+			Reserve:     schemas.GetReservefromDetails(mdl.Details),
 			FeedType:    ds.ChainlinkPriceFeed,
 		}, mdl.upperLimit().Cmp(new(big.Int)) != 0) // if upperLImit is not zero, then the price is bounded by upperLimit
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
+	mdl.mergedPFManager.Save(&mdl.Details)
 }
 
 func (mdl *ChainlinkPriceFeed) upperLimit() *big.Int {

@@ -361,7 +361,7 @@
       {
         blockNum: 5,
         feed: '#ChainlinkPriceFeed_3',
-        isPriceInUSD: true,
+        mergedPFVersion: 2,
         price: 2500,
         priceBI: '250000000000',
         roundId: 1,
@@ -619,7 +619,7 @@
       {
         blockNum: 7,
         feed: '#ChainlinkPriceFeed_2',
-        isPriceInUSD: true,
+        mergedPFVersion: 2,
         price: 20000,
         priceBI: '2000000000000',
         roundId: 1,

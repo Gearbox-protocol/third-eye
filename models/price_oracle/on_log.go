@@ -17,13 +17,22 @@ import (
 	"gorm.io/gorm/utils"
 )
 
+// QueryPriceFeed stores in details reserve status via PFVersion in details.Tokens.pfversion
+// chainlinkPriceFeed and compositeChainlinkPriceFeed stores pfversion as reserve status in details
+
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
-	case core.Topic("NewPriceFeed(address,address)"), core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"):
+	case core.Topic("NewPriceFeed(address,address)"),
+		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),
+		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
+		//
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
-
+		isReverse := core.Topic("SetReservePriceFeed(address,address,uint32,bool)") == txLog.Topics[0]
+		// if isReverse {
+		// 	log.Fatal("token", token, "oracle", oracle)
+		// }
 		//
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
@@ -34,17 +43,17 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			Args: &core.Json{
 				"priceFeed": oracle,
 				"token":     token,
+				"reserve":   isReverse,
 			},
 		})
 
-		version := mdl.GetVersion()
 		priceFeedType, bounded, err := mdl.checkPriceFeedContract(blockNum, oracle, token)
 		if err != nil {
 			log.Fatalf("Oracle %s, err: %s, blockNum %d", oracle, err, blockNum)
 		}
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account
-		case ds.YearnPF, ds.SingleAssetPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF, ds.CompositeChainlinkPF:
+		case ds.YearnPF, ds.SingleAssetPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF, ds.CompositeChainlinkPF, ds.RedStonePF:
 			// four types of oracles
 			// - Zero or almost zero price feed: constant price value
 			// - Chainlink price feed: market based price value
@@ -56,7 +65,8 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 				Oracle:      oracle,
 				Feed:        oracle, // feed is same as oracle
 				BlockNumber: blockNum,
-				Version:     version,
+				Version:     mdl.GetVersion(),
+				Reserve:     isReverse,
 				FeedType:    priceFeedType,
 			}, bounded)
 		default:
@@ -124,12 +134,14 @@ func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		core.V3_COMPOUND_V2_ORACLE,   // compounder
 		core.V3_ERC4626_VAULT_ORACLE: // erc4626
 		return ds.SingleAssetPF, false, nil
+	case core.V3_REDSTONE_ORACLE:
+		return ds.RedStonePF, false, nil
 	default:
 		yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 		log.CheckFatal(err)
 		description, err := yearnContract.Description(opts)
 		log.CheckFatal(err)
-		return ds.UnknownPF, false, fmt.Errorf("Unknown v3 pfType %v, oracle: %s token: %s, description: %s", pfType, oracle, token, description)
+		return ds.UnknownPF, false, fmt.Errorf("unknown v3 pfType %v, oracle: %s token: %s, description: %s", pfType, oracle, token, description)
 	}
 }
 
