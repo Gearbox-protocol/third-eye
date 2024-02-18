@@ -65,9 +65,9 @@ func (mdl MergedPFManager) Save(details *core.Json) {
 }
 
 func (mdl MergedPFManager) GetMergedPFVersion(blockNum int64, syncAdapterAddr string) schemas.MergedPFVersion {
-	for _, entry := range mdl {
-		if entry.BlockNumber <= blockNum {
-			return entry.MergedPFVersion
+	for ind := len(mdl) - 1; ind >= 0; ind-- {
+		if mdl[ind].BlockNumber <= blockNum {
+			return mdl[ind].MergedPFVersion
 		}
 	}
 	log.Fatal("Can't get mergedPFVersion", mdl, blockNum, syncAdapterAddr)

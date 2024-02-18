@@ -6,7 +6,6 @@ import (
 )
 
 func (repo *Repository) Flush(syncTill int64) error {
-	// log.Fatal("")
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	// preferred order (adapter | token) => pools => cm => credit session => blocks => allowedTokens

@@ -355,10 +355,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		},
 		eng.lastParameters[session.CreditManager].FeeInterest,
 	)
-	// if session.ID == "0x57ed1ED84461bb2079f8575d06A6feC07F0a13B1_16159748_285" {
-	// 	log.Fatal(blockNum, calHF, calDebt, calTotalValue, calThresholdValue, _calBorowedWithInterst)
-	// }
-	//
+
 	// the value of credit account is in terms of underlying asset
 	// set debt fields
 	debt := &schemas.Debt{
