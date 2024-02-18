@@ -61,7 +61,7 @@ func (eng *DebtEngine) AddTokenLTRamp(atoken *schemas_v3.TokenLTRamp) {
 func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
 	defer utils.Elapsed("Debt(loadTokenLastPrice)")()
 	data := []*schemas.PriceFeed{}
-	query := `SELECT distinct on (token, merged_pf_version) * FROM price_feeds WHERE block_num <= ? ORDER BY token, merged_pf_version, block_num DESC;`
+	query := `select * from (SELECT distinct on (token, merged_pf_version) * FROM price_feeds WHERE block_num <= ? ORDER BY token, merged_pf_version, block_num DESC) t order by block_num;`
 	err := eng.db.Raw(query, lastDebtSync, lastDebtSync).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
