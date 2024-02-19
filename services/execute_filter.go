@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/hex"
-	"math/big"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/aavev2LendingPool"
@@ -89,58 +88,6 @@ func dappCall(call *trace_service.Call, dappAddr common.Address) *ds.KnownCall {
 		}
 	}
 	return nil
-}
-
-// tenderly has logs for events(which we mainly use for Transfer on token) and balance_diff for native eth exchange
-// handling native eth exchange is not needed for execution transfer or swaps
-func (ef *ExecuteFilter) getExecuteTransfers(txLogs []trace_service.Log, cmEvents map[common.Hash]bool) []core.Transfers {
-	balances := make(core.Transfers)
-	var execEventBalances []core.Transfers
-	parsingTransfer := false
-	paramsIndex := -1
-	for _, raw := range txLogs {
-		eventLog := raw.Raw
-		eventSig := eventLog.Topics[0]
-		eventLogAddress := eventLog.Address.Hex()
-		// if any other creditmanager event is emitted add to the execute
-		if cmEvents[eventSig] && parsingTransfer {
-			execEventBalances = append(execEventBalances, balances)
-			balances = make(core.Transfers)
-			parsingTransfer = false
-		}
-		// ExecuteOrder
-		if utils.Contains([]common.Hash{
-			core.Topic("ExecuteOrder(address,address)"),
-			core.Topic("Execute(address,address)"),
-		}, eventSig) {
-			paramsIndex += 1
-			balances = make(core.Transfers)
-			parsingTransfer = true
-		}
-		// Transfer
-		if eventSig == core.Topic("Transfer(address,address,uint256)") &&
-			len(eventLog.Topics) == 3 && parsingTransfer {
-			src := common.BytesToAddress(eventLog.Topics[1][:])
-			dest := common.BytesToAddress(eventLog.Topics[2][:])
-			amt, b := new(big.Int).SetString(eventLog.Data[2:], 16)
-			if !b {
-				log.Fatal("failed at serializing transfer data in int")
-			}
-			creditAccount := ef.paramsList[paramsIndex].CreditAccount
-			if balances[eventLogAddress] == nil {
-				balances[eventLogAddress] = big.NewInt(0)
-			}
-			if src == creditAccount {
-				balances[eventLogAddress] = new(big.Int).Sub(balances[eventLogAddress], amt)
-			} else if dest == creditAccount {
-				balances[eventLogAddress] = new(big.Int).Add(balances[eventLogAddress], amt)
-			}
-		}
-	}
-	if parsingTransfer {
-		execEventBalances = append(execEventBalances, balances)
-	}
-	return execEventBalances
 }
 
 var abiJSONs = []string{

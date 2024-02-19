@@ -45,7 +45,7 @@ func NewMockExecuteParser() *MockExecuteParser {
 	}
 }
 
-func (m *MockExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
+func (m *MockExecuteParser) GetExecuteCalls(_ core.VersionType, txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	return m.executeCalls[txHash]
 }
 func (m *MockExecuteParser) GetMainCalls(txHash, creditFacade string) (mainCalls []*ds.FacadeCallNameWithMulticall) {

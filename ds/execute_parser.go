@@ -255,7 +255,7 @@ type BorrowerAndTo struct {
 	To       common.Address
 }
 type ExecuteParserI interface {
-	GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
+	GetExecuteCalls(version core.VersionType, txHash, creditManagerAddr string, paramsList []ExecuteParams) []*KnownCall
 	// ignores revertIfLessThan
 	GetMainCalls(txHash, creditFacade string) []*FacadeCallNameWithMulticall
 	GetTransfersAtClosev2(txHash string, account, underlyingToken string, users BorrowerAndTo) core.Transfers

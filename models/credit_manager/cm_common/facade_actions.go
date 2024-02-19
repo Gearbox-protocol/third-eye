@@ -186,7 +186,7 @@ func (mdl *CommonCMAdapter) executeOperations(txHash string, facadeActions []*mp
 
 func (mdl CommonCMAdapter) GetExecuteOrderAccountOperationFromParams(txHash string, executeParams []ds.ExecuteParams) (multiCalls []*schemas.AccountOperation) {
 	// credit manager has the execute event
-	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(txHash,
+	calls := mdl.Repo.GetExecuteParser().GetExecuteCalls(mdl.GetVersion(), txHash,
 		mdl.Address,
 		executeParams,
 	)

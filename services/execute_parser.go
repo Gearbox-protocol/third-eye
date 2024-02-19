@@ -56,7 +56,7 @@ func NewExecuteParser(cfg *config.Config, client core.ClientI) ds.ExecuteParserI
 	}
 }
 
-func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
+func (ep *ExecuteParser) GetExecuteCalls(version core.VersionType, txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	if len(paramsList) == 0 {
 		return nil
 	}
@@ -66,7 +66,12 @@ func (ep *ExecuteParser) GetExecuteCalls(txHash, creditManagerAddr string, param
 	}
 	calls := filter.getExecuteCalls(trace.CallTrace)
 
-	executeTransfers := filter.getExecuteTransfers(trace.Logs, ep.IgnoreCMEventIds)
+	var executeTransfers []core.Transfers
+	if version.MoreThanEq(core.NewVersion(300)) {
+		executeTransfers = filter.getExecuteTransfersv3(trace.Logs, ep.IgnoreCMEventIds)
+	} else {
+		executeTransfers = filter.getExecuteTransfersv2(trace.Logs, ep.IgnoreCMEventIds)
+	}
 	// log.Info(utils.ToJson(trace.Logs))
 	// log.Info(utils.ToJson(executeTransfers))
 
