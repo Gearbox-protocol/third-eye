@@ -46,6 +46,10 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 	return mdl
 }
 
+func (pf *QueryPriceFeed) GetPFType() string {
+	return pf.GetDetailsByKey("pfType")
+}
+
 func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) *QueryPriceFeed {
 	obj := &QueryPriceFeed{
 		SyncAdapter: adapter,

@@ -2,6 +2,7 @@ package ds
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -134,4 +135,5 @@ type RepositoryI interface {
 	AddTokenLTRamp(*schemas_v3.TokenLTRamp)
 	AddQuotaDetails(*schemas_v3.QuotaDetails)
 	GetAccountQuotaMgr() *AccountQuotaMgr
+	IsBlockRecent(block int64, dur time.Duration) bool
 }

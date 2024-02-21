@@ -400,7 +400,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			notMatched = true
 		}
 		// even if data compressor matching is disabled check the calc values  with session data at block where last credit snapshot was taken
-	} else if sessionSnapshot.BlockNum == blockNum {
+	} else if sessionSnapshot.BlockNum == blockNum && sessionSnapshot.HealthFactor.Convert().Cmp(new(big.Int)) != 0 { // it is 0 when the issuccessful is false for redstone credit accounts
 		if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.0001)) ||
 			// hf value calculated are on different side of 1
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor) ||

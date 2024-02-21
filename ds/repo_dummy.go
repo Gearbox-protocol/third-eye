@@ -2,6 +2,7 @@ package ds
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -236,4 +237,5 @@ func (DummyRepo) GetTokenFromSdk(string) string {
 func (DummyRepo) AddTokenLTRamp(*schemas_v3.TokenLTRamp)   {}
 func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails) {}
 
-func (DummyRepo) GetAccountQuotaMgr() *AccountQuotaMgr { return nil }
+func (DummyRepo) GetAccountQuotaMgr() *AccountQuotaMgr              { return nil }
+func (DummyRepo) IsBlockRecent(block int64, dur time.Duration) bool { return false }

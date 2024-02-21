@@ -46,8 +46,8 @@ func main() {
 		for ind, execTransfer := range x {
 			_ = execTransfer
 			log.Info(ops[ind].ID)
-			// err = db.Exec(`update account_operations set main_action = ? where id=?`, execTransfer.Transfers, ops[ind].ID).Error
-			// log.CheckFatal(err)
+			err = db.Exec(`update account_operations set transfers = ? where id=?`, execTransfer.Transfers.String(), ops[ind].ID).Error
+			log.CheckFatal(err)
 		}
 	}
 	//

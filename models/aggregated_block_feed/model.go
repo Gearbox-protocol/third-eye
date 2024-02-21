@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
@@ -29,6 +30,7 @@ type AQFWrapper struct {
 	queryFeedPrices []*schemas.PriceFeed
 	// intervel from config
 	Interval int64
+	redStone pkg.RedStoneMgrI
 }
 
 // not present in db , manaully added in syncadapter repository handler
@@ -55,6 +57,7 @@ func NewAQFWrapper(client core.ClientI, repo ds.RepositoryI, interval int64) *AQ
 		mu:          &sync.Mutex{},
 		QueryFeeds:  map[string]*query_price_feed.QueryPriceFeed{},
 		queryPFdeps: NewQueryPFDepenencies(repo, client),
+		redStone:    pkg.NewRedStoneMgr(client),
 	}
 	wrapper.queryPFdeps.aqf = wrapper
 	return wrapper

@@ -151,17 +151,21 @@ func (repo *BlocksRepo) Load() {
 	repo.prevStore.loadPrevPriceFeed(repo.db)
 }
 
+func (repo *BlocksRepo) IsBlockRecent(block int64, dur time.Duration) bool {
+	ts := repo._setAndGetBlock(block).Timestamp
+	return time.Since(time.Unix(int64(ts), 0)) < dur
+}
 func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...interface{}) {
-	ts := repo._setAndGetBlock(header.BlockNumber).Timestamp
-	if time.Since(time.Unix(int64(ts), 0)) < time.Hour {
-		if header.EventCode == "AMQP" {
-			log.AMQPMsgf(msg, args...)
-		} else {
-			log.SendRiskAlert(log.RiskAlert{
-				Msg:        fmt.Sprintf(msg, args...),
-				RiskHeader: header,
-			})
-		}
+	if !repo.IsBlockRecent(header.BlockNumber, time.Hour) {
+		return
+	}
+	if header.EventCode == "AMQP" {
+		log.AMQPMsgf(msg, args...)
+	} else {
+		log.SendRiskAlert(log.RiskAlert{
+			Msg:        fmt.Sprintf(msg, args...),
+			RiskHeader: header,
+		})
 	}
 }
 

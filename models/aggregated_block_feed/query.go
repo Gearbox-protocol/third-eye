@@ -42,6 +42,7 @@ func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
 		ch <- 1
 		wg.Add(1)
 		go mdl.queryAsync(blockNum, ch, wg)
+		mdl.queryRedStone(blockNum)
 		if rounds%100 == 0 {
 			timeLeft := (time.Since(loopStartTime).Seconds() * float64(toSinceTill-blockNum)) /
 				float64(blockNum-mdl.GetLastSync())
@@ -53,6 +54,37 @@ func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
 	}
 	wg.Wait()
 	return blockNum - mdl.Interval
+}
+func (mdl *AQFWrapper) queryRedStone(blockNum int64) {
+	// for redstone
+	for _, adapter := range mdl.QueryFeeds {
+		// fetch from redstone
+		validTokens := adapter.TokensValidAtBlock(blockNum)
+		if adapter.GetPFType() == ds.RedStonePF &&
+			len(validTokens) > 0 && mdl.redStone.IsRedStoneToken(validTokens[0].Token) && // if adapter has redstone token, then fetch from redstone
+			mdl.Repo.IsBlockRecent(blockNum, time.Minute*10) {
+			mdl.redStone.Update(blockNum, 20)
+			priceBI := mdl.redStone.GetPrice(validTokens[0].Token)
+			//
+			isPriceInUSD := adapter.GetVersion().IsPriceInUSD() // should be always true
+
+			priceData := parsePriceForRedStone(priceBI, isPriceInUSD, adapter.GetAddress())
+			log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceData.Price)
+			//
+			priceFeeds := []*schemas.PriceFeed{}
+			for _, entry := range adapter.TokensValidAtBlock(blockNum) {
+				priceDataCopy := priceData.Clone()
+				//
+				priceDataCopy.BlockNumber = blockNum
+				priceDataCopy.Token = entry.Token
+				priceDataCopy.MergedPFVersion = entry.MergedPFVersion
+				priceDataCopy.Feed = adapter.GetAddress()
+				//
+				priceFeeds = append(priceFeeds, priceDataCopy)
+			}
+			mdl.updateQueryPrices(priceFeeds)
+		}
+	}
 }
 
 // update all queryAdapter only if for the lastBlockNumber as we have fetched prices for that block.
@@ -145,7 +177,9 @@ var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
 func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_feed.QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 
-	if entry.Success {
+	if adapter.GetPFType() == ds.RedStonePF && mdl.Repo.IsBlockRecent(blockNum, time.Minute*10) { // 20 blocks
+		return nil
+	} else if entry.Success {
 		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
 		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
 	} else if adapter.GetVersion().MoreThanEq(core.NewVersion(300)) {
@@ -238,5 +272,17 @@ func parseRoundData(returnData []byte, isPriceInUSD bool, feed string) *schemas.
 		RoundId: roundData.RoundId.Int64(),
 		PriceBI: (*core.BigInt)(roundData.Answer),
 		Price:   utils.GetFloat64Decimal(roundData.Answer, decimals),
+	}
+}
+
+func parsePriceForRedStone(price *big.Int, isPriceInUSD bool, feed string) *schemas.PriceFeed {
+	var decimals int8 = 18 // for eth
+	if isPriceInUSD {
+		decimals = 8 // for usd
+	}
+	return &schemas.PriceFeed{
+		RoundId: 0,
+		PriceBI: (*core.BigInt)(price),
+		Price:   utils.GetFloat64Decimal(price, decimals),
 	}
 }
