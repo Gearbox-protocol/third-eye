@@ -117,7 +117,6 @@ func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
 	log.CheckFatal(err)
 	pfType := new(big.Int).SetBytes(data).Int64()
-	log.Info(pfType)
 	switch pfType {
 	case core.V3_COMPOSITE_ORACLE:
 		return ds.CompositeChainlinkPF, false, nil

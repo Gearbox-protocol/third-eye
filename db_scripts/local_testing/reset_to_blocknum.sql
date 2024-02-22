@@ -57,6 +57,7 @@ update credit_managers cm set
 delete from price_feeds where block_num >  18246321;
 delete from token_oracle where block_num > 18246321;
 update sync_adapters set last_sync=18246321 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
+delete from sync_adapters where discovered_at> 18246321 and type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
 update sync_adapters set last_sync=18246321 where type in ('AddressProvider',  'ACL', 'AccountFactory');
 delete from rebase_details where block_num > 18246321;
 
