@@ -37,7 +37,12 @@ psql -U $SUPERUSER -d sample < <(cat $PARENT_DIR/reset_to_blocknum.sql | sed "s/
 set +e
 psql -U $SUPERUSER -d postgres -c 'drop database tmp_sample'
 set -e
+
+LOCAL_DB="host=localhost user=debian  dbname=tmp_sample"
+go run "$PARENT_DIR/../../scripts/merged_pf_version_reset/main.go" "$LOCAL_DB" $FORK_BLOCK
 createdb -O $SUPERUSER -T sample tmp_sample
+
+
 
 # create user sample with encrypted password '123Sample';
 # GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sample;

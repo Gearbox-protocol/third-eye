@@ -2,6 +2,7 @@ package ds
 
 import (
 	"reflect"
+	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -104,4 +105,12 @@ func (mdl *MergedPFManager) DisableToken(token string, blockNum int64, pfVersion
 		MergedPFVersion: final,
 		BlockNumber:     blockNum,
 	})
+}
+
+func (mdl *MergedPFManager) DeleteAfter(blockNum int64) {
+	a := ([]entry)(*mdl)
+	ind := sort.Search(len(a), func(i int) bool {
+		return a[i].BlockNumber > blockNum
+	})
+	*mdl = (MergedPFManager)(a[:ind])
 }

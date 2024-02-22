@@ -89,9 +89,10 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(discoveredAt),
 	}
-	_, err = pfContract.PhaseId(opts)
+	_, err = pfContract.PhaseId(opts) // only on chainlink
 	if err != nil {
 		if strings.Contains(err.Error(), "VM execution error.") ||
+			strings.Contains(err.Error(), "Required data unavailable") ||
 			strings.Contains(err.Error(), "execution reverted") {
 			if mdl.GetVersion().MoreThanEq(core.NewVersion(300)) {
 				return mdl.v3PriceFeedType(opts, oracle, token)
@@ -116,6 +117,7 @@ func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
 	log.CheckFatal(err)
 	pfType := new(big.Int).SetBytes(data).Int64()
+	log.Info(pfType)
 	switch pfType {
 	case core.V3_COMPOSITE_ORACLE:
 		return ds.CompositeChainlinkPF, false, nil
