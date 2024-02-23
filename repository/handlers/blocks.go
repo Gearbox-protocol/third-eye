@@ -205,6 +205,7 @@ func (repo *BlocksRepo) AddDieselTransfer(transfer *schemas.DieselTransfer) {
 	repo.SetAndGetBlock(transfer.BlockNum).AddDieselTransfer(transfer)
 }
 func (repo *BlocksRepo) AddRebaseDetailsForDB(transfer *schemas.RebaseDetailsForDB) {
+	log.Info("RebaseToken details added at", transfer.BlockNum)
 	repo.SetAndGetBlock(transfer.BlockNum).AddRebaseDetailsForDB(transfer)
 }
 

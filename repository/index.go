@@ -62,19 +62,6 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 	return repo
 }
 
-func (repo *Repository) loadLastRebaseDetails() {
-	obj := &schemas.RebaseDetailsForDB{}
-	query := `SELECT * FROM rebase_details ORDER BY block_num DESC Limit 1`
-	err := repo.db.Raw(query).Find(obj).Error
-	log.CheckFatal(err)
-	if obj.BlockNum != 0 {
-		adapters := repo.GetAdapterAddressByName(ds.RebaseToken)
-		if len(adapters) > 0 {
-			repo.GetAdapter(adapters[0]).SetUnderlyingState(obj)
-		}
-	}
-}
-
 func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *handlers.ExtrasRepo) ds.RepositoryI {
 	r := GetRepository(db, client, config, ep)
 	return r
@@ -90,7 +77,6 @@ func (repo *Repository) Init() {
 	// load poolLMrewards
 	repo.loadLMRewardDetailsv2()
 	repo.loadLMRewardDetailsv3()
-	repo.loadLastRebaseDetails()
 	//
 	// for disabling previous token oracle if new oracle is set
 	repo.LoadCurrentTokenOracle(repo.db)
