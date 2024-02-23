@@ -82,8 +82,8 @@ func (mdl *RebaseToken) GetstETHDetails(blockNum int64) stETHValues {
 
 func (mdl stETHValues) ToDB() *schemas.RebaseDetailsForDB {
 	return &schemas.RebaseDetailsForDB{
-		TotalShares: (*core.BigInt)(mdl.totalETH),
-		TotalETH:    (*core.BigInt)(mdl.totalShares),
+		TotalShares: (*core.BigInt)(mdl.totalShares),
+		TotalETH:    (*core.BigInt)(mdl.totalETH),
 		BlockNum:    mdl.blockNum,
 	}
 }
