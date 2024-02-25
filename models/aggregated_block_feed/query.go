@@ -61,10 +61,8 @@ func (mdl *AQFWrapper) queryRedStone(blockNum int64) {
 		// fetch from redstone
 		validTokens := adapter.TokensValidAtBlock(blockNum)
 		if adapter.GetPFType() == ds.RedStonePF &&
-			len(validTokens) > 0 && mdl.redStone.IsRedStoneToken(validTokens[0].Token) && // if adapter has redstone token, then fetch from redstone
-			mdl.Repo.IsBlockRecent(blockNum, time.Minute*10) {
-			mdl.redStone.Update(blockNum, 20)
-			priceBI := mdl.redStone.GetPrice(validTokens[0].Token)
+			len(validTokens) > 0 && mdl.redStone.IsRedStoneToken(validTokens[0].Token) { // if adapter has redstone token, then fetch from redstone
+			priceBI := mdl.redStone.GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token)
 			//
 			isPriceInUSD := adapter.GetVersion().IsPriceInUSD() // should be always true
 
@@ -177,7 +175,7 @@ var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
 func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_feed.QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
 	var priceData *schemas.PriceFeed
 
-	if adapter.GetPFType() == ds.RedStonePF && mdl.Repo.IsBlockRecent(blockNum, time.Minute*10) { // 20 blocks
+	if adapter.GetPFType() == ds.RedStonePF { // 20 blocks
 		return nil
 	} else if entry.Success {
 		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
