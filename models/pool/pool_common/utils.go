@@ -18,7 +18,7 @@ func CheckIfAmountMoreThan1Mil(client core.ClientI, repo ds.RepositoryI, state *
 	}
 	value := utils.GetFloat64Decimal(new(big.Int).Mul(priceInUSD, amount), repo.GetToken(token).Decimals+8)
 	if value > 1_000_000 {
-		urls := core.NetworkUIUrl(core.GetChainId(client))
+		urls := log.NetworkUIUrl(core.GetChainId(client))
 		repo.RecentMsgf(log.RiskHeader{
 			BlockNumber: blockNum,
 			EventCode:   "AMQP",

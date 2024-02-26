@@ -42,7 +42,7 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 		eng.liquidableBlockTracker[debt.SessionId] != nil &&
 		(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= sendMsgAfterXBlocks &&
 		!eng.liquidableBlockTracker[debt.SessionId].NotifiedIfLiquidable {
-		urls := core.NetworkUIUrl(core.GetChainId(eng.client))
+		urls := log.NetworkUIUrl(core.GetChainId(eng.client))
 		eng.notifiedIfLiquidable(debt.SessionId, true)
 		eng.repo.RecentMsgf(log.RiskHeader{
 			BlockNumber: debt.BlockNumber,

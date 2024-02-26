@@ -225,7 +225,7 @@ func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt in
 		} else {
 			log.Warnf("Session(%s) liquidated at block:%d, but liquidable since block not stored", sessionId, closedAt)
 		}
-		urls := core.NetworkUIUrl(core.GetChainId(eng.client))
+		urls := log.NetworkUIUrl(core.GetChainId(eng.client))
 		eng.repo.RecentMsgf(log.RiskHeader{
 			BlockNumber: closedAt,
 			EventCode:   "AMQP",
