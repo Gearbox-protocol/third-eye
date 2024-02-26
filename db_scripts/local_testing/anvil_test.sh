@@ -4,7 +4,7 @@ PARENT_DIR=$(dirname $0)
 REMOTE_DB=$1
 SUPERUSER=$2
 
-FORK_BLOCK=`jq .forkBlock.number < <(curl https://anvil.gearbox.foundation/api/forks/432945bc-3620-11ee-be56-0242ac120002  )`
+FORK_BLOCK=`jq .forkBlock.number < <(curl https://anvil.gearbox.foundation/api/forks/Ethereum  )`
 
 # if [ "$PROXY_IP" = '' ]; then 
 #     ssh -t debian@$MAINNET_IP "bash /home/debian/db_copy.sh"
