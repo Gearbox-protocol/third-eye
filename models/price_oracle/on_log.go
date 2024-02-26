@@ -51,6 +51,19 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		if err != nil {
 			log.Fatalf("Oracle %s, err: %s, blockNum %d", oracle, err, blockNum)
 		}
+		if priceFeedType == ds.RedStonePF {
+			pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
+			sym := core.Symbol(mdl.Repo.GetToken(token).Symbol)
+			var ok bool
+			if isReverse {
+				_, ok = pfs.Reserves[sym]
+			} else {
+				_, ok = pfs.Mains[sym]
+			}
+			if !ok {
+				log.Warnf("RedStonePF not found in config for %s(%s). update sd-go.", sym, token)
+			}
+		}
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account
 		case ds.YearnPF, ds.SingleAssetPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF, ds.CompositeChainlinkPF, ds.RedStonePF:
