@@ -44,24 +44,31 @@ func (repo *PrevPriceStore) loadPrevPriceFeed(db *gorm.DB) {
 		(SELECT distinct on(token, merged_pf_version) * FROM price_feeds ORDER BY token, merged_pf_version, block_num DESC) t ORDER BY block_num`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, pf := range data {
-		repo.isPFAdded(pf, false)
+		repo.isPFAdded(pf)
 	}
 }
 
 // isUSD -> token -> feed -> price feed object
-func (repo *PrevPriceStore) isPFAdded(pf *schemas.PriceFeed, save bool) bool {
+func (repo *PrevPriceStore) isPFAdded(pf *schemas.PriceFeed) bool {
 	for _, pfVersion := range pf.MergedPFVersion.MergedPFVersionToList() {
 		if repo.prevPriceFeeds[pfVersion] == nil {
 			repo.prevPriceFeeds[pfVersion] = map[string]*schemas.PriceFeed{}
 		}
 		oldPF := repo.prevPriceFeeds[pfVersion][pf.Token]
 		//
-		price := pf.PriceBI.Convert().Int64()
 		if oldPF != nil {
-			// if the blocknum of new price is less than previous seenly price , ignore
-			if oldPF.BlockNumber >= pf.BlockNumber && !(price == 0 || price == 100) {
+			// old.pf price isn't zero, new price is zero and old.block> new.block
+			if oldPF.BlockNumber >= pf.BlockNumber && // if old pf has block number more than new pf
+				(pf.Price == 0 || pf.Price == 100) { // and new pf price is not 0 or 100
+				log.Warnf("Only for dev.Edge case: oldPF %s.\n NewPF %s.", oldPF, pf)
+			}
+			// old.block > new.block but none of the price is zero
+			if oldPF.BlockNumber >= pf.BlockNumber && // if old pf has block number more than new pf
+				!(pf.Price == 0 || pf.Price == 100) && // and new pf price is not 0 or 100
+				!(oldPF.Price == 0 || oldPF.Price == 100) { // and old pf price is not 0 or 100
 				log.Fatalf("oldPF %s.\n NewPF %s.", oldPF, pf)
 			}
+			// if the blocknum of new price is less than previous seenly price , ignore
 			// same price then don't add
 			if oldPF.PriceBI.Cmp(pf.PriceBI) == 0 {
 				return false

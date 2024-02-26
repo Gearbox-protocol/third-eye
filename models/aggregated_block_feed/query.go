@@ -61,6 +61,7 @@ func (mdl *AQFWrapper) queryRedStone(blockNum int64) {
 		// fetch from redstone
 		validTokens := adapter.TokensValidAtBlock(blockNum)
 		if adapter.GetPFType() == ds.RedStonePF &&
+			adapter.GetLastSync() < blockNum &&
 			len(validTokens) > 0 && mdl.redStone.IsRedStoneToken(validTokens[0].Token) { // if adapter has redstone token, then fetch from redstone
 			priceBI := mdl.redStone.GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token)
 			//
