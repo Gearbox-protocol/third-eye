@@ -53,7 +53,8 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		}
 		if priceFeedType == ds.RedStonePF {
 			pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
-			sym := core.Symbol(mdl.Repo.GetToken(token).Symbol)
+			addrToSym := core.GetTokenToSymbolByChainId(core.GetChainId(mdl.Client))
+			sym := addrToSym[common.HexToAddress(token)]
 			var ok bool
 			if isReverse {
 				_, ok = pfs.Reserves[sym]

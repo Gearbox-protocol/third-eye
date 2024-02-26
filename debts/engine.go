@@ -330,6 +330,17 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
 }
 
+func (eng *DebtEngine) hasRedStoneToken(balances *core.DBBalanceFormat) bool {
+	pfs := core.GetRedStonePFByChainId(core.GetChainId(eng.client))
+	addToSym := core.GetTokenToSymbolByChainId(core.GetChainId(eng.client))
+	for tokenAddr, details := range *balances {
+		if _, ok := pfs.Mains[addToSym[common.HexToAddress(tokenAddr)]]; details.IsEnabled && details.HasBalanceMoreThanOne() && ok {
+			return true
+		}
+	}
+	return false
+}
+
 func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) (*schemas.Debt, *ds.DebtProfile) {
 	sessionId := session.ID
 	sessionSnapshot := eng.lastCSS[sessionId]
@@ -408,7 +419,13 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)) {
 			// log.Info(debt.CalHealthFactor, sessionSnapshot.HealthFactor, blockNum)
 			// log.Info(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, blockNum)
-			notMatched = true
+			if eng.hasRedStoneToken(sessionSnapshot.Balances) {
+				if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.003)) { // .3% allowed
+					notMatched = true
+				}
+			} else {
+				notMatched = true
+			}
 		}
 	}
 	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken, debtDetails)
