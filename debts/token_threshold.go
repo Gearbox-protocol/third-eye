@@ -9,6 +9,7 @@ import (
 )
 
 // token threshold
+// before blockNum let the latest LT of all cm/token pair
 func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
 	defer utils.Elapsed("Debt(loadAllowedTokenThreshold)")()
 	data := []*schemas.AllowedToken{}

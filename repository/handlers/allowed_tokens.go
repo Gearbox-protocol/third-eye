@@ -22,6 +22,7 @@ type AllowedTokenRepo struct {
 
 func NewAllowedTokenRepo(blocks *BlocksRepo, tokens *TokensRepo) *AllowedTokenRepo {
 	return &AllowedTokenRepo{
+		// cm -> token -> allowed token
 		allowedTokens: make(map[string]map[string]*schemas.AllowedToken),
 		mu:            &sync.Mutex{},
 		blocks:        blocks,
@@ -175,7 +176,7 @@ func (repo *AllowedTokenRepo) AddAllowedTokenV2(logID uint, txHash, creditFilter
 		prevToken := repo.allowedTokens[atoken.CreditManager][atoken.Token]
 		prevToken.DisableBlock = atoken.BlockNumber
 		repo.blocks.SetBlock(atoken.BlockNumber)
-		repo.disabledTokens = append(repo.disabledTokens, prevToken)
+		// repo.disabledTokens = append(repo.disabledTokens, prevToken)
 	}
 	repo.addAllowedTokenState(atoken, true)
 	var daoEventType uint
