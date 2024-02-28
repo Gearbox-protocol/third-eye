@@ -48,8 +48,8 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
 			{ // one token is redstone token
-				tokenPrice := repo.getRedStonePrice(blockNum, token)
-				currencyPrice := repo.getRedStonePrice(blockNum, currency)
+				tokenPrice := repo.GetRedStonePrice(blockNum, token)
+				currencyPrice := repo.GetRedStonePrice(blockNum, currency)
 				if tokenPrice != nil || currencyPrice != nil {
 					if tokenPrice == nil {
 						tokenPrice, err = poContract.GetPrice(opts, common.HexToAddress(token))
@@ -74,14 +74,4 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 		}
 		return new(big.Int).Mul(usdcAmount, sig)
 	}
-}
-
-func (repo Repository) getRedStonePrice(blockNum int64, token string) *big.Int {
-	pfs := core.GetRedStonePFByChainId(core.GetChainId(repo.client))
-	sym := core.GetTokenToSymbolByChainId(core.GetChainId(repo.client))[common.HexToAddress(token)]
-	if _, ok := pfs.Mains[sym]; ok {
-		ts := repo.SetAndGetBlock(blockNum).Timestamp
-		return repo.GetRedStonemgr().GetPrice(int64(ts), token)
-	}
-	return nil
 }

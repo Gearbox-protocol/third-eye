@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg"
+	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers"
@@ -26,6 +27,8 @@ type TreasuryRepo struct {
 	blocks           *handlers.BlocksRepo
 	// for getting the block num from ts when it is missing from db
 	EtherscanAPI string
+	//
+	redstoneMgr redstone.RedStoneMgrI
 }
 
 func NewTreasuryRepo(tokens *handlers.TokensRepo, blocks *handlers.BlocksRepo, adapters *handlers.SyncAdaptersRepo, client core.ClientI, cfg *config.Config) *TreasuryRepo {
@@ -35,6 +38,7 @@ func NewTreasuryRepo(tokens *handlers.TokensRepo, blocks *handlers.BlocksRepo, a
 		adapters:     adapters,
 		blocks:       blocks,
 		EtherscanAPI: cfg.EtherscanAPI,
+		redstoneMgr:  redstone.NewRedStoneMgr(client),
 	}
 }
 
