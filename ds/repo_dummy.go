@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
 
@@ -239,3 +240,6 @@ func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails) {}
 
 func (DummyRepo) GetAccountQuotaMgr() *AccountQuotaMgr              { return nil }
 func (DummyRepo) IsBlockRecent(block int64, dur time.Duration) bool { return false }
+func (DummyRepo) GetRedStonemgr() redstone.RedStoneMgrI {
+	return nil
+}

@@ -57,7 +57,7 @@ func NewAQFWrapper(client core.ClientI, repo ds.RepositoryI, interval int64) *AQ
 		mu:          &sync.Mutex{},
 		QueryFeeds:  map[string]*query_price_feed.QueryPriceFeed{},
 		queryPFdeps: NewQueryPFDepenencies(repo, client),
-		redStone:    redstone.NewRedStoneMgr(client),
+		redStone:    repo.GetRedStonemgr(),
 	}
 	wrapper.queryPFdeps.aqf = wrapper
 	return wrapper

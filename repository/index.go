@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -36,6 +37,8 @@ type Repository struct {
 	config          *config.Config
 	accountManager  *ds.DirectTransferManager
 	AccountQuotaMgr *ds.AccountQuotaMgr
+	//
+	redstoneMgr redstone.RedStoneMgrI
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
@@ -54,6 +57,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 		client:           client,
 		config:           cfg,
 		accountManager:   ds.NewDirectTransferManager(),
+		redstoneMgr:      redstone.NewRedStoneMgr(client),
 	}
 	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
@@ -65,6 +69,10 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *handlers.ExtrasRepo) ds.RepositoryI {
 	r := GetRepository(db, client, config, ep)
 	return r
+}
+
+func (repo Repository) GetRedStonemgr() redstone.RedStoneMgrI {
+	return repo.redstoneMgr
 }
 
 func (repo *Repository) Init() {

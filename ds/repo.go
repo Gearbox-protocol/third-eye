@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 )
 
@@ -39,6 +40,7 @@ type EngineI interface {
 }
 
 type RepositoryI interface {
+	GetRedStonemgr() redstone.RedStoneMgrI
 	Init()
 	// sync adapters
 	GetAdapter(addr string) SyncAdapterI
