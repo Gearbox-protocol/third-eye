@@ -72,10 +72,18 @@ func GetPoolGateways(client core.ClientI) map[common.Address]GatewayDetails {
 	_chainId, err := client.ChainID(context.Background())
 	log.CheckFatal(err)
 	chainId := _chainId.Int64()
-	if !(chainId == 1 || chainId == 5) {
+	if log.GetNetworkName(chainId) == "TEST" {
 		return map[common.Address]GatewayDetails{}
 	}
 	symToAddrStore := core.GetSymToAddrByChainId(chainId)
+	if log.GetBaseNet(chainId) == "ARBITRUM" {
+		return map[common.Address]GatewayDetails{
+			symToAddrStore.Exchanges["GEARBOX_WETH_POOL"]: {
+				Gateway: symToAddrStore.Exchanges["WETH_GATEWAY"],
+				Sym:     "WETH",
+			},
+		}
+	}
 	return map[common.Address]GatewayDetails{
 		symToAddrStore.Exchanges["GEARBOX_WETH_POOL"]: {
 			Gateway: symToAddrStore.Exchanges["WETH_GATEWAY"],

@@ -52,6 +52,9 @@ func (mdl *CommonCMAdapter) OnBlockChange(lastBlockNum int64) (calls []multicall
 
 func (mdl *CommonCMAdapter) getCMCallAndProcessFn(blockNum int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(mdl.GetVersion(), blockNum, common.HexToAddress(mdl.Address))
+	if err != nil && err.Error() == "No data compressor found" {
+		return multicall.Multicall2Call{}, nil
+	}
 	if err != nil {
 		log.Fatalf("[CM:%s] Failed preparing get Cm call %v", mdl.Address, err)
 	}

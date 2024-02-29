@@ -90,6 +90,9 @@ func (mdl *AccountManager) Query(queryTill int64) {
 	for _, tokenAddr := range tokenAddrs {
 		hexAddrs = append(hexAddrs, common.HexToAddress(tokenAddr))
 	}
+	if len(mdl.AccountHashes) == 0 {
+		return
+	}
 	logs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
 	log.Infof("len of logs: %d", len(logs))
 	if err != nil {

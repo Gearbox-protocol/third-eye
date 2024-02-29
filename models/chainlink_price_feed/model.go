@@ -13,9 +13,9 @@ import (
 
 type ChainlinkPriceFeed struct {
 	*ds.SyncAdapter
-	Token           string
 	MainAgg         *ChainlinkMainAgg
 	mergedPFManager *ds.MergedPFManager
+	tokens          []string
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
@@ -58,13 +58,8 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 	if !ok {
 		log.Fatalf("Failed asserting oracle address(%s) as string for chainlink pricefeed(%s) ", adapter.Details["oracle"], adapter.GetAddress())
 	}
-	token, ok := adapter.Details["token"].(string)
-	if !ok {
-		log.Fatalf("Get token addr(%v) for oracle(%s) feed(%s)", adapter.Details["token"], oracleAddr, adapter.GetAddress())
-	}
 	obj := &ChainlinkPriceFeed{
 		SyncAdapter: adapter,
-		Token:       token,
 	}
 	obj.MainAgg = NewMainAgg(adapter.Client, common.HexToAddress(oracleAddr), obj.upperLimit().Cmp(new(big.Int)) != 0) // isBounded if upperlimit is not 0
 
@@ -108,15 +103,17 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 		} else {
 			discoveredAt = mdl.MainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
 		}
-		mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
-			Token:       mdl.Token,
-			Oracle:      mdl.MainAgg.Addr.Hex(),
-			Feed:        mdl.MainAgg.Addr.Hex(), // feed is same as oracle
-			BlockNumber: discoveredAt,
-			Version:     mdl.GetVersion(),
-			Reserve:     schemas.GetReservefromDetails(mdl.Details),
-			FeedType:    ds.ChainlinkPriceFeed,
-		}, mdl.upperLimit().Cmp(new(big.Int)) != 0) // if upperLImit is not zero, then the price is bounded by upperLimit
+		for _, token := range mdl.getTokens() {
+			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
+				Token:       token,
+				Oracle:      mdl.MainAgg.Addr.Hex(),
+				Feed:        mdl.MainAgg.Addr.Hex(), // feed is same as oracle
+				BlockNumber: discoveredAt,
+				Version:     mdl.GetVersion(),
+				Reserve:     schemas.GetReservefromDetails(mdl.Details),
+				FeedType:    ds.ChainlinkPriceFeed,
+			}, mdl.upperLimit().Cmp(new(big.Int)) != 0) // if upperLImit is not zero, then the price is bounded by upperLimit
+		}
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 	mdl.mergedPFManager.Save(&mdl.Details)

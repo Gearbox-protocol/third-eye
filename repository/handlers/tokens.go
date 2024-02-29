@@ -40,6 +40,9 @@ func NewTokensRepo(client core.ClientI) *TokensRepo {
 }
 
 func (repo *TokensRepo) GetTokenFromSdk(symbol string) string {
+	if symbol == "stETH" && log.GetBaseNet(core.GetChainId(repo.client)) == "ARBITRUM" {
+		return ""
+	}
 	if addr, ok := repo.symToAddrToken[symbol]; ok {
 		return addr.Hex()
 	}

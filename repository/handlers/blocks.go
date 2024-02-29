@@ -99,7 +99,9 @@ func (repo *BlocksRepo) fetchBlock(blockNum int64) *types.Block {
 	// 	repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum}
 	// 	return
 	// }
-	log.CheckFatal(err)
+	if err != nil {
+		log.Fatalf("%s: %d", err, blockNum)
+	}
 	return b
 }
 func (repo *BlocksRepo) setBlock(blockNum int64) {

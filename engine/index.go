@@ -67,8 +67,12 @@ func (e *Engine) addstETHToken() {
 		return
 	}
 	addr := core.GetSymToAddrByChainId(chainId).Tokens["stETH"]
-	stETHToken := rebase_token.NewRebaseToken(addr.Hex(), e.Client, e.repo)
-	e.repo.AddSyncAdapter(stETHToken)
+	if core.NULL_ADDR != addr { // on arbitrum
+		stETHToken := rebase_token.NewRebaseToken(addr.Hex(), e.Client, e.repo)
+		e.repo.AddSyncAdapter(stETHToken)
+	} else if log.GetBaseNet(core.GetChainId(e.Client)) != "ARBITRUM" {
+		log.Warnf("stETH is not present on %s", log.GetBaseNet(core.GetChainId(e.Client)))
+	}
 }
 
 func (e *Engine) getLastSyncedTill() int64 {
