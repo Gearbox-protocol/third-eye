@@ -86,7 +86,9 @@ func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
 		RepayAmount:       utils.GetFloat64Decimal(debt.RepayAmountBI.Convert(), decimals),
 		//
 		TotalValueInUSD: debt.TotalValueInUSD,
-		TFIndex:         debt.FarmingValUSD / debt.TotalValueInUSD,
+	}
+	if debt.TotalValueInUSD != 0 {
+		curDebt.TFIndex = debt.FarmingValUSD / debt.TotalValueInUSD
 	}
 	if curDebt.TFIndex >= 1 {
 		curDebt.TFIndex = 1
