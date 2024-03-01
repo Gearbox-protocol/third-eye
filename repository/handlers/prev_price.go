@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -24,14 +23,13 @@ type PrevPriceStore struct {
 }
 
 func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo) *PrevPriceStore {
-	chainId, err := client.ChainID(context.TODO())
-	log.CheckFatal(err)
+	chainId := core.GetChainId(client)
 
 	store := &PrevPriceStore{
 		prevPriceFeeds: map[schemas.PFVersion]map[string]*schemas.PriceFeed{},
 		mu:             &sync.Mutex{},
 	}
-	if chainId.Int64() == 1 || chainId.Int64() == 7878 {
+	if log.GetNetworkName(chainId) != "TEST" && log.GetNetworkName(chainId) == "MAINNET" {
 		store.spotOracle = ds.SetOneInchUpdater(client, tokensRepo)
 	}
 	return store
@@ -104,6 +102,19 @@ func (repo *PrevPriceStore) saveCurrentPrices(client core.ClientI, tx *gorm.DB, 
 	if len(currentPricesToSync) == 0 { // usd prices are set? only valid from v2
 		// so if it's empty, we don't need to store currentPrice and nor fetch 1inch prices in usdc
 		return
+	}
+	if log.GetBaseNet(core.GetChainId(client)) == "ARBITRUM" {
+		spot := []*schemas.TokenCurrentPrice{}
+		for _, price := range currentPricesToSync {
+			spot = append(spot, &schemas.TokenCurrentPrice{
+				PriceBI:  price.PriceBI,
+				Price:    utils.GetFloat64Decimal(price.PriceBI.Convert(), 8),
+				BlockNum: blockNum,
+				Token:    price.Token,
+				PriceSrc: string(core.SOURCE_SPOT),
+			})
+		}
+		currentPricesToSync = append(currentPricesToSync, spot...)
 	}
 	// spot prices to updated
 	if repo.spotOracle != nil {

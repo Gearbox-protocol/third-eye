@@ -84,8 +84,10 @@ func (e *Engine) getLastSyncedTill() int64 {
 		obj := address_provider.NewAddressProvider(e.Client, e.repo, addrProviders)
 		e.repo.AddSyncAdapter(obj)
 		// pool LM rewards
-		lmrewardsv2Obj := lmrewardsv2.NewLMRewardsv2("0x00000000000000000000000000000000000beef2", obj.FirstLogAt-1, e.Client, e.repo)
-		e.repo.AddSyncAdapter(lmrewardsv2Obj)
+		if log.GetBaseNet(core.GetChainId(e.Client)) == "MAINNET" {
+			lmrewardsv2Obj := lmrewardsv2.NewLMRewardsv2("0x00000000000000000000000000000000000beef2", obj.FirstLogAt-1, e.Client, e.repo)
+			e.repo.AddSyncAdapter(lmrewardsv2Obj)
+		}
 		lmrewardsv3Obj := lmrewardsv3.NewLMRewardsv3("0x00000000000000000000000000000000000beef3", obj.FirstLogAt-1, e.Client, e.repo)
 		e.repo.AddSyncAdapter(lmrewardsv3Obj)
 		//

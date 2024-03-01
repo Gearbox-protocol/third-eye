@@ -181,6 +181,7 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	if pf.MergedPFVersion == 0 {
 		log.Fatal(utils.ToJson(pf))
 	}
+
 	if repo.prevStore.isPFAdded(pf) {
 		repo.SetAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 	}

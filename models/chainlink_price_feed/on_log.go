@@ -61,8 +61,8 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 					Price:           utils.GetFloat64Decimal(answerBI, pfVersion.Decimals()),
 					MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address),
 				}
+				mdl.Repo.AddPriceFeed(priceFeed)
 			}
-			mdl.Repo.AddPriceFeed(priceFeed)
 			blockNums = append(blockNums, blockNum)
 		}
 	}
