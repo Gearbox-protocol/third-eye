@@ -55,7 +55,7 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 	if obj.Details == nil {
 		obj.Details = core.Json{}
 	}
-	if apAddrs == "" {
+	if core.GetChainId(adapter.Client) == 1337 {
 		apAddrs = adapter.GetAddress()
 	}
 	_, otherAddrProviders := GetAddressProvider(obj.Client, apAddrs)

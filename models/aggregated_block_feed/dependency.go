@@ -1,7 +1,6 @@
 package aggregated_block_feed
 
 import (
-	"context"
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
@@ -42,9 +41,8 @@ type QueryPFDependencies struct {
 }
 
 func NewQueryPFDepenencies(repo ds.RepositoryI, client core.ClientI) *QueryPFDependencies {
-	chainId, err := client.ChainID(context.TODO())
-	log.CheckFatal(err)
-	depGraph := getDepGraph()
+	chainId := core.GetChainId(client)
+	depGraph := getDepGraph(chainId)
 	return &QueryPFDependencies{
 		depGraph:                    depGraph,
 		ChainlinkSymToQueryPFSyms:   getInvertDependencyGraph(depGraph),
@@ -52,7 +50,7 @@ func NewQueryPFDepenencies(repo ds.RepositoryI, client core.ClientI) *QueryPFDep
 		//
 		repo:        repo,
 		mu:          &sync.Mutex{},
-		TokenSymMap: newTokenSymMap(chainId.Int64()),
+		TokenSymMap: newTokenSymMap(chainId),
 		client:      client,
 	}
 }
@@ -96,7 +94,7 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int
 }
 
 // token to its dependencies
-func getDepGraph() map[string][]string {
+func getDepGraph(chainId int64) map[string][]string {
 	depGraph := map[string][]string{
 		// frax and curve
 		"yvCURVE_FRAX":   {"FRAX", "USDC", "USDT", "DAI"},
@@ -186,6 +184,17 @@ func getDepGraph() map[string][]string {
 		"B_rETH_STABLE":           {},
 		"auraB_rETH_STABLE":       {},
 		"auraB_rETH_STABLE_vault": {},
+	}
+	if log.GetBaseNet(chainId) == "ARBITRUM" {
+		for sym, deps := range depGraph {
+			x := make([]string, 0, len(deps))
+			for _, d := range deps {
+				if d != "stETH" {
+					x = append(x, d)
+				}
+			}
+			depGraph[sym] = x
+		}
 	}
 	return depGraph
 }

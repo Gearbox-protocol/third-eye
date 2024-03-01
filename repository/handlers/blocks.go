@@ -99,7 +99,9 @@ func (repo *BlocksRepo) fetchBlock(blockNum int64) *types.Block {
 	// 	repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum}
 	// 	return
 	// }
-	log.CheckFatal(err)
+	if err != nil {
+		log.Fatalf("%s: %d", err, blockNum)
+	}
 	return b
 }
 func (repo *BlocksRepo) setBlock(blockNum int64) {
@@ -179,6 +181,7 @@ func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	if pf.MergedPFVersion == 0 {
 		log.Fatal(utils.ToJson(pf))
 	}
+
 	if repo.prevStore.isPFAdded(pf) {
 		repo.SetAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 	}

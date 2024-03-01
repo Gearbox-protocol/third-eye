@@ -8,7 +8,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	cpf "github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/ethereum/go-ethereum/common"
@@ -167,12 +166,16 @@ func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
 func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string) {
 	// TODO anvil fork
 	compositeOracleVersion := 0
-	if (discoveredAt <= 15997386 && utils.Contains([]int64{1, 7878}, chainId)) ||
-		(discoveredAt <= 7966150 && chainId == 5) {
-		compositeOracleVersion = 2
-	} else if discoveredAt <= 18544086 && utils.Contains([]int64{1, 7878}, chainId) {
-		compositeOracleVersion = 210
-	} else if utils.Contains([]int64{1, 7878}, chainId) {
+	baseNet := log.GetBaseNet(chainId)
+	if baseNet == "MAINNET" {
+		if discoveredAt <= 15997386 {
+			compositeOracleVersion = 2
+		} else if discoveredAt <= 18544086 {
+			compositeOracleVersion = 210
+		} else {
+			compositeOracleVersion = 3
+		}
+	} else if baseNet == "ARBITRUM" {
 		compositeOracleVersion = 3
 	}
 	//
@@ -186,7 +189,7 @@ func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string)
 		case 3:
 			sig = "385aee1b" // priceFeed0
 		default:
-			log.Fatal("Unknown composite oracle version")
+			log.Fatal("Unknown composite oracle version", compositeOracleVersion, targetMethod, discoveredAt, chainId)
 		}
 	case "ETHUSD":
 		switch compositeOracleVersion {
@@ -197,7 +200,7 @@ func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string)
 		case 3:
 			sig = "ab0ca0e1" // priceFeed1
 		default:
-			log.Fatal("Unknown composite oracle version")
+			log.Fatal("Unknown composite oracle version", compositeOracleVersion, targetMethod, discoveredAt, chainId)
 		}
 	default:
 		log.Fatal(targetMethod, "not found")

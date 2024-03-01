@@ -127,7 +127,7 @@ func StartServer(lc fx.Lifecycle, client core.ClientI, config *config.Config) {
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			go func() {
-				contractETH, err := addressProvider.NewAddressProvider(common.HexToAddress(config.AddressProviderAddrs), client)
+				contractETH, err := addressProvider.NewAddressProvider(common.HexToAddress(""), client)
 				log.CheckFatal(err)
 				gearToken, err := contractETH.GetGearToken(&bind.CallOpts{})
 				log.CheckFatal(err)

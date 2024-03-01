@@ -4,7 +4,6 @@ import "github.com/Gearbox-protocol/sdk-go/log"
 
 type Config struct {
 	// Authentication
-	AddressProviderAddrs string `env:"REACT_APP_ADDRESS_PROVIDER" validate:"required"`
 
 	// Database
 	DatabaseUrl string `env:"DATABASE_URL" validate:"required"`

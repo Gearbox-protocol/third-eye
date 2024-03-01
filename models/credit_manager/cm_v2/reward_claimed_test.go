@@ -6,6 +6,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_mvp"
@@ -96,6 +97,7 @@ func TestRewardClaimed(t *testing.T) {
 		Repo: r,
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{
+				Client:  test.NewTestClient(),
 				Address: cm,
 			},
 		},

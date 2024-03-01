@@ -31,7 +31,7 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			if txLogInd+1 < len(txLogs) && int64(txLogs[txLogInd+1].BlockNumber) == blockNum {
 				continue
 			}
-			if mdl.Token == "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" &&
+			if mdl.getTokens()[0] == "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" &&
 				mdl.Address == "0x37bC7498f4FF12C19678ee8fE19d713b87F6a9e6" && blockNum > 17217055 { // as there is already another chainlink activated 0xE62B71cf983019BFf55bC83B48601ce8419650CC
 				continue
 			}
@@ -51,32 +51,63 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 			}
 			// new(big.Int).SetString(txLog.Data[2:], 16)
 			pfVersion := schemas.VersionToPFVersion(mdl.GetVersion(), schemas.GetReservefromDetails(mdl.Details))
-			priceFeed = &schemas.PriceFeed{
-				BlockNumber:     blockNum,
-				Token:           mdl.Token,
-				Feed:            mdl.Address,
-				RoundId:         roundId,
-				PriceBI:         (*core.BigInt)(answerBI),
-				Price:           utils.GetFloat64Decimal(answerBI, pfVersion.Decimals()),
-				MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address),
+			for _, token := range mdl.getTokens() {
+				priceFeed = &schemas.PriceFeed{
+					BlockNumber:     blockNum,
+					Token:           token,
+					Feed:            mdl.Address,
+					RoundId:         roundId,
+					PriceBI:         (*core.BigInt)(answerBI),
+					Price:           utils.GetFloat64Decimal(answerBI, pfVersion.Decimals()),
+					MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address),
+				}
+				mdl.Repo.AddPriceFeed(priceFeed)
 			}
-			mdl.Repo.AddPriceFeed(priceFeed)
 			blockNums = append(blockNums, blockNum)
 		}
 	}
 	// not supported for v1
 	if !mdl.GetVersion().IsGBv1() && blockNums != nil {
-		mdl.Repo.ChainlinkPriceUpdatedAt(mdl.Token, blockNums)
+		for _, token := range mdl.getTokens() {
+			mdl.Repo.ChainlinkPriceUpdatedAt(token, blockNums)
+		}
 	}
 
 }
 
+func (mdl *ChainlinkPriceFeed) getTokens() (ans []string) {
+	if len(mdl.tokens) != 0 {
+		return mdl.tokens
+	}
+	if token := mdl.Details["token"]; token != nil {
+		switch v := token.(type) {
+		case string:
+			ans = []string{v}
+		case []interface{}:
+			ans = make([]string, 0, len(v))
+			for _, x := range v {
+				ans = append(ans, x.(string))
+			}
+		default:
+			log.Fatalf("token not set: %v", token)
+		}
+	}
+	mdl.tokens = ans
+	return mdl.tokens
+}
+
 func (mdl *ChainlinkPriceFeed) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
-	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
+	tokens := mdl.getTokens()
+	if !utils.Contains(tokens, token) {
+		tokens = append(tokens, token)
+		mdl.Details["token"] = tokens
+		mdl.tokens = tokens
+	}
+	mdl.mergedPFManager.AddToken(mdl.Address, blockNum, pfVersion)
 }
 
 func (mdl ChainlinkPriceFeed) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
-	mdl.mergedPFManager.DisableToken(token, blockNum, pfVersion)
+	mdl.mergedPFManager.DisableToken(blockNum, pfVersion)
 	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address)
 	if final == 0 {
 		mdl.SetBlockToDisableOn(blockNum)

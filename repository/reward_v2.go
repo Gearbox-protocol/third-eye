@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -11,6 +12,9 @@ import (
 )
 
 func (repo *Repository) loadLMRewardDetailsv2() {
+	if log.GetBaseNet(core.GetChainId(repo.client)) != "MAINNET" {
+		return
+	}
 	defer utils.Elapsed("loadLMRewardDetailsv2")()
 	adapterAddrs := repo.GetAdapterAddressByName(ds.LMRewardsv2)
 	if len(adapterAddrs) == 0 {
@@ -36,6 +40,9 @@ func (repo *Repository) loadLMRewardDetailsv2() {
 }
 
 func (repo Repository) saveLMRewardDetailsv2(tx *gorm.DB) {
+	if log.GetBaseNet(core.GetChainId(repo.client)) != "MAINNET" {
+		return
+	}
 	adapterAddr := repo.GetAdapterAddressByName(ds.LMRewardsv2)[0]
 	adapter := repo.GetAdapter(adapterAddr).(*lmrewardsv2.LMRewardsv2)
 	//

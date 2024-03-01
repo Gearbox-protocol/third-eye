@@ -8,7 +8,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
-	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -149,10 +148,10 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionI
 			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", closedAt, mdl.GetAddress(), session.Borrower, err)
 		}
 		mdl.closeSession(closedAt, session, dcAccountData, closeDetails)
-		// set close price for v3
-		if session.Version.MoreThanEq(core.NewVersion(300)) {
-			mdl.Repo.GetCreditSession(sessionId).ClosePrice = ds.GetOneInchUpdater().GetCurrentPriceAtBlockNum(closedAt-1, *session.Balances, mdl.GetUnderlyingToken())
-		}
+		// // set close price for v3
+		// if session.Version.MoreThanEq(core.NewVersion(300)) {
+		// 	mdl.Repo.GetCreditSession(sessionId).ClosePrice = ds.GetOneInchUpdater().GetCurrentPriceAtBlockNum(closedAt-1, *session.Balances, mdl.GetUnderlyingToken())
+		// }
 	}
 }
 
@@ -259,9 +258,9 @@ func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, bloc
 		}
 		mdl.updateSession(blockNum, session, dcAccountData)
 		// set entry price for v3
-		if session.Since == blockNum && session.Version.MoreThanEq(core.NewVersion(300)) {
-			mdl.Repo.GetCreditSession(sessionId).EntryPrice = ds.GetOneInchUpdater().GetCurrentPriceAtBlockNum(blockNum, *session.Balances, mdl.GetUnderlyingToken())
-		}
+		// if session.Since == blockNum && session.Version.MoreThanEq(core.NewVersion(300)) {
+		// 	mdl.Repo.GetCreditSession(sessionId).EntryPrice = ds.GetOneInchUpdater().GetCurrentPriceAtBlockNum(blockNum, *session.Balances, mdl.GetUnderlyingToken())
+		// }
 	}
 }
 

@@ -98,14 +98,15 @@ func (mdl *Poolv3) setZapper() {
 			mdl.setDetailsByKey("dUSDC", zapper.TokenIn.Hex())
 		}
 	}
-
-	if mdl.GetDetailsByKey("dUSDC") == "" {
-		log.Fatal("Can't get dUSDC from zapper for ", mdl.Address)
+	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" { // only on mainnet
+		if mdl.GetDetailsByKey("dUSDC") == "" {
+			log.Fatal("Can't get dUSDC from zapper for ", mdl.Address)
+		}
+		dieselTokenToPool := mdl.Repo.GetDieselTokens()
+		pool, ok := dieselTokenToPool[mdl.GetDetailsByKey("dUSDC")]
+		if !ok {
+			log.Fatalf("Can't get poolv2(dieselToken: %s) from poolv3: %s ", mdl.GetDetailsByKey("dUSDC"), mdl.Address)
+		}
+		mdl.setDetailsByKey("poolv2", pool.Pool)
 	}
-	dieselTokenToPool := mdl.Repo.GetDieselTokens()
-	pool, ok := dieselTokenToPool[mdl.GetDetailsByKey("dUSDC")]
-	if !ok {
-		log.Fatalf("Can't get poolv2(dieselToken: %s) from poolv3: %s ", mdl.GetDetailsByKey("dUSDC"), mdl.Address)
-	}
-	mdl.setDetailsByKey("poolv2", pool.Pool)
 }

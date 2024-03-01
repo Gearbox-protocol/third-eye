@@ -67,8 +67,12 @@ func (e *Engine) addstETHToken() {
 		return
 	}
 	addr := core.GetSymToAddrByChainId(chainId).Tokens["stETH"]
-	stETHToken := rebase_token.NewRebaseToken(addr.Hex(), e.Client, e.repo)
-	e.repo.AddSyncAdapter(stETHToken)
+	if core.NULL_ADDR != addr { // on arbitrum
+		stETHToken := rebase_token.NewRebaseToken(addr.Hex(), e.Client, e.repo)
+		e.repo.AddSyncAdapter(stETHToken)
+	} else if log.GetBaseNet(core.GetChainId(e.Client)) != "ARBITRUM" {
+		log.Warnf("stETH is not present on %s", log.GetBaseNet(core.GetChainId(e.Client)))
+	}
 }
 
 func (e *Engine) getLastSyncedTill() int64 {
@@ -76,11 +80,14 @@ func (e *Engine) getLastSyncedTill() int64 {
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {
 		// address Provider
-		obj := address_provider.NewAddressProvider(e.Client, e.repo, e.config.AddressProviderAddrs)
+		addrProviders := core.GetAddressProvider(core.GetChainId(e.Client), core.VersionType{})
+		obj := address_provider.NewAddressProvider(e.Client, e.repo, addrProviders)
 		e.repo.AddSyncAdapter(obj)
 		// pool LM rewards
-		lmrewardsv2Obj := lmrewardsv2.NewLMRewardsv2("0x00000000000000000000000000000000000beef2", obj.FirstLogAt-1, e.Client, e.repo)
-		e.repo.AddSyncAdapter(lmrewardsv2Obj)
+		if log.GetBaseNet(core.GetChainId(e.Client)) == "MAINNET" {
+			lmrewardsv2Obj := lmrewardsv2.NewLMRewardsv2("0x00000000000000000000000000000000000beef2", obj.FirstLogAt-1, e.Client, e.repo)
+			e.repo.AddSyncAdapter(lmrewardsv2Obj)
+		}
 		lmrewardsv3Obj := lmrewardsv3.NewLMRewardsv3("0x00000000000000000000000000000000000beef3", obj.FirstLogAt-1, e.Client, e.repo)
 		e.repo.AddSyncAdapter(lmrewardsv3Obj)
 		//

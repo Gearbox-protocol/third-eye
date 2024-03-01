@@ -122,12 +122,37 @@ func (mdl *CompositeChainlinkPF) OnLog(types.Log) {
 
 }
 
+// func (mdl CompositeChainlinkPF) getTokens() []string {
+// 	if token := mdl.Details["token"]; token != nil {
+// 		switch v := token.(type) {
+// 		case string:
+// 			return []string{v}
+// 		case []interface{}:
+// 			ans := make([]string, 0, len(v))
+// 			for _, x := range v {
+// 				ans = append(ans, x.(string))
+// 			}
+// 			return ans
+// 		default:
+// 			log.Fatalf("token not set: %v", token)
+// 		}
+// 	}
+// 	return nil
+// }
+
 func (mdl *CompositeChainlinkPF) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
-	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
+	if mdl.GetDetailsByKey("token") != token {
+		log.Fatal("miss match in stored token from newly added token", mdl.GetDetailsByKey("token"), token)
+	}
+	// tokens := mdl.getTokens()
+	// if !utils.Contains(tokens, token) {
+	// 	mdl.Details["token"] = append(tokens, token)
+	// }
+	mdl.mergedPFManager.AddToken(mdl.Address, blockNum, pfVersion)
 }
 
 func (mdl CompositeChainlinkPF) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
-	mdl.mergedPFManager.DisableToken(token, blockNum, pfVersion)
+	mdl.mergedPFManager.DisableToken(blockNum, pfVersion)
 	final := mdl.mergedPFManager.GetMergedPFVersion(blockNum, mdl.Address)
 	if final == 0 {
 		mdl.SetBlockToDisableOn(blockNum)
