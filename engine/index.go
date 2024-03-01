@@ -80,7 +80,8 @@ func (e *Engine) getLastSyncedTill() int64 {
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {
 		// address Provider
-		obj := address_provider.NewAddressProvider(e.Client, e.repo, e.config.AddressProviderAddrs)
+		addrProviders := core.GetAddressProvider(core.GetChainId(e.Client), core.VersionType{})
+		obj := address_provider.NewAddressProvider(e.Client, e.repo, addrProviders)
 		e.repo.AddSyncAdapter(obj)
 		// pool LM rewards
 		lmrewardsv2Obj := lmrewardsv2.NewLMRewardsv2("0x00000000000000000000000000000000000beef2", obj.FirstLogAt-1, e.Client, e.repo)
