@@ -29,7 +29,7 @@ func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo) *PrevPriceSt
 		prevPriceFeeds: map[schemas.PFVersion]map[string]*schemas.PriceFeed{},
 		mu:             &sync.Mutex{},
 	}
-	if log.GetNetworkName(chainId) != "TEST" && log.GetNetworkName(chainId) == "MAINNET" {
+	if log.GetNetworkName(chainId) != "TEST" {
 		store.spotOracle = ds.SetOneInchUpdater(client, tokensRepo)
 	}
 	return store
@@ -103,19 +103,19 @@ func (repo *PrevPriceStore) saveCurrentPrices(client core.ClientI, tx *gorm.DB, 
 		// so if it's empty, we don't need to store currentPrice and nor fetch 1inch prices in usdc
 		return
 	}
-	if log.GetBaseNet(core.GetChainId(client)) == "ARBITRUM" {
-		spot := []*schemas.TokenCurrentPrice{}
-		for _, price := range currentPricesToSync {
-			spot = append(spot, &schemas.TokenCurrentPrice{
-				PriceBI:  price.PriceBI,
-				Price:    utils.GetFloat64Decimal(price.PriceBI.Convert(), 8),
-				BlockNum: blockNum,
-				Token:    price.Token,
-				PriceSrc: string(core.SOURCE_SPOT),
-			})
-		}
-		currentPricesToSync = append(currentPricesToSync, spot...)
-	}
+	// if log.GetBaseNet(core.GetChainId(client)) == "ARBITRUM" {
+	// 	spot := []*schemas.TokenCurrentPrice{}
+	// 	for _, price := range currentPricesToSync {
+	// 		spot = append(spot, &schemas.TokenCurrentPrice{
+	// 			PriceBI:  price.PriceBI,
+	// 			Price:    utils.GetFloat64Decimal(price.PriceBI.Convert(), 8),
+	// 			BlockNum: blockNum,
+	// 			Token:    price.Token,
+	// 			PriceSrc: string(core.SOURCE_SPOT),
+	// 		})
+	// 	}
+	// 	currentPricesToSync = append(currentPricesToSync, spot...)
+	// }
 	// spot prices to updated
 	if repo.spotOracle != nil {
 		calls := repo.spotOracle.GetCalls()
