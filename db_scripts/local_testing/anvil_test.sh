@@ -42,7 +42,7 @@ set -e
 PWD=`pwd`
 LOCAL_DB="host=localhost user=debian  dbname=sample"
 cd /home/debian/anvil-third-eye
-go run "scripts/merged_pf_version_reset/main.go" "$LOCAL_DB" $FORK_BLOCK
+# go run "scripts/merged_pf_version_reset/main.go" "$LOCAL_DB" $FORK_BLOCK
 cd $PWD
 createdb -O $SUPERUSER -T sample tmp_sample
 
