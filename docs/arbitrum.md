@@ -7,3 +7,4 @@
 - farming pools info is not added to sdk-gov , like it is added for mainnet. In the tokens.ts for mainnet we have sdUSDCv3 , sdWETHv3 and other token details that are farmed tokens. This info is missing handle this in the ts-> go config generator. 
 - disable lm rewards v2 logic for arbitrum, disable the sync adapter for lmrewards v2.
 - On mainnet the price of gearbox token is fetched using curve pool, 0x0E9B5B092caD6F1c5E6bc7f89Ffe1abb5c95F1C2 , that is missing on arbitrum, need to add logic for that in the inch oracle in sdk-go. [TODO]
+- set price in spot oracle (1inch oracle) for USDC_e, USDC token on networks other table mainnet.
