@@ -33,7 +33,6 @@ func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 		return
 	}
 
-	log.Info(from, mdl.getZapPoolv2())
 	if from == mdl.getZapPoolv2() {
 		mdl.updatesForPoolv2 = append(mdl.updatesForPoolv2, UpdatePoolLedger{
 			Zapper:   from,

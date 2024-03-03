@@ -54,8 +54,16 @@ func readAndGetReader(a io.Reader) ([]byte, error) {
 	str := b.Bytes()
 	return str, nil
 }
-func (ep *TenderlyFetcher) getData(txHash string) (*TenderlyTrace, error) {
+func (ep *TenderlyFetcher) getTenderly(txHash string) (*TenderlyTrace, error) {
 	link := fmt.Sprintf("https://api.tenderly.co/api/v1/public-contract/%d/trace/%s", ep.ChainId, txHash)
+	return ep.getUrl(link)
+}
+func (ep *TenderlyFetcher) getProxy(txHash string) (*TenderlyTrace, error) {
+	link := fmt.Sprintf("https://testnet.gearbox.foundation/redstone/tenderly/%d/%s", ep.ChainId, txHash)
+	return ep.getUrl(link)
+}
+
+func (ep *TenderlyFetcher) getUrl(link string) (*TenderlyTrace, error) {
 	req, _ := http.NewRequest(http.MethodGet, link, nil)
 	resp, err := ep.Client.Do(req)
 	if err != nil {
@@ -67,31 +75,32 @@ func (ep *TenderlyFetcher) getData(txHash string) (*TenderlyTrace, error) {
 
 	err = json.Unmarshal(msg, trace)
 	if err != nil {
-		log.Info(string(msg))
-		log.Fatal(err, " for ", link)
 		return nil, err
 	}
 	return trace, nil
 }
 
-func (ep *TenderlyFetcher) getTxTrace(txHash string) *TenderlyTrace {
-	trace, err := ep.getData(txHash)
+func (ep *TenderlyFetcher) getTxTrace(txHash string) (*TenderlyTrace, error) {
+	trace, err := ep.getTenderly(txHash)
 	if err != nil {
-		log.Fatal(err)
+		trace, err = ep.getProxy(txHash)
+		if err != nil {
+			return nil, log.WrapErrWithLine(err)
+		}
 	}
 	if trace.CallTrace == nil {
 		log.Info("Call trace nil retrying in 30 sec")
 		time.Sleep(30 * time.Second)
-		trace, err = ep.getData(txHash)
+		trace, err = ep.getTenderly(txHash)
 		if err != nil {
-			log.Fatal(err)
+			return nil, log.WrapErrWithLine(err)
 		}
 		if trace.CallTrace == nil {
 			log.Fatal("Retry failed for tenderly: ", txHash)
 		}
-		return trace
+		return trace, nil
 	}
-	return trace
+	return trace, nil
 }
 
 type TenderlyFetcher struct {
@@ -158,13 +167,15 @@ func (ep InternalFetcher) check() {
 func (ep InternalFetcher) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *TenderlyTrace {
 	var trace *TenderlyTrace
 	if ep.useTenderlyTrace {
-		trace = ep.tenderlyFetcher.getTxTrace(txHash)
+		var err error
+		trace, err = ep.tenderlyFetcher.getTxTrace(txHash)
+		log.CheckFatal(err)
 	} else {
 		var err error
 		trace, err = ep.parityFetcher.getTxTrace(txHash)
 		if err != nil {
 			log.Info("fallback on tenderly due to", err, " for ", txHash)
-			trace = ep.tenderlyFetcher.getTxTrace(txHash)
+			trace, err = ep.tenderlyFetcher.getTxTrace(txHash)
 		}
 	}
 	//
