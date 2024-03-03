@@ -79,6 +79,7 @@ func (mdl *Poolv3) setZapper() {
 	var ETHAddr common.Address
 	if poolToCheck.Underlying == syms.Tokens["WETH"] {
 		ETHAddr = syms.Tokens["ETH"]
+		log.Info(ETHAddr)
 	}
 
 	// out = farmedUSDCv3, dUSDCv3
@@ -97,6 +98,9 @@ func (mdl *Poolv3) setZapper() {
 			mdl.setDetailsByKey("dUSDC-farmedUSDCv3", zapper.Zapper.Hex())
 			mdl.setDetailsByKey("dUSDC", zapper.TokenIn.Hex())
 		}
+	}
+	if mdl.Details["dUSDC-farmedUSDCv3"] != nil {
+		log.Fatal("Can't get dUSDC from zapper for ", mdl.Address)
 	}
 	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" { // only on mainnet
 		if mdl.GetDetailsByKey("dUSDC") == "" {

@@ -33,6 +33,7 @@ func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 		return
 	}
 
+	log.Info(from, mdl.getZapPoolv2())
 	if from == mdl.getZapPoolv2() {
 		mdl.updatesForPoolv2 = append(mdl.updatesForPoolv2, UpdatePoolLedger{
 			Zapper:   from,
@@ -65,6 +66,7 @@ func (mdl *Poolv3) updateFarmedv3(txLog types.Log) {
 			Shares:   shares,
 		}
 	}
+	log.Info(to, mdl.getZapPoolv2())
 	if to == mdl.getZapPoolv2() {
 		mdl.updatesForPoolv2 = append(mdl.updatesForPoolv2, UpdatePoolLedger{
 			Zapper:   to,
@@ -114,6 +116,7 @@ func (mdl *Poolv3) UpdatePoolv2Ledger(tx *gorm.DB) {
 		if update.Type == "" {
 			continue
 		}
+		log.Info(utils.ToJson(update))
 		x := tx.Exec(`UPDATE pool_ledger set user_address=? WHERE block_num=? AND event = ? AND tx_hash=? AND user_address in (?, ?)`,
 			update.User, update.BlockNum, update.Type, update.TxHash, update.User, update.Zapper)
 		log.CheckFatal(x.Error)
