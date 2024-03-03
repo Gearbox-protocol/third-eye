@@ -4,10 +4,15 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOraclev3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -76,8 +81,8 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionTy
 		prices = v2PriceAnswers(result[:len(tokenAddrs)])
 	}
 	for ind, token := range tokenAddrs {
-		if IsRedStoneToken(repo.client, token) {
-			if price := repo.GetRedStonePrice(blockNum, token); price != nil {
+		if prices[ind] == nil && repo.IsRedStoneToken(blockNum, oracle, token) {
+			if price := repo.GetRedStonePrice(blockNum, oracle, token); price != nil {
 				prices[ind] = price
 			}
 		}
@@ -90,17 +95,25 @@ func (repo TreasuryRepo) GetRedStonemgr() redstone.RedStoneMgrI {
 	return repo.redstoneMgr
 }
 
-func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, token string) *big.Int {
-	if IsRedStoneToken(repo.client, token) {
+func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle, token string) *big.Int {
+	if repo.IsRedStoneToken(blockNum, oracle, token) {
 		ts := repo.blocks.SetAndGetBlock(blockNum).Timestamp
 		return repo.GetRedStonemgr().GetPrice(int64(ts), token)
 	}
 	return nil
 }
 
-func IsRedStoneToken(client core.ClientI, token string) bool {
-	pfs := core.GetRedStonePFByChainId(core.GetChainId(client))
-	tokenToSym := core.GetTokenToSymbolByChainId(core.GetChainId(client))
-	_, ok := pfs.Mains[tokenToSym[common.HexToAddress(token)]]
-	return ok
+func (repo TreasuryRepo) IsRedStoneToken(blockNum int64, oracle string, token string) bool {
+	pon, err := priceOraclev3.NewPriceOraclev3(common.HexToAddress(oracle), repo.client)
+	log.CheckFatal(err)
+	priceFeed, err := pon.PriceFeeds(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)}, common.HexToAddress(token))
+	if err != nil {
+		return false
+	}
+	adapter, ok := repo.adapters.GetAdapter(priceFeed.Hex()).(*query_price_feed.QueryPriceFeed)
+	if !ok {
+		return false
+	}
+	return adapter.GetPFType() == ds.RedStonePF
+	//
 }

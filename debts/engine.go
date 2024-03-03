@@ -330,11 +330,12 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	eng.AddDebt(debt, sessionSnapshot.BlockNum == blockNum)
 }
 
+// todo fix, also check the feed type at this block number
 func (eng *DebtEngine) hasRedStoneToken(balances *core.DBBalanceFormat) bool {
 	pfs := core.GetRedStonePFByChainId(core.GetChainId(eng.client))
 	addToSym := core.GetTokenToSymbolByChainId(core.GetChainId(eng.client))
 	for tokenAddr, details := range *balances {
-		if _, ok := pfs.Mains[addToSym[common.HexToAddress(tokenAddr)]]; details.IsEnabled && details.HasBalanceMoreThanOne() && ok {
+		if _, ok := pfs[addToSym[common.HexToAddress(tokenAddr)]]; details.IsEnabled && details.HasBalanceMoreThanOne() && ok {
 			return true
 		}
 	}

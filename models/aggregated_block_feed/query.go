@@ -55,12 +55,6 @@ func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
 	wg.Wait()
 	return blockNum - mdl.Interval
 }
-func IsRedStoneToken(client core.ClientI, token string) bool {
-	pfs := core.GetRedStonePFByChainId(core.GetChainId(client))
-	tokenToSym := core.GetTokenToSymbolByChainId(core.GetChainId(client))
-	_, ok := pfs.Mains[tokenToSym[common.HexToAddress(token)]]
-	return ok
-}
 func (mdl *AQFWrapper) queryRedStone(blockNum int64) {
 	// for redstone
 	for _, adapter := range mdl.QueryFeeds {
@@ -68,7 +62,7 @@ func (mdl *AQFWrapper) queryRedStone(blockNum int64) {
 		validTokens := adapter.TokensValidAtBlock(blockNum)
 		if adapter.GetPFType() == ds.RedStonePF &&
 			adapter.GetLastSync() < blockNum &&
-			len(validTokens) > 0 && IsRedStoneToken(mdl.Client, validTokens[0].Token) { // if adapter has redstone token, then fetch from redstone
+			len(validTokens) > 0 && adapter.GetPFType() == ds.RedStonePF { // if adapter has redstone token, then fetch from redstone
 			priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token)
 			//
 			isPriceInUSD := adapter.GetVersion().IsPriceInUSD() // should be always true

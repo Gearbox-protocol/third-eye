@@ -48,8 +48,8 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
 			{ // one token is redstone token
-				tokenPrice := repo.GetRedStonePrice(blockNum, token)
-				currencyPrice := repo.GetRedStonePrice(blockNum, currency)
+				tokenPrice := repo.GetRedStonePrice(blockNum, oracle, token)
+				currencyPrice := repo.GetRedStonePrice(blockNum, oracle, currency)
 				if tokenPrice != nil || currencyPrice != nil {
 					if tokenPrice == nil {
 						tokenPrice, err = poContract.GetPrice(opts, common.HexToAddress(token))

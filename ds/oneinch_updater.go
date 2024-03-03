@@ -9,7 +9,7 @@ var _oneInchUpdater *priceFetcher.OneInchOracle
 
 func SetOneInchUpdater(client core.ClientI, tStore priceFetcher.DecimalStoreI) *priceFetcher.OneInchOracle {
 	if _oneInchUpdater == nil {
-		_oneInchUpdater = priceFetcher.New1InchOracle(client, core.GetChainId(client), tStore)
+		_oneInchUpdater = priceFetcher.New1InchOracle(client, tStore, "")
 	}
 	return _oneInchUpdater
 }

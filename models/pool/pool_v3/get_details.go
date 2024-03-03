@@ -78,7 +78,9 @@ func (mdl *Poolv3) setZapper() {
 	farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 	var ETHAddr common.Address
 	if poolToCheck.Underlying == syms.Tokens["WETH"] {
-		ETHAddr = syms.Tokens["ETH"]
+		// TODO ? why is eth address not set in tokens
+		// ETHAddr = syms.Tokens["ETH"]
+		ETHAddr = common.HexToAddress("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
 		log.Info(ETHAddr)
 	}
 

@@ -55,12 +55,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
 			addrToSym := core.GetTokenToSymbolByChainId(core.GetChainId(mdl.Client))
 			sym := addrToSym[common.HexToAddress(token)]
-			var ok bool
-			if isReverse {
-				_, ok = pfs.Reserves[sym]
-			} else {
-				_, ok = pfs.Mains[sym]
-			}
+			_, ok := pfs[sym]
 			if !ok {
 				log.Warnf("RedStonePF not found in config for %s(%s). update sd-go.", sym, token)
 			}
