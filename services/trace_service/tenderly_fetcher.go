@@ -1,9 +1,10 @@
 package trace_service
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -44,6 +45,15 @@ type TenderlyTrace struct {
 	BlockNumber int64  `json:"block_number"`
 }
 
+func readAndGetReader(a io.Reader) ([]byte, error) {
+	b := bytes.NewBuffer(nil)
+	_, err := b.ReadFrom(a)
+	if err != nil {
+		return nil, err
+	}
+	str := b.Bytes()
+	return str, nil
+}
 func (ep *TenderlyFetcher) getData(txHash string) (*TenderlyTrace, error) {
 	link := fmt.Sprintf("https://api.tenderly.co/api/v1/public-contract/%d/trace/%s", ep.ChainId, txHash)
 	req, _ := http.NewRequest(http.MethodGet, link, nil)
@@ -51,14 +61,14 @@ func (ep *TenderlyFetcher) getData(txHash string) (*TenderlyTrace, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
+	msg, err := readAndGetReader(resp.Body)
+	log.CheckFatal(err)
 	trace := &TenderlyTrace{}
-	err = json.Unmarshal(body, trace)
+
+	err = json.Unmarshal(msg, trace)
 	if err != nil {
-		log.Fatal(err, " for ", txHash)
+		log.Info(string(msg))
+		log.Fatal(err, " for ", link)
 		return nil, err
 	}
 	return trace, nil

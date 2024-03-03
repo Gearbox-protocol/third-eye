@@ -81,7 +81,6 @@ func (mdl *Poolv3) setZapper() {
 		// TODO ? why is eth address not set in tokens
 		// ETHAddr = syms.Tokens["ETH"]
 		ETHAddr = common.HexToAddress("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
-		log.Info(ETHAddr)
 	}
 
 	// out = farmedUSDCv3, dUSDCv3
