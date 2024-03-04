@@ -128,6 +128,22 @@ func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 	pfType := new(big.Int).SetBytes(data).Int64()
 	switch pfType {
 	case core.V3_COMPOSITE_ORACLE:
+		{ // composite feed is using redstone feed
+			// https://etherscan.io/address/0x8751F736E94F6CD167e8C5B97E245680FbD9CC36#readProxyContract
+			// this composite feed doesn't have known internal chainlink feeds.
+			// third-eye queries price feeds in 2 ways, for chainlink and compsite feeds it filters logs.
+			// For other , it fetches prices periodic.
+			// The new composite has internal feeds that don’t have known chainlink abi sigs. So, composite feed adapter is failing.
+			// I will treat them as query feed to be periodic synced every 10-15 blocks.
+
+			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
+			log.CheckFatal(err)
+			description, err := yearnContract.Description(opts)
+			log.CheckFatal(err)
+			if strings.Contains(strings.ToLower(description), "redstone") {
+				return ds.CurvePF, false, nil
+			}
+		}
 		return ds.CompositeChainlinkPF, false, nil
 	case core.V3_YEARN_ORACLE:
 		return ds.YearnPF, false, nil
