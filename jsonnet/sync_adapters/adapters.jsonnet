@@ -48,10 +48,12 @@
       details: {
         oracle: '#Oracle_1',
         token: '#Token_1',
-        mergedPFVersion: [{
-          blockNum: 3,
-          mergedPFVersion: 1,
-        }],
+        mergedPFVersion: {
+          '#Token_1': [{
+            blockNum: 3,
+            mergedPFVersion: 1,
+          }],
+        },
       },
       disabled: false,
       disabled_at: 0,
@@ -67,10 +69,12 @@
       details: {
         oracle: '#Oracle_5',
         token: '#Token_1',
-        mergedPFVersion: [{
-          blockNum: 6,
-          mergedPFVersion: 2,
-        }],
+        mergedPFVersion: {
+          '#Token_1': [{
+            blockNum: 6,
+            mergedPFVersion: 2,
+          }],
+        },
       },
       disabled: false,
       disabled_at: 0,

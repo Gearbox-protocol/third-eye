@@ -14,7 +14,6 @@ import (
 )
 
 type CompositeChainlinkPF struct {
-	Token string
 	*ds.SyncAdapter
 	BaseTokenMainAgg *cpf.ChainlinkMainAgg
 	MainAgg          *cpf.ChainlinkMainAgg
@@ -90,7 +89,6 @@ func toDecimals(decimals interface{}) int8 {
 func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChainlinkPF {
 	compositeMdl := &CompositeChainlinkPF{
 		SyncAdapter:      adapter,
-		Token:            adapter.GetDetailsByKey("token"),
 		decimalsOfBasePF: toDecimals(adapter.GetDetails()["decimals"]),
 	}
 	compositeMdl.BaseTokenMainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("base"))

@@ -103,7 +103,7 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 		} else {
 			discoveredAt = mdl.MainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
 		}
-		for _, token := range mdl.getTokens() {
+		for _, token := range mdl.mergedPFManager.GetTokens(discoveredAt) {
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 				Token:       token,
 				Oracle:      mdl.MainAgg.Addr.Hex(),
