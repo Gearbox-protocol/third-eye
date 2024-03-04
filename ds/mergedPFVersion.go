@@ -42,13 +42,27 @@ func (mdl *MergedPFManager) Load(details core.Json, discoveredAt int64) {
 			mdl.add(int64(v), details, discoveredAt)
 			return
 		case []interface{}:
-			token := details["token"].(string)
+			var tokens []string
+			switch _tokens := details["token"].(type) {
+			case string:
+				tokens = []string{_tokens}
+			case []string:
+				tokens = _tokens
+			case []interface{}:
+				for _, x := range _tokens {
+					tokens = append(tokens, x.(string))
+				}
+			default:
+				log.Fatal("can't get mergedPFVersion", details, reflect.TypeOf(details["token"]))
+			}
 			for _, det := range v {
 				snapDetails := det.(map[string]interface{})
-				(*mdl)[token] = append((*mdl)[token], entry{
-					MergedPFVersion: schemas.MergedPFVersion(snapDetails["mergedPFVersion"].(float64)),
-					BlockNumber:     int64(snapDetails["blockNum"].(float64)),
-				})
+				for _, token := range tokens {
+					(*mdl)[token] = append((*mdl)[token], entry{
+						MergedPFVersion: schemas.MergedPFVersion(snapDetails["mergedPFVersion"].(float64)),
+						BlockNumber:     int64(snapDetails["blockNum"].(float64)),
+					})
+				}
 			}
 		case map[string]interface{}:
 			for token, det := range v {
