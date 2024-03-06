@@ -241,6 +241,13 @@ func (mdl *CMv3) onIncreaseBorrowedAmountV3(txLog *types.Log, creditAccount stri
 	blockNum := int64(txLog.BlockNumber)
 	action, args := mdl.ParseEvent(eventName, txLog)
 	// add account operation
+
+	if amount.Sign() == 1 {
+		mdl.PoolBorrow(txLog, sessionId, borrower, amount)
+	} else { // set the repayed amount from the pool events but from the decreased debt event on cm.
+		repayAmount := mdl.poolRepayv3(txLog.TxHash.Hex(), sessionId, borrower)
+		amount = new(big.Int).Neg(repayAmount)
+	}
 	accountOperation := &schemas.AccountOperation{
 		TxHash:      txLog.TxHash.Hex(),
 		BlockNumber: blockNum,
@@ -256,17 +263,13 @@ func (mdl *CMv3) onIncreaseBorrowedAmountV3(txLog *types.Log, creditAccount stri
 		Dapp: txLog.Address.Hex(),
 	}
 	mdl.MulticallMgr.AddMulticallEvent(accountOperation)
-	if amount.Sign() == 1 {
-		mdl.PoolBorrow(txLog, sessionId, borrower, amount)
-	} else {
-		mdl.poolRepayv3(txLog.TxHash.Hex(), sessionId, borrower)
-	}
+	//
 	session := mdl.Repo.UpdateCreditSession(sessionId, nil)
 	session.BorrowedAmount = (*core.BigInt)(new(big.Int).Add(session.BorrowedAmount.Convert(), amount))
 	return nil
 }
 
-func (mdl *CMv3) poolRepayv3(txHash, sessionId, borrower string) {
+func (mdl *CMv3) poolRepayv3(txHash, sessionId, borrower string) *big.Int {
 	poolv3 := mdl.Repo.GetAdapter(mdl.State.PoolAddress).(*pool_v3.Poolv3)
 	poolLedgerEvent := poolv3.GetRepayEvent()
 	if txHash != poolLedgerEvent.TxHash {
@@ -275,6 +278,7 @@ func (mdl *CMv3) poolRepayv3(txHash, sessionId, borrower string) {
 	poolLedgerEvent.User = borrower
 	poolLedgerEvent.SessionId = sessionId
 	mdl.Repo.AddPoolLedger(poolLedgerEvent)
+	return (*big.Int)(poolLedgerEvent.AmountBI)
 }
 
 func (mdl *CMv3) AddExecuteParamsV3(txLog *types.Log,
