@@ -38,7 +38,7 @@ func main() {
 		} else {
 			mgr := ds.MergedPFManager{}
 			mgr.Load(adapter.GetDetails(), adapter.FirstLogAt)
-			// mgr.DeleteAfter(deletedB)
+			mgr.DeleteAfter(deletedB)
 			mgr.Save(&adapter.Details)
 		}
 	}

@@ -67,6 +67,7 @@ func (mdl *MergedPFManager) Load(details core.Json, discoveredAt int64) {
 			}
 		case map[string]interface{}:
 			for token, det := range v {
+				log.Info(token, det)
 				snaps := det.([]interface{})
 				for _, snap := range snaps {
 					snapDetails := snap.(map[string]interface{})
@@ -136,4 +137,20 @@ func (mdl MergedPFManager) DisableToken(blockNum int64, token string, pfVersion 
 		MergedPFVersion: final,
 		BlockNumber:     blockNum,
 	})
+}
+
+func (mdl MergedPFManager) DeleteAfter(blockNum int64) {
+	for token, entries := range mdl {
+		var newEntries []entry
+		for _, entry := range entries {
+			if entry.BlockNumber <= blockNum {
+				newEntries = append(newEntries, entry)
+			}
+		}
+		if len(newEntries) == 0 {
+			delete(mdl, token)
+		} else {
+			mdl[token] = newEntries
+		}
+	}
 }
