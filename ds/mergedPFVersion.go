@@ -1,6 +1,7 @@
 package ds
 
 import (
+	"fmt"
 	"reflect"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -89,14 +90,20 @@ func (mdl MergedPFManager) Save(details *core.Json) {
 }
 
 func (mdl MergedPFManager) GetMergedPFVersion(token string, blockNum int64, syncAdapterAddr string) schemas.MergedPFVersion {
+	version, err := mdl.getMergedPFVersion(token, blockNum, syncAdapterAddr)
+	log.CheckFatal(err)
+	return version
+}
+
+func (mdl MergedPFManager) getMergedPFVersion(token string, blockNum int64, syncAdapterAddr string) (schemas.MergedPFVersion, error) {
 	for ind := len(mdl[token]) - 1; ind >= 0; ind-- {
 		if mdl[token][ind].BlockNumber <= blockNum {
-			return mdl[token][ind].MergedPFVersion
+			return mdl[token][ind].MergedPFVersion, nil
 		}
 	}
-	log.Fatal("Can't get mergedPFVersion", mdl, blockNum, syncAdapterAddr)
-	return schemas.MergedPFVersion(0)
+	return schemas.MergedPFVersion(0), fmt.Errorf("can't get mergedPFVersion %v at %d for adapter: %s", mdl, blockNum, syncAdapterAddr)
 }
+
 func (mdl MergedPFManager) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
 	var last schemas.MergedPFVersion
 	if len(mdl[token]) != 0 {
@@ -110,8 +117,8 @@ func (mdl MergedPFManager) AddToken(token string, blockNum int64, pfVersion sche
 }
 func (mdl MergedPFManager) GetTokens(blockNum int64) (tokens []string) {
 	for token := range mdl {
-		version := mdl.GetMergedPFVersion(token, blockNum, "")
-		if version != 0 {
+		version, err := mdl.getMergedPFVersion(token, blockNum, "")
+		if version != 0 && err == nil {
 			tokens = append(tokens, token)
 		}
 	}

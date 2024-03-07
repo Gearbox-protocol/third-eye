@@ -107,7 +107,7 @@ func (mdl *QueryPriceFeed) AddToken(token string, discoveredAt int64, pfVersion 
 func (mdl *QueryPriceFeed) DisableToken(token string, disabledAt int64, pfVersion schemas.PFVersion) {
 	tokenDetails := mdl.DetailsDS.Tokens[token]
 	if tokenDetails == nil || len(tokenDetails[pfVersion]) != 1 {
-		log.Fatalf("%s's enable block number for pfVersion %d is malformed: %v", token, pfVersion, tokenDetails)
+		log.Fatalf("%s's enable block number for pfVersion %d is malformed: %v, trying with new block: %d", token, pfVersion, tokenDetails, disabledAt)
 	}
 	tokenDetails[pfVersion] = append(tokenDetails[pfVersion], disabledAt)
 }
