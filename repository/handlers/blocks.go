@@ -68,7 +68,7 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 		UpdateAll: true,
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
-	repo.prevStore.saveCurrentPrices(repo.client, tx, blockNum)
+	repo.prevStore.saveCurrentPrices(repo.client, tx, blockNum, repo.SetAndGetBlock(blockNum).Timestamp)
 }
 
 // external funcs

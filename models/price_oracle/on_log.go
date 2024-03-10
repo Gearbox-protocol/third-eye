@@ -124,7 +124,23 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
 func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, bool, error) {
 	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
-	log.CheckFatal(err)
+	if err != nil {
+		{ // redstone feed without price on demand doesn't have priceFeedType method.
+			//https://etherscan.io/address/0xbC5FBcf58CeAEa19D523aBc76515b9AEFb5cfd58#readProxyContract
+			con, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
+			log.CheckFatal(err)
+			if description, err := con.Description(nil); err != nil {
+				log.Fatal(oracle, token, "priceFeedType failed: ", err)
+			} else {
+				description = strings.ToLower(string(description))
+				if strings.Contains(description, "redstone") {
+					return ds.CurvePF, false, nil
+				} else {
+					log.Fatal(oracle, token, "priceFeedType failed: ", description, err)
+				}
+			}
+		}
+	}
 	pfType := new(big.Int).SetBytes(data).Int64()
 	switch pfType {
 	case core.V3_COMPOSITE_ORACLE:

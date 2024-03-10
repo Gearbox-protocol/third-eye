@@ -96,7 +96,7 @@ func (repo *PrevPriceStore) getCurrentPrice() (ans []*schemas.TokenCurrentPrice)
 	}
 	return getPrice(repo.prevPriceFeeds[schemas.V2PF])
 }
-func (repo *PrevPriceStore) saveCurrentPrices(client core.ClientI, tx *gorm.DB, blockNum int64) {
+func (repo *PrevPriceStore) saveCurrentPrices(client core.ClientI, tx *gorm.DB, blockNum int64, ts uint64) {
 	// chainlink current prices to updated
 	currentPricesToSync := repo.getCurrentPrice()
 	if len(currentPricesToSync) == 0 { // usd prices are set? only valid from v2
@@ -120,7 +120,7 @@ func (repo *PrevPriceStore) saveCurrentPrices(client core.ClientI, tx *gorm.DB, 
 	if repo.spotOracle != nil {
 		calls := repo.spotOracle.GetCalls()
 		results := core.MakeMultiCall(client, blockNum, false, calls)
-		for token, priceBI := range repo.spotOracle.GetPrices(results, blockNum) {
+		for token, priceBI := range repo.spotOracle.GetPrices(results, blockNum, ts) {
 			currentPricesToSync = append(currentPricesToSync, &schemas.TokenCurrentPrice{
 				PriceBI:  priceBI,
 				Price:    utils.GetFloat64Decimal(priceBI.Convert(), 8),

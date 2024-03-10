@@ -67,7 +67,6 @@ func (mdl *MergedPFManager) Load(details core.Json, discoveredAt int64) {
 			}
 		case map[string]interface{}:
 			for token, det := range v {
-				log.Info(token, det)
 				snaps := det.([]interface{})
 				for _, snap := range snaps {
 					snapDetails := snap.(map[string]interface{})
