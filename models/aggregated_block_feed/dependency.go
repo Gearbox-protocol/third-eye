@@ -72,6 +72,9 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int
 		//
 		for _, dependentSym := range q.ChainlinkSymToQueryPFSyms[chainlinkSym] {
 			depAddr := q.getTokenAddr(dependentSym)
+			if depAddr == "" {
+				continue
+			}
 			for _, blockNum := range blockNums {
 				// if a new chainlink price oracle is added it will create initial pf entry for lower block number
 				// and queryPFDependency will try to fetch dependent query token's pf for this lower block number.
@@ -195,6 +198,7 @@ func getDepGraph(chainId int64) map[string][]string {
 			}
 			depGraph[sym] = x
 		}
+		delete(depGraph, "cLINK")
 	}
 	return depGraph
 }

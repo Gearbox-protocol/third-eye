@@ -57,6 +57,9 @@ func TokenSymMapFromchainId(chainId int64) TokenSymMap {
 func (x TokenSymMap) getTokenAddr(sym string) string {
 	addr := x.symToAddr[sym]
 	if addr == core.NULL_ADDR {
+		if log.GetBaseNet(x.chainId) == "ARBITRUM" {
+			return ""
+		}
 		log.Fatal("Token sym not found  in embedded jsonnet", sym)
 	}
 	return addr.Hex()
