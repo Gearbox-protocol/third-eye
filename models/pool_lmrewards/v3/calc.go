@@ -92,7 +92,7 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 			}
 			farmAndItsUsers[to].AddCorrection(diff)
 		}
+		mdl.performTransfer(farmAddr, from, to, amount, blockNum)
 	}
 	//
-	mdl.performTransfer(farmAddr, from, to, amount, blockNum)
 }
