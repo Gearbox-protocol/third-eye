@@ -74,7 +74,7 @@ func (mdl CommonCMAdapter) AddCollateralToSession(blockNum int64, sessionId, tok
 // if mainEvent is opencreditaccount , called from facade_actions
 // if openCreditAccountWithoutMulticall called for v2
 func (mdl CommonCMAdapter) AddCollateralForOpenCreditAccount(blockNum int64, version core.VersionType, mainAction *schemas.AccountOperation) {
-	collateral := mdl.getCollateralAmountOnOpen(blockNum, mainAction)
+	collateral := mdl.getCollateralAmountOnOpen(blockNum, version, mainAction)
 	(*mainAction.Args)["userFunds"] = collateral.String()
 	if version.MoreThanEq(core.NewVersion(300)) {
 		borrowedAmount := mdl.getBorrowAmountOnOpen(mainAction)
@@ -98,7 +98,7 @@ func (mdl CommonCMAdapter) getBorrowAmountOnOpen(mainAction *schemas.AccountOper
 	return borrowedAmount
 }
 
-func (mdl CommonCMAdapter) getCollateralAmountOnOpen(blockNum int64, mainAction *schemas.AccountOperation) *big.Int {
+func (mdl CommonCMAdapter) getCollateralAmountOnOpen(blockNum int64, version core.VersionType, mainAction *schemas.AccountOperation) *big.Int {
 	userFunds := map[string]*big.Int{}
 	for _, event := range mainAction.MultiCall {
 		if event.Action == "AddCollateral(address,address,uint256)" || // v2,v3
@@ -144,8 +144,8 @@ func (mdl CommonCMAdapter) getCollateralAmountOnOpen(blockNum int64, mainAction 
 	if userFunds[underlyingToken] != nil { // directly add collateral for underlying token
 		initialAmount = new(big.Int).Add(initialAmount, userFunds[underlyingToken])
 	}
-	if initialAmount == nil || initialAmount.Cmp(new(big.Int)) == 0 {
-		log.Fatal("Collateral for opencreditaccount v2 is zero or nil")
+	if (initialAmount == nil || initialAmount.Cmp(new(big.Int)) == 0) && !version.MoreThanEq(core.NewVersion(300)) {
+		log.Fatal("Collateral for opencreditaccount v2 is zero or nil", blockNum, utils.ToJson(mainAction))
 	}
 	return initialAmount
 }

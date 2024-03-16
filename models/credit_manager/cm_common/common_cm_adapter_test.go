@@ -40,7 +40,7 @@ func TestGetCollateralAmountOnOpen(t *testing.T) {
 		UnderlyingToken: weth,
 	}
 	// account has weth as underlying
-	collateral := common.getCollateralAmountOnOpen(5, &schemas.AccountOperation{
+	collateral := common.getCollateralAmountOnOpen(5, core.NewVersion(2), &schemas.AccountOperation{
 		MultiCall: []*schemas.AccountOperation{
 			{
 				Action: "AddCollateral(address,address,uint256)",
