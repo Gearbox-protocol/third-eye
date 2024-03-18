@@ -1,6 +1,6 @@
 module github.com/Gearbox-protocol/third-eye
 
-go 1.19
+go 1.20
 
 require (
 	github.com/Gearbox-protocol/sdk-go v0.0.0-20240317004000-4ec3c02fa7f4
