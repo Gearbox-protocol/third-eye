@@ -1,6 +1,8 @@
 package cm_v3
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditManagerv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -40,6 +42,8 @@ func (mdl *Cmv3State) SetUnderlyingState(obj interface{}) {
 		mdl.PnlOnCM.Set(underlyingObj)
 	case *schemas.Parameters:
 		mdl.SetParams(underlyingObj)
+	case *big.Int:
+		mdl.setTotalDebtLimit(underlyingObj)
 	default:
 		log.Fatal("Type assertion for credit manager state failed")
 	}
@@ -92,4 +96,8 @@ func (mdl Cmv3State) GetSessionIdAndBorrower(account string, dontFail ...bool) (
 		log.Fatalf("session id not found for %s cm(%s)\n", account, mdl.Address)
 	}
 	return details.SessionId, details.Borrower
+}
+
+func (mdl *Cmv3State) setTotalDebtLimit(total *big.Int) {
+	mdl.State.TotalDebtLimit = (*core.BigInt)(total)
 }

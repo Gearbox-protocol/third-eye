@@ -42,6 +42,10 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			Args:        &core.Json{"newInterestRateModel": interestRateModel.Hex()},
 		})
 		mdl.updateBorrowRate(blockNum)
+	case core.Topic("SetCreditManagerDebtLimit(address,uint256)"):
+		cm := common.BytesToAddress(txLog.Topics[1][:])
+		total := new(big.Int).SetBytes(txLog.Data[:32])
+		mdl.Repo.GetAdapter(cm.Hex()).SetUnderlyingState(total)
 		// while processing deposit event, sub from user and add to receiver
 	case core.Topic("Deposit(address,address,uint256,uint256)"):
 		deposit, err := mdl.contract.ParseDeposit(txLog)

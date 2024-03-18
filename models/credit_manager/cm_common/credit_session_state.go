@@ -182,6 +182,7 @@ func (mdl *CommonCMAdapter) setCSSCollateralFields(blockNum int64, session *sche
 	css.Collateral = session.Collateral
 
 	collateral := new(big.Int)
+	// log.Info(session.ID, session.Collateral)
 	for token, amount := range *session.Collateral {
 		valueInUnderlyingAsset := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, mdl.GetUnderlyingToken(), amount.Convert())
 		collateral = new(big.Int).Add(collateral, valueInUnderlyingAsset)

@@ -1,0 +1,1 @@
+alter table credit_managers add total_debt_limit varchar(80);
