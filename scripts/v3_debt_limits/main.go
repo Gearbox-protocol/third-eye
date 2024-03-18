@@ -39,5 +39,7 @@ func main() {
 		log.Info(minDebt, maxDebt)
 		err = db.Exec(`update credit_managers set min_amount=? , max_amount=? where address=?`, (*core.BigInt)(minDebt), (*core.BigInt)(maxDebt), entry.Address).Error
 		log.CheckFatal(err)
+		err = db.Exec(`update parameters set min_amount=? , max_amount=? where credit_manager=?`, (*core.BigInt)(minDebt), (*core.BigInt)(maxDebt), entry.Address).Error
+		log.CheckFatal(err)
 	}
 }

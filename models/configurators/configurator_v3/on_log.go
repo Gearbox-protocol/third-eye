@@ -206,6 +206,14 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 			Type: schemas.SetTokenLiquidationThresholdRamp,
 		})
 	case core.Topic("SetBorrowingLimits(uint128,uint128)"):
+		limitEvent, err := mdl.cfgContract.ParseSetBorrowingLimits(txLog)
+		log.CheckFatal(err)
+		mdl.Repo.UpdateLimits(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), &schemas.Parameters{
+			BlockNum:      int64(txLog.BlockNumber),
+			CreditManager: creditManager,
+			MinAmount:     (*core.BigInt)(limitEvent.MinDebt),
+			MaxAmount:     (*core.BigInt)(limitEvent.MaxDebt),
+		})
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),
 			LogID:       txLog.Index,
