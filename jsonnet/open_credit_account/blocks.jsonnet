@@ -81,6 +81,8 @@
       borrower: '#User_1',
       collateralInUSD: 1000,
       collateralInUnderlying: 1000,
+      instCollateralUSD: 1000,
+      instCollateralUnderlying: 1000,
       cumulativeIndexAtOpen: '1000000000000000000000000000',
       healthFactor: '11250',
       quotaFees: '0',

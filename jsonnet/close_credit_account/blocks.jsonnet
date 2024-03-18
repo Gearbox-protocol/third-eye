@@ -32,6 +32,8 @@
         borrower: '#User_1',
         collateralInUSD: 6500,
         collateralInUnderlying: 6500,
+        instCollateralUSD: 6500,
+        instCollateralUnderlying: 6500,
         cumulativeIndexAtOpen: '1000000000000000000000000000',
         healthFactor: '15600',
         sessionId: '#Account_1_3_3',
