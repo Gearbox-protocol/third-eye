@@ -176,15 +176,30 @@ func (mdl *CommonCMAdapter) closeSession(closedAt int64, session *schemas.Credit
 	mdl.createCSSnapshot(closedAt-1, session, data)
 }
 
+func (mdl *CommonCMAdapter) setCSSCollateralFields(blockNum int64, session *schemas.CreditSession, css *schemas.CreditSessionSnapshot) {
+	css.CollateralInUSD = session.CollateralInUSD
+	css.CollateralInUnderlying = session.CollateralInUnderlying
+	css.Collateral = session.Collateral
+
+	collateral := new(big.Int)
+	for token, amount := range *session.Collateral {
+		valueInUnderlyingAsset := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, mdl.GetUnderlyingToken(), amount.Convert())
+		collateral = new(big.Int).Add(collateral, valueInUnderlyingAsset)
+	}
+	css.InstCollteralUnderlying = utils.GetFloat64Decimal(collateral, mdl.GetUnderlyingDecimal())
+	//
+	valueInUSD := mdl.Repo.GetValueInCurrency(blockNum, session.Version, mdl.GetUnderlyingToken(), "USDC", collateral)
+	css.InstCollteralUSD = utils.GetFloat64Decimal(valueInUSD, 6)
+}
+
 // for liquidatev3 it is called at blockNum -1 due to `liqv3Sessions` and then at blockNum due to `updatedSessions`
 func (mdl *CommonCMAdapter) createCSSnapshot(blockNum int64, session *schemas.CreditSession, data dc.CreditAccountCallData) {
 	// create session snapshot
-	css := schemas.CreditSessionSnapshot{}
+	css := &schemas.CreditSessionSnapshot{}
 	mdl.Repo.SetBlock(blockNum)
 	css.BlockNum = blockNum
 	css.SessionId = session.ID
-	css.CollateralInUSD = session.CollateralInUSD
-	css.CollateralInUnderlying = session.CollateralInUnderlying
+	mdl.setCSSCollateralFields(blockNum, session, css)
 	css.Borrower = session.Borrower
 	css.HealthFactor = (*core.BigInt)(data.HealthFactor)
 	css.TotalValueBI = (*core.BigInt)(data.TotalValue)
@@ -208,7 +223,7 @@ func (mdl *CommonCMAdapter) createCSSnapshot(blockNum int64, session *schemas.Cr
 	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
-	mdl.Repo.AddCreditSessionSnapshot(&css)
+	mdl.Repo.AddCreditSessionSnapshot(css)
 }
 func (mdl *CommonCMAdapter) poolRepay(blockNum int64, session *schemas.CreditSession, details *SessionCloseDetails, data dc.CreditAccountCallData) {
 	// log.Info(mdl.params, session.Version,

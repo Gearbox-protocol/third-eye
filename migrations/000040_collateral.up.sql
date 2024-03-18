@@ -1,0 +1,2 @@
+alter table credit_session_snapshots add inst_collateral_underlying double precision;
+alter table credit_session_snapshots add inst_collateral_usd double precision;
