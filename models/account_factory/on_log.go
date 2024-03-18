@@ -29,5 +29,8 @@ func (mdl *AccountFactory) OnLog(txLog types.Log) {
 	case core.Topic("NewCreditAccount(address)"):
 		accountAddr := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
 		mdl.Repo.AddAccountAddr(accountAddr)
+	case core.Topic("DeployCreditAccount(address,address)"):
+		accountAddr := common.HexToAddress(txLog.Topics[1].Hex()).Hex()
+		mdl.Repo.AddAccountAddr(accountAddr)
 	}
 }
