@@ -31,6 +31,11 @@ func (mdl *CMv3) OnLog(txLog types.Log) {
 		case core.Topic("SetCreditFacade(address)"):
 			facade := utils.ChecksumAddr(txLog.Topics[1].Hex())
 			mdl.setCreditFacadeSyncer(facade)
+		case core.Topic("SetBorrowingLimits(uint256,uint256)"):
+			minDebt := new(big.Int).SetBytes(txLog.Data[:32])
+			maxDebt := new(big.Int).SetBytes(txLog.Data[32:])
+			mdl.State.MinAmount = (*core.BigInt)(minDebt)
+			mdl.State.MaxAmount = (*core.BigInt)(maxDebt)
 		case core.Topic("SetExpirationDate(uint40)"):
 			mdl.expirationDate = uint64(new(big.Int).SetBytes(txLog.Data[:]).Int64())
 		case core.Topic("UpdateFees(uint16,uint16,uint16,uint16,uint16)"):
