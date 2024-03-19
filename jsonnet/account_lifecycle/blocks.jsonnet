@@ -501,6 +501,13 @@
             isEnabled: true,
             isForbidden: false,
           },
+          '#Token_2': {
+            BI: '100000000000000000',
+            F: 0.1,
+            ind: 2,
+            isEnabled: false,
+            isForbidden: false,
+          },
           '#Token_3': {
             BI: '3000000000000000000',
             F: 3,

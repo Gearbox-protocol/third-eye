@@ -61,7 +61,9 @@ func main() {
 
 			balances := cm_common.AddStETHBalance(data.Addr.Hex(), entry.BlockNum, data.Balances, client, store, tokens["stETH"].Hex())
 			log.Info(entry.SessionId, utils.ToJson(balances))
-			err = db.Exec(`update credit_account_snapshots set balances=? where session_id=? and block_num=?`, entry.SessionId, entry.BlockNum, balances).Error
+			err = db.Exec(`update credit_session_snapshots set balances=? where session_id=? and block_num=?`, balances, entry.SessionId, entry.BlockNum).Error
+			log.CheckFatal(err)
+			err = db.Exec(`update credit_sessions set balances=? where id=?`, balances, entry.SessionId).Error
 			log.CheckFatal(err)
 		}
 	}

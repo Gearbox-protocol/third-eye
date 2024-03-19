@@ -313,7 +313,6 @@ func AddStETHBalance(account string, blockNum int64, dcv2Balances []core.TokenBa
 			balance.F = utils.GetFloat64Decimal(balance.BI, tStore.GetDecimals(common.HexToAddress(token)))
 			dbFormat[token] = balance.DBTokenBalance
 			//
-			log.Info(stETH, token)
 			if stETH == token {
 				accountData := common.HexToHash(account)
 				_v, err := core.CallFuncWithExtraBytes(
