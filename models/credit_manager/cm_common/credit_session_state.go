@@ -294,17 +294,30 @@ func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.Credi
 }
 
 func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Balances []core.TokenBalanceCallData) *core.DBBalanceFormat {
+	return AddStETHBalance(account, blockNum, dcv2Balances, mdl.Client, mdl, mdl.Repo.GetTokenFromSdk("stETH"))
+}
+
+func (mdl *CommonCMAdapter) GetDecimals(token common.Address) int8 {
+	return mdl.Repo.GetToken(token.Hex()).Decimals
+}
+
+type DecimalStoreI interface {
+	GetDecimals(tokenAddr common.Address) int8
+}
+
+func AddStETHBalance(account string, blockNum int64, dcv2Balances []core.TokenBalanceCallData, client core.ClientI, tStore DecimalStoreI, stETH string) *core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
 	for _, balance := range dcv2Balances {
 		token := balance.Token
-		if balance.IsEnabled && balance.HasBalanceMoreThanOne() {
-			balance.F = utils.GetFloat64Decimal(balance.BI, mdl.Repo.GetToken(token).Decimals)
+		if balance.HasBalanceMoreThanOne() { // is enabled not needed.
+			balance.F = utils.GetFloat64Decimal(balance.BI, tStore.GetDecimals(common.HexToAddress(token)))
 			dbFormat[token] = balance.DBTokenBalance
 			//
-			if mdl.Repo.GetTokenFromSdk("stETH") == token {
+			log.Info(stETH, token)
+			if stETH == token {
 				accountData := common.HexToHash(account)
 				_v, err := core.CallFuncWithExtraBytes(
-					mdl.Client, "f5eb42dc", // shareOf, https://etherscan.io/token/0xae7ab96520de3a18e5e111b5eaab095312d7fe84#readProxyContract
+					client, "f5eb42dc", // shareOf, https://etherscan.io/token/0xae7ab96520de3a18e5e111b5eaab095312d7fe84#readProxyContract
 					common.HexToAddress(token), blockNum, accountData[:],
 				)
 				log.CheckFatal(err)
