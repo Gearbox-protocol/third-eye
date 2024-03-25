@@ -62,7 +62,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	})
 
 	// create a pool stat snapshot at first log of the pool
-	pool.onBlockChangeInternally(pool.DiscoveredAt)
+	pool.onBlockChangeInternally()
 
 	return pool
 }

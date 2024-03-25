@@ -103,10 +103,8 @@ func (mdl *Poolv3) setZapper() {
 	if mdl.Details["dUSDC-farmedUSDCv3"] != nil {
 		log.Fatal("Can't get dUSDC from zapper for ", mdl.Address)
 	}
-	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" { // only on mainnet
-		if mdl.GetDetailsByKey("dUSDC") == "" {
-			log.Fatal("Can't get dUSDC from zapper for ", mdl.Address)
-		}
+	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" && // only on mainnet
+		mdl.getdUSDC() != "" { // is not null for only USDC, DAI, WETH and WBTC
 		dieselTokenToPool := mdl.Repo.GetDieselTokens()
 		pool, ok := dieselTokenToPool[mdl.GetDetailsByKey("dUSDC")]
 		if !ok {

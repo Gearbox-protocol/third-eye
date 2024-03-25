@@ -58,9 +58,9 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
-	a := []*schemas.PriceFeed{}
+	poolStas := []*schemas.PoolStat{}
 	for _, block := range repo.GetBlocks() {
-		a = append(a, block.PriceFeeds...)
+		poolStas = append(poolStas, block.PoolStats...)
 		blocksToSync = append(blocksToSync, block)
 	}
 	// clauses not needed here
@@ -74,12 +74,12 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 // external funcs
 func (repo *BlocksRepo) GetPrice(token string) *big.Int {
 	store := repo.prevStore.prevPriceFeeds[schemas.V3PF_MAIN]
-	if store != nil {
+	if store != nil && store[token] != nil {
 		return store[token].PriceBI.Convert()
 	}
 
 	store = repo.prevStore.prevPriceFeeds[schemas.V2PF]
-	if store != nil {
+	if store != nil && store[token] != nil {
 		return store[token].PriceBI.Convert()
 	}
 	return nil

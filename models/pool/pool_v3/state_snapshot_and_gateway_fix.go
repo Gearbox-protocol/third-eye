@@ -33,6 +33,9 @@ func (mdl *Poolv3) OnBlockChange(inputBlock int64) (call multicall.Multicall2Cal
 	}
 	// set to zero, we only create poolstat snapshot when there is a event with changed pool cumulative interest rate
 	mdl.lastEventBlock = 0
+	if mdl.DiscoveredAt == inputBlock { //ONESNAPPOOL: only one pool stat at the discoveredAt
+		return multicall.Multicall2Call{}, nil
+	}
 	return mdl.getCallAndProcessFn(inputBlock)
 }
 
@@ -59,7 +62,8 @@ func (mdl *Poolv3) getCallAndProcessFn(inputB int64) (multicall.Multicall2Call, 
 	}
 }
 
-func (mdl *Poolv3) onBlockChangeInternally(inputB int64) {
+func (mdl *Poolv3) onBlockChangeInternally() {
+	inputB := mdl.DiscoveredAt //ONESNAPPOOL: only one pool stat at the discoveredAt
 	call, processFn := mdl.getCallAndProcessFn(inputB)
 	if processFn != nil {
 		result := core.MakeMultiCall(mdl.Client, inputB, false, []multicall.Multicall2Call{call})
