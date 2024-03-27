@@ -56,6 +56,7 @@ func (details *UserLMDetails) SubCorrection(amount *big.Int) {
 
 type LMRewardsv3 struct {
 	*ds.SyncAdapter
+	// farm by farm address
 	farms map[string]*Farmv3
 	// farmv3 to user to balance
 	users map[common.Address]map[string]*UserLMDetails
