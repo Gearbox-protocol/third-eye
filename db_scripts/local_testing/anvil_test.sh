@@ -9,7 +9,7 @@ FINAL_DB="$4"
 FORK_BLOCK=`jq .forkBlock.number < <(curl  $FORK_URL )`
 
 
-TMP_DB="TMP_$FINAL_DB"
+TMP_DB="tmp_$FINAL_DB"
 export TMP_DB_URL="postgres://$SUPERUSER@localhost:5432/$TMP_DB?sslmode=disable"
 
 set +e
@@ -20,7 +20,7 @@ set -e
 
 # psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
 psql -U $SUPERUSER -d $TMP_DB < $PARENT_DIR/../../migrations/000016_rankings.up.sql
-migrate -path $PARENT_DIR/../../migrations/ -database "$TMP_DB" up
+migrate -path $PARENT_DIR/../../migrations/ -database "$TMP_DB_URL" up
 
 
 psql -U $SUPERUSER -d $TMP_DB < <(cat $PARENT_DIR/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
