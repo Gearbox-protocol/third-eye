@@ -39,13 +39,14 @@ createdb -O $SUPERUSER -T $TMP_DB $FINAL_DB
 
 
 
-# create user sample with encrypted password '123Sample';
-# GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO sample;
-# ALTER DATABASE sample OWNER TO sample;
+# create user debian with encrypted password '123Sample';
+# GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO debian;
+# ALTER user debian createdb;
+# ALTER DATABASE sample OWNER TO debian;
 # update schema_migrations set version=27, dirty='f';
 #
 # SELECT format(
-#           'ALTER TABLE public.%I OWNER TO sample',
+#           'ALTER TABLE public.%I OWNER TO debian',
 #           table_name
 #        )
 # FROM information_schema.tables
