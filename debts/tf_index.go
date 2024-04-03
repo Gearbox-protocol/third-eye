@@ -15,15 +15,16 @@ type FarmingCalculator struct {
 }
 
 func NewFarmingCalculator(chainId int64, testing bool) *FarmingCalculator {
-	tradingTokens := []string{"WETH", "stETH", "DAI", "SUSD", "FRAX", "GUSD", "LUSD", "WBTC", "USDC", "USDT", "LQTY", "LDO", "CVX", "FXS", "CRV", "SNX", // mainnet
-		"wstETH"} // arbitrum
+	tradingTokens := core.AllTradingSymbolForDBWithW()
+	//
 	tradingTokensMap := map[string]bool{}
 	syms := core.GetSymToAddrByChainId(chainId)
 	for _, tradingSym := range tradingTokens {
-		if addr, ok := syms.Tokens[tradingSym]; ok {
+		if addr, ok := syms.Tokens[string(tradingSym)]; ok {
 			tradingTokensMap[addr.Hex()] = true
 		} else if (tradingSym == "stETH" || tradingSym == "GUSD") && log.GetBaseNet(chainId) == "ARBITRUM" { // these tokens are not present on arbitrum
 			// ignore
+		} else if utils.Contains([]core.Symbol{"stETH", "GUSD", "LQTY", "CVX", "yvUSDC", "GMX", "ARB", "MKR", "sDAI", "APE"}, tradingSym) && log.GetBaseNet(chainId) == "OPTIMISM" {
 		} else {
 			log.Warnf("Trading token(%s) for tf_index missing from sdk config: %s", tradingSym, addr)
 		}

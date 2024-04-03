@@ -165,7 +165,8 @@ func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string)
 	// TODO anvil fork
 	compositeOracleVersion := 0
 	baseNet := log.GetBaseNet(chainId)
-	if baseNet == "MAINNET" {
+	switch baseNet {
+	case "MAINNET":
 		if discoveredAt <= 15997386 {
 			compositeOracleVersion = 2
 		} else if discoveredAt <= 18544086 {
@@ -173,7 +174,7 @@ func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string)
 		} else {
 			compositeOracleVersion = 3
 		}
-	} else if baseNet == "ARBITRUM" {
+	case "ARBITRUM", "OPTIMISM":
 		compositeOracleVersion = 3
 	}
 	//
