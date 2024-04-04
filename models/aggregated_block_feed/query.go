@@ -180,7 +180,7 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_fee
 		return nil
 	} else if entry.Success {
 		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
-		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress())
+		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress(), blockNum)
 	} else if adapter.GetVersion().MoreThanEq(core.NewVersion(300)) {
 		if core.GetChainId(mdl.Client) == 7878 {
 			return nil
@@ -254,12 +254,12 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_fee
 	return priceFeeds
 }
 
-func parseRoundData(returnData []byte, isPriceInUSD bool, feed string) *schemas.PriceFeed {
+func parseRoundData(returnData []byte, isPriceInUSD bool, feed string, blockNum int64) *schemas.PriceFeed {
 	priceFeedABI := core.GetAbi("PriceFeed")
 	roundData := schemas.LatestRounData{}
 	value, err := priceFeedABI.Unpack("latestRoundData", returnData)
 	if err != nil {
-		log.Fatalf("For feed(%s) can't get the lastestRounData: %s", feed, err)
+		log.Fatalf("For feed(%s) can't get the lastestRounData: %s at %d", feed, err, blockNum)
 	}
 	roundData.RoundId = *abi.ConvertType(value[0], new(*big.Int)).(**big.Int)
 	roundData.Answer = *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)

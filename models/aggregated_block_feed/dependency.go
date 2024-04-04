@@ -275,7 +275,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 		/// parse price
 		// there is no check that call was made for feed that is existing for given blockNum
 		if entry.Success && len(entry.ReturnData) != 0 {
-			newPrice = parseRoundData(entry.ReturnData, true, details.Feed) // only valid for v2
+			newPrice = parseRoundData(entry.ReturnData, true, details.Feed, blockNum) // only valid for v2
 		} else {
 			// if failed check and pfType of the queryPrice is YearnPF
 			adapterI := q.repo.GetAdapter(details.Feed)
