@@ -3,7 +3,6 @@ package aggregated_block_feed
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -58,7 +57,7 @@ func TokenSymMapFromchainId(chainId int64) TokenSymMap {
 func (x TokenSymMap) getTokenAddr(sym string) string {
 	addr := x.symToAddr[sym]
 	if addr == core.NULL_ADDR {
-		if utils.Contains([]string{"ARBITRUM", "OPTIMISM"}, log.GetBaseNet(x.chainId)) {
+		if log.GetBaseNet(x.chainId) != "MAINNET" {
 			return ""
 		}
 		log.Fatal("Token sym not found  in embedded jsonnet", sym)

@@ -70,7 +70,7 @@ func (e *Engine) addstETHToken() {
 	if core.NULL_ADDR != addr { // on arbitrum
 		stETHToken := rebase_token.NewRebaseToken(addr.Hex(), e.Client, e.repo)
 		e.repo.AddSyncAdapter(stETHToken)
-	} else if log.GetBaseNet(core.GetChainId(e.Client)) != "ARBITRUM" {
+	} else if log.GetBaseNet(core.GetChainId(e.Client)) == "MAINNET" {
 		log.Warnf("stETH is not present on %s", log.GetBaseNet(core.GetChainId(e.Client)))
 	}
 }

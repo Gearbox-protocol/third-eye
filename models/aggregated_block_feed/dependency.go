@@ -188,7 +188,7 @@ func getDepGraph(chainId int64) map[string][]string {
 		"auraB_rETH_STABLE":       {},
 		"auraB_rETH_STABLE_vault": {},
 	}
-	if log.GetBaseNet(chainId) == "ARBITRUM" {
+	if log.GetBaseNet(chainId) != "MAINNET" {
 		for sym, deps := range depGraph {
 			x := make([]string, 0, len(deps))
 			for _, d := range deps {
