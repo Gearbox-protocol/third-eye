@@ -57,7 +57,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			sym := addrToSym[common.HexToAddress(token)]
 			_, ok := pfs[sym]
 			if !ok {
-				log.Warnf("RedStonePF not found in config for %s(%s). update sd-go.", sym, token)
+				log.Warnf("RedStonePF not found in config for %s(%s). update sdk-go.", sym, token)
 			}
 		}
 		switch priceFeedType {
