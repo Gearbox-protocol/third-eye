@@ -19,6 +19,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/swapRouterv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv3Adapter"
@@ -112,6 +113,7 @@ var abiJSONs = []string{
 	compoundv2CEther.Compoundv2CEtherABI, compoundv2CToken.Compoundv2CTokenABI, compoundv2ERC20.Compoundv2ERC20ABI,
 	savingMaker.SavingMakerABI,
 	erc4626Adapter.Erc4626AdapterABI,
+	swapRouterv3.SwapRouterv3ABI,
 }
 
 var abiParsers []abi.ABI
