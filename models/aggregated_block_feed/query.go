@@ -185,7 +185,7 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_fee
 		if core.GetChainId(mdl.Client) == 7878 {
 			return nil
 		} else if utils.Contains([]string{"0xCbeCfA4017965939805Da5a2150E3DB1BeDD0364", "0x814E6564e8cda436c1ab25041C10bfdb21dEC519"},
-			adapter.GetAddress()) { // arbitrum redstone composite feed
+			adapter.GetAddress()) { // arbitrum redstone composite feed // reserve price feeds
 			return nil
 		} else {
 			log.Warnf("Can't get latestRounData in AQFWrapper for %s(%s) at %d",

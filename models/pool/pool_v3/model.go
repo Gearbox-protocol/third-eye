@@ -90,6 +90,7 @@ func (mdl Poolv3) Topics() [][]common.Hash {
 		{
 			// for pool
 			core.Topic("SetInterestRateModel(address)"),
+			core.Topic("SetCreditManagerDebtLimit(address,uint256)"),
 			core.Topic("Deposit(address,address,uint256,uint256)"),
 			core.Topic("Withdraw(address,address,address,uint256,uint256)"),
 			core.Topic("Borrow(address,address,uint256)"),

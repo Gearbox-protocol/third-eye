@@ -43,6 +43,17 @@ func setlimits(db *gorm.DB, block int64, node pkg.Node) {
 		minDebt := new(big.Int).SetBytes(txLog.Data[:32])
 		maxDebt := new(big.Int).SetBytes(txLog.Data[32:])
 		log.Info(minDebt, maxDebt)
+		//
+		{
+			type _d struct {
+				MinAmount *core.BigInt `gorm:"column:min_amount"`
+				MaxAmount *core.BigInt `gorm:"column:max_amount"`
+			}
+			d := &_d{}
+			err = db.Raw(`select min_amount, max_amount from credit_managers where address=?`, entry.Address).Find(d).Error
+			log.CheckFatal(err)
+			log.Info(d.MinAmount, d.MaxAmount)
+		}
 		err = db.Exec(`update credit_managers set min_amount=? , max_amount=? where address=?`, (*core.BigInt)(minDebt), (*core.BigInt)(maxDebt), entry.Address).Error
 		log.CheckFatal(err)
 		err = db.Exec(`update parameters set min_amount=? , max_amount=? where credit_manager=?`, (*core.BigInt)(minDebt), (*core.BigInt)(maxDebt), entry.Address).Error
