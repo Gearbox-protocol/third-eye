@@ -155,8 +155,7 @@ func (mdl *CompositeChainlinkPF) AddToken(token string, blockNum int64, pfVersio
 
 func (mdl CompositeChainlinkPF) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
 	mdl.mergedPFManager.DisableToken(blockNum, token, pfVersion)
-	final := mdl.mergedPFManager.GetMergedPFVersion(token, blockNum, mdl.Address)
-	if final == 0 {
-		mdl.SetBlockToDisableOn(blockNum)
-	}
+	// if len(mdl.mergedPFManager.GetTokens(blockNum+1)) == 0 {
+	// 	mdl.SetBlockToDisableOn(blockNum)
+	// }
 }

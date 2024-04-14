@@ -82,8 +82,8 @@ func (mdl *ChainlinkPriceFeed) AddToken(token string, blockNum int64, pfVersion 
 
 func (mdl ChainlinkPriceFeed) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
 	mdl.mergedPFManager.DisableToken(blockNum, token, pfVersion)
-	final := mdl.mergedPFManager.GetMergedPFVersion(token, blockNum, mdl.Address)
-	if final == 0 {
-		mdl.SetBlockToDisableOn(blockNum)
-	}
+	// final := mdl.mergedPFManager.GetMergedPFVersion(token, blockNum, mdl.Address)
+	// if final == 0 {
+	// 	mdl.SetBlockToDisableOn(blockNum)
+	// }
 }
