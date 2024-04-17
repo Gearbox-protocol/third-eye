@@ -1,7 +1,6 @@
 package main
 
 import (
-	"strconv"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
@@ -10,11 +9,10 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_common"
 	"github.com/Gearbox-protocol/third-eye/repository"
+	"github.com/Gearbox-protocol/third-eye/scripts/helper"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -31,21 +29,8 @@ func main() {
 	err := db.Raw(`select distinct on (session_id) session_id, block_num from credit_session_snapshots where session_id in (select id from credit_sessions where version=300 and status=0) order by session_id , block_num desc`).Find(&a).Error
 	log.CheckFatal(err)
 
-	dc := dc_wrapper.NewDataCompressorWrapper(client)
-
-	{ // add dc addrs
-		s := &ds.SyncAdapter{}
-		err = db.Raw(`select details from sync_adapters where type='AddressProvider'`).Find(s).Error
-		log.CheckFatal(err)
-		for block, dcAddr := range s.Details["dc"].(map[string]interface{}) {
-			i, err := strconv.ParseInt(block, 10, 64)
-			log.CheckFatal(err)
-			splits := strings.Split(dcAddr.(string), "_")
-			if len(splits) == 2 {
-				dc.AddDataCompressorByVersion(core.NewVersion(300), splits[0], i)
-			}
-		}
-	}
+	dc := helper.GetDC(client, db)
+	//
 	store := priceFetcher.NewTokensStore(client)
 	tokens := core.GetSymToAddrByChainId(core.GetChainId(client)).Tokens
 	for _, entry := range a {
