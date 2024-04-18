@@ -15,10 +15,13 @@ func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
 	switch ans := obj.(type) {
 	case []*Farmv3:
 		farms := map[string]*Farmv3{}
+		pools := map[common.Address]string{}
 		for _, farm := range ans {
 			farms[farm.Farm] = farm
+			pools[common.HexToAddress(farm.Pool)] = farm.Farm
 		}
 		mdl.farms = farms
+		mdl.pools = pools
 	case []*UserLMDetails:
 		users := map[common.Address]map[string]*UserLMDetails{}
 		for _, user := range ans {

@@ -15,13 +15,14 @@ import (
 // userAccounting
 // farmingLib
 type UserLMDetails struct {
-	Correction *core.BigInt `gorm:"column:correction"`
-	BalancesBI *core.BigInt `gorm:"column:balances_bi"`
-	Balances   float64      `gorm:"column:balances"`
-	Account    string       `gorm:"column:account;primaryKey"`
-	Farm       string       `gorm:"column:farm;primaryKey"`
-	DieselSym  string       `gorm:"column:diesel_sym"`
-	updated    bool         `gorm:"-"`
+	Correction    *core.BigInt `gorm:"column:correction"`
+	BalancesBI    *core.BigInt `gorm:"column:balances_bi"`
+	Balances      float64      `gorm:"column:balances"`
+	Account       string       `gorm:"column:account;primaryKey"`
+	Farm          string       `gorm:"column:farm;primaryKey"`
+	DieselSym     string       `gorm:"column:diesel_sym"`
+	updated       bool         `gorm:"-"`
+	DieselBalance *core.BigInt `gorm:"column:diesel_balance"`
 }
 
 func (UserLMDetails) TableName() string {
@@ -58,6 +59,7 @@ type LMRewardsv3 struct {
 	*ds.SyncAdapter
 	// farm by farm address
 	farms map[string]*Farmv3
+	pools map[common.Address]string
 	// farmv3 to user to balance
 	users map[common.Address]map[string]*UserLMDetails
 }

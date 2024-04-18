@@ -1,0 +1,1 @@
+alter table user_lmdetails_v3 add diesel_balance varchar(80);

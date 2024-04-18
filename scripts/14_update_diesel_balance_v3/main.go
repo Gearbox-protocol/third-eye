@@ -58,10 +58,12 @@ func updateDieselBalances(client core.ClientI, block int64, db *gorm.DB) {
 		User string `gorm:"column:account"`
 	}
 	data := []_dieselUser{}
-	err := db.Raw(`select user from user_lmdetails_v3`).Find(&data).Error
+	err := db.Raw(`select account from user_lmdetails_v3;`).Find(&data).Error
 	log.CheckFatal(err)
 
-	//
+	// data = []_dieselUser{{
+	// 	User: "0xd620AADaBaA20d2af700853C4504028cba7C3333",
+	// }}
 
 	dc := helper.GetDC(client, db)
 	pools, ok := dc.GetPoolListv3()
@@ -70,16 +72,19 @@ func updateDieselBalances(client core.ClientI, block int64, db *gorm.DB) {
 	}
 	poolToFarm := convert(db)
 	for _, user := range data {
+		log.Info(user)
 		diesleBalances := getBalances(user.User, block, pools, client, poolToFarm)
 		for _, entry := range diesleBalances {
+			log.Info(utils.ToJson(entry))
+			// continue
 			obj := db.Exec("update user_lmdetails_v3 set diesel_balance=? where account=? and farm=?", entry.DieselBalance, entry.Account, entry.Farm)
 			if obj.Error != nil {
 				log.Fatal(obj.Error, utils.ToJson(entry))
 			}
-			if obj.RowsAffected > 0 {
+			if obj.RowsAffected == 0 {
 				err := db.Create(entry).Error
 				if err != nil {
-					log.Fatal(obj.Error, utils.ToJson(entry))
+					log.Fatal(err, utils.ToJson(entry))
 				}
 			}
 		}
@@ -89,6 +94,7 @@ func updateDieselBalances(client core.ClientI, block int64, db *gorm.DB) {
 func getBalances(user string, block int64, poolMap []dataCompressorv3.PoolData, client core.ClientI, poolToFarm map[common.Address]x) (ans []v3.UserLMDetails) {
 	calls := []multicall.Multicall2Call{}
 	abi := core.GetAbi("Token")
+	// log.Info(user, len(poolMap))
 	for _, details := range poolMap {
 		data, err := abi.Pack("balanceOf", common.HexToAddress(user))
 		log.CheckFatal(err)
@@ -97,7 +103,7 @@ func getBalances(user string, block int64, poolMap []dataCompressorv3.PoolData, 
 			CallData: data,
 		})
 	}
-	result := core.MakeMultiCall(client, block, false, calls, 0)
+	result := core.MakeMultiCall(client, block, false, calls)
 	for ind, entry := range result {
 		pool := poolMap[ind].Addr
 		b, ok := core.MulticallAnsBigInt(entry)
