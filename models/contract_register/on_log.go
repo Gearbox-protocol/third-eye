@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager/cm_v3"
 	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
 	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
+	v3 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v3"
 )
 
 func (mdl *ContractRegister) OnLog(txLog types.Log) {
@@ -53,6 +54,11 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int
 		return pool_v2.NewPool(addr, client, repo, blockNum)
 	default:
 		if version.MoreThanEq(core.NewVersion(300)) {
+			// add pool to the lmrewards so that farm_v3 table entry can be created.
+			adapters := repo.GetAdapterAddressByName(ds.LMRewardsv3)
+			lmRewards := repo.GetAdapter(adapters[0])
+			lmRewards.(*v3.LMRewardsv3).AddPoolv3(blockNum, addr)
+			// add pool
 			return pool_v3.NewPool(addr, client, repo, blockNum)
 		}
 	}

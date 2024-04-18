@@ -189,6 +189,8 @@ func (dcw *DataCompressorWrapper) GetLatestv3DC() (common.Address, bool) {
 	return dcs[len(dcs)-1].address, true
 }
 
+// blockNum can't be zero
+
 func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType, blockNum int64, creditManager common.Address, borrower common.Address, account common.Address) (
 	call multicall.Multicall2Call,
 	resultFn func([]byte) (dc.CreditAccountCallData, error),
@@ -257,6 +259,8 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType,
 	}
 	return
 }
+
+// blockNum can't be zero
 
 func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType, blockNum int64, _creditManager common.Address) (
 	call multicall.Multicall2Call,
@@ -337,6 +341,8 @@ func (dcw *DataCompressorWrapper) GetPoolListv3() ([]dcv3.PoolData, bool) {
 	log.CheckFatal(err)
 	return poolList, true
 }
+
+// blockNum can't be zero
 func (dcw *DataCompressorWrapper) GetPoolData(version core.VersionType, blockNum int64, _pool common.Address) (
 	call multicall.Multicall2Call,
 	resultFn func([]byte) (dc.PoolCallData, error),

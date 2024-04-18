@@ -47,34 +47,6 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 	}
 }
 
-func (mdl *LMRewardsv3) getFarmsAndPoolsv3() {
-	if len(mdl.farms) != 0 { // already set
-		return
-	}
-	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
-	if found && len(mdl.farms) == 0 {
-		farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
-		poolAndFarms := []*Farmv3{}
-		for _, pool := range pools {
-			for _, zapper := range pool.Zappers {
-				// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
-				if _, ok := farmingPools[zapper.TokenOut]; ok && zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
-					poolAndFarms = append(poolAndFarms, &Farmv3{
-						Farm:        zapper.TokenOut.Hex(),
-						Pool:        pool.Addr.Hex(),
-						DieselToken: pool.DieselToken.Hex(),
-						// initial
-						Fpt:         (*core.BigInt)(new(big.Int)),
-						TotalSupply: (*core.BigInt)(new(big.Int)),
-						Reward:      (*core.BigInt)(new(big.Int)),
-					})
-				}
-			}
-		}
-		mdl.SetUnderlyingState(poolAndFarms)
-	}
-}
-
 // LMRewardsv2 has fake address so no need for adding .Address value to addrs
 func (mdl *LMRewardsv3) GetAllAddrsForLogs() (addrs []common.Address) {
 	mdl.getFarmsAndPoolsv3()
