@@ -13,7 +13,7 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 	addr := txLog.Address
 	blockNum := int64(txLog.BlockNumber)
 	currentTs := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
-	if mdl.farms[addr.Hex()] == nil {
+	if mdl.farms[addr.Hex()] != nil {
 		farmAddr := addr.Hex()
 		switch txLog.Topics[0] {
 		case core.Topic("Transfer(address,address,uint256)"):
