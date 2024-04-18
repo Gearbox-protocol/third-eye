@@ -20,14 +20,16 @@ type PrevPriceStore struct {
 	prevPriceFeeds map[schemas.PFVersion]map[string]*schemas.PriceFeed
 	spotOracle     *priceFetcher.OneInchOracle
 	mu             *sync.Mutex
+	db             *gorm.DB
 }
 
-func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo) *PrevPriceStore {
+func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo, db *gorm.DB) *PrevPriceStore {
 	chainId := core.GetChainId(client)
 
 	store := &PrevPriceStore{
 		prevPriceFeeds: map[schemas.PFVersion]map[string]*schemas.PriceFeed{},
 		mu:             &sync.Mutex{},
+		db:             db,
 	}
 	if log.GetNetworkName(chainId) != "TEST" {
 		store.spotOracle = ds.SetOneInchUpdater(client, tokensRepo)
@@ -97,6 +99,16 @@ func (repo *PrevPriceStore) getCurrentPrice() (ans []*schemas.TokenCurrentPrice)
 	return getPrice(repo.prevPriceFeeds[schemas.V2PF])
 }
 func (repo *PrevPriceStore) saveCurrentPrices(client core.ClientI, tx *gorm.DB, blockNum int64, ts uint64) {
+	{
+		a := struct {
+			BlockNum int64 `gorm:"column:block_num"`
+		}{}
+		err := repo.db.Raw(`select max(id) block_num from blocks`).Find(&a).Error
+		log.CheckFatal(err)
+		if a.BlockNum >= blockNum {
+			return
+		}
+	}
 	// chainlink current prices to updated
 	currentPricesToSync := repo.getCurrentPrice()
 	if len(currentPricesToSync) == 0 { // usd prices are set? only valid from v2

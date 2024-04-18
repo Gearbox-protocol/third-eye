@@ -33,7 +33,7 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config, tokensR
 		//
 		client:    client,
 		db:        db,
-		prevStore: NewPrevPriceStore(client, tokensRepo),
+		prevStore: NewPrevPriceStore(client, tokensRepo, db),
 	}
 	return blocksRepo
 }

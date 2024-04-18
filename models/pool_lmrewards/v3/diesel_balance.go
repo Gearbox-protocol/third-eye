@@ -4,6 +4,8 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -17,6 +19,9 @@ func (mdl *LMRewardsv3) updateDieselBalances(farmAddr, from, to string, amount *
 			mdl.users[common.HexToAddress(farmAddr)] = map[string]*UserLMDetails{}
 		}
 		//
+		if mdl.farms[farmAddr] == nil {
+			log.Fatal("farm not set for address", utils.ToJson(mdl.farms[farmAddr]))
+		}
 		diesel := mdl.Repo.GetToken(mdl.farms[farmAddr].DieselToken)
 		farmAndItsUsers := mdl.users[common.HexToAddress(farmAddr)]
 		if !fromZero {
