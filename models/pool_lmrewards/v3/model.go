@@ -15,14 +15,14 @@ import (
 // userAccounting
 // farmingLib
 type UserLMDetails struct {
-	Correction    *core.BigInt `gorm:"column:correction"`
-	BalancesBI    *core.BigInt `gorm:"column:balances_bi"`
-	Balances      float64      `gorm:"column:balances"`
-	Account       string       `gorm:"column:account;primaryKey"`
-	Farm          string       `gorm:"column:farm;primaryKey"`
-	DieselSym     string       `gorm:"column:diesel_sym"`
-	updated       bool         `gorm:"-"`
-	DieselBalance *core.BigInt `gorm:"column:diesel_balance"`
+	Correction      *core.BigInt `gorm:"column:correction"`
+	FarmedBalanceBI *core.BigInt `gorm:"column:farmed_balance_bi"`
+	FarmedBalance   float64      `gorm:"column:farmed_balance"`
+	Account         string       `gorm:"column:account;primaryKey"`
+	Farm            string       `gorm:"column:farm;primaryKey"`
+	DieselSym       string       `gorm:"column:diesel_sym"`
+	updated         bool         `gorm:"-"`
+	DieselBalanceBI *core.BigInt `gorm:"column:diesel_balance"`
 }
 
 func (UserLMDetails) TableName() string {
@@ -31,7 +31,7 @@ func (UserLMDetails) TableName() string {
 
 func (user UserLMDetails) GetPoints(farm *Farmv3, currentTs uint64) *big.Int {
 	fpt := farm.calcFarmedPerToken(currentTs)
-	num := new(big.Int).Mul(user.BalancesBI.Convert(), fpt)
+	num := new(big.Int).Mul(user.FarmedBalanceBI.Convert(), fpt)
 
 	//
 	return new(big.Int).Quo(new(big.Int).Sub(num, user.Correction.Convert()), _SCALE)
@@ -39,8 +39,8 @@ func (user UserLMDetails) GetPoints(farm *Farmv3, currentTs uint64) *big.Int {
 
 func (details *UserLMDetails) AddBalances(amount *big.Int, decimals int8) {
 	details.updated = true
-	details.BalancesBI = (*core.BigInt)(new(big.Int).Add(details.BalancesBI.Convert(), amount))
-	details.Balances = utils.GetFloat64Decimal(details.BalancesBI.Convert(), decimals)
+	details.FarmedBalanceBI = (*core.BigInt)(new(big.Int).Add(details.FarmedBalanceBI.Convert(), amount))
+	details.FarmedBalance = utils.GetFloat64Decimal(details.FarmedBalanceBI.Convert(), decimals)
 }
 func (details *UserLMDetails) SubBalances(amount *big.Int, decimals int8) {
 	details.updated = true

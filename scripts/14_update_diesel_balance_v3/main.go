@@ -77,7 +77,7 @@ func updateDieselBalances(client core.ClientI, block int64, db *gorm.DB) {
 		for _, entry := range diesleBalances {
 			log.Info(utils.ToJson(entry))
 			// continue
-			obj := db.Exec("update user_lmdetails_v3 set diesel_balance=? where account=? and farm=?", entry.DieselBalance, entry.Account, entry.Farm)
+			obj := db.Exec("update user_lmdetails_v3 set diesel_balance_bi=? where account=? and farm=?", entry.DieselBalanceBI, entry.Account, entry.Farm)
 			if obj.Error != nil {
 				log.Fatal(obj.Error, utils.ToJson(entry))
 			}
@@ -112,12 +112,12 @@ func getBalances(user string, block int64, poolMap []dataCompressorv3.PoolData, 
 		}
 		if b.Cmp(new(big.Int)) != 0 {
 			ans = append(ans, v3.UserLMDetails{
-				DieselBalance: (*core.BigInt)(b),
-				Account:       user,
-				Correction:    core.NewBigInt(nil),
-				BalancesBI:    core.NewBigInt(nil),
-				Farm:          poolToFarm[pool].Farm,
-				DieselSym:     poolToFarm[pool].DieselSym,
+				DieselBalanceBI: (*core.BigInt)(b),
+				Account:         user,
+				Correction:      core.NewBigInt(nil),
+				FarmedBalanceBI: core.NewBigInt(nil),
+				Farm:            poolToFarm[pool].Farm,
+				DieselSym:       poolToFarm[pool].DieselSym,
 			})
 		}
 	}

@@ -71,11 +71,11 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 		if !fromZero {
 			if farmAndItsUsers[from] == nil {
 				farmAndItsUsers[from] = &UserLMDetails{
-					Correction: (*core.BigInt)(new(big.Int)),
-					BalancesBI: (*core.BigInt)(new(big.Int)),
-					Account:    from,
-					Farm:       farmAddr,
-					DieselSym:  diesel.Symbol,
+					Correction:      (*core.BigInt)(new(big.Int)),
+					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
+					Account:         from,
+					Farm:            farmAddr,
+					DieselSym:       diesel.Symbol,
 				}
 			}
 			farmAndItsUsers[from].SubCorrection(diff)
@@ -83,11 +83,11 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 		if !toZero {
 			if farmAndItsUsers[to] == nil {
 				farmAndItsUsers[to] = &UserLMDetails{
-					Correction: (*core.BigInt)(new(big.Int)),
-					BalancesBI: (*core.BigInt)(new(big.Int)),
-					Account:    to,
-					Farm:       farmAddr,
-					DieselSym:  diesel.Symbol,
+					Correction:      (*core.BigInt)(new(big.Int)),
+					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
+					Account:         to,
+					Farm:            farmAddr,
+					DieselSym:       diesel.Symbol,
 				}
 			}
 			farmAndItsUsers[to].AddCorrection(diff)

@@ -27,33 +27,33 @@ func (mdl *LMRewardsv3) updateDieselBalances(farmAddr, from, to string, amount *
 		if !fromZero {
 			if farmAndItsUsers[from] == nil {
 				farmAndItsUsers[from] = &UserLMDetails{
-					Correction:    (*core.BigInt)(new(big.Int)),
-					BalancesBI:    (*core.BigInt)(new(big.Int)),
-					Account:       from,
-					Farm:          farmAddr,
-					DieselSym:     diesel.Symbol,
-					DieselBalance: (*core.BigInt)(new(big.Int)),
+					Correction:      (*core.BigInt)(new(big.Int)),
+					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
+					Account:         from,
+					Farm:            farmAddr,
+					DieselSym:       diesel.Symbol,
+					DieselBalanceBI: (*core.BigInt)(new(big.Int)),
 				}
 			}
 			farmAndItsUsers[from].updated = true
-			farmAndItsUsers[from].DieselBalance = (*core.BigInt)(new(big.Int).Sub(
-				farmAndItsUsers[from].DieselBalance.Convert(),
+			farmAndItsUsers[from].DieselBalanceBI = (*core.BigInt)(new(big.Int).Sub(
+				farmAndItsUsers[from].DieselBalanceBI.Convert(),
 				amount,
 			))
 		}
 		if !toZero {
 			if farmAndItsUsers[to] == nil {
 				farmAndItsUsers[to] = &UserLMDetails{
-					Correction:    (*core.BigInt)(new(big.Int)),
-					BalancesBI:    (*core.BigInt)(new(big.Int)),
-					Account:       to,
-					Farm:          farmAddr,
-					DieselSym:     diesel.Symbol,
-					DieselBalance: (*core.BigInt)(new(big.Int)),
+					Correction:      (*core.BigInt)(new(big.Int)),
+					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
+					Account:         to,
+					Farm:            farmAddr,
+					DieselSym:       diesel.Symbol,
+					DieselBalanceBI: (*core.BigInt)(new(big.Int)),
 				}
 			}
 			farmAndItsUsers[to].updated = true
-			farmAndItsUsers[to].DieselBalance = core.AddCoreAndInt(farmAndItsUsers[to].DieselBalance, amount)
+			farmAndItsUsers[to].DieselBalanceBI = core.AddCoreAndInt(farmAndItsUsers[to].DieselBalanceBI, amount)
 		}
 	}
 }
