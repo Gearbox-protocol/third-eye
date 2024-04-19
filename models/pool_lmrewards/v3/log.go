@@ -42,7 +42,7 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 			to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
 			amount := new(big.Int).SetBytes(txLog.Data)
 			farmAddr := mdl.pools[poolAddr]
-			mdl.updateDieselBalances(farmAddr, from, to, amount)
+			mdl.updateDieselBalances(txLog, farmAddr, from, to, amount)
 		}
 	}
 }

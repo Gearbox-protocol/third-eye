@@ -82,6 +82,8 @@ func NewSyncWrapper(name string, client core.ClientI) *SyncWrapper {
 func (w SyncWrapper) GetAdapter(addr string) ds.SyncAdapterI {
 	return w.Adapters.Get(addr)
 }
+func (w SyncWrapper) SetDisabled(disabled bool) {
+}
 
 func (w *SyncWrapper) AddSyncAdapter(adapter ds.SyncAdapterI) {
 	if w.ViaDataProcess == -1 {

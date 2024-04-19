@@ -66,6 +66,7 @@ func (repo *SyncAdaptersRepo) LoadSyncAdapters(db *gorm.DB) {
 		log.Fatal(err)
 	}
 	for _, adapter := range data {
+		// adapter.SetDisabled(false)
 		p := repo.PrepareSyncAdapter(adapter)
 		repo.addSyncAdapter(p)
 	}

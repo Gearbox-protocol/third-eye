@@ -22,7 +22,7 @@ type UserLMDetails struct {
 	Farm            string       `gorm:"column:farm;primaryKey"`
 	DieselSym       string       `gorm:"column:diesel_sym"`
 	updated         bool         `gorm:"-"`
-	DieselBalanceBI *core.BigInt `gorm:"column:diesel_balance"`
+	DieselBalanceBI *core.BigInt `gorm:"column:diesel_balance_bi"`
 }
 
 func (UserLMDetails) TableName() string {

@@ -55,6 +55,7 @@ type SyncAdapterI interface {
 	Query(queryTill int64)         //
 	WillBeSyncedTo(blockNum int64) //
 	IsDisabled() bool              //
+	SetDisabled(disabled bool)     //
 	SetBlockToDisableOn(blockNum int64)
 	GetBlockToDisableOn() int64
 	GetDiscoveredAt() int64
@@ -87,6 +88,9 @@ func (s SyncAdapter) GetAllAddrsForLogs() (addrs []common.Address) {
 	return
 }
 
+func (s *SyncAdapter) SetDisabled(disabled bool) {
+	s.Disabled = disabled
+}
 func InterfaceToAddr(v interface{}) common.Address {
 	switch obj := v.(type) {
 	case string:

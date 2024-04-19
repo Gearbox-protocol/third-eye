@@ -7,9 +7,10 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *LMRewardsv3) updateDieselBalances(farmAddr, from, to string, amount *big.Int) {
+func (mdl *LMRewardsv3) updateDieselBalances(txLog types.Log, farmAddr, from, to string, amount *big.Int) {
 	fromZero := from == core.NULL_ADDR.Hex()
 	toZero := to == core.NULL_ADDR.Hex()
 
@@ -36,6 +37,9 @@ func (mdl *LMRewardsv3) updateDieselBalances(farmAddr, from, to string, amount *
 				}
 			}
 			farmAndItsUsers[from].updated = true
+			if farmAndItsUsers[from].DieselBalanceBI == nil {
+				log.Fatal("FarmAddr, from, to, amount txHash", farmAddr, from, to, amount, txLog.TxHash, txLog.Index)
+			}
 			farmAndItsUsers[from].DieselBalanceBI = (*core.BigInt)(new(big.Int).Sub(
 				farmAndItsUsers[from].DieselBalanceBI.Convert(),
 				amount,
