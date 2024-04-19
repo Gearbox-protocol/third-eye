@@ -14,6 +14,7 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData)
 	mdl.State.IsWETH = dc.IsWETH(mdl.Client, state.Underlying)
 	//
 	bororwAmountForBlock := mdl.GetBorrowAmountForBlockAndClear()
+	// add borrowed amount
 	mdl.State.TotalBorrowedBI = core.AddCoreAndInt(mdl.State.TotalBorrowedBI, bororwAmountForBlock)
 	mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
 	//
@@ -28,7 +29,7 @@ func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData)
 			new(big.Int).Sub(pnl.Profit, pnl.Loss),
 		))
 		mdl.State.TotalRepaid = utils.GetFloat64Decimal(mdl.State.TotalRepaidBI.Convert(), mdl.GetUnderlyingDecimal())
-		//
+		// repaying here, so subtract
 		mdl.State.TotalBorrowedBI = core.SubCoreAndInt(mdl.State.TotalBorrowedBI, pnl.BorrowedAmount)
 		mdl.State.TotalBorrowed = utils.GetFloat64Decimal(mdl.State.TotalBorrowedBI.Convert(), mdl.GetUnderlyingDecimal())
 		mdl.State.TotalLossesBI = core.AddCoreAndInt(mdl.State.TotalLossesBI, pnl.Loss)

@@ -52,11 +52,8 @@ func (mdl *LMRewardsv3) updateDieselBalances(farmAddr, from, to string, amount *
 					DieselBalance: (*core.BigInt)(new(big.Int)),
 				}
 			}
-			farmAndItsUsers[from].updated = true
-			farmAndItsUsers[to].DieselBalance = (*core.BigInt)(new(big.Int).Add(
-				farmAndItsUsers[to].DieselBalance.Convert(),
-				amount,
-			))
+			farmAndItsUsers[to].updated = true
+			farmAndItsUsers[to].DieselBalance = core.AddCoreAndInt(farmAndItsUsers[to].DieselBalance, amount)
 		}
 	}
 }

@@ -53,7 +53,7 @@ func (mdl *LMRewardsv3) GetAllAddrsForLogs() (addrs []common.Address) {
 	//
 	for addr, farm := range mdl.farms {
 		addrs = append(addrs, common.HexToAddress(addr))
-		addrs = append(addrs, common.HexToAddress(farm.Farm))
+		addrs = append(addrs, common.HexToAddress(farm.Pool))
 	}
 	return addrs
 }
