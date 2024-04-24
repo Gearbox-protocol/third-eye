@@ -44,10 +44,17 @@ func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, 
 	}
 
 	// for yearn it is based on the vault. https://github.com/Gearbox-protocol/integrations-v2/blob/main/contracts/oracles/yearn/YearnPriceFeed.sol#L62
-	newAnswer := new(big.Int).Quo(
-		new(big.Int).Mul(pricePerShare, roundData.Answer),
-		mdl.decimalDivider,
-	)
+	var newAnswer *big.Int
+	if pricePerShare == nil || roundData.Answer == nil || mdl.decimalDivider == nil {
+		newAnswer = new(big.Int)
+		log.Errorf("failing to get price internally", mdl.mainPFAddress)
+	} else {
+
+		newAnswer = new(big.Int).Quo(
+			new(big.Int).Mul(pricePerShare, roundData.Answer),
+			mdl.decimalDivider,
+		)
+	}
 	pfVersion := schemas.VersionToPFVersion(version, false)
 	return &schemas.PriceFeed{
 		RoundId:         roundData.RoundId.Int64(),

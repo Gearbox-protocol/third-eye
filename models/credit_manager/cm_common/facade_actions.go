@@ -27,7 +27,11 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 	}
 	//
 	var ind int
-	for _, mainCall := range mainCalls {
+	for _, mainCall := range mainCalls[:utils.Min(len(facadeActions), len(mainCalls))] { // TOOD fix
+		if len(facadeActions) <= ind {
+			log.Error(ind, len(facadeActions), mainCall.Name, utils.ToJson(facadeActions[0].Data))
+			return
+		}
 		action := facadeActions[ind]
 		switch mainCall.Name {
 		case ds.FacadeOpenMulticallCall:

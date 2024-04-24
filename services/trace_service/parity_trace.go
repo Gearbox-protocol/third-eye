@@ -120,11 +120,18 @@ func toTenderlyCall(old RPCTrace, txHash string) (*Call, []int) {
 	callerOp := strings.ToUpper(old.Action.CallType)
 	var valueStr string
 	if callerOp != "STATICCALL" {
-		value, ok := new(big.Int).SetString(old.Action.Value[2:], 16)
-		if !ok {
-			log.Fatalf("For txhash (%s) can't parse ethValue %s", txHash, old.Action.Value)
+		if len(old.Action.Value) >= 2 {
+			value, ok := new(big.Int).SetString(old.Action.Value[2:], 16)
+			if !ok {
+				log.Errorf("For txhash (%s) can't parse ethValue %s", txHash, old.Action.Value)
+				valueStr = "0"
+			} else {
+				valueStr = value.String()
+			}
+		} else {
+			log.Errorf("For txhash (%s) can't parse old.Action.value %s", txHash, utils.ToJson(old))
+			valueStr = "0"
 		}
-		valueStr = value.String()
 	}
 	var calls []*Call
 	if old.Subtraces > 0 {
