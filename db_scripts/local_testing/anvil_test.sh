@@ -32,7 +32,7 @@ set -e
 PWD=`pwd`
 LOCAL_DB="host=localhost user=$SUPERUSER  dbname=$TMP_DB"
 cd /home/debian/$FINAL_DB-third-eye
-go run "scripts/merged_pf_version_reset/main.go" "$LOCAL_DB" $FORK_BLOCK
+go run "scripts/08_merged_pf_version_reset/main.go" "$LOCAL_DB" $FORK_BLOCK
 cd $PWD
 
 createdb -O $SUPERUSER -T $TMP_DB $FINAL_DB
