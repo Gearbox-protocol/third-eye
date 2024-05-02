@@ -11,7 +11,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -21,7 +21,7 @@ type AQFWrapper struct {
 	*ds.SyncAdapter
 	mu *sync.Mutex
 	// yearn feed
-	QueryFeeds map[string]*query_price_feed.QueryPriceFeed
+	QueryFeeds map[string]base_price_feed.QueryPriceFeedI
 
 	// for dependency based fetching price
 	queryPFdeps *QueryPFDependencies
@@ -53,7 +53,7 @@ func NewAQFWrapper(client core.ClientI, repo ds.RepositoryI, interval int64) *AQ
 		SyncAdapter: syncAdapter,
 		Interval:    interval,
 		mu:          &sync.Mutex{},
-		QueryFeeds:  map[string]*query_price_feed.QueryPriceFeed{},
+		QueryFeeds:  map[string]base_price_feed.QueryPriceFeedI{},
 		queryPFdeps: NewQueryPFDepenencies(repo, client),
 	}
 	wrapper.queryPFdeps.aqf = wrapper
@@ -61,17 +61,13 @@ func NewAQFWrapper(client core.ClientI, repo ds.RepositoryI, interval int64) *AQ
 }
 
 // only called by priceoracle
-func (mdl *AQFWrapper) AddYearnFeed(adapter ds.SyncAdapterI) {
-	yearnFeed, ok := adapter.(*query_price_feed.QueryPriceFeed)
-	if !ok {
-		log.Fatal("Failed in parsing yearn feed for aggregated yearn feed")
-	}
+func (mdl *AQFWrapper) AddQueryPriceFeed(adapter base_price_feed.QueryPriceFeedI) {
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
-	mdl.QueryFeeds[adapter.GetAddress()] = yearnFeed
+	mdl.QueryFeeds[adapter.GetAddress()] = adapter
 }
 
-func (mdl *AQFWrapper) GetQueryFeeds() []*query_price_feed.QueryPriceFeed {
-	feeds := make([]*query_price_feed.QueryPriceFeed, 0, len(mdl.QueryFeeds))
+func (mdl *AQFWrapper) GetQueryFeeds() []base_price_feed.QueryPriceFeedI {
+	feeds := make([]base_price_feed.QueryPriceFeedI, 0, len(mdl.QueryFeeds))
 	for _, feed := range mdl.QueryFeeds {
 		feeds = append(feeds, feed)
 	}
@@ -87,7 +83,7 @@ func (mdl *AQFWrapper) AddFeedOrToken(token, oracle string, pfType string, disco
 	if mdl.QueryFeeds[oracle] != nil {
 		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt, pfVersion)
 	} else {
-		mdl.AddYearnFeed(query_price_feed.NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, pfVersion))
+		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, pfVersion))
 		// MAINNET: old yvUSDC added on gearbox v1
 		if token == "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
 			mdl.QueryFeeds[oracle].DisableToken(token, 13856183, pfVersion) // new yvUSDC added on gearbox v1
@@ -95,7 +91,7 @@ func (mdl *AQFWrapper) AddFeedOrToken(token, oracle string, pfType string, disco
 	}
 	// when token is added to the queryPricefeed, add price object at discoveredAt
 	// so that  accounts opened just after discoveredAt can get the price from db
-	mdl.updateQueryPrices(createPriceFeedOnInit(mdl.QueryFeeds[oracle], token, discoveredAt))
+	mdl.updateQueryPrices(createPriceFeedOnInit(mdl.QueryFeeds[oracle], mdl.Client, token, discoveredAt))
 }
 
 func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) schemas.MergedPFVersion {
@@ -108,16 +104,16 @@ func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) sch
 	}
 	return pfVersion
 }
-func createPriceFeedOnInit(qpf *query_price_feed.QueryPriceFeed, token string, discoveredAt int64) []*schemas.PriceFeed {
-	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.Address), qpf.Client)
+func createPriceFeedOnInit(qpf base_price_feed.QueryPriceFeedI, client core.ClientI, token string, discoveredAt int64) []*schemas.PriceFeed {
+	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.GetAddress()), client)
 	log.CheckFatal(err)
 	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
 	log.CheckFatal(err)
 	//
-	pfVersion := mergePFVersionAt(discoveredAt, qpf.DetailsDS.Tokens[token])
+	pfVersion := mergePFVersionAt(discoveredAt, qpf.GetTokens()[token])
 	return []*schemas.PriceFeed{{
 		BlockNumber:     discoveredAt,
-		Feed:            qpf.Address,
+		Feed:            qpf.GetAddress(),
 		Token:           token,
 		RoundId:         data.RoundId.Int64(),
 		MergedPFVersion: pfVersion,
@@ -139,7 +135,7 @@ func (mdl *AQFWrapper) OnLog(txLog types.Log) {
 
 // no need to check version of feed, as while adding from chainlink we make sure that the version is more than 1
 // and  we can't have version 2 and 3 feed active at the same time.
-func (mdl AQFWrapper) getFeeds(blockNum int64, neededTokens map[string]bool) (result []schemas.TokenAndMergedPFVersion) {
+func (mdl AQFWrapper) getFeedAdapters(blockNum int64, neededTokens map[string]bool) (result []base_price_feed.QueryPriceFeedI) {
 	for _, adapter := range mdl.QueryFeeds {
 		if !adapter.GetVersion().MoreThan(core.NewVersion(1)) {
 			continue
@@ -147,7 +143,8 @@ func (mdl AQFWrapper) getFeeds(blockNum int64, neededTokens map[string]bool) (re
 		tokensForAdapter := adapter.TokensValidAtBlock(blockNum)
 		for _, entry := range tokensForAdapter {
 			if neededTokens[entry.Token] {
-				result = append(result, entry)
+				result = append(result, adapter)
+				break
 			}
 		}
 	}

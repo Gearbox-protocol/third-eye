@@ -8,8 +8,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type repoI interface {
@@ -228,8 +226,8 @@ func (q *QueryPFDependencies) updateQueryPrices(pfs []*schemas.PriceFeed) {
 }
 
 // clearExtraBefore is used to remove price feed before the lastSync of aggregatedBlockFeed
-func (q *QueryPFDependencies) extraPriceForQueryFeed(clearExtraBefore int64) []*schemas.PriceFeed {
-	updates := q.getChainlinkBasedQueryUpdates(clearExtraBefore)
+func (q *QueryPFDependencies) extraPriceForQueryFeed(deleteExtraBefore int64) []*schemas.PriceFeed {
+	updates := q.getChainlinkBasedQueryUpdates(deleteExtraBefore)
 	for _, blockToDelete := range q.aggregatedFetchedBlocks {
 		delete(updates, blockToDelete)
 	}
@@ -249,55 +247,31 @@ func (q *QueryPFDependencies) extraPriceForQueryFeed(clearExtraBefore int64) []*
 
 func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]bool,
 	ch <-chan int, wg *sync.WaitGroup) {
-	// get the latestRoundData call data
-	priceFeedABI := core.GetAbi("PriceFeed")
-	data, err := priceFeedABI.Pack("latestRoundData")
-	log.CheckFatal(err)
-
-	// generate calls
 	var calls []multicall.Multicall2Call
-
-	feedAndToken := q.aqf.getFeeds(blockNum, tokens)
-	for _, details := range feedAndToken {
-		call := multicall.Multicall2Call{
-			Target:   common.HexToAddress(details.Feed),
-			CallData: data,
-		}
-		calls = append(calls, call)
-	}
-	// get result
-	results := core.MakeMultiCall(q.client, blockNum, false, calls, 30)
-	// parse result and create PriceFeed obj
-	var newPrices []*schemas.PriceFeed
-	for ind, entry := range results {
-		details := feedAndToken[ind]
-		var newPrice *schemas.PriceFeed
-		/// parse price
-		// there is no check that call was made for feed that is existing for given blockNum
-		if entry.Success && len(entry.ReturnData) != 0 {
-			newPrice = parseRoundData(entry.ReturnData, true, details.Feed, blockNum) // only valid for v2
-		} else {
-			// if failed check and pfType of the queryPrice is YearnPF
-			adapterI := q.repo.GetAdapter(details.Feed)
-			if adapter, ok := adapterI.(*query_price_feed.QueryPriceFeed); !ok {
-				log.Fatal("Conversion of adapter to queryPriceFeed failed ", details.Feed)
-			} else if adapter.GetDetailsByKey("pfType") == ds.YearnPF {
-				// if underlying price feed address is null, then don't set price
-				if _newPrice, err := adapter.CalculateYearnPFInternally(blockNum); err == nil {
-					newPrice = _newPrice
-				}
-			}
-		}
-		if newPrice != nil {
-			// add token and feed details
-			newPrice.Token = details.Token
-			newPrice.Feed = details.Feed
-			newPrice.BlockNumber = blockNum
-			newPrice.MergedPFVersion = details.MergedPFVersion
-			newPrices = append(newPrices, newPrice)
+	queryAdapters := []adapterAndNoCall{}
+	//
+	for _, adapter := range q.aqf.getFeedAdapters(blockNum, tokens) {
+		otherCalls, isQueryable := adapter.GetCalls(blockNum)
+		if isQueryable {
+			calls = append(calls, otherCalls...)
+			queryAdapters = append(queryAdapters, adapterAndNoCall{
+				adapter: adapter,
+				nocalls: len(otherCalls),
+			})
 		}
 	}
-	q.updateQueryPrices(newPrices)
+	//
+	_results := core.MakeMultiCall(q.client, blockNum, false, calls, 30)
+	iterator := core.NewMulticallResultIterator(_results)
+	//
+	for _, entry := range queryAdapters {
+		var results []multicall.Multicall2Result
+		for i := 0; i < entry.nocalls; i++ {
+			results = append(results, iterator.Next())
+		}
+		prices := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results)
+		q.updateQueryPrices(prices)
+	}
 	// sync control
 	<-ch
 	wg.Done()

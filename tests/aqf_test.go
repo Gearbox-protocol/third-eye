@@ -9,7 +9,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -44,7 +43,7 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 	// set feed to token
 	if syncAdapterObj != nil {
 		for _, adapter := range syncAdapterObj.Adapters {
-			aqf.AddYearnFeed(query_price_feed.NewQueryPriceFeedFromAdapter(adapter))
+			aqf.AddQueryPriceFeed(aggregated_block_feed.NewQueryPriceFeedFromAdapter(adapter))
 		}
 	}
 	log.Info(addressMap)

@@ -59,6 +59,7 @@ func (m *MockRepo) Init(fileNames []string) {
 	m.processInputTestFile(inputFile)
 }
 
+// key/name to address
 func ParseMockClientInput(t *testing.T, client *test.TestClient, fileNames []string) (*TestInput3Eye, core.AddressMap) {
 	filePaths := make([]string, len(fileNames))
 	for i, fileName := range fileNames {

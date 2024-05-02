@@ -7,7 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"gorm.io/gorm/clause"
 )
@@ -22,7 +22,7 @@ func main() {
 	log.CheckFatal(err)
 	for _, adapter := range adapters {
 		if adapter.GetName() == ds.QueryPriceFeed {
-			details := query_price_feed.DetailsDS{}
+			details := base_price_feed.DetailsDS{}
 			details.Load(adapter.GetDetails(), adapter.GetVersion())
 			for _, d := range details.Tokens {
 				for pf, blocks := range d {

@@ -1,4 +1,4 @@
-package query_price_feed
+package base_price_feed
 
 import (
 	"bytes"

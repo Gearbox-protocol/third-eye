@@ -53,7 +53,7 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 	switch adapterI.GetName() {
 	case ds.QueryPriceFeed:
-		handler.aggregatedBlockFeed.AddYearnFeed(adapterI)
+		handler.aggregatedBlockFeed.AddQueryPriceFeed(aggregated_block_feed.FromAdapter(adapterI))
 		// REVERT_ADMIN_WRAPPER
 	case ds.ContractRegister, ds.ACL, ds.AccountFactory, ds.GearToken:
 		handler.adminWrapper.AddSyncAdapter(adapterI)

@@ -11,7 +11,8 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -81,7 +82,7 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionTy
 		prices = v2PriceAnswers(result[:len(tokenAddrs)])
 	}
 	for ind, token := range tokenAddrs {
-		if prices[ind] == nil && repo.IsRedStoneToken(blockNum, oracle, token) {
+		if prices[ind] == nil {
 			if price := repo.GetRedStonePrice(blockNum, oracle, token); price != nil {
 				prices[ind] = price
 			}
@@ -96,24 +97,29 @@ func (repo TreasuryRepo) GetRedStonemgr() redstone.RedStoneMgrI {
 }
 
 func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle, token string) *big.Int {
-	if repo.IsRedStoneToken(blockNum, oracle, token) {
-		ts := repo.blocks.SetAndGetBlock(blockNum).Timestamp
-		return repo.GetRedStonemgr().GetPrice(int64(ts), token)
+	if adapter := repo.IsRedStoneAdapter(blockNum, oracle, token); adapter != nil {
+		call, isQueryable := adapter.GetCalls(blockNum)
+		if !isQueryable {
+			return nil
+		}
+		results := core.MakeMultiCall(repo.client, blockNum, false, call)
+		price := adapter.ProcessResult(blockNum, results)
+		return price.PriceBI.Convert()
 	}
 	return nil
 }
 
-func (repo TreasuryRepo) IsRedStoneToken(blockNum int64, oracle string, token string) bool {
+func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle string, token string) base_price_feed.QueryPriceFeedI {
 	pon, err := priceOraclev3.NewPriceOraclev3(common.HexToAddress(oracle), repo.client)
 	log.CheckFatal(err)
 	priceFeed, err := pon.PriceFeeds(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)}, common.HexToAddress(token))
 	if err != nil {
-		return false
+		return nil
 	}
-	adapter, ok := repo.adapters.GetAdapter(priceFeed.Hex()).(*query_price_feed.QueryPriceFeed)
-	if !ok {
-		return false
+	adapter := repo.adapters.GetAdapter(priceFeed.Hex())
+	if adapter.GetName() == ds.QueryPriceFeed && utils.Contains([]string{ds.RedStonePF, ds.CompositeRedStonePF}, adapter.GetDetailsByKey("pfType")) {
+		return aggregated_block_feed.FromAdapter(adapter)
 	}
-	return adapter.GetPFType() == ds.RedStonePF
 	//
+	return nil
 }

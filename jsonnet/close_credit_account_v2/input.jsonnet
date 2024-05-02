@@ -59,12 +59,6 @@ local extraBorrowedAmount = 1000;
               isForbidden: false,  // changed
               isEnabled: true,
             },
-            {
-              token: '#Token_3',
-              BI: utils.bigInt(3, 18),
-              isForbidden: false,  // changed
-              isEnabled: true,
-            },
             // {
             //   // token 2 yfi is allowed.but  its not linked to account
             //   token: '#Token_2',
@@ -72,6 +66,12 @@ local extraBorrowedAmount = 1000;
             //   isForbidden: false, // changed
             //   isEnabled: false,
             // }
+            {
+              token: '#Token_3',
+              BI: utils.bigInt(3, 18),
+              isForbidden: false,  // changed
+              isEnabled: true,
+            },
           ],
           version: 2,
         }],
