@@ -1,6 +1,8 @@
 package account_manager
 
 import (
+	"strings"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -93,13 +95,15 @@ func (mdl *AccountManager) Query(queryTill int64) {
 	if len(mdl.AccountHashes) == 0 {
 		return
 	}
-	logs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
-	log.Infof("len of logs: %d", len(logs))
+	txLogs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
 	if err != nil {
+		if strings.Contains(err.Error(), "exceed max topics") && log.GetNetworkName(core.GetChainId(mdl.Client)) != log.GetBaseNet(core.GetChainId(mdl.Client)) { // testnet
+			return
+		}
 		log.Fatal(err, "range ", queryFrom, queryTill, "tokenAddrs", len(tokenAddrs), "accountHashes", len(mdl.AccountHashes))
 	}
-	for _, log := range logs {
-		mdl.OnLog(log)
+	for _, txLog := range txLogs {
+		mdl.OnLog(txLog)
 	}
 }
 
