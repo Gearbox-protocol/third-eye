@@ -56,6 +56,7 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		isTesting:              testing,
 		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
 		v3DebtDetails:          Newv3DebtDetails(),
+		tokenLTRamp:            map[string]map[string]*schemas_v3.TokenLTRamp{},
 	}
 }
 

@@ -42,11 +42,12 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config, tokensR
 func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	log.Infof("Loaded %d to %d blocks for debt", from, to)
 	data := []*schemas.Block{}
-	err := repo.db.Preload("CSS").Preload("PoolStats").
-		Preload("AllowedTokens").Preload("PriceFeeds").Preload("Params").
-		Preload("RebaseDetailsForDB").
+	err := repo.db.
+		Preload("RebaseDetailsForDB").Preload("Params").Preload("QuotaDetails").
+		Preload("CSS").Preload("PoolStats").
+		Preload("LTRamp").Preload("AllowedTokens").Preload("PriceFeeds").
 		// v3
-		Preload("QuotaDetails").
+		// quotadetails, ltramp
 		Find(&data, "id > ? AND id <= ?", from, to).Error
 	if err != nil {
 		log.Fatal(err)
@@ -59,9 +60,7 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
-	poolStas := []*schemas.PoolStat{}
 	for _, block := range repo.GetBlocks() {
-		poolStas = append(poolStas, block.PoolStats...)
 		blocksToSync = append(blocksToSync, block)
 	}
 	// clauses not needed here
