@@ -1,0 +1,2 @@
+update sync_adapters set  details=( details || jsonb_build_object('pfType','CompositeRedStonePF')) where address='0x68ebdB03abb45976Bd3Fc5321B66A14399ca83CC';
+update token_oracle set feed_type='CompositeRedStonePF' where oracle='0x68ebdB03abb45976Bd3Fc5321B66A14399ca83CC';
