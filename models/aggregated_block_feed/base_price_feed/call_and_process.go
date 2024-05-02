@@ -15,9 +15,10 @@ import (
 func (mdl *BasePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 	priceFeedABI := core.GetAbi("PriceFeed")
 	// reduntant check already in the aqfwrapper, CHECK_RED_QUERY_ADAPTER
-	if blockNum <= mdl.GetLastSync() || len(mdl.TokensValidAtBlock(blockNum)) == 0 {
-		return
-	}
+	// this check is not needed as in dependency based fetching, lastSync will be set to willsyncTo, and will be updated in the next block
+	// if blockNum <= mdl.GetLastSync() || len(mdl.TokensValidAtBlock(blockNum)) == 0 {
+	// 	return
+	// }
 	data, err := priceFeedABI.Pack("latestRoundData")
 	log.CheckFatal(err)
 	return []multicall.Multicall2Call{{

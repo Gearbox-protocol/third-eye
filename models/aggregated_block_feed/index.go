@@ -19,7 +19,7 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 		return curve_price_feed.NewCurvePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
 	case ds.CompositeRedStonePF:
 		return composite_redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
-	case ds.YearnPF:
+	case ds.YearnPF, ds.SingleAssetPF:
 		return yearn_price_feed.NewYearnPriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
 	default:
 		return nil
@@ -34,7 +34,7 @@ func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) base_price_feed.Query
 	case ds.CompositeRedStonePF:
 		return composite_redstone_price_feed.NewRedstonePriceFeedFromAdapter(adapter)
 		// return curve_price_feed.NewCurvePriceFeedFromAdapter(adapter)
-	case ds.YearnPF:
+	case ds.YearnPF, ds.SingleAssetPF:
 		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
 	default:
 		return nil

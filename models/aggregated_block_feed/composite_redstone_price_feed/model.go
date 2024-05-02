@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -31,7 +32,7 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStone
 	pf1, err := core.CallFuncWithExtraBytes(adapter.Client, "ab0ca0e1", common.HexToAddress(adapter.Address), 0, nil) // priceFeed1
 	log.CheckFatal(err)
 	//
-	decimals, err := core.CallFuncWithExtraBytes(adapter.Client, "313ce567", common.HexToAddress(adapter.Address), 0, nil) // decimals
+	decimals, err := core.CallFuncWithExtraBytes(adapter.Client, "313ce567", common.BytesToAddress(pf0), 0, nil) // decimals
 	log.CheckFatal(err)
 	return &CompositeRedStonePriceFeed{
 		BasePriceFeed: base_price_feed.NewBasePriceFeedFromAdapter(adapter),
@@ -55,18 +56,26 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 	if !results[0].Success {
 		return nil
 	}
+	log.Info("here")
 	validTokens := mdl.TokensValidAtBlock(blockNum)
 	targetPrice := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token, true)
 	//
-	isPriceInUSD := mdl.GetVersion().IsPriceInUSD() // should be always true
-	log.Infof("RedStone compoiste price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, targetPrice)
-
-	basePrice, ok := core.MulticallAnsBigInt(results[0])
-	if ok {
-		price := utils.GetInt64(new(big.Int).Mul(targetPrice, basePrice), mdl.Decimals)
-		return parsePriceForRedStone(price, isPriceInUSD)
+	basePrice := func() *big.Int {
+		values, err := core.GetAbi("PriceFeed").Unpack("latestRoundData", results[0].ReturnData)
+		if err != nil {
+			log.Warnf("Can't get the lastestRounData: %s at %d for mdl.priceFeed1(%s)", err, blockNum, mdl.priceFeed1)
+			return nil
+		}
+		return *abi.ConvertType(values[1], new(*big.Int)).(**big.Int)
+	}()
+	log.Infof("RedStone composite targetprice for %s at %d is %f, basePrice, %s", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, utils.GetFloat64Decimal(targetPrice, mdl.Decimals), basePrice)
+	if basePrice == nil {
+		return nil
 	}
-	return nil
+	// calculate price
+	price := utils.GetInt64(new(big.Int).Mul(targetPrice, basePrice), mdl.Decimals)
+	isPriceInUSD := mdl.GetVersion().IsPriceInUSD() // should be always true
+	return parsePriceForRedStone(price, isPriceInUSD)
 }
 
 func parsePriceForRedStone(price *big.Int, isPriceInUSD bool) *schemas.PriceFeed {
