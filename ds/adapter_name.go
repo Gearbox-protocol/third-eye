@@ -50,6 +50,7 @@ const (
 	RedStonePF           = "RedStonePF"
 	ZeroPF               = "ZeroPF"
 	CompositeChainlinkPF = "CompositeChainlinkPF"
+	CompositeRedStonePF  = "CompositeRedStonePF"
 	AlmostZeroPF         = "AlmostZeroPF"
 )
 

@@ -1,16 +1,13 @@
-package query_price_feed
+package yearn_price_feed
 
 import (
-	"sync"
 	"testing"
 
-	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/ethclient"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestInternalyearnPrice(t *testing.T) {
@@ -25,14 +22,7 @@ func TestInternalyearnPrice(t *testing.T) {
 			},
 		},
 	}
-	obj := &QueryPriceFeed{
-		SyncAdapter: adapter,
-		mu:          &sync.Mutex{},
-		yearnPFInternal: yearnPFInternal{
-			mainPFAddress: common.HexToAddress(adapter.Address),
-			version:       core.NewVersion(300),
-		}, // main price feed
-	}
+	obj := NewYearnPriceFeedFromAdapter(adapter)
 	pf, err := obj.CalculateYearnPFInternally(18631514)
 	log.CheckFatal(err)
 	log.Info(utils.ToJson(pf))

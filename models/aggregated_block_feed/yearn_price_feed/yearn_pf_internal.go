@@ -1,4 +1,4 @@
-package query_price_feed
+package yearn_price_feed
 
 import (
 	"fmt"
@@ -12,6 +12,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
+
+// only used in v1,v2
+
+func (mdl *YearnPriceFeed) CalculateYearnPFInternally(blockNum int64) (*schemas.PriceFeed, error) {
+	return mdl.yearnPFInternal.calculatePrice(blockNum, mdl.Client, mdl.GetVersion())
+}
 
 type yearnPFInternal struct {
 	mainPFAddress        common.Address // for yearn manual price calculation

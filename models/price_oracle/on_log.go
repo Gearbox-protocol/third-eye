@@ -62,7 +62,9 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		}
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account
-		case ds.YearnPF, ds.SingleAssetPF, ds.CurvePF, ds.ChainlinkPriceFeed, ds.ZeroPF, ds.AlmostZeroPF, ds.CompositeChainlinkPF, ds.RedStonePF:
+		case ds.ChainlinkPriceFeed, ds.CompositeChainlinkPF,
+			ds.ZeroPF, ds.AlmostZeroPF,
+			ds.RedStonePF, ds.CompositeRedStonePF, ds.YearnPF, ds.SingleAssetPF, ds.CurvePF:
 			// four types of oracles
 			// - Zero or almost zero price feed: constant price value
 			// - Chainlink price feed: market based price value
@@ -157,7 +159,7 @@ func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			description, err := yearnContract.Description(opts)
 			log.CheckFatal(err)
 			if strings.Contains(strings.ToLower(description), "redstone") {
-				return ds.CurvePF, false, nil
+				return ds.CompositeRedStonePF, false, nil
 			}
 		}
 		return ds.CompositeChainlinkPF, false, nil

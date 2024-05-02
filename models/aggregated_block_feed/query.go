@@ -1,8 +1,6 @@
 package aggregated_block_feed
 
 import (
-	"fmt"
-	"math/big"
 	"sort"
 	"sync"
 	"time"
@@ -11,11 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
-	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/query_price_feed"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	// "fmt"
 )
 
@@ -42,7 +36,6 @@ func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
 		ch <- 1
 		wg.Add(1)
 		go mdl.queryAsync(blockNum, ch, wg)
-		mdl.queryRedStone(blockNum)
 		if rounds%100 == 0 {
 			timeLeft := (time.Since(loopStartTime).Seconds() * float64(toSinceTill-blockNum)) /
 				float64(blockNum-mdl.GetLastSync())
@@ -54,36 +47,6 @@ func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
 	}
 	wg.Wait()
 	return blockNum - mdl.Interval
-}
-func (mdl *AQFWrapper) queryRedStone(blockNum int64) {
-	// for redstone
-	for _, adapter := range mdl.QueryFeeds {
-		// fetch from redstone
-		validTokens := adapter.TokensValidAtBlock(blockNum)
-		if adapter.GetPFType() == ds.RedStonePF &&
-			adapter.GetLastSync() < blockNum &&
-			len(validTokens) > 0 && adapter.GetPFType() == ds.RedStonePF { // if adapter has redstone token, then fetch from redstone
-			priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token)
-			//
-			isPriceInUSD := adapter.GetVersion().IsPriceInUSD() // should be always true
-
-			priceData := parsePriceForRedStone(priceBI, isPriceInUSD, adapter.GetAddress())
-			log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceData.Price)
-			//
-			priceFeeds := []*schemas.PriceFeed{}
-			for _, entry := range adapter.TokensValidAtBlock(blockNum) {
-				priceDataCopy := priceData.Clone()
-				//
-				priceDataCopy.BlockNumber = blockNum
-				priceDataCopy.Token = entry.Token
-				priceDataCopy.MergedPFVersion = entry.MergedPFVersion
-				priceDataCopy.Feed = adapter.GetAddress()
-				//
-				priceFeeds = append(priceFeeds, priceDataCopy)
-			}
-			mdl.updateQueryPrices(priceFeeds)
-		}
-	}
 }
 
 // update all queryAdapter only if for the lastBlockNumber as we have fetched prices for that block.
@@ -108,8 +71,8 @@ func (mdl *AQFWrapper) Query(toSinceTill int64) {
 	mdl.LastSync = syncedTill
 }
 
-func (mdl *AQFWrapper) addQueryPrices(clearExtraBefore int64) {
-	mdl.updateQueryPrices(mdl.queryPFdeps.extraPriceForQueryFeed(clearExtraBefore))
+func (mdl *AQFWrapper) addQueryPrices(deleteExtraBefore int64) {
+	mdl.updateQueryPrices(mdl.queryPFdeps.extraPriceForQueryFeed(deleteExtraBefore))
 	// query feed prices
 	sort.SliceStable(mdl.queryFeedPrices, func(i, j int) bool {
 		return mdl.queryFeedPrices[i].BlockNumber < mdl.queryFeedPrices[j].BlockNumber
@@ -141,105 +104,53 @@ func (mdl *AQFWrapper) updateQueryPrices(pfs []*schemas.PriceFeed) {
 func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
 	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
 	result := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
+	iterator := core.NewMulticallResultIterator(result)
 	//
 	//
 	var queryFeedPrices []*schemas.PriceFeed
-	for ind, entry := range result {
-		pf := mdl.processRoundData(blockNum, queryAbleAdapters[ind], entry)
+	for _, entry := range queryAbleAdapters {
+		var results []multicall.Multicall2Result
+		for i := 0; i < entry.nocalls; i++ {
+			results = append(results, iterator.Next())
+		}
+		pf := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results)
 		queryFeedPrices = append(queryFeedPrices, pf...)
 	}
 	//
 	return queryFeedPrices
 }
 
-func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []*query_price_feed.QueryPriceFeed) {
-	priceFeedABI := core.GetAbi("PriceFeed")
+type adapterAndNoCall struct {
+	adapter base_price_feed.QueryPriceFeedI
+	nocalls int
+}
+
+func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []adapterAndNoCall) {
 	//
 	for _, adapter := range mdl.QueryFeeds {
 		if blockNum <= adapter.GetLastSync() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
 			continue
 		}
-		data, err := priceFeedABI.Pack("latestRoundData")
-		log.CheckFatal(err)
-		call := multicall.Multicall2Call{
-			Target:   common.HexToAddress(adapter.GetAddress()),
-			CallData: data,
+		moreCalls, isQueryable := adapter.GetCalls(blockNum)
+		if isQueryable {
+			calls = append(calls, moreCalls...)
+			queryAbleAdapters = append(queryAbleAdapters, adapterAndNoCall{
+				adapter: adapter,
+				nocalls: len(moreCalls),
+			})
+			continue
 		}
-		calls = append(calls, call)
-		queryAbleAdapters = append(queryAbleAdapters, adapter)
 	}
 	return
 }
 
-var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
+func processRoundDataWithAdapterTokens(blockNum int64, adapter base_price_feed.QueryPriceFeedI, entries []multicall.Multicall2Result) []*schemas.PriceFeed {
 
-func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_feed.QueryPriceFeed, entry multicall.Multicall2Result) []*schemas.PriceFeed {
-	var priceData *schemas.PriceFeed
+	// } else if utils.Contains([]string{"0xCbeCfA4017965939805Da5a2150E3DB1BeDD0364", "0x814E6564e8cda436c1ab25041C10bfdb21dEC519"},
 
-	if adapter.GetPFType() == ds.RedStonePF { // 20 blocks
+	priceData := adapter.ProcessResult(blockNum, entries)
+	if priceData == nil {
 		return nil
-	} else if entry.Success {
-		isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
-		priceData = parseRoundData(entry.ReturnData, isPriceInUSD, adapter.GetAddress(), blockNum)
-	} else if adapter.GetVersion().MoreThanEq(core.NewVersion(300)) {
-		if core.GetChainId(mdl.Client) == 7878 {
-			return nil
-		} else if utils.Contains([]string{"0xCbeCfA4017965939805Da5a2150E3DB1BeDD0364", "0x814E6564e8cda436c1ab25041C10bfdb21dEC519"},
-			adapter.GetAddress()) { // arbitrum redstone composite feed // reserve price feeds
-			return nil
-		} else {
-			log.Warnf("Can't get latestRounData in AQFWrapper for %s(%s) at %d",
-				adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), blockNum)
-			return nil
-		}
-	} else {
-		switch adapter.GetDetailsByKey("pfType") {
-		case ds.YearnPF:
-			// fail on err, since we only sync for block_num which is more than discovered_at, we can assume that underlying price feed will be set for given block_num
-			_priceData, err := adapter.CalculateYearnPFInternally(blockNum)
-			if err != nil {
-				log.Fatal(fmt.Errorf("At %d can't calculate yearnfeed(%s)'s price internally: %s",
-					blockNum,
-					adapter.GetAddress(), err.Error()))
-			}
-			priceData = _priceData
-		case ds.CurvePF:
-			// if virtualprice of pool for this oracle is not within lowerBound and upperBound , ignore the price
-			oracleAddr := common.HexToAddress(adapter.GetAddress())
-			virtualPrice := GetCurveVirtualPrice(blockNum, oracleAddr, adapter.GetVersion(), mdl.Client)
-			//
-			withinLimits := func() bool {
-				lowerLimit, err := core.CallFuncWithExtraBytes(mdl.Client, "a384d6ff", oracleAddr, blockNum, nil) // lowerBound
-				log.CheckFatal(err)
-				upperLimit, err := core.CallFuncWithExtraBytes(mdl.Client, "b09ad8a0", oracleAddr, blockNum, nil) // upperBound
-				log.CheckFatal(err)
-				return new(big.Int).SetBytes(lowerLimit).Cmp(virtualPrice) < 0 &&
-					new(big.Int).SetBytes(upperLimit).Cmp(virtualPrice) > 0
-			}()
-			if curvePFLatestRoundDataTimer[adapter.GetAddress()] == nil {
-				curvePFLatestRoundDataTimer[adapter.GetAddress()] = log.GetRiskMsgTimer()
-			}
-			var msg string
-			if !withinLimits {
-				msg = "virtual price is not within limits for " + adapter.GetAddress()
-			} else {
-				msg = "failing due to unknown reason maybe underlying pricefeed of curve pool token is failing for curve adapter" + adapter.GetAddress()
-			}
-			log.SendRiskAlertPerTimer(
-				log.RiskAlert{
-					Msg: msg,
-					RiskHeader: log.RiskHeader{
-						BlockNumber: blockNum,
-						EventCode:   "CURVE_LATEST_ROUNDDATA_FAIL",
-					},
-				},
-				curvePFLatestRoundDataTimer[adapter.GetAddress()],
-				86400*time.Second,
-			)
-			return nil
-		default:
-			log.Fatalf("Can't get latestRounData in AQFWrapper for %s(%s) at %d", adapter.GetDetailsByKey("pfType"), adapter.GetAddress(), blockNum)
-		}
 	}
 	priceFeeds := []*schemas.PriceFeed{}
 	for _, entry := range adapter.TokensValidAtBlock(blockNum) {
@@ -253,39 +164,4 @@ func (mdl *AQFWrapper) processRoundData(blockNum int64, adapter *query_price_fee
 		priceFeeds = append(priceFeeds, priceDataCopy)
 	}
 	return priceFeeds
-}
-
-func parseRoundData(returnData []byte, isPriceInUSD bool, feed string, blockNum int64) *schemas.PriceFeed {
-	priceFeedABI := core.GetAbi("PriceFeed")
-	roundData := schemas.LatestRounData{}
-	value, err := priceFeedABI.Unpack("latestRoundData", returnData)
-	if err != nil {
-		log.Fatalf("For feed(%s) can't get the lastestRounData: %s at %d", feed, err, blockNum)
-	}
-	roundData.RoundId = *abi.ConvertType(value[0], new(*big.Int)).(**big.Int)
-	roundData.Answer = *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
-	// roundData.StartedAt = *abi.ConvertType(value[2], new(*big.Int)).(**big.Int)
-	// roundData.UpdatedAt = *abi.ConvertType(value[3], new(*big.Int)).(**big.Int)
-	// roundData.AnsweredInRound = *abi.ConvertType(value[4], new(*big.Int)).(**big.Int)
-	var decimals int8 = 18 // for eth
-	if isPriceInUSD {
-		decimals = 8 // for usd
-	}
-	return &schemas.PriceFeed{
-		RoundId: roundData.RoundId.Int64(),
-		PriceBI: (*core.BigInt)(roundData.Answer),
-		Price:   utils.GetFloat64Decimal(roundData.Answer, decimals),
-	}
-}
-
-func parsePriceForRedStone(price *big.Int, isPriceInUSD bool, feed string) *schemas.PriceFeed {
-	var decimals int8 = 18 // for eth
-	if isPriceInUSD {
-		decimals = 8 // for usd
-	}
-	return &schemas.PriceFeed{
-		RoundId: 0,
-		PriceBI: (*core.BigInt)(price),
-		Price:   utils.GetFloat64Decimal(price, decimals),
-	}
 }

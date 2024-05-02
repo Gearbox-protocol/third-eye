@@ -143,7 +143,8 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 	}
 	pfVersion := schemas.VersionToPFVersion(newTokenOracle.Version, newTokenOracle.Reserve)
 	switch newTokenOracle.FeedType {
-	case ds.CurvePF, ds.SingleAssetPF, ds.YearnPF, ds.ZeroPF, ds.AlmostZeroPF, ds.RedStonePF:
+	case ds.ZeroPF, ds.AlmostZeroPF,
+		ds.CurvePF, ds.SingleAssetPF, ds.YearnPF, ds.RedStonePF, ds.CompositeRedStonePF:
 		if repo.alreadyActiveFeedForToken(newTokenOracle) {
 			return
 		}
