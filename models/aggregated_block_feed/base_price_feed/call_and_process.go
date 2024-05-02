@@ -32,7 +32,7 @@ func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, bloc
 	roundData := schemas.LatestRounData{}
 	value, err := priceFeedABI.Unpack("latestRoundData", returnData)
 	if err != nil {
-		log.Fatalf("For feed(%s) can't get the lastestRounData: %s at %d", feed, err, blockNum)
+		log.Fatalf("For feed(%s) can't get the latestRounData: %s at %d", feed, err, blockNum)
 	}
 	roundData.RoundId = *abi.ConvertType(value[0], new(*big.Int)).(**big.Int)
 	roundData.Answer = *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)

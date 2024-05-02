@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -12,7 +13,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -93,22 +94,29 @@ func (repo *BlocksRepo) GetBlockDatePairs(ts int64) *schemas.BlockDate {
 	return repo.blockDatePairs.Get(ts)
 }
 
-func (repo *BlocksRepo) fetchBlock(blockNum int64) *types.Block {
+func (repo *BlocksRepo) fetchBlockTime(blockNum int64) uint64 {
 	b, err := repo.client.BlockByNumber(context.Background(), big.NewInt(blockNum))
 	// if err != nil && err.Error() == "server returned empty uncle list but block header indicates uncles" {
 	// 	repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum}
 	// 	return
 	// }
 	if err != nil {
+
+		if strings.Contains(err.Error(), "invalid transaction v, r, s values") && ds.IsTestnet(repo.client) {
+			b, err := repo.client.BlockByNumber(context.Background(), big.NewInt(blockNum-1))
+			log.CheckFatal(err)
+			return b.Time() + 1
+		}
 		log.Fatalf("%s: %d", err, blockNum)
 	}
-	return b
+	return b.Time()
 }
+
 func (repo *BlocksRepo) setBlock(blockNum int64) {
 	if repo.blocks.Get(blockNum) == nil {
-		b := repo.fetchBlock(blockNum)
-		repo.blocks.Set(blockNum, &schemas.Block{BlockNumber: blockNum, Timestamp: b.Time()})
-		repo.addBlockDate(&schemas.BlockDate{BlockNum: blockNum, Timestamp: int64(b.Time())})
+		bTime := repo.fetchBlockTime(blockNum)
+		repo.blocks.Set(blockNum, &schemas.Block{BlockNumber: blockNum, Timestamp: bTime})
+		repo.addBlockDate(&schemas.BlockDate{BlockNum: blockNum, Timestamp: int64(bTime)})
 	}
 }
 

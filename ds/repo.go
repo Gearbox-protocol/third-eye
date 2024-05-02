@@ -139,3 +139,8 @@ type RepositoryI interface {
 	GetAccountQuotaMgr() *AccountQuotaMgr
 	IsBlockRecent(block int64, dur time.Duration) bool
 }
+
+func IsTestnet(client core.ClientI) bool {
+	chainid := core.GetChainId(client)
+	return log.GetNetworkName(chainid) != log.GetBaseNet(chainid)
+}

@@ -97,7 +97,7 @@ func (mdl *AccountManager) Query(queryTill int64) {
 	}
 	txLogs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
 	if err != nil {
-		if strings.Contains(err.Error(), "exceed max topics") && log.GetNetworkName(core.GetChainId(mdl.Client)) != log.GetBaseNet(core.GetChainId(mdl.Client)) { // testnet
+		if strings.Contains(err.Error(), "exceed max topics") && ds.IsTestnet(mdl.Client) { // anvil failure
 			return
 		}
 		log.Fatal(err, "range ", queryFrom, queryTill, "tokenAddrs", len(tokenAddrs), "accountHashes", len(mdl.AccountHashes))

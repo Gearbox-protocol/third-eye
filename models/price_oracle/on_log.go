@@ -27,7 +27,10 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),
 		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
 		//
-		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
+		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex() // token
+		if token == "0x8C23b9E4CB9884e807294c4b4C33820333cC613c" {    // weETH/ETH
+			return
+		}
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
 		isReverse := core.Topic("SetReservePriceFeed(address,address,uint32,bool)") == txLog.Topics[0]
 		// if isReverse {
