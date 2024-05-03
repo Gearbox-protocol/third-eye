@@ -109,7 +109,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 			strings.Contains(err.Error(), "Required data unavailable") ||
 			strings.Contains(err.Error(), "execution reverted") {
 			if mdl.GetVersion().MoreThanEq(core.NewVersion(300)) {
-				return mdl.v3PriceFeedType(opts, oracle, token)
+				return mdl.V3PriceFeedType(opts, oracle, token)
 			} else {
 				return mdl.v2PriceFeedType(opts, oracle)
 			}
@@ -127,7 +127,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
-func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, bool, error) {
+func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, bool, error) {
 	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
 	if err != nil {
 		{ // redstone feed without price on demand doesn't have priceFeedType method.
@@ -157,15 +157,28 @@ func (mdl *PriceOracle) v3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			// The new composite has internal feeds that don’t have known chainlink abi sigs. So, composite feed adapter is failing.
 			// I will treat them as query feed to be periodic synced every 10-15 blocks.
 
-			yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
-			log.CheckFatal(err)
-			description, err := yearnContract.Description(opts)
-			log.CheckFatal(err)
-			if strings.Contains(strings.ToLower(description), "redstone") {
+			pf := func() common.Address {
+				pf, err := core.CallFuncWithExtraBytes(mdl.Client, "385aee1b", common.HexToAddress(oracle), 0, nil) // priceFeed0
+				log.CheckFatal(err)
+				return common.BytesToAddress(pf)
+			}()
+			pf0Type := func() int {
+				pf0Type, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
+				if err != nil {                                                                 // this means that it can be from outside of gearbox protocol, like redstone own oracle.
+					log.Warnf("pf:%s oracle:%s token:%s err:%s, pf0 can be non-gearbox oracle.", pf, oracle, token, err)
+					return core.V3_CURVE_2LP_ORACLE
+				}
+				return int(new(big.Int).SetBytes(pf0Type).Int64())
+			}()
+			switch pf0Type {
+			case core.V3_REDSTONE_ORACLE:
 				return ds.CompositeRedStonePF, false, nil
+			case core.V3_CHAINLINK_ORACLE:
+				return ds.CompositeChainlinkPF, false, nil
+			default:
+				return ds.CurvePF, false, nil
 			}
 		}
-		return ds.CompositeChainlinkPF, false, nil
 	case core.V3_YEARN_ORACLE:
 		return ds.YearnPF, false, nil
 	case core.V3_CHAINLINK_ORACLE:
