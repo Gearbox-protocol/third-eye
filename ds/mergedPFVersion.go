@@ -131,7 +131,10 @@ func (mdl MergedPFManager) DisableToken(blockNum int64, token string, pfVersion 
 		obj := mdl[token][len(mdl[token])-1]
 		last = obj.MergedPFVersion
 	}
-	final := last ^ schemas.MergedPFVersion(pfVersion)
+	final := last - (last & schemas.MergedPFVersion(pfVersion))
+	if final == last {
+		return
+	}
 	mdl[token] = append(mdl[token], entry{
 		MergedPFVersion: final,
 		BlockNumber:     blockNum,
@@ -150,6 +153,21 @@ func (mdl MergedPFManager) DeleteAfter(blockNum int64) {
 			delete(mdl, token)
 		} else {
 			mdl[token] = newEntries
+		}
+	}
+}
+
+func (mdl MergedPFManager) CloseV2(client core.ClientI, syncedTill int64, address string) {
+	var v2CloseBlock int64 = 19752044
+	if syncedTill >= v2CloseBlock && log.GetBaseNet(core.GetChainId(client)) == "MAINNET" {
+		for _, token := range mdl.GetTokens(v2CloseBlock) {
+			pfversion := mdl.GetMergedPFVersion(token, v2CloseBlock, address)
+			if pfversion&schemas.MergedPFVersion(schemas.V1PF) != 0 {
+				mdl.DisableToken(v2CloseBlock, token, schemas.V1PF)
+			}
+			if pfversion&schemas.MergedPFVersion(schemas.V2PF) != 0 {
+				mdl.DisableToken(v2CloseBlock, token, schemas.V2PF)
+			}
 		}
 	}
 }

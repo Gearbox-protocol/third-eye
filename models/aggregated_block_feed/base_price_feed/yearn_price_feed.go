@@ -121,6 +121,24 @@ func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) sch
 }
 
 func (mdl *BasePriceFeed) AfterSyncHook(b int64) {
+	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" {
+		var v1CloseBlock int64 = 18577104 // v1 all accounts closed at
+		if b >= v1CloseBlock {
+			for token, details := range mdl.DetailsDS.Tokens {
+				if len(details[schemas.V1PF]) == 1 {
+					mdl.DisableToken(token, v1CloseBlock, schemas.V1PF)
+				}
+			}
+		}
+		var v2CloseBlock int64 = 19752044 // v2 all accounts closed at
+		if b >= v2CloseBlock {
+			for token, details := range mdl.DetailsDS.Tokens {
+				if len(details[schemas.V2PF]) == 1 {
+					mdl.DisableToken(token, v2CloseBlock, schemas.V2PF)
+				}
+			}
+		}
+	}
 	mdl.Details = mdl.DetailsDS.Save()
 	mdl.SyncAdapter.AfterSyncHook(b)
 }

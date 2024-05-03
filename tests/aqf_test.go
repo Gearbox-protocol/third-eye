@@ -4,6 +4,7 @@ import (
 	"sort"
 	"testing"
 
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/test"
@@ -20,7 +21,7 @@ func TestAQFWrapper(t *testing.T) {
 	//
 	r := &ds.DummyRepo{}
 	aqf := aggregated_block_feed.NewAQFWrapper(client, r, 25) // 25 is the sync interval
-	updateAQF(t, aqf, addressMap, inputFile)
+	updateAQF(t, aqf, addressMap, inputFile, client)
 	//
 	//
 	//
@@ -36,13 +37,14 @@ func TestAQFWrapper(t *testing.T) {
 	// framework.Print(t, addressMap, map[string]interface{}{"data": r.PFs})
 }
 
-func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap map[string]string, inputFile *framework.TestInput3Eye) {
+func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap map[string]string, inputFile *framework.TestInput3Eye, client core.ClientI) {
 
 	//
 	syncAdapterObj := inputFile.GetSyncAdapter(addressMap, t)
 	// set feed to token
 	if syncAdapterObj != nil {
 		for _, adapter := range syncAdapterObj.Adapters {
+			adapter.Client = client
 			aqf.AddQueryPriceFeed(aggregated_block_feed.NewQueryPriceFeedFromAdapter(adapter))
 		}
 	}

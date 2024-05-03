@@ -155,6 +155,7 @@ func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 
 
 func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
+	mdl.mergedPFManager.CloseV2(mdl.Client, syncedTill, mdl.Address)
 	mdl.mergedPFManager.Save(&mdl.Details)
 }
 
