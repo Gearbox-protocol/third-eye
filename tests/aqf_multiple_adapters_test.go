@@ -70,7 +70,7 @@ func TestAQFMultipleAdapter(t *testing.T) {
 	sort.Slice(r.PFs, func(a, b int) bool {
 		aBlock := r.PFs[a].BlockNumber
 		bBlock := r.PFs[b].BlockNumber
-		return aBlock < bBlock || (aBlock == bBlock && reverseAddrMap[r.PFs[a].Token] < reverseAddrMap[r.PFs[b].Token])
+		return aBlock < bBlock || (aBlock == bBlock && reverseAddrMap[r.PFs[a].Feed] < reverseAddrMap[r.PFs[b].Feed])
 	})
 
 	// framework.Print(t, addressMap, map[string]interface{}{"data": r.PFs})
