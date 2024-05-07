@@ -390,7 +390,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			profile.Tokens[tokenAddr] = ds.TokenDetails{
 				Price:             eng.GetTokenLastPrice(tokenAddr, schemas.VersionToPFVersion(session.Version, false)), // don't use reserve
 				Decimals:          eng.repo.GetToken(tokenAddr).Decimals,
-				TokenLiqThreshold: eng.allowedTokensThreshold[session.CreditManager][tokenAddr],
+				TokenLiqThreshold: eng.tokenLTRamp[session.CreditManager][tokenAddr].GetLTForTs(eng.currentTs),
 			}
 		}
 	}

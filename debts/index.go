@@ -21,7 +21,6 @@ type DebtEngine struct {
 	lastCSS        map[string]*schemas.CreditSessionSnapshot
 	tokenLastPrice map[schemas.PFVersion]map[string]*schemas.PriceFeed
 	//// credit_manager -> token -> liquidity threshold
-	allowedTokensThreshold map[string]map[string]*core.BigInt
 	poolLastInterestData   map[string]*schemas.PoolInterestData
 	debts                  []*schemas.Debt
 	tvlSnapshots           []*schemas.TvlSnapshots
@@ -48,7 +47,6 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		config:                 config,
 		lastCSS:                make(map[string]*schemas.CreditSessionSnapshot),
 		tokenLastPrice:         make(map[schemas.PFVersion]map[string]*schemas.PriceFeed),
-		allowedTokensThreshold: make(map[string]map[string]*core.BigInt),
 		poolLastInterestData:   make(map[string]*schemas.PoolInterestData),
 		lastDebts:              make(map[string]*schemas.Debt),
 		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),

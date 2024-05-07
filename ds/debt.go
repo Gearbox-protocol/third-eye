@@ -22,7 +22,7 @@ type DebtEngineI interface {
 type TokenDetails struct {
 	Price             *big.Int
 	Decimals          int8
-	TokenLiqThreshold *core.BigInt     `json:"tokenLiqThreshold"`
+	TokenLiqThreshold *big.Int         `json:"tokenLiqThreshold"`
 	Symbol            string           `json:"symbol"`
 	Version           core.VersionType `json:"version"`
 }

@@ -62,7 +62,7 @@ func (s storeForCalc) GetLiqThreshold(ts uint64, cm, token string) *big.Int {
 	if ltRamp := s.inner.tokenLTRamp[cm][token]; ltRamp != nil {
 		return ltRamp.GetLTForTs(ts)
 	}
-	return s.inner.allowedTokensThreshold[cm][token].Convert()
+	return nil
 }
 
 type poolDetailsForCalc struct {

@@ -1,7 +1,8 @@
 package debts
 
 import (
-	"github.com/Gearbox-protocol/sdk-go/core"
+	"math"
+
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -30,10 +31,19 @@ func (eng *DebtEngine) loadAllowedTokenThreshold(lastDebtSync int64) {
 }
 
 func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *schemas.AllowedToken) {
-	if eng.allowedTokensThreshold[atoken.CreditManager] == nil {
-		eng.allowedTokensThreshold[atoken.CreditManager] = make(map[string]*core.BigInt)
+	var lt uint16 = 0
+	if atoken.LiquidityThreshold != nil {
+		lt = uint16(atoken.LiquidityThreshold.Convert().Int64())
 	}
-	eng.allowedTokensThreshold[atoken.CreditManager][atoken.Token] = atoken.LiquidityThreshold
+	eng.AddTokenLTRamp(&schemas_v3.TokenLTRamp{
+		BlockNum:      atoken.BlockNumber,
+		CreditManager: atoken.CreditManager,
+		Token:         atoken.Token,
+		LtInitial:     lt,
+		LtFinal:       lt,
+		RampStart:     math.MaxInt64,
+		RampEnd:       0,
+	})
 }
 
 func (eng *DebtEngine) loadLastLTRamp(lastDebtSync int64) {
@@ -54,6 +64,12 @@ func (eng *DebtEngine) loadLastLTRamp(lastDebtSync int64) {
 func (eng *DebtEngine) AddTokenLTRamp(atoken *schemas_v3.TokenLTRamp) {
 	if eng.tokenLTRamp[atoken.CreditManager] == nil {
 		eng.tokenLTRamp[atoken.CreditManager] = make(map[string]*schemas_v3.TokenLTRamp)
+	}
+	if eng.tokenLTRamp[atoken.CreditManager][atoken.Token] != nil {
+		block := eng.tokenLTRamp[atoken.CreditManager][atoken.Token].BlockNum
+		if block > atoken.BlockNum { // no need to update if the block is latest already
+			return
+		}
 	}
 	eng.tokenLTRamp[atoken.CreditManager][atoken.Token] = atoken
 }
