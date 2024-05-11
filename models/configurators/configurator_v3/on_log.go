@@ -43,15 +43,15 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 	// credit configurator events
 	/////////////////////////////
 	case core.Topic("AllowToken(address)"):
-		tokenEvent, err := mdl.cfgContract.ParseAllowToken(txLog)
-		log.CheckFatal(err)
-		mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
-			BlockNumber:        blockNum,
-			CreditManager:      creditManager,
-			Token:              tokenEvent.Token.Hex(),
-			LiquidityThreshold: nil,
-			Configurator:       mdl.Address,
-		})
+		// tokenEvent, err := mdl.cfgContract.ParseAllowToken(txLog)
+		// log.CheckFatal(err)
+		// mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
+		// 	BlockNumber:        blockNum,
+		// 	CreditManager:      creditManager,
+		// 	Token:              tokenEvent.Token.Hex(),
+		// 	LiquidityThreshold: nil,
+		// 	Configurator:       mdl.Address,
+		// })
 	case core.Topic("SetTokenLiquidationThreshold(address,uint16)"):
 		tokenEvent, err := mdl.cfgContract.ParseSetTokenLiquidationThreshold(txLog)
 		log.CheckFatal(err)

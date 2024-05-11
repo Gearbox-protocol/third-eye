@@ -349,6 +349,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	//
 	// calculating account fields
 	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
+	// failure true as we are calculating debt
 	calHF, calTotalValue, calThresholdValue, debtDetails := calculator.CalcAccountFields(
 		eng.currentTs,
 		blockNum,
@@ -366,6 +367,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			forQuotas:             eng.v3DebtDetails,
 		},
 		eng.lastParameters[session.CreditManager].FeeInterest,
+		true,
 	)
 
 	// the value of credit account is in terms of underlying asset
