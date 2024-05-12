@@ -1,0 +1,1 @@
+update sync_adapters set address=details->>'oracle' where type='CompositeChainlinkPF';
