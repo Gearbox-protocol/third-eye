@@ -1,6 +1,8 @@
 package price_oracle
 
 import (
+	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"strings"
@@ -11,6 +13,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -20,6 +23,16 @@ import (
 // QueryPriceFeed stores in details reserve status via PFVersion in details.Tokens.pfversion
 // chainlinkPriceFeed and compositeChainlinkPriceFeed stores pfversion as reserve status in details
 
+func getDesc(client core.ClientI, addr common.Address) string {
+	data, err := hex.DecodeString("06fdde03") // enabledTokens
+	log.CheckFatal(err)
+	bytes, err := client.CallContract(context.TODO(), ethereum.CallMsg{
+		To:   &addr,
+		Data: data,
+	}, nil)
+	log.CheckFatal(err)
+	return strings.Trim(string(bytes), "\x00")
+}
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
@@ -28,8 +41,18 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
 		//
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex() // token
-		if token == "0x8C23b9E4CB9884e807294c4b4C33820333cC613c" {    // weETH/ETH
-			return
+		// on mainnet, these are the tickers added as weETH redstone composite oracle is made up of ticker oracle weETH/ETH redstone and ETH/USD chainlink oracle
+
+		{
+			// 0x8C23b9E4CB9884e807294c4b4C33820333cC613c weETH/ETH
+			// 0xFb56Fb16B4F33A875b01881Da7458E09D286208e ezETH/ETH
+			if log.GetNetworkName(core.GetChainId(mdl.Client)) != "TEST" {
+				desc := getDesc(mdl.Client, common.HexToAddress(token))
+				if strings.Contains(desc, "Ticker Token") { // ezETH/ETH and weETH/ETH
+					log.Warnf("Ingore [%s](%s) in priceOracle", token, desc)
+					return
+				}
+			}
 		}
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
 		isReverse := core.Topic("SetReservePriceFeed(address,address,uint32,bool)") == txLog.Topics[0]
