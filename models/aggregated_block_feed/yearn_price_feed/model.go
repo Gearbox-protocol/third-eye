@@ -35,6 +35,10 @@ func NewYearnPriceFeedFromAdapter(adapter *ds.SyncAdapter) *YearnPriceFeed {
 
 func (mdl *YearnPriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result) *schemas.PriceFeed {
 	if !results[0].Success {
+		if mdl.Address == "0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB" { // https://optimistic.etherscan.io/address/0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB // yvWETH, v3
+			return nil
+		}
+		//
 		if !mdl.GetVersion().MoreThanEq(core.NewVersion(300)) { // v1,v2
 			priceData, err := mdl.CalculateYearnPFInternally(blockNum)
 			if err != nil {
@@ -42,11 +46,14 @@ func (mdl *YearnPriceFeed) ProcessResult(blockNum int64, results []multicall.Mul
 					blockNum,
 					mdl.GetAddress(), err.Error())
 			}
-			log.Warnf("Can't get latestRounData in AQFWrapper for %s(%s) at %d",
+			log.Warnf("Can't get latestRounData for YearnModule in AQFWrapper for %s(%s) at %d",
 				mdl.GetDetailsByKey("pfType"), mdl.GetAddress(), blockNum)
 			return priceData
+		} else { // v3
+			log.Warnf("Can't get latestRounData for YearnModule in AQFWrapper for %s(%s) at %d",
+				mdl.GetDetailsByKey("pfType"), mdl.GetAddress(), blockNum)
+			return nil
 		}
-		return nil
 	}
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
 	return base_price_feed.ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, mdl.GetAddress(), blockNum)
