@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/ethereum/go-ethereum/common"
+	"gorm.io/gorm/utils"
 )
 
 type YearnPriceFeed struct {
@@ -35,7 +36,11 @@ func NewYearnPriceFeedFromAdapter(adapter *ds.SyncAdapter) *YearnPriceFeed {
 
 func (mdl *YearnPriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result) *schemas.PriceFeed {
 	if !results[0].Success {
-		if mdl.Address == "0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB" { // https://optimistic.etherscan.io/address/0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB // yvWETH, v3
+		if utils.Contains([]string{
+			"0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB",
+			"0xf4bc1D894F23e85bF666dA647CA573fB13109811",
+			"0x5e6ee42dD1D1A8299CB0aC4C7641F597C434aC5e",
+			"0x77BB9d857a5FfB6Db01581887312F68B1C9832A6"}, mdl.Address) { // https://optimistic.etherscan.io/address/0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB // yvWETH, v3
 			return nil
 		}
 		//
