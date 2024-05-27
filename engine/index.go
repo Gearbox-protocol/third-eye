@@ -145,12 +145,13 @@ func (e *Engine) SyncAndFlush(syncTill int64) {
 	e.syncedBlock.Store(syncTill)
 }
 
-func (e *Engine) LastSyncedBlock() int64 {
+func (e *Engine) LastSyncedBlock() (int64, uint64) {
 	v := e.syncedBlock.Load()
 	if v == nil {
-		return 0
+		return 0, 0
 	}
-	return v.(int64)
+	block := v.(int64)
+	return block, e.repo.SetAndGetBlock(block).Timestamp
 }
 
 func (e *Engine) Sync(syncTill int64) {

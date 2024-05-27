@@ -35,7 +35,7 @@ import (
 type EngineI interface {
 	SyncHandler()
 	Sync(syncTill int64)
-	LastSyncedBlock() int64
+	LastSyncedBlock() (int64, uint64)
 	UseThreads()
 }
 
