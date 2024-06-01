@@ -171,13 +171,13 @@ func getDepGraph(chainId int64) map[string][]string {
 		//
 		"crvUSDUSDC":         {"crvUSD", "USDC"},
 		"crvUSDUSDT":         {"crvUSD", "USDT"},
-		"crvUSDFRAX":         {"crvUSD", "ETH", "FRAX"},
-		"crvUSDETHCRV":       {"crvUSD", "ETH", "CRV"},
-		"cvxcrvUSDETHCRV":    {"crvUSD", "ETH", "CRV"},
-		"stkcvxcrvUSDETHCRV": {"crvUSD", "ETH", "CRV"},
+		"crvUSDFRAX":         {"crvUSD", "WETH", "FRAX"},
+		"crvUSDETHCRV":       {"crvUSD", "WETH", "CRV"},
+		"cvxcrvUSDETHCRV":    {"crvUSD", "WETH", "CRV"},
+		"stkcvxcrvUSDETHCRV": {"crvUSD", "WETH", "CRV"},
 
 		// due to v3 compatibility
-		"rETH_f":                  {"ETH"},
+		"rETH_f":                  {"WETH"},
 		"cLINK":                   {"LINK"},
 		"sDAI":                    {"DAI"},
 		"YieldETH":                {},
@@ -185,6 +185,12 @@ func getDepGraph(chainId int64) map[string][]string {
 		"B_rETH_STABLE":           {},
 		"auraB_rETH_STABLE":       {},
 		"auraB_rETH_STABLE_vault": {},
+		// redstones
+		"weETH":  {"WETH"},
+		"ezETH":  {"WETH"},
+		"rswETH": {"WETH"},
+		"pufETH": {"WETH"},
+		"rsETH":  {"WETH"},
 	}
 	if log.GetBaseNet(chainId) != "MAINNET" {
 		for sym, deps := range depGraph {
