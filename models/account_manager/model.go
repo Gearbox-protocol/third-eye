@@ -17,14 +17,35 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+type HashAndAccounts struct {
+	Hashs     []common.Hash
+	Accounts  []string
+	isAccount map[string]bool
+}
+
+func NewHashAndAddrs() HashAndAccounts {
+	return HashAndAccounts{
+		Hashs:     []common.Hash{},
+		Accounts:  []string{},
+		isAccount: map[string]bool{},
+	}
+}
+
+func (ha *HashAndAccounts) Add(addr string) {
+	if !ha.isAccount[addr] {
+		ha.Accounts = append(ha.Accounts, addr)
+		ha.Hashs = append(ha.Hashs, common.HexToHash(addr))
+		ha.isAccount[addr] = true
+	}
+}
+
 // for getting directtoken transfer
 // AddAccount is called from account factory
 // AddAccountTokenTransfer sets the data in the ds.DirectTransferManager
 type AccountManager struct {
 	*ds.SyncAdapter
-	node          *pkg.Node
-	AccountHashes []common.Hash
-	isAccount     map[string]bool
+	node     *pkg.Node
+	accounts HashAndAccounts
 }
 
 func NewAccountManager(addr string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *AccountManager {
@@ -50,7 +71,7 @@ func NewAccountManager(addr string, discoveredAt int64, client core.ClientI, rep
 func NewAccountManagerFromAdapter(adapter *ds.SyncAdapter) *AccountManager {
 	obj := &AccountManager{
 		SyncAdapter: adapter,
-		isAccount:   map[string]bool{},
+		accounts:    NewHashAndAddrs(),
 	}
 	obj.DataProcessType = ds.ViaQuery
 	obj.node = &pkg.Node{
@@ -77,8 +98,8 @@ func (mdl *AccountManager) OnLog(txLog types.Log) {
 			From:          from,
 			To:            to,
 			Amount:        (*core.BigInt)(value),
-			IsFromAccount: mdl.isAccount[from],
-			IsToAccount:   mdl.isAccount[to],
+			IsFromAccount: mdl.accounts.isAccount[from],
+			IsToAccount:   mdl.accounts.isAccount[to],
 		}
 		mdl.Repo.AddAccountTokenTransfer(tt)
 	}
@@ -86,21 +107,21 @@ func (mdl *AccountManager) OnLog(txLog types.Log) {
 
 func (mdl *AccountManager) Query(queryTill int64) {
 	queryFrom := mdl.GetLastSync() + 1
-	log.Infof("Sync %s from %d to %d", mdl.GetName(), queryFrom, queryTill)
 	tokenAddrs := mdl.Repo.GetTokens()
 	hexAddrs := []common.Address{}
 	for _, tokenAddr := range tokenAddrs {
 		hexAddrs = append(hexAddrs, common.HexToAddress(tokenAddr))
 	}
-	if len(mdl.AccountHashes) == 0 {
+	if len(mdl.accounts.Accounts) == 0 {
 		return
 	}
-	txLogs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.AccountHashes)
+	txLogs, err := mdl.node.GetLogsForTransfer(queryFrom, queryTill, hexAddrs, mdl.accounts.Hashs)
+	log.Infof("Sync %s from %d to %d: %d. tokensAddrs %d accountHashes %d", mdl.GetName(), queryFrom, queryTill, len(txLogs), len(tokenAddrs), len(mdl.accounts.Accounts))
 	if err != nil {
 		if strings.Contains(err.Error(), "exceed max topics") && ds.IsTestnet(mdl.Client) { // anvil failure
 			return
 		}
-		log.Fatal(err, "range ", queryFrom, queryTill, "tokenAddrs", len(tokenAddrs), "accountHashes", len(mdl.AccountHashes))
+		log.Fatal(err, "range ", queryFrom, queryTill, "tokenAddrs", len(tokenAddrs), "accountHashes", len(mdl.accounts.Accounts))
 	}
 	for _, txLog := range txLogs {
 		mdl.OnLog(txLog)
@@ -108,21 +129,10 @@ func (mdl *AccountManager) Query(queryTill int64) {
 }
 
 func (mdl *AccountManager) AddAccount(addr string) {
-	accounts := mdl.getAccountAddrs()
-	mdl.Details["accounts"] = append(accounts, addr)
-	mdl.populateInternalData()
+	mdl.accounts.Add(addr)
 }
 
 func (mdl *AccountManager) populateInternalData() {
-	accountHashes := []common.Hash{}
-	for _, accountAddr := range mdl.getAccountAddrs() {
-		mdl.isAccount[accountAddr] = true
-		accountHashes = append(accountHashes, common.HexToHash(accountAddr))
-	}
-	mdl.AccountHashes = accountHashes
-}
-
-func (mdl *AccountManager) getAccountAddrs() []string {
 	if mdl.Details == nil {
 		mdl.Details = make(map[string]interface{})
 	}
@@ -130,10 +140,13 @@ func (mdl *AccountManager) getAccountAddrs() []string {
 	if mdl.Details["accounts"] != nil {
 		accountAddrs = utils.ConvertToListOfString(mdl.Details["accounts"])
 	}
-	return accountAddrs
+	for _, addr := range accountAddrs {
+		mdl.accounts.Add(addr)
+	}
 }
 
 func (mdl *AccountManager) AfterSyncHook(syncedTill int64) {
+	mdl.Details["accounts"] = mdl.accounts.Accounts
 	mdl.Repo.GetAccountManager().Init()
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }
