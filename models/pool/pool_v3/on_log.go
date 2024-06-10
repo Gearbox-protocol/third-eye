@@ -62,7 +62,7 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			SharesBI:    (*core.BigInt)(deposit.Shares),
 			Shares:      utils.GetFloat64Decimal(deposit.Shares, mdl.getDecimals()),
 			AmountBI:    (*core.BigInt)(deposit.Assets),
-			Amount:      utils.GetFloat64Decimal(deposit.Shares, mdl.getDecimals()),
+			Amount:      utils.GetFloat64Decimal(deposit.Assets, mdl.getDecimals()),
 		}
 		if mdl.checkIfZapAddr(deposit.Sender.Hex()) {
 			mdl.changeAddressOnAddLiq(event)
@@ -87,9 +87,9 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			Receiver: withdrawal.Receiver.Hex(),
 			//
 			SharesBI: (*core.BigInt)(withdrawal.Shares),
-			Shares:   utils.GetFloat64Decimal(withdrawal.Assets, mdl.getDecimals()),
+			Shares:   utils.GetFloat64Decimal(withdrawal.Shares, mdl.getDecimals()),
 			AmountBI: (*core.BigInt)(withdrawal.Assets),
-			Amount:   utils.GetFloat64Decimal(withdrawal.Shares, mdl.getDecimals()),
+			Amount:   utils.GetFloat64Decimal(withdrawal.Assets, mdl.getDecimals()),
 		}
 		if mdl.checkIfZapAddr(withdrawal.Sender.Hex()) {
 			mdl.changeAddressOnRemoveLiq(event)
