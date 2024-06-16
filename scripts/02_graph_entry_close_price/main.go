@@ -47,12 +47,16 @@ func main() {
 	ans := []*SessionSave{}
 	//
 	for _, session := range sessions {
+		entryPrice, err := oracle.GetCurrentPriceAtBlockNum(session.Since, *session.OpenBal, session.Underlying)
+		log.CheckFatal(err)
 		entry := &SessionSave{
 			SessionId:  session.SessionId,
-			EntryPrice: oracle.GetCurrentPriceAtBlockNum(session.Since, *session.OpenBal, session.Underlying),
+			EntryPrice: entryPrice,
 		}
 		if session.ClosedAt != 0 {
-			entry.ClosePrice = oracle.GetCurrentPriceAtBlockNum(session.ClosedAt, *session.CloseBal, session.Underlying)
+			closePrice, err := oracle.GetCurrentPriceAtBlockNum(session.ClosedAt, *session.CloseBal, session.Underlying)
+			log.CheckFatal(err)
+			entry.ClosePrice = closePrice
 		}
 		ans = append(ans, entry)
 		log.Infof("fetched for %s", session.SessionId)
