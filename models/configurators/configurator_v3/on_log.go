@@ -58,6 +58,7 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 		mdl.Repo.AddAllowedTokenV2(txLog.Index, txLog.TxHash.Hex(), mdl.Address, &schemas.AllowedToken{
 			BlockNumber:        blockNum,
 			CreditManager:      creditManager,
+			LogID:              txLog.Index,
 			Token:              tokenEvent.Token.Hex(),
 			LiquidityThreshold: (*core.BigInt)(big.NewInt(int64(tokenEvent.LiquidationThreshold))),
 			Configurator:       mdl.Address,
@@ -182,6 +183,7 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 		mdl.Repo.AddTokenLTRamp(
 			&schemas_v3.TokenLTRamp{
 				BlockNum:      blockNum,
+				LogID:         txLog.Index,
 				CreditManager: mdl.GetCM(),
 				Token:         rampDetails.Token.Hex(),
 				LtInitial:     rampDetails.LiquidationThresholdInitial,
@@ -240,3 +242,5 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 		})
 	}
 }
+
+// select block_num, token , credit_manager , count(*) from (select * from (select block_num , credit_manager, token  from allowed_tokens ) a union all (select block_num, credit_manager, token from token_ltramp)) b group by b.block_num, b.token, b.credit_manager having count(*)>1;

@@ -74,6 +74,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	}
 	// synced till
 	lastDebtSynced := eng.repo.LoadLastDebtSync()
+	// lastDebtSynced = 227143579
 	log.Info("Debt engine started, from", lastDebtSynced)
 	eng.loadLastTvlSnapshot()
 	eng.loadLastCSS(lastDebtSynced)
@@ -91,6 +92,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	//
 	// process blocks for calculating debts
 	adaptersSyncedTill := eng.repo.LoadLastAdapterSync()
+	// adaptersSyncedTill = 227143580
 	batchSize := eng.config.BatchSizeForHistory
 	for ; lastDebtSynced+batchSize < adaptersSyncedTill; lastDebtSynced += batchSize {
 		eng.processBlocksInBatch(lastDebtSynced, lastDebtSynced+batchSize)

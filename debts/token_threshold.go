@@ -39,6 +39,7 @@ func (eng *DebtEngine) AddAllowedTokenThreshold(atoken *schemas.AllowedToken) {
 		BlockNum:      atoken.BlockNumber,
 		CreditManager: atoken.CreditManager,
 		Token:         atoken.Token,
+		LogID:         atoken.LogID,
 		LtInitial:     lt,
 		LtFinal:       lt,
 		RampStart:     math.MaxInt64,
@@ -66,8 +67,10 @@ func (eng *DebtEngine) AddTokenLTRamp(atoken *schemas_v3.TokenLTRamp) {
 		eng.tokenLTRamp[atoken.CreditManager] = make(map[string]*schemas_v3.TokenLTRamp)
 	}
 	if eng.tokenLTRamp[atoken.CreditManager][atoken.Token] != nil {
-		block := eng.tokenLTRamp[atoken.CreditManager][atoken.Token].BlockNum
-		if block > atoken.BlockNum { // no need to update if the block is latest already
+		prevblock := eng.tokenLTRamp[atoken.CreditManager][atoken.Token].BlockNum
+		prevLogId := eng.tokenLTRamp[atoken.CreditManager][atoken.Token].LogID
+		if prevblock > atoken.BlockNum || // no need to update if the block is latest already
+			(prevblock == atoken.BlockNum && prevLogId > atoken.LogID) {
 			return
 		}
 	}
