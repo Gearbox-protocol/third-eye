@@ -38,6 +38,7 @@
       CreditManager: '#CreditManager_1',
       DisableBlock: 0,
       LiquidityThreshold: '9000',
+      LogID: 0,
       Token: '#Token_1',
     },
   ],

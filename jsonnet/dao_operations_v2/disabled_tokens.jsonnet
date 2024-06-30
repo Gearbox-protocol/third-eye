@@ -13,6 +13,7 @@
       CreditManager: '#CreditManager_1',
       DisableBlock: 5,
       LiquidityThreshold: '8000',
+      LogID: 0,
       Token: '#Token_1',
       Configurator: '#CreditConfigurator_1',
     },

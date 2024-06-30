@@ -33,7 +33,7 @@ func (r *repoForAQF) SetAndGetBlock(blockNum int64) *schemas.Block {
 	if blockNum == 26 {
 		return &schemas.Block{
 			BlockNumber: blockNum,
-			Timestamp:   1714525200, // 2024, 1 may starting
+			Timestamp:   1719719320, // 2024, 30 jun starting
 		}
 	}
 	return nil
