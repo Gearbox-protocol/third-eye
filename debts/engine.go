@@ -423,7 +423,11 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			// log.Info(debt.CalHealthFactor, sessionSnapshot.HealthFactor, blockNum)
 			// log.Info(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, blockNum)
 			if log.GetBaseNet(core.GetChainId(eng.client)) == "ARBITRUM" {
-				// ignore  // TODO:FIX
+				profile.CumIndexAndUToken = cumIndexAndUToken
+				profile.Debt = debt
+				profile.CreditSessionSnapshot = sessionSnapshot
+				profile.UnderlyingDecimals = cumIndexAndUToken.Decimals
+				log.Warn(utils.ToJson(profile))
 			} else if eng.hasRedStoneToken(sessionSnapshot.Balances) {
 				if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.003)) { // .3% allowed
 					notMatched = true

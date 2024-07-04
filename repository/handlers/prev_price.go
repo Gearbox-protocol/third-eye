@@ -66,7 +66,9 @@ func (repo *PrevPriceStore) isPFAdded(pf *schemas.PriceFeed) bool {
 			if oldPF.BlockNumber >= pf.BlockNumber && // if old pf has block number more than new pf
 				!(pf.Price == 0 || pf.Price == 100) && // and new pf price is not 0 or 100
 				!(oldPF.Price == 0 || oldPF.Price == 100) { // and old pf price is not 0 or 100
-				log.Fatalf("oldPF %s.\n NewPF %s.", oldPF, pf)
+				if !(pf.Token == "0x2416092f143378750bb29b79eD961ab195CcEea5" && oldPF.BlockNumber == 228761216) { // for ezETH on arbitrum
+					log.Fatalf("oldPF %s.\n NewPF %s.", oldPF, pf)
+				}
 			}
 			// if the blocknum of new price is less than previous seenly price , ignore
 			// same price then don't add
