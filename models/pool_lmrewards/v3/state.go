@@ -6,7 +6,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -26,9 +25,10 @@ func (mdl *LMRewardsv3) getFarmsAndPoolsv3() {
 }
 
 func (mdl *LMRewardsv3) SetData(pools []dataCompressorv3.PoolData) {
-	farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
+	// farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 	poolAndFarms := []*Farmv3{}
 	for _, pool := range pools {
+		onePerPool := []*Farmv3{}
 		for _, zapper := range pool.Zappers {
 			if zapper.TokenOut.Hex() == "0x580e39ADb33E106fFc2712cBD57B9cE954dcfE75" { // GHO
 				zapper.TokenOut = common.HexToAddress("0xE2037090f896A858E3168B978668F22026AC52e7")
@@ -37,8 +37,12 @@ func (mdl *LMRewardsv3) SetData(pools []dataCompressorv3.PoolData) {
 				zapper.TokenOut = common.HexToAddress("0xC853E4DA38d9Bd1d01675355b8c8f3BBC1451973")
 			}
 			// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
-			if _, ok := farmingPools[zapper.TokenOut]; ok && zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
-				poolAndFarms = append(poolAndFarms, &Farmv3{
+			if zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
+				_, err := core.CallFuncWithExtraBytes(mdl.Client, "bfe10928", zapper.TokenOut, 0, nil) // distributor on the farm
+				if err != nil {
+					continue
+				}
+				onePerPool = append(onePerPool, &Farmv3{
 					Farm:        zapper.TokenOut.Hex(),
 					Pool:        pool.Addr.Hex(),
 					DieselToken: pool.DieselToken.Hex(),
@@ -49,6 +53,16 @@ func (mdl *LMRewardsv3) SetData(pools []dataCompressorv3.PoolData) {
 				})
 			}
 		}
+		farms := []common.Address{}
+		for _, entry := range onePerPool {
+			farms = append(farms, common.HexToAddress(entry.Farm))
+		}
+		log.Warn("farms for pool", len(onePerPool), farms)
+		// if len(onePerPool) != 1 {
+		// 	log.Fatal(utils.ToJson(onePerPool))
+		// } else {
+		poolAndFarms = append(poolAndFarms, onePerPool...)
+		// }
 	}
 	mdl.SetUnderlyingState(poolAndFarms)
 }
@@ -118,26 +132,34 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 	log.CheckFatal(err)
 
 	//
-	rewards := []*pool_lmrewards.LMReward{}
+	rewards := map[string]*pool_lmrewards.LMReward{}
 	for _, farmAndItsUsers := range mdl.users {
 		for _, user := range farmAndItsUsers {
 			farm := mdl.farms[user.Farm]
 			reward := user.GetPoints(farm, currentTs)
-			rewards = append(rewards, &pool_lmrewards.LMReward{
-				User:   user.Account,
-				Pool:   farm.Pool,
-				Farm:   farm.Farm,
-				Reward: (*core.BigInt)(reward),
-			})
-		}
-	}
-	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(rewards, 500).Error
-	for i, a := range rewards[:utils.Max(len(rewards)-1, 0)] {
-		for _, b := range rewards[i+1:] {
-			if a.User == b.User && a.Pool == b.Pool {
-				log.Fatalf("Duplicate entries for %s %s %s %s", a.User, a.Pool, a.Farm, b.Farm)
+			key := user.Account + farm.Pool
+			if rewards[key] == nil {
+				rewards[key] = &pool_lmrewards.LMReward{
+					User: user.Account,
+					Pool: farm.Pool,
+					// Farm:   farm.Farm,
+					Reward: core.NewBigInt(nil),
+				}
 			}
+			rewards[key].Reward = (*core.BigInt)(new(big.Int).Add(rewards[key].Reward.Convert(), reward))
 		}
 	}
+	dataToSave := []*pool_lmrewards.LMReward{}
+	for _, entry := range rewards {
+		dataToSave = append(dataToSave, entry)
+	}
+	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(dataToSave, 500).Error
+	// for i, a := range rewards[:utils.Max(len(rewards)-1, 0)] {
+	// 	for _, b := range rewards[i+1:] {
+	// 		if a.User == b.User && a.Pool == b.Pool {
+	// 			log.Fatalf("Duplicate entries for %s %s %s %s", a.User, a.Pool, a.Farm, b.Farm)
+	// 		}
+	// 	}
+	// }
 	log.CheckFatal(err)
 }
