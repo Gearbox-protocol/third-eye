@@ -75,7 +75,7 @@ func (mdl *Poolv3) setZapper() {
 	// 2. dUSDC-farmedUSDCv3
 	// 3. ETH-farmedETHv3
 	syms := core.GetSymToAddrByChainId(core.GetChainId(mdl.Client))
-	farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
+	// farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 	var ETHAddr common.Address
 	if poolToCheck.Underlying == syms.Tokens["WETH"] {
 		// TODO ? why is eth address not set in tokens
@@ -85,15 +85,15 @@ func (mdl *Poolv3) setZapper() {
 
 	// out = farmedUSDCv3, dUSDCv3
 	for _, zapper := range poolToCheck.Zappers {
-		if log.GetNetworkName(core.GetChainId(mdl.Client)) == "OPTTEST" { // only on mainnet
-			if zapper.TokenIn == poolToCheck.Underlying && zapper.TokenOut.Hex() != mdl.Address { // tokenIn = USDC,  tokenOut is farming Pool(!= dUSDCv3)
-				mdl.setDetailsByKey("USDC-farmedUSDCv3", zapper.Zapper.Hex())
-				mdl.setDetailsByKey("farmedUSDCv3", zapper.TokenOut.Hex())
-			}
-		} else if zapper.TokenIn == poolToCheck.Underlying && farmingPools[zapper.TokenOut] != "" { // tokenIn = USDC,  tokenOut is farming Pool(!= dUSDCv3)
+		if zapper.TokenIn == poolToCheck.Underlying && zapper.TokenOut.Hex() != mdl.Address { // tokenIn = USDC,  tokenOut is farming Pool(!= dUSDCv3)
 			mdl.setDetailsByKey("USDC-farmedUSDCv3", zapper.Zapper.Hex())
 			mdl.setDetailsByKey("farmedUSDCv3", zapper.TokenOut.Hex())
 		}
+		// if log.GetNetworkName(core.GetChainId(mdl.Client)) == "OPTTEST" { // only on mainnet
+		// } else if zapper.TokenIn == poolToCheck.Underlying && farmingPools[zapper.TokenOut] != "" { // tokenIn = USDC,  tokenOut is farming Pool(!= dUSDCv3)
+		// 	mdl.setDetailsByKey("USDC-farmedUSDCv3", zapper.Zapper.Hex())
+		// 	mdl.setDetailsByKey("farmedUSDCv3", zapper.TokenOut.Hex())
+		// }
 	}
 	for _, zapper := range poolToCheck.Zappers { // for ETH
 		if zapper.TokenIn == ETHAddr && zapper.TokenOut.Hex() == mdl.GetDetailsByKey("farmedUSDCv3") {
@@ -105,8 +105,8 @@ func (mdl *Poolv3) setZapper() {
 			mdl.setDetailsByKey("dUSDC", zapper.TokenIn.Hex())
 		}
 	}
-	if mdl.Details["dUSDC-farmedUSDCv3"] != nil {
-		log.Fatal("Can't get dUSDC from zapper for ", mdl.Address)
+	if mdl.Details["USDC-farmedUSDCv3"] == nil {
+		log.Fatal("Can't get zapper for ", mdl.Address)
 	}
 	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" && // only on mainnet
 		mdl.getdUSDC() != "" { // is not null for only USDC, DAI, WETH and WBTC
