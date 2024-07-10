@@ -23,6 +23,7 @@ type Poolv3 struct {
 	addLiquidityEvent *schemas.PoolLedger
 	updatesForPoolv2  []UpdatePoolLedger
 	removeLiqUpdate   *UpdatePoolLedger
+	zappers           *Zappers
 }
 
 func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
@@ -78,8 +79,14 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 			log.CheckFatal(err)
 			return contract
 		}(),
+		zappers: &Zappers{},
 	}
 	obj.setPoolQuotaKeeper()
+	data := &schemas.PoolState{}
+	err := obj.Repo.GetDB().Raw(`SELECT * from pools where address=?`, obj.Address).Find(data).Error
+	log.CheckFatal(err)
+	// and poolWrapper also need all the address so we need to set underlyingstate when the obj is reported from NewPoolfromAdapter, as a result the state is set in the newpoolfromadapter
+	// setzapper requires address of diesel token of poolv2, so SetUnderlyingState should be called on all pools before calling this function
 	obj.setZapper()
 	//
 	return obj
@@ -111,8 +118,13 @@ func (mdl Poolv3) GetAllAddrsForLogs() (addrs []common.Address) {
 	if mdl.getPoolKeeper() != "" {
 		addrs = append(addrs, common.HexToAddress(mdl.getPoolKeeper()))
 	}
-	if mdl.getFarmedUSDCv3() != "" {
-		addrs = append(addrs, common.HexToAddress(mdl.getFarmedUSDCv3()))
+	{ // farm where tranfer event is emitted this will be used for adding correct address.
+		farms := mdl.zappers.GetFarm()
+		ans := []common.Address{}
+		for _, farm := range farms {
+			ans = append(ans, common.HexToAddress(farm))
+		}
+		addrs = append(addrs, ans...)
 	}
 	if mdl.gatewayHandler.Gateway == core.NULL_ADDR {
 		return
@@ -122,4 +134,9 @@ func (mdl Poolv3) GetAllAddrsForLogs() (addrs []common.Address) {
 		mdl.gatewayHandler.Token,
 	)
 	return
+}
+
+func (mdl *Poolv3) AfterSyncHook(b int64) {
+	mdl.zappers.Save(&mdl.Details)
+	mdl.SyncAdapter.AfterSyncHook(b)
 }

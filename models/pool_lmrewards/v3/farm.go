@@ -4,7 +4,9 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 var _SCALE = utils.GetExpInt(18)
@@ -13,6 +15,7 @@ type Farmv3 struct {
 	Pool        string `gorm:"column:pool"`
 	Farm        string `gorm:"column:farm;primaryKey"`
 	DieselToken string `gorm:"column:diesel_token"`
+	RewardToken string `gorm:"column:reward_token"`
 	//
 	Checkpoint uint64       `gorm:"column:checkpoint"`
 	Fpt        *core.BigInt `gorm:"column:farmed_per_token"`
@@ -22,6 +25,14 @@ type Farmv3 struct {
 	EndTs  uint64       `gorm:"column:end_ts"`
 	//
 	TotalSupply *core.BigInt `gorm:"column:total_supply"`
+}
+
+func (farm *Farmv3) setRewardToken(client core.ClientI) {
+	if farm.RewardToken == "" || farm.RewardToken == core.NULL_ADDR.Hex() {
+		rewardToken, err := core.CallFuncWithExtraBytes(client, "d1af0c7d", common.HexToAddress(farm.Farm), 0, nil) // rewardToken
+		log.CheckFatal(err)
+		farm.RewardToken = common.BytesToAddress(rewardToken).Hex()
+	}
 }
 
 func (Farmv3) TableName() string {

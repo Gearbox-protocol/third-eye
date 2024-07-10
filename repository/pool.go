@@ -20,11 +20,22 @@ func (repo *Repository) loadPool() {
 		adapter.SetUnderlyingState(pool)
 	}
 }
+func (repo *Repository) loadDieselToken() {
+	defer utils.Elapsed("loadPool")()
+	data := []*schemas.PoolState{}
+	err := repo.db.Find(&data).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, pool := range data {
+		repo.AddDieselToken(pool.DieselToken, pool.UnderlyingToken, pool.Address, pool.Version)
+	}
+}
 
 func (repo *Repository) AddPoolLedger(pl *schemas.PoolLedger) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	if "AddLiquidity" == pl.Event {
+	if pl.Event == "AddLiquidity" {
 		repo.AddPoolUniqueUser(pl.Pool, pl.User)
 	}
 	repo.SetAndGetBlock(pl.BlockNumber).AddPoolLedger(pl)

@@ -180,28 +180,24 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			// The new composite has internal feeds that don’t have known chainlink abi sigs. So, composite feed adapter is failing.
 			// I will treat them as query feed to be periodic synced every 10-15 blocks.
 
-			pf := func() common.Address {
+			pf0 := func() common.Address {
 				pf, err := core.CallFuncWithExtraBytes(mdl.Client, "385aee1b", common.HexToAddress(oracle), 0, nil) // priceFeed0
 				log.CheckFatal(err)
 				return common.BytesToAddress(pf)
 			}()
 			pf0Type := func() int {
-				pf0Type, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
-				if err != nil {                                                                 // this means that it can be from outside of gearbox protocol, like redstone own oracle.
+				pf0Type, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf0, 0, nil) // priceFeedType
+				if err != nil {                                                                  // this means that it can be from outside of gearbox protocol, like redstone own oracle.
 					pf0Type := func() int {
-						con, err := priceFeed.NewPriceFeed(pf, mdl.Client)
+						con, err := priceFeed.NewPriceFeed(pf0, mdl.Client)
 						log.CheckFatal(err)
 						_, err1 := con.PhaseId(nil)
 						if err1 == nil {
 							return core.V3_CHAINLINK_ORACLE
 						}
-						_, err2 := con.Aggregator(nil)
-						if err2 == nil {
-							return core.V3_CHAINLINK_ORACLE
-						}
 						return core.V3_CURVE_2LP_ORACLE
 					}()
-					log.Warnf("pf:%s oracle:%s token:%s err:%s, pf0 can be non-gearbox oracle or chainlink. assumed type of pf0.: %d", pf, oracle, token, err, pf0Type)
+					log.Warnf("pf0:%s compositeOracle:%s token:%s err:%s, pf0 can be non-gearbox oracle or chainlink. assumed type of pf0.: %d", pf0, oracle, token, err, pf0Type)
 					return pf0Type
 				}
 				return int(new(big.Int).SetBytes(pf0Type).Int64())

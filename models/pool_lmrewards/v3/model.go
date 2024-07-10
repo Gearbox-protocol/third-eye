@@ -10,6 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// delete from farm_v3;
+// delete from user_lmdetails_v3;
+// delete from lm_rewards where pool in (select address from pools where version = 300);
+// update sync_adapters set last_sync = 0 where type = 'LMRewardsv3';
+//
 // farmingPool https://etherscan.io/address/0x9ef444a6d7f4a5adcd68fd5329aa5240c90e14d2#code
 // farmAccounting
 // userAccounting

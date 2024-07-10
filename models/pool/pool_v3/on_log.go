@@ -26,7 +26,7 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
 	case core.Topic("Transfer(address,address,uint256)"):
-		if txLog.Address.Hex() == mdl.getFarmedUSDCv3() {
+		if utils.Contains(mdl.zappers.GetFarm(), txLog.Address.Hex()) { //if farm
 			mdl.updateFarmedv3(txLog)
 		}
 	case core.Topic("UpdateTokenQuotaRate(address,uint256)"):

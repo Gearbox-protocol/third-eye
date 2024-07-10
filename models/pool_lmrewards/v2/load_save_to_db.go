@@ -51,12 +51,15 @@ func (mdl LMRewardsv2) GetLMRewards() (rewards []pool_lmrewards.LMReward) {
 	if !mdl.hasDataToSave {
 		return
 	}
+	// only for v2
+	gearToken := core.GetSymToAddrByChainId(mdl.chainId).Tokens["GEAR"]
 	for pool, rewardForUsers := range mdl.rewards {
 		for user, reward := range rewardForUsers {
 			rewards = append(rewards, pool_lmrewards.LMReward{
-				User:   user,
-				Pool:   pool,
-				Reward: (*core.BigInt)(reward),
+				User:        user,
+				Pool:        pool,
+				Reward:      (*core.BigInt)(reward),
+				RewardToken: gearToken.Hex(),
 			})
 		}
 	}

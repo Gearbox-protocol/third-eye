@@ -20,11 +20,11 @@ func (mdl *LMRewardsv3) getFarmsAndPoolsv3() {
 	}
 	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
 	if found && len(mdl.farms) == 0 {
-		mdl.SetData(pools)
+		mdl.SetFarm(pools)
 	}
 }
 
-func (mdl *LMRewardsv3) SetData(pools []dataCompressorv3.PoolData) {
+func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 	// farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 	poolAndFarms := []*Farmv3{}
 	for _, pool := range pools {
@@ -42,7 +42,7 @@ func (mdl *LMRewardsv3) SetData(pools []dataCompressorv3.PoolData) {
 				if err != nil {
 					continue
 				}
-				onePerPool = append(onePerPool, &Farmv3{
+				farm := &Farmv3{
 					Farm:        zapper.TokenOut.Hex(),
 					Pool:        pool.Addr.Hex(),
 					DieselToken: pool.DieselToken.Hex(),
@@ -50,7 +50,9 @@ func (mdl *LMRewardsv3) SetData(pools []dataCompressorv3.PoolData) {
 					Fpt:         (*core.BigInt)(new(big.Int)),
 					TotalSupply: (*core.BigInt)(new(big.Int)),
 					Reward:      (*core.BigInt)(new(big.Int)),
-				})
+				}
+				farm.setRewardToken(mdl.Client)
+				onePerPool = append(onePerPool, farm)
 			}
 		}
 		farms := []common.Address{}
@@ -78,7 +80,7 @@ func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
 	if err != nil {
 		log.Fatal(err, blockNum, pool)
 	}
-	mdl.SetData([]dataCompressorv3.PoolData{data})
+	mdl.SetFarm([]dataCompressorv3.PoolData{data})
 }
 
 func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
@@ -92,6 +94,7 @@ func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
 		}
 		for _, farm := range ans {
 			if mdl.farms[farm.Farm] == nil {
+				farm.setRewardToken(mdl.Client)
 				mdl.farms[farm.Farm] = farm
 				mdl.pools[common.HexToAddress(farm.Pool)] = farm.Farm
 			}
@@ -137,11 +140,12 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 		for _, user := range farmAndItsUsers {
 			farm := mdl.farms[user.Farm]
 			reward := user.GetPoints(farm, currentTs)
-			key := user.Account + farm.Pool
+			key := user.Account + farm.Pool + farm.RewardToken
 			if rewards[key] == nil {
 				rewards[key] = &pool_lmrewards.LMReward{
-					User: user.Account,
-					Pool: farm.Pool,
+					User:        user.Account,
+					Pool:        farm.Pool,
+					RewardToken: farm.RewardToken,
 					// Farm:   farm.Farm,
 					Reward: core.NewBigInt(nil),
 				}

@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
+	"gorm.io/gorm"
 )
 
 type DummyRepo struct {
@@ -18,6 +19,9 @@ type DummyRepo struct {
 
 func (DummyRepo) Init() {
 
+}
+func (DummyRepo) GetDB() *gorm.DB {
+	return nil
 }
 
 // sync adapters

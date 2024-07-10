@@ -26,23 +26,14 @@ func (mdl *Poolv3) setPoolQuotaKeeper() {
 func (mdl *Poolv3) getPoolKeeper() string {
 	return mdl.getAddrFromDetails("PoolKeeper")
 }
-func (mdl *Poolv3) getFarmedUSDCv3() string {
-	return mdl.getAddrFromDetails("farmedUSDCv3")
-}
 func (mdl *Poolv3) getdUSDC() string {
 	return mdl.getAddrFromDetails("dUSDC")
 }
 func (mdl *Poolv3) getPoolv2() string {
 	return mdl.getAddrFromDetails("poolv2")
 }
-func (mdl *Poolv3) getZapUnderlying() string {
-	return mdl.getAddrFromDetails("USDC-farmedUSDCv3")
-}
 func (mdl *Poolv3) getZapPoolv2() string {
 	return mdl.getAddrFromDetails("dUSDC-farmedUSDCv3")
-}
-func (mdl *Poolv3) getZapETH() string {
-	return mdl.getAddrFromDetails("ETH-farmedETHv3")
 }
 func (mdl *Poolv3) getAddrFromDetails(key string) string {
 	if mdl.Details == nil || mdl.Details[key] == nil { // if zapper already set
@@ -52,12 +43,15 @@ func (mdl *Poolv3) getAddrFromDetails(key string) string {
 }
 
 func (mdl *Poolv3) checkIfZapAddr(addr string) bool {
-	return utils.Contains([]string{mdl.getZapUnderlying(), mdl.getZapPoolv2(), mdl.getZapETH()}, addr)
+	return utils.Contains(mdl.zappers.GetZapper(), addr)
 }
+
 func (mdl *Poolv3) setZapper() {
-	if mdl.getAddrFromDetails("farmedUSDCv3") != "" { // if zapper already set
+	mdl.zappers.Load(mdl.Details)
+	if len(*mdl.zappers) != 0 { // if zapper already set
 		return
 	}
+	//
 	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
 	if !found {
 		return
@@ -83,29 +77,34 @@ func (mdl *Poolv3) setZapper() {
 		ETHAddr = common.HexToAddress("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee")
 	}
 
+	zappers := Zappers{}
 	// out = farmedUSDCv3, dUSDCv3
 	for _, zapper := range poolToCheck.Zappers {
 		if zapper.TokenIn == poolToCheck.Underlying && zapper.TokenOut.Hex() != mdl.Address { // tokenIn = USDC,  tokenOut is farming Pool(!= dUSDCv3)
-			mdl.setDetailsByKey("USDC-farmedUSDCv3", zapper.Zapper.Hex())
-			mdl.setDetailsByKey("farmedUSDCv3", zapper.TokenOut.Hex())
+			zappers = append(zappers, Zapper{
+				Zapper:  zapper.Zapper.Hex(),
+				TokenIn: zapper.TokenIn.Hex(),
+				Farm:    zapper.TokenOut.Hex(),
+			})
 		}
-		// if log.GetNetworkName(core.GetChainId(mdl.Client)) == "OPTTEST" { // only on mainnet
-		// } else if zapper.TokenIn == poolToCheck.Underlying && farmingPools[zapper.TokenOut] != "" { // tokenIn = USDC,  tokenOut is farming Pool(!= dUSDCv3)
-		// 	mdl.setDetailsByKey("USDC-farmedUSDCv3", zapper.Zapper.Hex())
-		// 	mdl.setDetailsByKey("farmedUSDCv3", zapper.TokenOut.Hex())
-		// }
 	}
 	for _, zapper := range poolToCheck.Zappers { // for ETH
-		if zapper.TokenIn == ETHAddr && zapper.TokenOut.Hex() == mdl.GetDetailsByKey("farmedUSDCv3") {
-			mdl.setDetailsByKey("ETH-farmedETHv3", zapper.Zapper.Hex())
+		if zapper.TokenIn == ETHAddr && utils.Contains(zappers.GetFarm(), zapper.TokenOut.Hex()) {
+			zappers = append(zappers, Zapper{
+				Zapper:  zapper.Zapper.Hex(),
+				TokenIn: zapper.TokenIn.Hex(),
+				Farm:    zapper.TokenOut.Hex(),
+			})
 		}
 		if zapper.TokenIn != poolToCheck.Underlying && zapper.TokenIn != ETHAddr &&
-			zapper.TokenOut.Hex() == mdl.GetDetailsByKey("farmedUSDCv3") { // tokenIn = dUSDC, tokenOut = farmedUSDCv3
+			utils.Contains(zappers.GetFarm(), zapper.TokenOut.Hex()) { // tokenIn = dUSDC, tokenOut = farmedUSDCv3
 			mdl.setDetailsByKey("dUSDC-farmedUSDCv3", zapper.Zapper.Hex())
 			mdl.setDetailsByKey("dUSDC", zapper.TokenIn.Hex())
 		}
 	}
-	if mdl.Details["USDC-farmedUSDCv3"] == nil {
+	(*mdl.zappers) = zappers
+	//
+	if len(*mdl.zappers) == 0 {
 		log.Fatal("Can't get zapper for ", mdl.Address)
 	}
 	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" && // only on mainnet

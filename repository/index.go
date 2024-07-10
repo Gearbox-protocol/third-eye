@@ -67,11 +67,17 @@ func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *
 	return r
 }
 
+func (r Repository) GetDB() *gorm.DB {
+	return r.db
+}
+
 func (repo *Repository) Init() {
 	// lastdebtsync is required to load credit session which are active or closed after lastdebtsync block number
 	lastDebtSync := repo.LoadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
 	repo.TokensRepo.LoadTokens(repo.db)
+
+	repo.loadDieselToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
 	// load poolLMrewards

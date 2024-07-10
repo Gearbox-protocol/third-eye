@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
+	"gorm.io/gorm"
 )
 
 // type PriceInUSDType bool
@@ -40,6 +41,7 @@ type EngineI interface {
 }
 
 type RepositoryI interface {
+	GetDB() *gorm.DB
 	GetRedStonemgr() redstone.RedStoneMgrI
 	Init()
 	// sync adapters
