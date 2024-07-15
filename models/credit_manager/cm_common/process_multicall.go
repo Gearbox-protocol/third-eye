@@ -34,6 +34,10 @@ func (mdl CommonCMAdapter) ProcessRemainingMultiCalls(version core.VersionType, 
 		mdl.Repo.AddAccountOperation(openWithoutMC)
 		mdl.AddCollateralForOpenCreditAccount(openWithoutMC.BlockNumber, core.NewVersion(2), openWithoutMC)
 	}
+	// TRACE-LOGIC
+	if !ds.CallTraceAllowed(mdl.Client) {
+		return
+	}
 	if len(facadeActions) > 0 { // account operation will only exist if there are one or more facade actions
 		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(lastTxHash, mdl.GetCreditFacadeAddr())
 		fixedFacadeActions := mdl.fixFacadeActionStructureViaTenderlyCalls(mainCalls, facadeActions)

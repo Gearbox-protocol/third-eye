@@ -149,7 +149,11 @@ func toAddressHex(addr interface{}) string {
 func (mdl *CommonCMAdapter) executeOperations(txHash string, facadeActions []*mpi.FacadeAccountAction,
 	executeParams, nonMultiCallExecuteEvents []ds.ExecuteParams) {
 	sort.Slice(executeParams, func(i, j int) bool { return executeParams[i].Index < executeParams[j].Index })
-	tenderlyExecOperations := mdl.GetExecuteOrderAccountOperationFromParams(txHash, executeParams)
+	// TRACE-LOGIC: if neither anvil nor main network
+	tenderlyExecOperations := []*schemas.AccountOperation{}
+	if ds.CallTraceAllowed(mdl.Client) {
+		tenderlyExecOperations = mdl.GetExecuteOrderAccountOperationFromParams(txHash, executeParams)
+	}
 
 	// process non multicall execute order operations
 	remainingExecOperations := []*schemas.AccountOperation{}
@@ -171,7 +175,10 @@ func (mdl *CommonCMAdapter) executeOperations(txHash string, facadeActions []*mp
 		multicalls := mainAction.GetMulticallsFromEvent()
 		for multicallInd, innerEvent := range multicalls {
 			if innerEvent.Action == "ExecuteOrder" {
-				if innerEvent.LogId == remainingExecOperations[indTenderlyCall].LogId { // add multicall execute order to main event
+				// TRACE-LOGIC: if neither anvil nor main network
+				if !ds.CallTraceAllowed(mdl.Client) { // if neither anvil nor main network
+					// can't process the data
+				} else if innerEvent.LogId == remainingExecOperations[indTenderlyCall].LogId { // add multicall execute order to main event
 					multicalls[multicallInd] = remainingExecOperations[indTenderlyCall]
 				} else {
 					log.Fatalf("execute order index mismatch: events: %s, calls: %s", utils.ToJson(innerEvent), utils.ToJson(remainingExecOperations[indTenderlyCall]))

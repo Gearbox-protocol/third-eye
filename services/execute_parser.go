@@ -56,6 +56,8 @@ func NewExecuteParser(cfg *config.Config, client core.ClientI) ds.ExecuteParserI
 	}
 }
 
+// used for adding to multicalls of v2/v3 or directly add AccountOperation to db for v1/v3
+// used at 2 places, both are in this function, ProcessRemainingMultiCalls
 func (ep *ExecuteParser) GetExecuteCalls(version core.VersionType, txHash, creditManagerAddr string, paramsList []ds.ExecuteParams) []*ds.KnownCall {
 	if len(paramsList) == 0 {
 		return nil

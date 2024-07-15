@@ -47,3 +47,7 @@ type CumIndexAndUToken struct {
 func (profile *DebtProfile) String() string {
 	return utils.ToJson(profile)
 }
+
+func CallTraceAllowed(client core.ClientI) bool {
+	return utils.Contains([]int64{1, 42161, 10, 7878, 1337}, core.GetChainId(client))
+}
