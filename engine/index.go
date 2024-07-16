@@ -212,7 +212,11 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 		}
 		mdl.OnLogs(txLogs)
 	} else {
-		for _, txLog := range txLogs {
+
+		for ind, txLog := range txLogs {
+			if ind%1000 == 0 {
+				log.Infof("Syncing %s(%s) %d/%d", mdl.GetName(), mdl.GetAddress(), ind, len(txLogs))
+			}
 			// parse and unpause events
 			e.isEventPausedOrUnParsed(txLog)
 			// pass the event to the onlog handler
