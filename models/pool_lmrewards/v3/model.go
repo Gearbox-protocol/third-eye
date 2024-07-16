@@ -14,6 +14,7 @@ import (
 // delete from user_lmdetails_v3;
 // delete from lm_rewards where pool in (select address from pools where version = 300);
 // update sync_adapters set last_sync = 0 where type = 'LMRewardsv3';
+// delete from diesel_balances where pool =”; // for v3 pool
 //
 // farmingPool https://etherscan.io/address/0x9ef444a6d7f4a5adcd68fd5329aa5240c90e14d2#code
 // farmAccounting
@@ -25,9 +26,9 @@ type UserLMDetails struct {
 	FarmedBalance   float64      `gorm:"column:farmed_balance"`
 	Account         string       `gorm:"column:account;primaryKey"`
 	Farm            string       `gorm:"column:farm;primaryKey"`
-	DieselSym       string       `gorm:"column:diesel_sym"`
 	updated         bool         `gorm:"-"`
-	DieselBalanceBI *core.BigInt `gorm:"column:diesel_balance_bi"`
+	// DieselSym       string       `gorm:"column:diesel_sym"`
+	// DieselBalanceBI *core.BigInt `gorm:"column:diesel_balance_bi"`
 }
 
 func (UserLMDetails) TableName() string {
@@ -64,9 +65,11 @@ type LMRewardsv3 struct {
 	*ds.SyncAdapter
 	// farm by farm address
 	farms map[string]*Farmv3
-	pools map[common.Address]string
+
+	poolsToSyncedTill map[common.Address]int64
 	// farmv3 to user to balance
-	users map[common.Address]map[string]*UserLMDetails
+	farmUserRewards map[common.Address]map[string]*UserLMDetails
+	dieselBalances  map[common.Address]map[string]*ds.DieselBalance
 }
 
 func NewLMRewardsv3(addr string, syncedTill int64, client core.ClientI, repo ds.RepositoryI) *LMRewardsv3 {
@@ -90,7 +93,8 @@ func NewLMRewardsv3FromAdapter(adapter *ds.SyncAdapter) *LMRewardsv3 {
 	// chainId, err := adapter.Client.ChainID(context.Background())
 	// log.CheckFatal(err)
 	obj := &LMRewardsv3{
-		SyncAdapter: adapter,
+		SyncAdapter:       adapter,
+		poolsToSyncedTill: map[common.Address]int64{},
 	}
 	return obj
 }

@@ -31,7 +31,7 @@ func (repo *Repository) loadLMRewardDetailsv2() {
 	}
 	adapter.LoadLMRewards(rewardData)
 	//
-	dBalanceData := []lmrewardsv2.DieselBalance{}
+	dBalanceData := []ds.DieselBalance{}
 	err = repo.db.Raw(`SELECT * FROM diesel_balances`).Find(&dBalanceData).Error
 	if err != nil {
 		log.Fatal(err)

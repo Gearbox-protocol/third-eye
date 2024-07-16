@@ -20,7 +20,7 @@ func (mdl *LMRewardsv3) check(blockNum int64, currentTs uint64, farm, from, to s
 			farmedData, err := core.CallFuncWithExtraBytes(mdl.Client, "4216f972", common.HexToAddress(farm), blockNum, s[:])
 			log.CheckFatal(err)
 			expected := new(big.Int).SetBytes(farmedData)
-			obj := mdl.users[common.HexToAddress(farm)][addr]
+			obj := mdl.farmUserRewards[common.HexToAddress(farm)][addr]
 			actual := obj.GetPoints(mdl.farms[farm], currentTs)
 			if expected.Cmp(actual) != 0 {
 				log.Fatal("Expected", expected, "Actual", actual, "farm", utils.ToJson(mdl.farms[farm]), "user", utils.ToJson(obj))

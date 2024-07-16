@@ -6,58 +6,52 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
-func (mdl *LMRewardsv3) updateDieselBalances(txLog types.Log, farmAddr, from, to string, amount *big.Int) {
+func (mdl *LMRewardsv3) updateDieselBalances(txLog types.Log, pool common.Address, from, to string, amount *big.Int) {
 	fromZero := from == core.NULL_ADDR.Hex()
 	toZero := to == core.NULL_ADDR.Hex()
 
 	if amount.Sign() > 0 && from != to {
 		//
-		if mdl.users[common.HexToAddress(farmAddr)] == nil {
-			mdl.users[common.HexToAddress(farmAddr)] = map[string]*UserLMDetails{}
+		if mdl.dieselBalances[pool] == nil {
+			mdl.dieselBalances[pool] = map[string]*ds.DieselBalance{}
 		}
 		//
-		if mdl.farms[farmAddr] == nil {
-			log.Fatal("farm not set for address", utils.ToJson(mdl.farms[farmAddr]))
-		}
-		diesel := mdl.Repo.GetToken(mdl.farms[farmAddr].DieselToken)
-		farmAndItsUsers := mdl.users[common.HexToAddress(farmAddr)]
+		userAndBalance := mdl.dieselBalances[pool]
+		decimals := mdl.Repo.GetToken(pool.Hex()).Decimals
 		if !fromZero {
-			if farmAndItsUsers[from] == nil {
-				farmAndItsUsers[from] = &UserLMDetails{
-					Correction:      (*core.BigInt)(new(big.Int)),
-					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
-					Account:         from,
-					Farm:            farmAddr,
-					DieselSym:       diesel.Symbol,
-					DieselBalanceBI: (*core.BigInt)(new(big.Int)),
+			if userAndBalance[from] == nil {
+				userAndBalance[from] = &ds.DieselBalance{
+					Pool:      pool.Hex(),
+					User:      from,
+					BalanceBI: (*core.BigInt)(new(big.Int)),
 				}
 			}
-			farmAndItsUsers[from].updated = true
-			if farmAndItsUsers[from].DieselBalanceBI == nil {
-				log.Fatal("FarmAddr, from, to, amount txHash", farmAddr, from, to, amount, txLog.TxHash, txLog.Index)
+			userAndBalance[from].Updated = true
+			if userAndBalance[from].BalanceBI == nil {
+				log.Fatal("Pool, from, to, amount txHash", pool, from, to, amount, txLog.TxHash, txLog.Index)
 			}
-			farmAndItsUsers[from].DieselBalanceBI = (*core.BigInt)(new(big.Int).Sub(
-				farmAndItsUsers[from].DieselBalanceBI.Convert(),
+			userAndBalance[from].BalanceBI = (*core.BigInt)(new(big.Int).Sub(
+				userAndBalance[from].BalanceBI.Convert(),
 				amount,
 			))
+			userAndBalance[from].Balance = utils.GetFloat64Decimal(userAndBalance[from].BalanceBI, decimals)
 		}
 		if !toZero {
-			if farmAndItsUsers[to] == nil {
-				farmAndItsUsers[to] = &UserLMDetails{
-					Correction:      (*core.BigInt)(new(big.Int)),
-					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
-					Account:         to,
-					Farm:            farmAddr,
-					DieselSym:       diesel.Symbol,
-					DieselBalanceBI: (*core.BigInt)(new(big.Int)),
+			if userAndBalance[to] == nil {
+				userAndBalance[to] = &ds.DieselBalance{
+					User:      to,
+					BalanceBI: (*core.BigInt)(new(big.Int)),
+					Pool:      pool.Hex(),
 				}
 			}
-			farmAndItsUsers[to].updated = true
-			farmAndItsUsers[to].DieselBalanceBI = core.AddCoreAndInt(farmAndItsUsers[to].DieselBalanceBI, amount)
+			userAndBalance[to].Updated = true
+			userAndBalance[to].BalanceBI = core.AddCoreAndInt(userAndBalance[to].BalanceBI, amount)
+			userAndBalance[to].Balance = utils.GetFloat64Decimal(userAndBalance[to].BalanceBI, decimals)
 		}
 	}
 }

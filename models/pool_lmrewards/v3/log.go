@@ -12,16 +12,13 @@ import (
 func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 	addr := txLog.Address.Hex()
 	blockNum := int64(txLog.BlockNumber)
-	if mdl.farms[addr] != nil && mdl.farms[addr].SyncedTill >= blockNum { // if farm
-		return
-	}
-	if farmAddr := mdl.pools[txLog.Address]; farmAddr != "" && mdl.farms[farmAddr].SyncedTill >= blockNum {
-		return
-	}
 	currentTs := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
 	//
 	if mdl.farms[addr] != nil {
 		farmAddr := addr
+		if mdl.farms[addr] != nil && mdl.farms[addr].SyncedTill >= blockNum { // if farm
+			return
+		}
 		switch txLog.Topics[0] {
 		case core.Topic("Transfer(address,address,uint256)"):
 			from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
@@ -48,8 +45,10 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 			from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 			to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
 			amount := new(big.Int).SetBytes(txLog.Data)
-			farmAddr := mdl.pools[poolAddr]
-			mdl.updateDieselBalances(txLog, farmAddr, from, to, amount)
+			if lastSync := mdl.poolsToSyncedTill[poolAddr]; lastSync >= blockNum {
+				return
+			}
+			mdl.updateDieselBalances(txLog, poolAddr, from, to, amount)
 		}
 	}
 }

@@ -27,6 +27,11 @@ func (repo *Repository) loadLMRewardDetailsv3() {
 	err = repo.db.Raw(`SELECT * FROM user_lmdetails_v3`).Find(&details).Error
 	log.CheckFatal(err)
 	adapter.SetUnderlyingState(details)
+	//
+	dBalances := []*ds.DieselBalance{}
+	err = repo.db.Raw(`SELECT * FROM diesel_balances where pool in (select address from pools where _version=300)`).Find(&dBalances).Error
+	log.CheckFatal(err)
+	adapter.SetUnderlyingState(dBalances)
 }
 
 func (repo Repository) saveLMRewardDetailsv3(tx *gorm.DB, syncTill int64) {

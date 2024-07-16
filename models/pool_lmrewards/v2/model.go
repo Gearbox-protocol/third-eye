@@ -20,13 +20,13 @@ type LMRewardsv2 struct {
 	rewards map[string]map[string]*big.Int
 	// diesel symbol to total supply
 	totalSupplies map[string]*big.Int
-	// sym to decimals and pool
-	decimalsAndPool map[string]*_PoolAndDecimals
-	hasDataToSave   bool
+	// pool to decimal
+	poolToDecimal map[string]symAndDecimals
+	hasDataToSave bool
 }
-type _PoolAndDecimals struct {
-	decimals int8
-	pool     string
+type symAndDecimals struct {
+	decimals  int8
+	dieselsym string
 }
 
 func NewLMRewardsv2(addr string, syncedTill int64, client core.ClientI, repo ds.RepositoryI) *LMRewardsv2 {
@@ -56,7 +56,7 @@ func NewLMRewardsv2FromAdapter(adapter *ds.SyncAdapter) *LMRewardsv2 {
 		dieselBalances:   map[string]map[string]*big.Int{}, // to DieselBalances for saving in DB
 		rewards:          map[string]map[string]*big.Int{}, // to LMRewards for saving in DB
 		totalSupplies:    map[string]*big.Int{},            // will be converted to details on syncAdapter
-		decimalsAndPool:  map[string]*_PoolAndDecimals{},   // auxillary data
+		poolToDecimal:    map[string]symAndDecimals{},      // auxillary data
 
 	}
 	obj.detailsToTotalSupplies()

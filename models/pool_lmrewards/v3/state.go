@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -23,6 +24,13 @@ func (mdl *LMRewardsv3) getFarmsAndPoolsv3() {
 	if found {
 		mdl.SetFarm(pools)
 	}
+}
+
+func (mdl *LMRewardsv3) setPoolSyncedTill(pool common.Address, syncedTill int64) {
+	if mdl.poolsToSyncedTill[pool] == 0 {
+		mdl.poolsToSyncedTill[pool] = syncedTill
+	}
+	mdl.poolsToSyncedTill[pool] = utils.Min(mdl.poolsToSyncedTill[pool], syncedTill)
 }
 
 func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
@@ -59,8 +67,10 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 					farm.setRewardToken(mdl.Client)
 					poolAndFarms = append(poolAndFarms, farm)
 					newfarmsForPool = append(newfarmsForPool, common.HexToAddress(farm.Farm))
+					mdl.setPoolSyncedTill(pool.Addr, farm.SyncedTill)
 				} else {
 					oldfarmsForPool = append(oldfarmsForPool, common.HexToAddress(farm.Farm))
+					mdl.setPoolSyncedTill(pool.Addr, farm.SyncedTill)
 				}
 			}
 		}
@@ -94,14 +104,10 @@ func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
 		if mdl.farms == nil {
 			mdl.farms = map[string]*Farmv3{}
 		}
-		if mdl.pools == nil {
-			mdl.pools = map[common.Address]string{}
-		}
 		for _, farm := range ans {
 			if mdl.farms[farm.Farm] == nil {
 				farm.setRewardToken(mdl.Client)
 				mdl.farms[farm.Farm] = farm
-				mdl.pools[common.HexToAddress(farm.Pool)] = farm.Farm
 			}
 		}
 	case []*UserLMDetails:
@@ -112,7 +118,17 @@ func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
 			}
 			users[common.HexToAddress(user.Farm)][user.Account] = user
 		}
-		mdl.users = users
+		mdl.farmUserRewards = users
+	case []*ds.DieselBalance:
+		users := map[common.Address]map[string]*ds.DieselBalance{}
+		for _, user := range ans {
+			pool := common.HexToAddress(user.Pool)
+			if users[pool] == nil {
+				users[pool] = map[string]*ds.DieselBalance{}
+			}
+			users[pool][user.User] = user
+		}
+		mdl.dieselBalances = users
 	default:
 		log.Fatalf("Not able to parse underlying state for %T", obj)
 	}
@@ -128,7 +144,7 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 
 	//
 	users := []*UserLMDetails{}
-	for _, farmAndItsUsers := range mdl.users {
+	for _, farmAndItsUsers := range mdl.farmUserRewards {
 		for _, entry := range farmAndItsUsers {
 			if entry.updated {
 				users = append(users, entry)
@@ -140,8 +156,20 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 	log.CheckFatal(err)
 
 	//
+	dieselBalance := []*ds.DieselBalance{}
+	for _, userAndBalances := range mdl.dieselBalances {
+		for _, entry := range userAndBalances {
+			if entry.Updated {
+				dieselBalance = append(dieselBalance, entry)
+				entry.Updated = false
+			}
+		}
+	}
+	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(dieselBalance, 500).Error
+	log.CheckFatal(err)
+	//
 	rewards := map[string]*pool_lmrewards.LMReward{}
-	for _, farmAndItsUsers := range mdl.users {
+	for _, farmAndItsUsers := range mdl.farmUserRewards {
 		for _, user := range farmAndItsUsers {
 			farm := mdl.farms[user.Farm]
 			reward := user.GetPoints(farm, currentTs)
@@ -163,12 +191,5 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 		dataToSave = append(dataToSave, entry)
 	}
 	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(dataToSave, 500).Error
-	// for i, a := range rewards[:utils.Max(len(rewards)-1, 0)] {
-	// 	for _, b := range rewards[i+1:] {
-	// 		if a.User == b.User && a.Pool == b.Pool {
-	// 			log.Fatalf("Duplicate entries for %s %s %s %s", a.User, a.Pool, a.Farm, b.Farm)
-	// 		}
-	// 	}
-	// }
 	log.CheckFatal(err)
 }

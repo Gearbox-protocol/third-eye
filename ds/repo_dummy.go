@@ -247,3 +247,16 @@ func (DummyRepo) IsBlockRecent(block int64, dur time.Duration) bool { return fal
 func (DummyRepo) GetRedStonemgr() redstone.RedStoneMgrI {
 	return nil
 }
+
+type DieselBalance struct {
+	BalanceBI *core.BigInt `gorm:"column:balance_bi"`
+	Balance   float64      `gorm:"column:balance"`
+	User      string       `gorm:"primaryKey;column:user_address"`
+	Updated   bool         `gorm:"-"`
+	// Diesel    string       `gorm:"primaryKey;column:diesel_sym"`
+	Pool string `gorm:"primaryKey;column:pool"`
+}
+
+func (DieselBalance) TableName() string {
+	return "diesel_balances"
+}

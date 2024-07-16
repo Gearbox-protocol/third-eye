@@ -6,31 +6,21 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
 )
 
-type DieselBalance struct {
-	BalanceBI *core.BigInt `gorm:"column:balance_bi"`
-	Balance   float64      `gorm:"column:balance"`
-	User      string       `gorm:"primaryKey;column:user_address"`
-	Diesel    string       `gorm:"primaryKey;column:diesel_sym"`
-}
-
-func (DieselBalance) TableName() string {
-	return "diesel_balances"
-}
-
-func (mdl LMRewardsv2) GetDieselBalances() (dieselBalances []DieselBalance) {
+func (mdl LMRewardsv2) GetDieselBalances() (dieselBalances []ds.DieselBalance) {
 	if !mdl.hasDataToSave {
 		return
 	}
-	for tokenSym, balances := range mdl.dieselBalances {
-		decimals := mdl.decimalsAndPool[tokenSym].decimals
+	for pool, balances := range mdl.dieselBalances {
+		decimals := mdl.poolToDecimal[pool].decimals
 		for user, balanceBI := range balances {
-			dieselBalances = append(dieselBalances, DieselBalance{
+			dieselBalances = append(dieselBalances, ds.DieselBalance{
 				BalanceBI: (*core.BigInt)(balanceBI),
 				User:      user,
-				Diesel:    tokenSym,
+				Pool:      pool,
 				Balance:   utils.GetFloat64Decimal(balanceBI, decimals),
 			})
 		}
@@ -38,12 +28,12 @@ func (mdl LMRewardsv2) GetDieselBalances() (dieselBalances []DieselBalance) {
 	return dieselBalances
 }
 
-func (mdl LMRewardsv2) LoadDieselBalances(dieselBalances []DieselBalance) {
+func (mdl LMRewardsv2) LoadDieselBalances(dieselBalances []ds.DieselBalance) {
 	for _, dieselBalance := range dieselBalances {
-		if _, ok := mdl.dieselBalances[dieselBalance.Diesel]; !ok {
-			mdl.dieselBalances[dieselBalance.Diesel] = map[string]*big.Int{}
+		if _, ok := mdl.dieselBalances[dieselBalance.Pool]; !ok {
+			mdl.dieselBalances[dieselBalance.Pool] = map[string]*big.Int{}
 		}
-		mdl.dieselBalances[dieselBalance.Diesel][dieselBalance.User] = dieselBalance.BalanceBI.Convert()
+		mdl.dieselBalances[dieselBalance.Pool][dieselBalance.User] = dieselBalance.BalanceBI.Convert()
 	}
 }
 

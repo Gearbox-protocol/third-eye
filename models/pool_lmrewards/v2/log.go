@@ -102,8 +102,8 @@ func (mdl LMRewardsv2) calculateRewards(from, to int64) {
 		if snapInd != len(snapshots)-1 {
 			snapEnd = snapshots[snapInd+1].Block - 1
 		}
-		for dieselSym, userAndbalance := range mdl.dieselBalances {
-			pool := mdl.decimalsAndPool[dieselSym].pool
+		for pool, userAndbalance := range mdl.dieselBalances {
+			dieselSym := mdl.poolToDecimal[pool].dieselsym
 			rewardPerBlock := utils.NotNilBigInt(snapshot.RewardPerBlock[dieselSym])
 			for user, balance := range userAndbalance {
 				norm := new(big.Int).Mul(balance, rewardPerBlock)
@@ -137,10 +137,10 @@ func (mdl *LMRewardsv2) GetAllAddrsForLogs() (addrs []common.Address) {
 			continue
 		}
 		addrs = append(addrs, common.HexToAddress(addr))
-		token := mdl.Repo.GetToken(addr)
-		mdl.decimalsAndPool[token.Symbol] = &_PoolAndDecimals{
-			decimals: token.Decimals,
-			pool:     poolAndUToken.Pool,
+		token := mdl.Repo.GetToken(poolAndUToken.UToken)
+		mdl.poolToDecimal[poolAndUToken.Pool] = symAndDecimals{
+			decimals:  token.Decimals,
+			dieselsym: token.Symbol,
 		}
 	}
 	return addrs

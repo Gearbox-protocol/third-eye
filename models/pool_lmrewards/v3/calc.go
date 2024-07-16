@@ -40,7 +40,7 @@ func (mdl *LMRewardsv3) performTransfer(farmAddr, from, to string, amount *big.I
 	}
 	//
 	diesel := mdl.Repo.GetToken(mdl.farms[farmAddr].DieselToken)
-	farmAndItsUsers := mdl.users[common.HexToAddress(farmAddr)]
+	farmAndItsUsers := mdl.farmUserRewards[common.HexToAddress(farmAddr)]
 	if !fromZero {
 		farmAndItsUsers[from].SubBalances(amount, diesel.Decimals)
 	}
@@ -59,15 +59,14 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 		}
 
 		//
-		if mdl.users[common.HexToAddress(farmAddr)] == nil {
-			mdl.users[common.HexToAddress(farmAddr)] = map[string]*UserLMDetails{}
+		if mdl.farmUserRewards[common.HexToAddress(farmAddr)] == nil {
+			mdl.farmUserRewards[common.HexToAddress(farmAddr)] = map[string]*UserLMDetails{}
 		}
 		//
 		farm := mdl.farms[farmAddr]
 		diff := new(big.Int).Mul(amount, farm.calcFarmedPerToken(currentTs))
 		//
-		diesel := mdl.Repo.GetToken(mdl.farms[farmAddr].DieselToken)
-		farmAndItsUsers := mdl.users[common.HexToAddress(farmAddr)]
+		farmAndItsUsers := mdl.farmUserRewards[common.HexToAddress(farmAddr)]
 		if !fromZero {
 			if farmAndItsUsers[from] == nil {
 				farmAndItsUsers[from] = &UserLMDetails{
@@ -75,7 +74,6 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
 					Account:         from,
 					Farm:            farmAddr,
-					DieselSym:       diesel.Symbol,
 				}
 			}
 			farmAndItsUsers[from].SubCorrection(diff)
@@ -87,7 +85,6 @@ func (mdl *LMRewardsv3) updateBalances(farmAddr, from, to string, amount *big.In
 					FarmedBalanceBI: (*core.BigInt)(new(big.Int)),
 					Account:         to,
 					Farm:            farmAddr,
-					DieselSym:       diesel.Symbol,
 				}
 			}
 			farmAndItsUsers[to].AddCorrection(diff)
