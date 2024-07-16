@@ -10,11 +10,18 @@ import (
 
 // https://etherscan.io/address/0x9ef444a6d7f4a5adcd68fd5329aa5240c90e14d2#code farmingPool
 func (mdl LMRewardsv3) OnLog(txLog types.Log) {
-	addr := txLog.Address
+	addr := txLog.Address.Hex()
 	blockNum := int64(txLog.BlockNumber)
+	if mdl.farms[addr] != nil && mdl.farms[addr].SyncedTill >= blockNum { // if farm
+		return
+	}
+	if farmAddr := mdl.pools[txLog.Address]; farmAddr != "" && mdl.farms[farmAddr].SyncedTill >= blockNum {
+		return
+	}
 	currentTs := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
-	if mdl.farms[addr.Hex()] != nil {
-		farmAddr := addr.Hex()
+	//
+	if mdl.farms[addr] != nil {
+		farmAddr := addr
 		switch txLog.Topics[0] {
 		case core.Topic("Transfer(address,address,uint256)"):
 			from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
@@ -36,7 +43,7 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 			}
 		}
 	} else { // for tracking diesel balance
-		poolAddr := addr
+		poolAddr := txLog.Address
 		if core.Topic("Transfer(address,address,uint256)") == txLog.Topics[0] {
 			from := common.BytesToAddress(txLog.Topics[1][:]).Hex()
 			to := common.BytesToAddress(txLog.Topics[2][:]).Hex()
@@ -47,9 +54,14 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 	}
 }
 
+// over right to set new farms
+func (mdl *LMRewardsv3) GetLastSync() int64 {
+	mdl.getFarmsAndPoolsv3()
+	return mdl.SyncAdapter.GetLastSync()
+}
+
 // LMRewardsv2 has fake address so no need for adding .Address value to addrs
 func (mdl *LMRewardsv3) GetAllAddrsForLogs() (addrs []common.Address) {
-	mdl.getFarmsAndPoolsv3()
 	//
 	for addr, farm := range mdl.farms {
 		addrs = append(addrs, common.HexToAddress(addr))

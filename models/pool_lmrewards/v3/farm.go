@@ -25,6 +25,7 @@ type Farmv3 struct {
 	EndTs  uint64       `gorm:"column:end_ts"`
 	//
 	TotalSupply *core.BigInt `gorm:"column:total_supply"`
+	SyncedTill  int64        `gorm:"column:synced_till"`
 }
 
 func (farm *Farmv3) setRewardToken(client core.ClientI) {

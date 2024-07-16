@@ -114,7 +114,7 @@ func (mdl *Poolv3) UpdatePoolv2Ledger(tx *gorm.DB) {
 		if update.Type == "" {
 			continue
 		}
-		log.Info(utils.ToJson(update))
+		// log.Info(utils.ToJson(update))
 		x := tx.Exec(`UPDATE pool_ledger set user_address=? WHERE block_num=? AND event = ? AND tx_hash=? AND user_address in (?, ?)`,
 			update.User, update.BlockNum, update.Type, update.TxHash, update.User, update.Zapper)
 		log.CheckFatal(x.Error)

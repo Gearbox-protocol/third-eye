@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
@@ -15,11 +16,11 @@ import (
 )
 
 func (mdl *LMRewardsv3) getFarmsAndPoolsv3() {
-	if len(mdl.farms) != 0 { // already set
-		return
-	}
+	// if len(mdl.farms) != 0 { // already set
+	// 	return
+	// }
 	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
-	if found && len(mdl.farms) == 0 {
+	if found {
 		mdl.SetFarm(pools)
 	}
 }
@@ -28,7 +29,8 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 	// farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 	poolAndFarms := []*Farmv3{}
 	for _, pool := range pools {
-		onePerPool := []*Farmv3{}
+		newfarmsForPool := []common.Address{}
+		oldfarmsForPool := []common.Address{}
 		for _, zapper := range pool.Zappers {
 			if zapper.TokenOut.Hex() == "0x580e39ADb33E106fFc2712cBD57B9cE954dcfE75" { // GHO
 				zapper.TokenOut = common.HexToAddress("0xE2037090f896A858E3168B978668F22026AC52e7")
@@ -50,21 +52,24 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 					Fpt:         (*core.BigInt)(new(big.Int)),
 					TotalSupply: (*core.BigInt)(new(big.Int)),
 					Reward:      (*core.BigInt)(new(big.Int)),
+					SyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
 				}
-				farm.setRewardToken(mdl.Client)
-				onePerPool = append(onePerPool, farm)
+				if mdl.farms[farm.Farm] == nil {
+					mdl.LastSync = utils.Min(mdl.LastSync, farm.SyncedTill)
+					farm.setRewardToken(mdl.Client)
+					poolAndFarms = append(poolAndFarms, farm)
+					newfarmsForPool = append(newfarmsForPool, common.HexToAddress(farm.Farm))
+				} else {
+					oldfarmsForPool = append(oldfarmsForPool, common.HexToAddress(farm.Farm))
+				}
 			}
 		}
-		farms := []common.Address{}
-		for _, entry := range onePerPool {
-			farms = append(farms, common.HexToAddress(entry.Farm))
+		if len(newfarmsForPool) != 0 && len(oldfarmsForPool) != 0 {
+			log.Warn("pool tracking for disel balance will be affected as new farms are added", pool.Addr)
 		}
-		log.Warn("farms for pool", len(onePerPool), farms)
-		// if len(onePerPool) != 1 {
-		// 	log.Fatal(utils.ToJson(onePerPool))
-		// } else {
-		poolAndFarms = append(poolAndFarms, onePerPool...)
-		// }
+		if len(newfarmsForPool) != 0 {
+			log.Warnf("farms for pool(%s): new:%v: old: %v", pool.Addr, newfarmsForPool, oldfarmsForPool)
+		}
 	}
 	mdl.SetUnderlyingState(poolAndFarms)
 }

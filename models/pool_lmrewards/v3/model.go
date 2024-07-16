@@ -96,5 +96,10 @@ func NewLMRewardsv3FromAdapter(adapter *ds.SyncAdapter) *LMRewardsv3 {
 }
 
 func (mdl *LMRewardsv3) AfterSyncHook(syncedTill int64) {
+	for _, farm := range mdl.farms {
+		if farm.SyncedTill < syncedTill {
+			farm.SyncedTill = syncedTill
+		}
+	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }
