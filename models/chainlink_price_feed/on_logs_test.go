@@ -1,6 +1,7 @@
 package chainlink_price_feed
 
 import (
+	"math"
 	"math/big"
 	"testing"
 
@@ -64,6 +65,7 @@ func TestOnLogs(t *testing.T) {
 		},
 	}
 	obj.OnLogs(txLogs)
+	obj.flushPrices(math.MaxInt64)
 	if len(repo.pfs) != 1 ||
 		repo.pfs[0].BlockNumber != validPf.BlockNumber ||
 		repo.pfs[0].Feed != validPf.Feed ||

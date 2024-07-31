@@ -213,7 +213,7 @@ func (DummyRepo) GetYearnFeedAddrs() []string {
 }
 
 // has mutex lock
-func (DummyRepo) AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool) {
+func (DummyRepo) AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool, forChainlinkNewFeed ...bool) {
 }
 
 func (DummyRepo) LoadLastDebtSync() int64 {

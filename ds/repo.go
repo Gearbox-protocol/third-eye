@@ -63,7 +63,7 @@ type RepositoryI interface {
 	// price feed/oracle funcs
 	GetTokenOracles() map[schemas.PFVersion]map[string]*schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
-	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool)
+	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool, forChainlinkNewFeed ...bool)
 	//
 	GetPrice(token string) *big.Int
 	AddPriceFeed(pf *schemas.PriceFeed)
