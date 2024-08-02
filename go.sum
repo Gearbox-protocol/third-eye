@@ -5,10 +5,8 @@ contrib.go.opencensus.io/exporter/ocagent v0.6.0/go.mod h1:zmKjrJcdo0aYcVS7bmEeS
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20240716101724-5d0f635c6136 h1:cruIoF6cMZ7V9CJzcN/Rprg/1hZI1CgK1UPzu5uPAhM=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20240716101724-5d0f635c6136/go.mod h1:GqBi61WLtfKxqYFle+ePGkWAOf5lKtgQBTOjGJwkgn0=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20240717144914-cfe3639569ec h1:A9VfgXRKvldJNTbAnlZB+woJl+oQnc1c1q9zsk5eNNA=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20240717144914-cfe3639569ec/go.mod h1:GqBi61WLtfKxqYFle+ePGkWAOf5lKtgQBTOjGJwkgn0=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20240802192412-7da59ab2633e h1:MvgZJhRLbDrZ4I2Jnfwh9mxsOXiB6EpqmDZaOLo9c6I=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20240802192412-7da59ab2633e/go.mod h1:GqBi61WLtfKxqYFle+ePGkWAOf5lKtgQBTOjGJwkgn0=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
