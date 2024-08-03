@@ -4,8 +4,8 @@ import (
 	dcv3 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
-	"gorm.io/gorm/utils"
 )
 
 func (mdl *Poolv3) setDetailsByKey(key, value string) {

@@ -17,12 +17,12 @@ type Zapper struct {
 }
 
 func (d *Zappers) Load(in core.Json) {
-	if in != nil || in["zappers"] == nil {
+	if in != nil && in["zappers"] == nil {
 		return
 	}
 	str := utils.ToJson(in["zappers"])
 	data := Zappers{}
-	err := utils.ReadJsonAndSetInterface(str, &data)
+	err := utils.SetJson([]byte(str), &data)
 	log.CheckFatal(err)
 	*d = data
 }
