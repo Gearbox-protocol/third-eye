@@ -56,6 +56,7 @@ const (
 
 const (
 	FacadeMulticallCall        = "FacadeMulticall"
+	FacadeBotMulticallCall        = "FacadeBotMulticall"
 	FacadeOpenMulticallCall    = "FacadeOpenMulticall"
 	FacadeLiquidateCall        = "FacadeLiquidate"
 	FacadeLiquidateExpiredCall = "FacadeLiquidateExpired"
@@ -71,6 +72,8 @@ func FacadeAccountMethodSigToCallName(funcSig string) string {
 		return FacadeCloseAccountCall
 	case "multicall":
 		return FacadeMulticallCall
+	case "botMulticall":
+		return FacadeBotMulticallCall
 	// v2
 	case "openCreditAccountMulticall":
 		return FacadeOpenMulticallCall

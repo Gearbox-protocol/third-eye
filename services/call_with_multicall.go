@@ -18,6 +18,7 @@ import (
 func (ep *ExecuteParser) GetMainCalls(txHash, creditFacade string) []*ds.FacadeCallNameWithMulticall {
 	// no need to get the logs as mainCalls doesn't deal with logs
 	trace := ep.GetTxTrace(txHash, false)
+	// log.Info(utils.ToJson(trace))
 	data, err := ep.getMainEvents(trace.CallTrace, common.HexToAddress(creditFacade))
 	if err != nil {
 		log.Fatal(err.Error(), "for txHash", txHash)
@@ -43,14 +44,17 @@ func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade co
 				mainEvents = append(mainEvents, event)
 				// v3
 			case "ebe4107c", // multicall(address,calls)
+				"7e2ca9db", // botMulticall(address,calls)
 				"e3f46b26", // liquidateCreditAccount (v3)
 				"36b2ced3", // closeCreditAccount(creditAccount,to,skipTokenMask,convertToETH,calls)
 				// "5d91a0e0", // liquidateCreditAccount
 				"92beab1d": // openCreditAccount(onBehalfOf,calls,referralCode)
+				log.Info("v3 main event", call.Input[2:10])
 				event, err := getCreditFacadeMainEvent(call.To, call.Input, creditFacadev3Parser)
 				if err != nil {
 					return nil, err
 				}
+				// log.Info(utils.ToJson(event.GetMulticalls()))
 				mainEvents = append(mainEvents, event)
 			}
 		} else {

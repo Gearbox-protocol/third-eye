@@ -38,7 +38,7 @@ func (mdl CommonCMAdapter) getEventNameFromCallv2(mainCallName string, sessionId
 func (mdl CommonCMAdapter) getEventNameFromCallv3(mainCallName string, sessionId string) string {
 	var mainEventFromCall string
 	switch mainCallName {
-	case ds.FacadeMulticallCall:
+	case ds.FacadeMulticallCall, ds.FacadeBotMulticallCall:
 		mdl.SetSessionIsUpdated(sessionId)
 		mainEventFromCall = "StartMultiCall(address,address)"
 	case ds.FacadeOpenMulticallCall:

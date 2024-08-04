@@ -39,7 +39,7 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 				log.Fatal()
 			}
 			result = append(result, action)
-		case ds.FacadeMulticallCall:
+		case ds.FacadeMulticallCall, ds.FacadeBotMulticallCall:
 			result = append(result, action)
 		case ds.FacadeLiquidateCall, ds.FacadeLiquidateExpiredCall, ds.FacadeCloseAccountCall:
 			if mainCall.LenOfMulticalls() != 0 && len(facadeActions) > ind+1 { // combine next facadeAccountAction with current,
