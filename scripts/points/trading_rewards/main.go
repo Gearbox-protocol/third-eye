@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -38,7 +39,8 @@ func main() {
 		schemas.CreditSession
 		ClosedTs int64 `gorm:"column:end_ts"`
 	}{}
-	err = db.Raw(`select a.*, b.timestamp end_ts from (select * from credit_sessions where version=300 and since < ?) a left join blocks b on b.id=a.closed_at `, lastblockAllowed).Find(&sessions).Error
+	err = db.Raw(`select a.*, b.timestamp end_ts from (select * from credit_sessions where version=300 and since < ? and credit_manager in (select address from credit_managers where _version=300 and name like '%Trade%' )) a left join blocks b on b.id=a.closed_at `, lastblockAllowed).Find(&sessions).Error
+	log.Info("got sessions")
 	log.CheckFatal(err)
 	data := map[string]*BorrowAndValue{}
 
@@ -50,10 +52,19 @@ func main() {
 		schemas.Debt
 		Ts int64 `gorm:"column:timestamp"`
 	}{}
-	err = db.Raw(`select a.*, b.timestamp from (select * from debts where session_id in (select id from credit_sessions where version=300) and block_num <?) a join blocks b on a.block_num= b.id order by block_num `, lastblockAllowed).Find(&debts).Error
+	err = db.Raw(`with cm as (select id from credit_sessions where version=300 and credit_manager in (select address from credit_managers where _version=300 and  name like '%Trade%')) select a.*, b.timestamp from (select * from debts where session_id in (select id from cm) and block_num <?) a join blocks b on a.block_num= b.id order by block_num `, lastblockAllowed).Find(&debts).Error
+	log.Info("got debts")
 	log.CheckFatal(err)
 	for _, debt := range debts {
 		a := data[debt.SessionId]
+		if debt.CalHealthFactor.Convert().Cmp(big.NewInt(65535)) == 0  {
+			if a.LastTs !=0 {
+				a.TotalValue += float64(debt.Ts-a.LastTs) * a.LastValue
+				a.LastTs =0
+				a.ClosedTs  = debt.Ts
+			}
+			continue
+		}
 		if a.LastTs != 0 {
 			a.TotalValue += float64(debt.Ts-a.LastTs) * a.LastValue
 		} else {

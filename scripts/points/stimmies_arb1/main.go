@@ -16,7 +16,7 @@ type RewardAndTs struct {
 func main() {
 	cfg := config.NewConfig()
 	db := repository.NewDBClient(cfg)
-	cam := "Arb-Campaign1"
+	cam := "Arb-Campaign2"
 	data := []RewardAndTs{}
 	err := db.Raw(`(select user_address, point from user_points where campaign=?) union all (select user_address, points from hrlyrate_points where campaign=?)`, cam, cam).Find(&data).Error
 	log.CheckFatal(err)
