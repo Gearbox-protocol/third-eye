@@ -183,6 +183,7 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 		return
 	}
 	var totalAvailableLiquidityInUSD float64 = 0
+	log.Info("tvl for block",blockNum)
 	for _, entry := range eng.poolLastInterestData {
 		adapter := eng.repo.GetAdapter(entry.Address)
 		state := adapter.GetUnderlyingState()

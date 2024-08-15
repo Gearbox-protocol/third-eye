@@ -104,7 +104,7 @@ func (mdl *Poolv3) setZapper() {
 	}
 	(*mdl.zappers) = zappers
 	//
-	if len(*mdl.zappers) == 0 {
+	if len(*mdl.zappers) == 0 && len(poolToCheck.Zappers) != 0 {
 		log.Fatal("Can't get zapper for ", mdl.Address)
 	}
 	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" && // only on mainnet
