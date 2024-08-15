@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -81,6 +82,21 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 }
 
 func (mdl *ChainlinkPriceFeed) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
+	data, err :=mdl.MainAgg.contractETH.LatestRoundData(&bind.CallOpts{
+		BlockNumber: new(big.Int).SetInt64(blockNum),
+	})
+	log.CheckFatal(err)
+	priceFeed := &schemas.PriceFeed{
+		BlockNumber:     blockNum,
+		Token:           token,
+		Feed:            mdl.Address,
+		RoundId:         data.RoundId.Int64(),
+		PriceBI:         (*core.BigInt)(data.Answer),
+		Price:           utils.GetFloat64Decimal(data.Answer, pfVersion.Decimals()),
+		MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(token, blockNum, mdl.Address),
+	}
+	mdl.Repo.AddPriceFeed(priceFeed)
+	//
 	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
 }
 
