@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -16,7 +17,7 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 	//
 	if mdl.farms[addr] != nil {
 		farmAddr := addr
-		if mdl.farms[addr] != nil && mdl.farms[addr].SyncedTill >= blockNum { // if farm
+		if mdl.farms[addr] != nil && mdl.farms[addr].FarmSyncedTill >= blockNum { // if farm
 			return
 		}
 		switch txLog.Topics[0] {
@@ -48,10 +49,10 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 			if lastSync := mdl.poolsToSyncedTill[poolAddr]; lastSync >= blockNum {
 				return
 			}
-			// if to == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" || from == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" { 
-			// 	log.Info(from == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" , amount, txLog.TxHash, mdl.poolsToSyncedTill[poolAddr])
-			// }
 			mdl.updateDieselBalances(txLog, poolAddr, from, to, amount)
+			if to == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" || from == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" { 
+				log.Info(from == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" , amount, txLog.TxHash, mdl.poolsToSyncedTill[poolAddr], mdl.dieselBalances[poolAddr]["0x3E965117A51186e41c2BB58b729A1e518A715e5F"].Balance)
+			}
 		}
 	}
 }

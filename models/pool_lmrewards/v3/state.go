@@ -30,7 +30,9 @@ func (mdl *LMRewardsv3) setPoolSyncedTill(pool common.Address, syncedTill int64)
 	if mdl.poolsToSyncedTill[pool] == 0 {
 		mdl.poolsToSyncedTill[pool] = syncedTill
 	}
-	mdl.poolsToSyncedTill[pool] = utils.Min(mdl.poolsToSyncedTill[pool], syncedTill)
+	if  mdl.poolsToSyncedTill[pool] != syncedTill {
+		log.Fatal("in farm_v3 the pool_synced_till is different from different farms of that pool", syncedTill, mdl.poolsToSyncedTill[pool])
+	}
 }
 
 func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
@@ -60,18 +62,20 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 					Fpt:         (*core.BigInt)(new(big.Int)),
 					TotalSupply: (*core.BigInt)(new(big.Int)),
 					Reward:      (*core.BigInt)(new(big.Int)),
-					SyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
+					FarmSyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
+					PoolSyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
 				}
 				if mdl.farms[farm.Farm] == nil {
-					mdl.LastSync = utils.Min(mdl.LastSync, farm.SyncedTill)
+					mdl.LastSync = utils.Min(mdl.LastSync, farm.GetMinSyncedTill())
 					farm.setRewardToken(mdl.Client)
 					poolAndFarms = append(poolAndFarms, farm)
 					newfarmsForPool = append(newfarmsForPool, common.HexToAddress(farm.Farm))
-					mdl.setPoolSyncedTill(pool.Addr, farm.SyncedTill)
+					mdl.setPoolSyncedTill(pool.Addr, farm.PoolSyncedTill)
 				} else {
 					farm = mdl.farms[farm.Farm]
+					farm.SetSyncedTill(mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt()) // at least pool synced till from  start
 					oldfarmsForPool = append(oldfarmsForPool, common.HexToAddress(farm.Farm))
-					mdl.setPoolSyncedTill(pool.Addr, farm.SyncedTill)
+					mdl.setPoolSyncedTill(pool.Addr, farm.PoolSyncedTill)
 				}
 			}
 		}

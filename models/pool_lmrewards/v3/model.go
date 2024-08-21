@@ -18,9 +18,9 @@ import (
 //
 // delete from farm_v3;
 // delete from user_lmdetails_v3;
-// delete from lm_rewards where pool in (select address from pools where version = 300);
-// update sync_adapters set last_sync = 0 where type = 'LMRewardsv3';
-// delete from diesel_balances where pool =”; // for v3 pool
+// delete from diesel_balances where pool in (select address from pools where version=300); // for v3 pool
+// delete from lm_rewards where pool in (select address from pools where _version = 300);
+// update sync_adapters set last_sync = (select min(discovered_at) from sync_adapters where type='Pool' and version=300 ) where type = 'LMRewardsv3';
 //
 // farmingPool https://etherscan.io/address/0x9ef444a6d7f4a5adcd68fd5329aa5240c90e14d2#code
 // farmAccounting
@@ -107,8 +107,8 @@ func NewLMRewardsv3FromAdapter(adapter *ds.SyncAdapter) *LMRewardsv3 {
 
 func (mdl *LMRewardsv3) AfterSyncHook(syncedTill int64) {
 	for _, farm := range mdl.farms {
-		if farm.SyncedTill < syncedTill {
-			farm.SyncedTill = syncedTill
+		if farm.GetMinSyncedTill() < syncedTill {
+			farm.SetSyncedTill(syncedTill)
 		}
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
