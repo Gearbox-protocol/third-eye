@@ -26,18 +26,17 @@ func (mdl *LMRewardsv3) getFarmsAndPoolsv3() {
 	}
 }
 
-func (mdl *LMRewardsv3) setPoolSyncedTill(pool common.Address, syncedTill int64) {
+func (mdl *LMRewardsv3) setMinPoolSyncedTill(pool common.Address, syncedTill int64, farm string) {
 	if mdl.poolsToSyncedTill[pool] == 0 {
 		mdl.poolsToSyncedTill[pool] = syncedTill
 	}
-	if  mdl.poolsToSyncedTill[pool] != syncedTill {
-		log.Fatal("in farm_v3 the pool_synced_till is different from different farms of that pool", syncedTill, mdl.poolsToSyncedTill[pool])
+	if mdl.poolsToSyncedTill[pool] != syncedTill {
+		log.Fatal("in farm_v3 the pool_synced_till is different from different farms of that pool", syncedTill, mdl.poolsToSyncedTill[pool], farm)
 	}
 }
 
 func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 	// farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
-	poolAndFarms := []*Farmv3{}
 	for _, pool := range pools {
 		newfarmsForPool := []common.Address{}
 		oldfarmsForPool := []common.Address{}
@@ -59,24 +58,24 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 					Pool:        pool.Addr.Hex(),
 					DieselToken: pool.DieselToken.Hex(),
 					// initial
-					Fpt:         (*core.BigInt)(new(big.Int)),
-					TotalSupply: (*core.BigInt)(new(big.Int)),
-					Reward:      (*core.BigInt)(new(big.Int)),
-					FarmSyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
+					Fpt:            (*core.BigInt)(new(big.Int)),
+					TotalSupply:    (*core.BigInt)(new(big.Int)),
+					Reward:         (*core.BigInt)(new(big.Int)),
+					FarmSyncedTill: mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
 					PoolSyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
 				}
 				if mdl.farms[farm.Farm] == nil {
-					mdl.LastSync = utils.Min(mdl.LastSync, farm.GetMinSyncedTill())
 					farm.setRewardToken(mdl.Client)
-					poolAndFarms = append(poolAndFarms, farm)
+					mdl.farms[farm.Farm] = farm
+					// poolAndFarms = append(poolAndFarms, farm)
 					newfarmsForPool = append(newfarmsForPool, common.HexToAddress(farm.Farm))
-					mdl.setPoolSyncedTill(pool.Addr, farm.PoolSyncedTill)
+					mdl.LastSync = utils.Min(mdl.LastSync, farm.GetMinSyncedTill())
 				} else {
 					farm = mdl.farms[farm.Farm]
-					farm.SetSyncedTill(mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt()) // at least pool synced till from  start
 					oldfarmsForPool = append(oldfarmsForPool, common.HexToAddress(farm.Farm))
-					mdl.setPoolSyncedTill(pool.Addr, farm.PoolSyncedTill)
 				}
+				// poolsyncedTill is zero  then rejected. in the case of new pool.
+				// poolSyncedTill is zero in db and then it is updated to discoveredat of pool. and used to calculate min poolsyncedTill
 			}
 		}
 		if len(newfarmsForPool) != 0 && len(oldfarmsForPool) != 0 {
@@ -86,7 +85,7 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 			log.Warnf("farms for pool(%s): new:%v: old: %v", pool.Addr, newfarmsForPool, oldfarmsForPool)
 		}
 	}
-	mdl.SetUnderlyingState(poolAndFarms)
+	// mdl.SetUnderlyingState(poolAndFarms)
 }
 
 func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
@@ -113,6 +112,7 @@ func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
 			if mdl.farms[farm.Farm] == nil {
 				farm.setRewardToken(mdl.Client)
 				mdl.farms[farm.Farm] = farm
+				mdl.setMinPoolSyncedTill(common.HexToAddress(farm.Pool), farm.PoolSyncedTill, farm.Farm)
 			}
 		}
 	case []*UserLMDetails:

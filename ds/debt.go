@@ -34,6 +34,7 @@ type DebtProfile struct {
 	Tokens                         map[string]TokenDetails `json:"tokens"`
 	UnderlyingDecimals             int8                    `json:"underlyingDecimals"`
 	*CumIndexAndUToken             `json:"poolDetails"`
+	CalcString 				   string `json:"calcString"`
 }
 
 type CumIndexAndUToken struct {

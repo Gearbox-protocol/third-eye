@@ -18,7 +18,7 @@ func (kit *AdapterKit) init() {
 	// another level created bcz of poolKeeper.
 	kit.AddLevel([]string{PoolQuotaWrapper, ChainlinkPriceFeed})
 	// REVERT_CM_WRAPPER
-	kit.AddLevel([]string{CMWrapper, AggregatedQueryFeedWrapper, LMRewardsv2, LMRewardsv3})
+	kit.AddLevel([]string{CMWrapper, AggregatedQueryFeedWrapper, LMRewardsv2,LMRewardsv3 })
 	// REVERT_CF_WRAPPER
 	kit.AddLevel([]string{CFWrapper, CreditConfigurator, Treasury})
 	// - we are dropping the uni check, so the dependency is reversed.

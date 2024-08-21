@@ -118,7 +118,7 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 		} else {
 			discoveredAt = mdl.MainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
 		}
-		log.Info(mdl.Address, discoveredAt, newPriceFeed)
+		// log.Info(mdl.Address, discoveredAt, newPriceFeed)
 		mdl.flushPrices(discoveredAt)
 		for _, token := range mdl.mergedPFManager.GetTokens(discoveredAt) {
 			for _, pfVersion  := range mdl.mergedPFManager.GetMergedPFVersion(token, discoveredAt, mdl.Address).MergedPFVersionToList() {

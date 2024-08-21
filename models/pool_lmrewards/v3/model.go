@@ -11,14 +11,18 @@ import (
 )
 
 // # from details for single pool
-// delete from user_lmdetails_v3 where farm in (select farm from farm_v3 where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f');
-// delete from farm_v3 where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f';
-// delete from diesel_balanaces where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f';
+// update  farm_v3 set pool_synced_till=0 where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f';
+// delete from diesel_balances where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f';
+// update sync_adapters set last_sync = (select min(discovered_at) from sync_adapters where type='Pool' and version=300 ) where type = 'LMRewardsv3';
 //
-//
+
+// update  farm_v3 set pool_synced_till=0 ;
+// delete from diesel_balances ;
+// update sync_adapters set last_sync = (select min(discovered_at) from sync_adapters where type='Pool' and version=300 ) where type = 'LMRewardsv3';
+
 // delete from farm_v3;
 // delete from user_lmdetails_v3;
-// delete from diesel_balances where pool in (select address from pools where version=300); // for v3 pool
+// delete from diesel_balances where pool in (select address from pools where _version=300); -- for v3 pool
 // delete from lm_rewards where pool in (select address from pools where _version = 300);
 // update sync_adapters set last_sync = (select min(discovered_at) from sync_adapters where type='Pool' and version=300 ) where type = 'LMRewardsv3';
 //
@@ -107,9 +111,7 @@ func NewLMRewardsv3FromAdapter(adapter *ds.SyncAdapter) *LMRewardsv3 {
 
 func (mdl *LMRewardsv3) AfterSyncHook(syncedTill int64) {
 	for _, farm := range mdl.farms {
-		if farm.GetMinSyncedTill() < syncedTill {
-			farm.SetSyncedTill(syncedTill)
-		}
+		farm.SetSyncedTill(syncedTill)
 	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }

@@ -351,7 +351,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	// calculating account fields
 	calculator := calc.Calculator{Store: storeForCalc{inner: eng}}
 	// failure true as we are calculating debt
-	calHF, calTotalValue, calThresholdValue, debtDetails := calculator.CalcAccountFields(
+	calHF, calTotalValue, calThresholdValue, debtDetails, profileStr := calculator.CalcAccountFields(
 		eng.currentTs,
 		blockNum,
 		poolDetailsForCalc{
@@ -387,7 +387,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		SessionId: sessionId,
 	}
 	var notMatched bool
-	profile := ds.DebtProfile{CreditSessionSnapshot: sessionSnapshot, Tokens: map[string]ds.TokenDetails{}}
+	profile := ds.DebtProfile{CreditSessionSnapshot: sessionSnapshot, Tokens: map[string]ds.TokenDetails{}, CalcString: profileStr}
 	for tokenAddr, details := range *sessionSnapshot.Balances {
 		if details.IsEnabled {
 			profile.Tokens[tokenAddr] = ds.TokenDetails{
