@@ -93,15 +93,15 @@ func (repo *SessionRepo) UpdateCreditSession(sessionId string, values map[string
 	session.IsDirty = true
 	ref := reflect.ValueOf(session).Elem()
 	for k, v := range values {
-		switch v.(type) {
+		switch typedV := v.(type) {
 		case string:
-			ref.FieldByName(k).SetString(v.(string))
+			ref.FieldByName(k).SetString(typedV)
 		case int64:
-			ref.FieldByName(k).SetInt(v.(int64))
+			ref.FieldByName(k).SetInt(typedV)
 		case int:
-			ref.FieldByName(k).SetInt(int64(v.(int)))
+			ref.FieldByName(k).SetInt(int64(typedV))
 		case *big.Int:
-			val := (*core.BigInt)(v.(*big.Int))
+			val := (*core.BigInt)(typedV)
 			pointer := reflect.ValueOf(val)
 			ref.FieldByName(k).Set(pointer)
 		default:

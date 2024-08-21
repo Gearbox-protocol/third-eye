@@ -135,7 +135,7 @@ func (eng *DebtEngine) Clear() {
 	eng.repo.Clear()
 }
 
-func (eng *DebtEngine) loadLiquidableAccounts(lastDebtSync int64) {
+func (eng *DebtEngine) loadLiquidableAccounts(_lastDebtSync int64) {
 	defer utils.Elapsed("loadLiquidableAccounts")()
 	data := []*schemas.LiquidableAccount{}
 	query := `SELECT * FROM liquidable_accounts la JOIN credit_sessions cs ON la.session_id = cs.id WHERE cs.status not in (1,2);`

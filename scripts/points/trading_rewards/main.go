@@ -1,8 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/big"
+	"os"
+	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -23,6 +26,21 @@ type BorrowAndValue struct {
 	schemas.CreditSession
 }
 
+func GetPureSessions( client core.ClientI) map[string]bool {
+	chainId :=core.GetChainId(client)
+	net:= string(log.GetBaseNet(chainId))
+	
+	f, err := os.OpenFile(fmt.Sprintf("scripts/points/trading_rewards/%s_pure.csv", strings.ToLower(net) ), os.O_RDONLY, 0)
+	log.CheckFatal(err)
+	scan := bufio.NewScanner(f)
+	ans := map[string]bool{}
+	for scan.Scan() {
+		id := scan.Text()
+		// log.Info(len(id))
+		ans[id] = true
+	}
+	return ans
+}
 func main() {
 	cfg := config.NewConfig()
 	client := ethclient.NewEthClient(cfg)
@@ -57,11 +75,11 @@ func main() {
 	log.CheckFatal(err)
 	for _, debt := range debts {
 		a := data[debt.SessionId]
-		if debt.CalHealthFactor.Convert().Cmp(big.NewInt(65535)) == 0  {
-			if a.LastTs !=0 {
+		if debt.CalHealthFactor.Convert().Cmp(big.NewInt(65535)) == 0 {
+			if a.LastTs != 0 {
 				a.TotalValue += float64(debt.Ts-a.LastTs) * a.LastValue
-				a.LastTs =0
-				a.ClosedTs  = debt.Ts
+				a.LastTs = 0
+				a.ClosedTs = debt.Ts
 			}
 			continue
 		}
@@ -73,8 +91,12 @@ func main() {
 		a.LastValue = debt.TotalValueInUSD
 		a.LastTs = debt.Ts
 	}
+	valid := GetPureSessions(client)
 	fmt.Println("session, user, avg_total_value, started_ts, closed_ts, usd_value*holder_period ")
 	for _, v := range data {
+		if !valid[v.ID] {
+			continue
+		}
 		lastts := lastAllowedTs
 		if v.ClosedTs != 0 && v.ClosedTs < lastAllowedTs {
 			lastts = v.ClosedTs

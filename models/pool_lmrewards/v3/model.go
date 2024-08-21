@@ -10,6 +10,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+// # from details for single pool
+// delete from user_lmdetails_v3 where farm in (select farm from farm_v3 where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f');
+// delete from farm_v3 where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f';
+// delete from diesel_balanaces where pool='0xda0002859B2d05F66a753d8241fCDE8623f26F4f';
+//
+//
 // delete from farm_v3;
 // delete from user_lmdetails_v3;
 // delete from lm_rewards where pool in (select address from pools where version = 300);

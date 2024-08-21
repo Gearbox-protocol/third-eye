@@ -16,7 +16,7 @@ type TokensRepo struct {
 	// export vars
 	wethAddr      string
 	usdcAddr      string
-	gearTokenAddr string
+	gearTokenAddr string // address of the gear token
 	// blocks/token
 	tokens map[string]*schemas.Token
 	// diesel tokens to pool and underlying
@@ -136,7 +136,7 @@ func (repo *TokensRepo) GetTokens() []string {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	tokens := []string{}
-	for addr, _ := range repo.tokens {
+	for addr := range repo.tokens {
 		tokens = append(tokens, addr)
 	}
 	if repo.gearTokenAddr != "" {
@@ -169,10 +169,6 @@ func (repo *TokensRepo) AddTokenObj(obj *schemas.Token) {
 	repo.addTokenObj(obj)
 }
 
-// get specific tokens
-func (repo *TokensRepo) setwethAddr(addr string) {
-	repo.wethAddr = addr
-}
 
 func (repo *TokensRepo) GetWETHAddr() string {
 	return repo.wethAddr

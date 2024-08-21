@@ -48,6 +48,9 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 			if lastSync := mdl.poolsToSyncedTill[poolAddr]; lastSync >= blockNum {
 				return
 			}
+			// if to == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" || from == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" { 
+			// 	log.Info(from == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" , amount, txLog.TxHash, mdl.poolsToSyncedTill[poolAddr])
+			// }
 			mdl.updateDieselBalances(txLog, poolAddr, from, to, amount)
 		}
 	}

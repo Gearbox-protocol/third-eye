@@ -6,7 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
 
-func (eng *DebtEngine) loadParameters(blockNum int64) {
+func (eng *DebtEngine) loadParameters(_ int64) {
 	defer utils.Elapsed("Debt(loadLastDebts)")()
 	data := []*schemas.Parameters{}
 	err := eng.db.Raw("SELECT distinct on (credit_manager) * FROM parameters ORDER BY credit_manager, block_num DESC;").Find(&data).Error

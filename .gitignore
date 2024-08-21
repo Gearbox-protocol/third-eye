@@ -8,3 +8,4 @@ app
 temp
 dist
 test.go
+*.csv

@@ -69,6 +69,7 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 					newfarmsForPool = append(newfarmsForPool, common.HexToAddress(farm.Farm))
 					mdl.setPoolSyncedTill(pool.Addr, farm.SyncedTill)
 				} else {
+					farm = mdl.farms[farm.Farm]
 					oldfarmsForPool = append(oldfarmsForPool, common.HexToAddress(farm.Farm))
 					mdl.setPoolSyncedTill(pool.Addr, farm.SyncedTill)
 				}

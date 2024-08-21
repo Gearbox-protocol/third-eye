@@ -15,10 +15,15 @@ import (
 
 var Version = "dev"
 
+// Metrics represents the structure for storing and reporting various metrics
+// about the application's performance and status.
 type Metrics struct {
-	Version     string `json:"version"`
-	LatestBlock int64  `json:"latestBlock"`
-	Uptime      string `json:"uptime"`
+	// Version is the current version of the application
+	Version string `json:"version"`
+	// LatestBlock is the most recently processed block number
+	LatestBlock int64 `json:"latestBlock"`
+	// Uptime is the duration for which the application has been running
+	Uptime string `json:"uptime"`
 }
 
 func newMetEngine(eng ds.EngineI, _cfg *config.Config) {
