@@ -101,7 +101,7 @@ func (mdl MergedPFManager) getMergedPFVersion(token string, blockNum int64, sync
 			return mdl[token][ind].MergedPFVersion, nil
 		}
 	}
-	return schemas.MergedPFVersion(0), fmt.Errorf("can't get mergedPFVersion %v at %d for adapter: %s", mdl, blockNum, syncAdapterAddr)
+	return schemas.MergedPFVersion(0), fmt.Errorf("can't get mergedPFVersion %v at %d for adapter: %s, token: %s", mdl, blockNum, syncAdapterAddr, token)
 }
 
 func (mdl MergedPFManager) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {

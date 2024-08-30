@@ -82,6 +82,8 @@ func (mdl *ChainlinkPriceFeed) OnLogs(txLogs []types.Log) {
 }
 
 func (mdl *ChainlinkPriceFeed) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
+		//
+		mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
 	data, err :=mdl.MainAgg.contractETH.LatestRoundData(&bind.CallOpts{
 		BlockNumber: new(big.Int).SetInt64(blockNum),
 	})
@@ -96,8 +98,6 @@ func (mdl *ChainlinkPriceFeed) AddToken(token string, blockNum int64, pfVersion 
 		MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(token, blockNum, mdl.Address),
 	}
 	mdl.Repo.AddPriceFeed(priceFeed)
-	//
-	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
 }
 
 func (mdl ChainlinkPriceFeed) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {

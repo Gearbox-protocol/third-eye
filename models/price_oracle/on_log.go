@@ -187,7 +187,8 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			}()
 			pf0Type := func() int {
 				pf0Type, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf0, 0, nil) // priceFeedType
-				if err != nil {                                                                  // this means that it can be from outside of gearbox protocol, like redstone own oracle.
+				if err != nil && strings.Contains(err.Error(), "execution reverted") {
+					// this means that it can be from outside of gearbox protocol, like redstone own oracle.
 					pf0Type := func() int {
 						con, err := priceFeed.NewPriceFeed(pf0, mdl.Client)
 						log.CheckFatal(err)
