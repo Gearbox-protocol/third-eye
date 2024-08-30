@@ -36,6 +36,10 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 	priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token, false)
 	//
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD() // should be always true
+	if priceBI.Cmp(new(big.Int)) == 0 {
+		log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceBI)
+		return nil
+	}
 
 	priceData := parsePriceForRedStone(priceBI, isPriceInUSD)
 	log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceData.Price)
