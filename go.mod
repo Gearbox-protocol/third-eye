@@ -3,7 +3,7 @@ module github.com/Gearbox-protocol/third-eye
 go 1.20
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20240902081058-0fb2286162d3
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20240902091456-600807c25daf
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.5.9
@@ -12,8 +12,8 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/fx v1.13.1
-	gorm.io/driver/postgres v1.2.2
-	gorm.io/gorm v1.22.2
+	gorm.io/driver/postgres v1.5.9
+	gorm.io/gorm v1.25.11
 )
 
 require (
@@ -42,16 +42,12 @@ require (
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/holiman/uint256 v1.2.4 // indirect
 	github.com/howeyc/gopass v0.0.0-20210920133722-c8aef6fb66ef // indirect
-	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.10.0 // indirect
-	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.1.1 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.8.1 // indirect
-	github.com/jackc/pgx/v4 v4.13.0 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgx/v5 v5.5.5 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jinzhu/now v1.1.2 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/metachris/flashbotsrpc v0.5.0 // indirect
@@ -86,6 +82,6 @@ require (
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-replace github.com/Gearbox-protocol/sdk-go v0.0.0-20240812145336-3b295592ddd3 => ../sdk-go
+replace github.com/Gearbox-protocol/sdk-go v0.0.0-20240902081058-0fb2286162d3 => ../sdk-go
 
 replace github.com/ethereum/go-ethereum v1.13.14 => github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227

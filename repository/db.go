@@ -7,9 +7,8 @@
 package repository
 
 import (
-	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/third-eye/config"
-	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
@@ -17,12 +16,7 @@ import (
 // Connects to MongoDB using config credentials
 func NewDBClient(config *config.Config) *gorm.DB {
 	// Getting database settings
-	gormDB, err := gorm.Open(postgres.Open(config.DatabaseUrl), &gorm.Config{
+	return core.NewDBClient(config.DatabaseUrl, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return gormDB
 }
