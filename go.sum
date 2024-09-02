@@ -7,6 +7,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20240830092631-d94099796499 h1:tTj5usg8A9t9bF0wwSHLbt7eSAQWChOu67e6UdEVGis=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20240830092631-d94099796499/go.mod h1:GqBi61WLtfKxqYFle+ePGkWAOf5lKtgQBTOjGJwkgn0=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20240902081058-0fb2286162d3 h1:Jmu6yQL0t1g9tZdFB1URJCcOwLgARce9EUmiKlV9fYg=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20240902081058-0fb2286162d3/go.mod h1:GqBi61WLtfKxqYFle+ePGkWAOf5lKtgQBTOjGJwkgn0=
 github.com/Masterminds/semver/v3 v3.1.1 h1:hLg3sBzpNErnxhQtUy/mmLR2I9foDujNK030IGemrRc=
 github.com/Masterminds/semver/v3 v3.1.1/go.mod h1:VPu/7SZ7ePZ3QOrcuXROw5FAcLl4a0cBrbBpGY/8hQs=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
