@@ -41,7 +41,7 @@ func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multic
 	}, true
 }
 
-func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result) *schemas.PriceFeed {
+func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
 	validTokens := mdl.TokensValidAtBlock(blockNum)
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
 	{
@@ -55,7 +55,9 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
 			return parsePriceForRedStone(price, isPriceInUSD)
 		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
-			return nil
+			if (len(force) ==0 || !force[0] ) {
+				return nil
+			}
 		}
 	}
 	{

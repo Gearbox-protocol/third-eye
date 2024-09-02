@@ -103,7 +103,7 @@ func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle, token string) 
 			return nil
 		}
 		results := core.MakeMultiCall(repo.client, blockNum, false, call)
-		price := adapter.ProcessResult(blockNum, results)
+		price := adapter.ProcessResult(blockNum, results, true)
 		return price.PriceBI.Convert()
 	}
 	return nil

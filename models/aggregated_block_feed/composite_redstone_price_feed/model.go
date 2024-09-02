@@ -56,7 +56,7 @@ func (mdl *CompositeRedStonePriceFeed) GetCalls(blockNum int64) (calls []multica
 	}}, true
 }
 
-func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result) *schemas.PriceFeed {
+func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
 	if !results[1].Success {
 		return nil
 	}
@@ -69,7 +69,9 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
 			return parsePriceForRedStone(price, isPriceInUSD)
 		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
-			return nil
+			if (len(force) ==0 || !force[0] ) {
+				return nil
+			}
 		}
 	}
 	validTokens := mdl.TokensValidAtBlock(blockNum)
@@ -81,7 +83,7 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 	}
 	//
 	basePrice := func() *big.Int {
-		values, err := core.GetAbi("PriceFeed").Unpack("latestRoundData", results[0].ReturnData)
+		values, err := core.GetAbi("PriceFeed").Unpack("latestRoundData", results[1].ReturnData)
 		if err != nil {
 			log.Warnf("Can't get the lastestRounData: %s at %d for mdl.priceFeed1(%s)", err, blockNum, mdl.priceFeed1)
 			return nil

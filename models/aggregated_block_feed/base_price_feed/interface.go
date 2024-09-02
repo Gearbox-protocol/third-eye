@@ -11,7 +11,7 @@ type QueryPriceFeedI interface {
 	GetPFType() string
 	ds.SyncAdapterI
 	GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool)
-	ProcessResult(blockNum int64, results []multicall.Multicall2Result) *schemas.PriceFeed
+	ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed
 	DisableToken(token string, disabledAt int64, pfVersion schemas.PFVersion)
 	AddToken(token string, discoveredAt int64, pfVersion schemas.PFVersion)
 	GetTokens() map[string]map[schemas.PFVersion][]int64

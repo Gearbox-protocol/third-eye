@@ -33,7 +33,7 @@ func NewCurvePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CurvePriceFeed {
 
 var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
 
-func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result) *schemas.PriceFeed {
+func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
 	if !results[0].Success {
 		if adapter.GetVersion().LessThan(core.NewVersion(300)) { // failed and
 			// if virtualprice of pool for this oracle is not within lowerBound and upperBound , ignore the price
