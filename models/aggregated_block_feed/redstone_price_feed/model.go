@@ -1,7 +1,9 @@
 package redstone_price_feed
 
 import (
+	"encoding/hex"
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -10,6 +12,8 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type RedstonePriceFeed struct {
@@ -27,24 +31,46 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *RedstonePriceFeed
 	}
 }
 
-func (*RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
-	return nil, true
+func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
+	data, _:=hex.DecodeString("feaf968c")
+	return []multicall.Multicall2Call{
+		{
+			Target: common.HexToAddress(obj.Address),
+			CallData: data,
+		},
+	}, true
 }
 
 func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result) *schemas.PriceFeed {
 	validTokens := mdl.TokensValidAtBlock(blockNum)
-	priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token, false)
-	//
-	isPriceInUSD := mdl.GetVersion().IsPriceInUSD() // should be always true
-	if priceBI.Cmp(new(big.Int)) == 0 {
-		log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceBI)
-		return nil
+	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
+	{
+		if len(results) != 1 {
+			log.Fatal("wrong result")
+		}
+		if results[0].Success {
+			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", results[0].ReturnData)
+			log.CheckFatal(err)
+			price :=  *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
+			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
+			return parsePriceForRedStone(price, isPriceInUSD)
+		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+			return nil
+		}
 	}
-
-	priceData := parsePriceForRedStone(priceBI, isPriceInUSD)
-	log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceData.Price)
-	//
-	return priceData
+	{
+		//
+		priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token, false)
+		if priceBI.Cmp(new(big.Int)) == 0 {
+			log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceBI)
+			return nil
+		}
+	
+		priceData := parsePriceForRedStone(priceBI, isPriceInUSD)
+		log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceData.Price)
+		//
+		return priceData
+	}
 }
 
 func parsePriceForRedStone(price *big.Int, isPriceInUSD bool) *schemas.PriceFeed {

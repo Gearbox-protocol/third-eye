@@ -13,6 +13,7 @@ local newCollateral = 1;
       '385aee1b': { '#CompositeRedstone_1': '#PriceFeed_0' },
       ab0ca0e1: { '#CompositeRedstone_1': '#PriceFeed_1' },
       '313ce567': { '#PriceFeed_0': '8' },
+      feaf968c: { '#CompositeRedstone_1': '6' },
     },
   },
   blocks: {
@@ -23,7 +24,7 @@ local newCollateral = 1;
             '#YearnFeed_1': utils.bigIntTopic(1, 8),
             '#CurvePriceFeed_1': utils.bigIntTopic(10000, 8),
             '#SingleAsset_1': utils.bigIntTopic(1, 8),
-            '#Redstone_1': utils.bigIntTopic(0, 8),
+            '#Redstone_1': utils.bigIntTopic(20, 8),
             '#PriceFeed_1': utils.bigIntTopic(3000, 8),
           },
         },
