@@ -3,7 +3,7 @@ module github.com/Gearbox-protocol/third-eye
 go 1.20
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20240902112528-ba0e3ab7a2b3
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20240903070426-d7305e1702be
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.5.9
@@ -12,7 +12,6 @@ require (
 	github.com/prometheus/client_golang v1.14.0
 	github.com/stretchr/testify v1.8.4
 	go.uber.org/fx v1.13.1
-	gorm.io/driver/postgres v1.5.9
 	gorm.io/gorm v1.25.11
 )
 
@@ -76,12 +75,13 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorm.io/driver/postgres v1.5.9 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-replace github.com/Gearbox-protocol/sdk-go v0.0.0-20240902081058-0fb2286162d3 => ../sdk-go
+replace github.com/Gearbox-protocol/sdk-go v0.0.0-20240902112528-ba0e3ab7a2b3 => ../sdk-go
 
 replace github.com/ethereum/go-ethereum v1.13.14 => github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227
