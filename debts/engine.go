@@ -6,7 +6,6 @@ import (
 	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
-	"github.com/Gearbox-protocol/sdk-go/artifacts/yearnPriceFeed"
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -14,7 +13,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -183,7 +181,7 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 		return
 	}
 	var totalAvailableLiquidityInUSD float64 = 0
-	log.Info("tvl for block",blockNum)
+	log.Info("tvl for block", blockNum)
 	for _, entry := range eng.poolLastInterestData {
 		adapter := eng.repo.GetAdapter(entry.Address)
 		state := adapter.GetUnderlyingState()
@@ -298,15 +296,18 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	// yearn price feed might be stale as a result difference btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
 	if profile != nil {
-		yearnFeeds := eng.repo.GetRetryFeedForDebts()
+		retryFeeds := eng.repo.GetRetryFeedForDebts()
 		for tokenAddr, details := range *sessionSnapshot.Balances {
 			if details.IsEnabled && details.HasBalanceMoreThanOne() {
 				lastPriceEvent := eng.getTokenPriceFeed(tokenAddr, schemas.VersionToPFVersion(session.Version, false)) // don't use reserve
 				//
 				if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
-					feed := lastPriceEvent.Feed
-					if utils.Contains(yearnFeeds, feed) {
-						eng.requestPriceFeed(blockNum, feed, tokenAddr, lastPriceEvent.MergedPFVersion)
+					feedAddr := lastPriceEvent.Feed
+					for _, retryFeed := range retryFeeds {
+						if retryFeed.GetAddress() == feedAddr {
+							eng.requestPriceFeed(blockNum, retryFeed, tokenAddr, lastPriceEvent.MergedPFVersion)
+
+						}
 					}
 				}
 			}
@@ -436,6 +437,13 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			} else {
 				notMatched = true
 			}
+			log.Info(
+				IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.001)),
+				// hf value calculated are on different side of 1
+				core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor),
+				// if healhFactor diff by 4 %
+				core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)),
+			)
 		}
 	}
 	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken, debtDetails)
@@ -503,29 +511,27 @@ func (eng *DebtEngine) SessionDataFromDC(version core.VersionType, blockNum int6
 	return data
 }
 
-func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string, pfVersion schemas.MergedPFVersion) {
+func (eng *DebtEngine) requestPriceFeed(blockNum int64, retryFeed ds.QueryPriceFeedI, token string, pfVersion schemas.MergedPFVersion) {
 	// defer func() {
 	// 	if err:= recover(); err != nil {
 	// 		log.Warn("err", err, "in getting yearn price feed in debt", feed, token, blockNum, pfVersion)
 	// 	}
 	// }()
 	// PFFIX
-	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(feed), eng.client)
-	log.CheckFatal(err)
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
+	calls, isQueryable := retryFeed.GetCalls(blockNum)
+	if !isQueryable {
+		return
 	}
-	roundData, err := yearnPFContract.LatestRoundData(opts)
-	if err != nil {
-		log.Fatal(err)
-	}
+	log.Info("getting price for ", token, "at", blockNum)
+	results := core.MakeMultiCall(eng.client, blockNum, false, calls)
+	price := retryFeed.ProcessResult(blockNum, results, true)
 	eng.AddTokenLastPrice(&schemas.PriceFeed{
 		BlockNumber:     blockNum,
 		Token:           token,
-		Feed:            feed,
-		RoundId:         roundData.RoundId.Int64(),
-		PriceBI:         (*core.BigInt)(roundData.Answer),
-		Price:           utils.GetFloat64Decimal(roundData.Answer, pfVersion.Decimals()),
+		Feed:            retryFeed.GetAddress(),
+		RoundId:         price.RoundId,
+		PriceBI:         price.PriceBI,
+		Price:           price.Price,
 		MergedPFVersion: pfVersion,
 	})
 }

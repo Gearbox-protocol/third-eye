@@ -12,7 +12,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -109,7 +108,7 @@ func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle, token string) 
 	return nil
 }
 
-func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle string, token string) base_price_feed.QueryPriceFeedI {
+func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle string, token string) ds.QueryPriceFeedI {
 	pon, err := priceOraclev3.NewPriceOraclev3(common.HexToAddress(oracle), repo.client)
 	log.CheckFatal(err)
 	priceFeed, err := pon.PriceFeeds(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)}, common.HexToAddress(token))

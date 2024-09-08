@@ -3,7 +3,6 @@ package redstone_price_feed
 import (
 	"encoding/hex"
 	"math/big"
-	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -54,7 +53,8 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			price :=  *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
 			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
 			return parsePriceForRedStone(price, isPriceInUSD)
-		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+		// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+		} else {
 			if (len(force) ==0 || !force[0] ) {
 				return nil
 			}

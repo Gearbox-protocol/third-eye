@@ -122,7 +122,7 @@ type RepositoryI interface {
 	RecentMsgf(headers log.RiskHeader, msg string, args ...interface{})
 	//
 	// oracle and uni
-	GetRetryFeedForDebts() []string
+	GetRetryFeedForDebts() []QueryPriceFeedI
 	//
 	LoadLastDebtSync() int64
 	LoadLastAdapterSync() int64

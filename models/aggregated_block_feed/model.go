@@ -11,7 +11,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -21,7 +20,7 @@ type AQFWrapper struct {
 	*ds.SyncAdapter
 	mu *sync.Mutex
 	// yearn feed
-	QueryFeeds map[string]base_price_feed.QueryPriceFeedI
+	QueryFeeds map[string]ds.QueryPriceFeedI
 
 	// for dependency based fetching price
 	queryPFdeps *QueryPFDependencies
@@ -53,7 +52,7 @@ func NewAQFWrapper(client core.ClientI, repo ds.RepositoryI, interval int64) *AQ
 		SyncAdapter: syncAdapter,
 		Interval:    interval,
 		mu:          &sync.Mutex{},
-		QueryFeeds:  map[string]base_price_feed.QueryPriceFeedI{},
+		QueryFeeds:  map[string]ds.QueryPriceFeedI{},
 		queryPFdeps: NewQueryPFDepenencies(repo, client),
 	}
 	wrapper.queryPFdeps.aqf = wrapper
@@ -61,13 +60,13 @@ func NewAQFWrapper(client core.ClientI, repo ds.RepositoryI, interval int64) *AQ
 }
 
 // only called by priceoracle
-func (mdl *AQFWrapper) AddQueryPriceFeed(adapter base_price_feed.QueryPriceFeedI) {
+func (mdl *AQFWrapper) AddQueryPriceFeed(adapter ds.QueryPriceFeedI) {
 	mdl.LastSync = utils.Min(adapter.GetLastSync(), mdl.LastSync)
 	mdl.QueryFeeds[adapter.GetAddress()] = adapter
 }
 
-func (mdl *AQFWrapper) GetQueryFeeds() []base_price_feed.QueryPriceFeedI {
-	feeds := make([]base_price_feed.QueryPriceFeedI, 0, len(mdl.QueryFeeds))
+func (mdl *AQFWrapper) GetQueryFeeds() []ds.QueryPriceFeedI {
+	feeds := make([]ds.QueryPriceFeedI, 0, len(mdl.QueryFeeds))
 	for _, feed := range mdl.QueryFeeds {
 		feeds = append(feeds, feed)
 	}
@@ -104,7 +103,7 @@ func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) sch
 	}
 	return pfVersion
 }
-func createPriceFeedOnInit(qpf base_price_feed.QueryPriceFeedI, client core.ClientI, token string, discoveredAt int64) []*schemas.PriceFeed {
+func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, token string, discoveredAt int64) []*schemas.PriceFeed {
 	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.GetAddress()), client)
 	log.CheckFatal(err)
 	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
@@ -135,7 +134,7 @@ func (mdl *AQFWrapper) OnLog(txLog types.Log) {
 
 // no need to check version of feed, as while adding from chainlink we make sure that the version is more than 1
 // and  we can't have version 2 and 3 feed active at the same time.
-func (mdl AQFWrapper) getFeedAdapters(blockNum int64, neededTokens map[string]bool) (result []base_price_feed.QueryPriceFeedI) {
+func (mdl AQFWrapper) getFeedAdapters(blockNum int64, neededTokens map[string]bool) (result []ds.QueryPriceFeedI) {
 	for _, adapter := range mdl.QueryFeeds {
 		if !adapter.GetVersion().MoreThan(core.NewVersion(1)) {
 			continue

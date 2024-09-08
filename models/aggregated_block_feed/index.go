@@ -4,14 +4,13 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/composite_redstone_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/curve_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/redstone_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/yearn_price_feed"
 )
 
-func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) base_price_feed.QueryPriceFeedI {
+func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) ds.QueryPriceFeedI {
 	switch pfType {
 	case ds.RedStonePF:
 		return redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
@@ -25,7 +24,7 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 		return nil
 	}
 }
-func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) base_price_feed.QueryPriceFeedI {
+func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) ds.QueryPriceFeedI {
 	switch adapter.GetDetailsByKey("pfType") {
 	case ds.RedStonePF:
 		return redstone_price_feed.NewRedstonePriceFeedFromAdapter(adapter)
@@ -40,7 +39,7 @@ func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) base_price_feed.Query
 		return nil
 	}
 }
-func FromAdapter(obj ds.SyncAdapterI) base_price_feed.QueryPriceFeedI {
+func FromAdapter(obj ds.SyncAdapterI) ds.QueryPriceFeedI {
 	switch adapter := obj.(type) {
 	case *curve_price_feed.CurvePriceFeed:
 		return adapter

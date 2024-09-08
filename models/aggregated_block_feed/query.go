@@ -9,7 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	// "fmt"
 )
 
@@ -121,7 +121,7 @@ func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
 }
 
 type adapterAndNoCall struct {
-	adapter base_price_feed.QueryPriceFeedI
+	adapter ds.QueryPriceFeedI
 	nocalls int
 }
 
@@ -144,7 +144,7 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 	return
 }
 
-func processRoundDataWithAdapterTokens(blockNum int64, adapter base_price_feed.QueryPriceFeedI, entries []multicall.Multicall2Result) []*schemas.PriceFeed {
+func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeedI, entries []multicall.Multicall2Result) []*schemas.PriceFeed {
 
 	// } else if utils.Contains([]string{"0xCbeCfA4017965939805Da5a2150E3DB1BeDD0364", "0x814E6564e8cda436c1ab25041C10bfdb21dEC519"},
 

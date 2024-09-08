@@ -101,6 +101,9 @@ func (mdl *CommonCMAdapter) liqv3SessionCallAndResultFn(liquidatedAt int64, sess
 			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v", mdl.GetAddress(), session.Borrower, liquidatedAt-1, result.ReturnData)
 		}
 		dcAccountData, err := resultFn(result.ReturnData)
+		if err == nil && !dcAccountData.IsSuccessful && mdl.GetVersion() == core.NewVersion(300) {
+			dcAccountData, err = mdl.retry(dcAccountData, liquidatedAt-1)
+		}
 		if err != nil {
 			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", liquidatedAt, mdl.GetAddress(), session.Borrower, err)
 		}
@@ -144,6 +147,9 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionI
 			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v, dc: %s(%s)", mdl.GetAddress(), session.Borrower, closedAt-1, result.ReturnData, key, dc)
 		}
 		dcAccountData, err := resultFn(result.ReturnData)
+		if err == nil && !dcAccountData.IsSuccessful && mdl.GetVersion() == core.NewVersion(300) {
+			dcAccountData, err = mdl.retry(dcAccountData, closedAt-1)
+		}
 		if err != nil {
 			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", closedAt, mdl.GetAddress(), session.Borrower, err)
 		}
@@ -251,6 +257,7 @@ func (mdl *CommonCMAdapter) poolRepay(blockNum int64, session *schemas.CreditSes
 		amountToPool)
 
 }
+
 
 func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
 	multicall.Multicall2Call, func(multicall.Multicall2Result)) {
