@@ -125,11 +125,18 @@ func (repo AdapterKitHandler) GetAdaptersFromWrapper() (adapters []ds.SyncAdapte
 	return
 }
 
-func (repo AdapterKitHandler) GetYearnFeedAddrs() (addrs []string) {
+func (repo AdapterKitHandler) GetRetryFeedForDebts() (addrs []string) {
 	feeds := repo.aggregatedBlockFeed.GetQueryFeeds()
 	addrs = make([]string, 0, len(feeds))
 	for _, adapter := range feeds {
-		addrs = append(addrs, adapter.GetAddress())
+		// ds.RedStonePF
+		// ds.CompositeRedStonePF
+
+		if utils.Contains([]string{ds.CurvePF,
+			ds.YearnPF,
+			ds.SingleAssetPF}, adapter.GetPFType()) {
+			addrs = append(addrs, adapter.GetAddress())
+		}
 	}
 	return
 }

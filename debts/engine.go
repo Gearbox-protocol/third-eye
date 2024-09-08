@@ -298,7 +298,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	// yearn price feed might be stale as a result difference btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
 	if profile != nil {
-		yearnFeeds := eng.repo.GetYearnFeedAddrs()
+		yearnFeeds := eng.repo.GetRetryFeedForDebts()
 		for tokenAddr, details := range *sessionSnapshot.Balances {
 			if details.IsEnabled && details.HasBalanceMoreThanOne() {
 				lastPriceEvent := eng.getTokenPriceFeed(tokenAddr, schemas.VersionToPFVersion(session.Version, false)) // don't use reserve
@@ -504,6 +504,11 @@ func (eng *DebtEngine) SessionDataFromDC(version core.VersionType, blockNum int6
 }
 
 func (eng *DebtEngine) requestPriceFeed(blockNum int64, feed, token string, pfVersion schemas.MergedPFVersion) {
+	// defer func() {
+	// 	if err:= recover(); err != nil {
+	// 		log.Warn("err", err, "in getting yearn price feed in debt", feed, token, blockNum, pfVersion)
+	// 	}
+	// }()
 	// PFFIX
 	yearnPFContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(feed), eng.client)
 	log.CheckFatal(err)

@@ -208,7 +208,7 @@ func (DummyRepo) RecentMsgf(headers log.RiskHeader, msg string, args ...interfac
 }
 
 // oracle
-func (DummyRepo) GetYearnFeedAddrs() []string {
+func (DummyRepo) GetRetryFeedForDebts() []string {
 	return nil
 }
 
