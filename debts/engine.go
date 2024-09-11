@@ -295,7 +295,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	// if profile is not null
 	// yearn price feed might be stale as a result difference btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
-	if profile != nil {
+	if profile != nil || debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 1 {
 		retryFeeds := eng.repo.GetRetryFeedForDebts()
 		for tokenAddr, details := range *sessionSnapshot.Balances {
 			if details.IsEnabled && details.HasBalanceMoreThanOne() {
