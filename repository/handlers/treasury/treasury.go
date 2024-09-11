@@ -2,6 +2,7 @@ package treasury
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -26,7 +27,6 @@ type TreasuryRepo struct {
 	adapters         *handlers.SyncAdaptersRepo
 	blocks           *handlers.BlocksRepo
 	// for getting the block num from ts when it is missing from db
-	EtherscanAPI string
 	//
 	redstoneMgr redstone.RedStoneMgrI
 }
@@ -37,7 +37,6 @@ func NewTreasuryRepo(tokens *handlers.TokensRepo, blocks *handlers.BlocksRepo, a
 		client:       client,
 		adapters:     adapters,
 		blocks:       blocks,
-		EtherscanAPI: cfg.EtherscanAPI,
 		redstoneMgr:  redstone.NewRedStoneMgr(client),
 	}
 }
@@ -133,15 +132,16 @@ func (repo *TreasuryRepo) saveTreasurySnapshot() {
 	ts := repo.lastTreasureTime.Unix()
 	blockDate := repo.blocks.GetBlockDatePairs(ts)
 	if blockDate == nil {
-		if repo.EtherscanAPI != "" {
-			if blockNum, err := pkg.GetBlockNumForTs(repo.EtherscanAPI, core.GetChainId(repo.client), ts); err == nil {
+		key := fmt.Sprintf("%s_API_KEY", log.GetNetworkName(core.GetChainId(repo.client)))
+		if utils.GetEnvOrDefault(key, "") !="" {
+			if blockNum := pkg.GetBlockNum(uint64(ts), core.GetChainId(repo.client)); blockNum!=0 {
 				repo.blocks.SetBlock(blockNum)
 				blockDate = &schemas.BlockDate{
 					BlockNum:  blockNum,
 					Timestamp: ts,
 				}
 			} else {
-				log.Fatal("Etherscan err", err)
+				log.Fatal("Etherscan err")
 			}
 		} else {
 			log.Fatalf("can't find the blocknum for ts(%d) and etherscan api key is also missing", ts)

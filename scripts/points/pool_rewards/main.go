@@ -35,8 +35,10 @@ func main() {
 	// node := pkg.Node{Client: client}
 	db := repository.NewDBClient(cfg)
 	var lastAllowedTs int64 = 1719792000
-	lastblockAllowed, err := pkg.GetBlockNumForTs(utils.GetEnvOrDefault("ETHERSCAN_API_KEY", ""), core.GetChainId(client), lastAllowedTs)
-	log.CheckFatal(err)
+	lastblockAllowed:= pkg.GetBlockNum( uint64( lastAllowedTs), core.GetChainId(client))
+	if lastblockAllowed == 0 {
+		log.Fatal("lastblockAllowed is zero")
+	}
 	data := []struct {
 		User      string  `gorm:"column:user_address" json:"user"`
 		Amount    float64 `gorm:"column:amount" json:"amount"`
@@ -46,7 +48,7 @@ func main() {
 		BlockNum int64 `gorm:"column:block_num"`
 	}{}
 	log.Info(lastblockAllowed)
-	err = db.Raw(`select p.underlying_token, a.*, b.timestamp from (select * from pool_ledger where event in  ('AddLiquidity', 'RemoveLiquidity') and pool in (select address from pools where _version=300) and block_num<?) a join blocks b on b.id=a.block_num join pools p on p.address=a.pool order by a.block_num`, lastblockAllowed).Find(&data).Error
+	err := db.Raw(`select p.underlying_token, a.*, b.timestamp from (select * from pool_ledger where event in  ('AddLiquidity', 'RemoveLiquidity') and pool in (select address from pools where _version=300) and block_num<?) a join blocks b on b.id=a.block_num join pools p on p.address=a.pool order by a.block_num`, lastblockAllowed).Find(&data).Error
 	log.CheckFatal(err)
 
 	ans := map[string]map[string]float64{}
@@ -75,8 +77,10 @@ func main() {
 			ans[curAction.Token][curAction.User] += v
 			dataInd++
 		}
-		dayEndBlock, err := pkg.GetBlockNumForTs(utils.GetEnvOrDefault("ETHERSCAN_API_KEY", ""), core.GetChainId(client), ts.Unix())
-		log.CheckFatal(err)
+		dayEndBlock := pkg.GetBlockNum(uint64( ts.Unix()), core.GetChainId(client))
+		if dayEndBlock == 0 {
+			log.Fatal("")
+		}
 		log.Info(ts.Format(time.DateOnly), dayEndBlock)
 		for token, entry:= range ans {
 			var t float64 = 0

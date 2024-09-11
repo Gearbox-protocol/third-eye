@@ -11,7 +11,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/repository"
@@ -49,15 +48,17 @@ func main() {
 
 	//
 	var lastAllowedTs int64 = 1719792000
-	lastblockAllowed, err := pkg.GetBlockNumForTs(utils.GetEnvOrDefault("ETHERSCAN_API_KEY", ""), core.GetChainId(client), lastAllowedTs)
-	log.CheckFatal(err)
+	lastblockAllowed := pkg.GetBlockNum(uint64(lastAllowedTs), core.GetChainId(client))
+	if lastblockAllowed == 0 {
+		log.Fatal("lastblockAllowed is zero")
+	}
 	log.Info(lastblockAllowed)
 
 	sessions := []struct {
 		schemas.CreditSession
 		ClosedTs int64 `gorm:"column:end_ts"`
 	}{}
-	err = db.Raw(`select a.*, b.timestamp end_ts from (select * from credit_sessions where version=300 and since < ? and credit_manager in (select address from credit_managers where _version=300 and name like '%Trade%' )) a left join blocks b on b.id=a.closed_at `, lastblockAllowed).Find(&sessions).Error
+	err := db.Raw(`select a.*, b.timestamp end_ts from (select * from credit_sessions where version=300 and since < ? and credit_manager in (select address from credit_managers where _version=300 and name like '%Trade%' )) a left join blocks b on b.id=a.closed_at `, lastblockAllowed).Find(&sessions).Error
 	log.Info("got sessions")
 	log.CheckFatal(err)
 	data := map[string]*BorrowAndValue{}

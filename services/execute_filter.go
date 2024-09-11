@@ -19,6 +19,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/mellowR7"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/swapRouterv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
@@ -114,6 +115,7 @@ var abiJSONs = []string{
 	savingMaker.SavingMakerABI,
 	erc4626Adapter.Erc4626AdapterABI,
 	swapRouterv3.SwapRouterv3ABI,
+	mellowR7.MellowR7ABI,
 }
 
 var abiParsers []abi.ABI
