@@ -34,6 +34,14 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 		} else if pfType == ds.RedStonePF {
 			t = core.V3_REDSTONE_ORACLE
 		}
+		{ // ignore LBTC price on mainnet as the pf0 of composite is not updated, so can't provide the pod
+			client := mdl.Client
+			chainId := core.GetChainId(client)
+			addrToSym:=core.GetTokenToSymbolByChainId(chainId)
+			if (addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" ){
+				continue
+			}
+		}
 		ans = append(ans, redstone.TokenAndFeedType{
 			Token:    common.HexToAddress(token),
 			Reversed: false,
