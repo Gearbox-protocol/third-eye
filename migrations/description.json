@@ -1,0 +1,690 @@
+[
+    {
+        "table": "blocks",
+        "category": "all",
+        "desc": "block number to timestamp mapping",
+        "columns": {
+            "id": "block number",
+            "timestamp": "timestamp corresponding to block id"
+        }
+    },
+    {
+        "table": "account_operations",
+        "category": "all",
+        "desc": "operations performed on credit accounts via user or bots",
+        "columns": {
+            "id": "unique monotonously increasing number acting as primary key",
+            "depth": "",
+            "tx_hash": "tx hash of the transaction in which this action happened",
+            "block_num": "block number of the block in which this action happened",
+            "log_id": "corresponding event log id when this event related to this action was emitted",
+            "borrower": "the borrower of the credit session at the time this action happened",
+            "session_id": "session id of the credit session/account",
+            "dapp": "on which protocol does this action occurred , if opened/closed/decrease_borrow_amount/increase_borror_amount(i.e. gearbox related actions ) then the dapp is the credit facade addres, else it is the address of the protocol like curve/uniswap smart contract",
+            "action": "the event signature of the action",
+            "adapter_call": "whether it is a contract call or emitted event.",
+            "args": " the arguments of the call or emitted event",
+            "transfers": " if there are any related token transfer from/to the credit account related to this event, this helps in tracking the balance change due to this performed action",
+            "main_action": "since gearbox supports multicall where under a main action (open,close, liquidate, multicall) there can be multiple sub actions like execute,decrease_borrow_amount,increase_borrower_amount. to link the sub account operation to main account operation main_action field is used. It holds the id of main action"
+        }
+    },
+    {
+        "table": "allowed_protocols",
+        "category": "all",
+        "desc": "history of allowed protocol added to credit manager",
+        "columns": {
+            "id": "unique monotonously increasing number acting as primary key",
+            "protocol": "protocol that is whitelisted for gearbox usage, like curve, uniswap etc.",
+            "adapter": "gearbox developed adapter that is responsible for securely handling protocol calls",
+            "block_num": "block number at which the adapter is added for this protocool to credit confiugator",
+            "credit_manager": "credit manager address",
+            "configurator": "credit configurator at the time adapter was added"
+        }
+    },
+    {
+        "table": "allowed_tokens",
+        "category": "all",
+        "desc": "history of allowed tokens added to credit manager",
+        "columns": {
+            "credit_manager": "credit manager to which token is allowed",
+            "token": "token",
+            "liquiditythreshold": "liquidity threshold added for token to credit configurator",
+            "block_num": "block at which allowed token is added",
+            "disable_block": "if the allowed token is disabled, then at which block it was disabled",
+            "configurator": "credit configurator",
+            "log_id": "log id of the event at which the token was added"
+        }
+    },
+    {
+        "table": "credit_manager_stats",
+        "category": "all",
+        "desc": "history of credit manager stats",
+        "columns": {
+            "id": "unique monotonously increasing number acting as primary key",
+            "credit_manager": "credit manager",
+            "opened_accounts_count": "currently open accounts",
+            "total_opened_accounts": "total accounts opened on given credit manager till block_num",
+            "total_closed_accounts": "total closed accounts on given credit manager",
+            "total_repaid_accounts": "repaid accounts related to gearbox v1, not valid after that",
+            "total_liquidated_accounts": "all liquidated accounts count",
+            "total_borrowed_bi": "currently borrowed amount from pool via this credit manager, format bigint",
+            "cumulative_borrowed_bi": "reduntant field",
+            "total_repaid_bi": "repaid amount till block_num, this can be bigger than current total borrowed bi, because it is sigma of all repaid amount, format bigint",
+            "total_profit_bi": "profit till block_num, format bigint",
+            "total_losses_bi": "loss till block_num, format bigint",
+            "block_num": "block number at which the snapshot of these credit manager stats was taken",
+            "total_borrowed": "currently borrowed amount from pool via this credit manager, format decimals",
+            "cumulative_borrowed": "reduntant field",
+            "total_repaid": "repaid till block_num, format decimals",
+            "total_profit": "profit till block_num, format decimals",
+            "total_losses": "loss till block_num, format decimals",
+            "unique_users": "reduntant field",
+            "available_liquidity_bi": "reduntant field",
+            "available_liquidity": "reduntant field"
+        }
+    },
+    {
+        "table": "credit_managers",
+        "category": "all",
+        "desc": "credit manager details",
+        "columns": {
+            "address": "credit manager",
+            "pool_address": "pool address of credit manager",
+            "underlying_token": "underlying token of the pool of cm",
+            "max_leverage": "max allowed leverage",
+            "disabled": "disable or not",
+            "is_weth": "is weth credit  manager?",
+            "min_amount": "min allowed borrowed amount",
+            "max_amount": "max allowed borrowed amount",
+            "total_borrowed_bi": "currently borrowed amount, format bigint",
+            "cumulative_borrowed_bi": "reduntant field",
+            "total_repaid_bi": "repaid amount till block_num, this can be bigger than current total borrowed bi, because it is sigma of all repaid amount, format bigint",
+            "total_profit_bi": "profit till block_num, format bigint",
+            "total_losses_bi": "loss till block_num, format bigint",
+            "total_borrowed": "currently borrowed amount from pool via this credit manager, format decimals",
+            "cumulative_borrowed": "reduntant field",
+            "total_repaid": "repaid till block_num, format decimals",
+            "total_profit": "profit till block_num, format decimals",
+            "total_losses": "loss till block_num, format decimals",
+            "opened_accounts_count": "currently open accounts",
+            "total_opened_accounts": "total accounts opened on given credit manager till block_num",
+            "total_closed_accounts": "total closed accounts on given credit manager",
+            "total_repaid_accounts": "repaid accounts related to gearbox v1, not valid after that",
+            "total_liquidated_accounts": "all liquidated accounts count",
+            "unique_users": "reduntant field",
+            "_version": "version of gearbox protocol to which this cm belongs",
+            "paused": "paused or not",
+            "name": "name of cm",
+            "total_debt_limit": "debt limit"
+        }
+    },
+    {
+        "table": "credit_session_snapshots",
+        "category": "all",
+        "desc": "credit session snapshot",
+        "columns": {
+            "id": "unique monotonously increasing number acting as primary key",
+            "block_num": "block at which snapshot of credit session is added",
+            "session_id": "credit session id",
+            "borrowed_amount_bi": "borrowed amount at block number, format bigint",
+            "borrowed_amount": "borrowed amount at block number, format decimals",
+            "total_value_bi": "total value, format bigint",
+            "total_value": "total value, format decimals",
+            "total_value_eth": "total value in eth, format decimals",
+            "total_value_usd": "total value in usd, format decimals",
+            "balances": "balances of the credit session, format json",
+            "cumulative_index": "cumulative index of the credit session",
+            "health_factor": "health factor of the credit session",
+            "borrower": "borrower of the credit session at given block number",
+            "collateral_usd": "collateral in usd, format decimals",
+            "collateral_underlying": "collateral in underlying, format decimals",
+            "cum_quota_interest": "cumulative quota interest of the credit session",
+            "quota_fees": "quota fees of the credit session",
+            "extra_quota_apy": "extra quota apy of the credit session",
+            "inst_collateral_underlying": "collateral in underlying, format decimals",
+            "inst_collateral_usd": "collateral in usd, format decimals",
+            "collateral": "collateral of the credit session, format json"
+        }
+    },
+    {
+        "table": "credit_sessions",
+        "category": "all",
+        "desc": "credit session details",
+        "columns": {
+            "id": "session id",
+            "status": "active, clsoed, liquidated, liquidation_pending",
+            "borrower": "borrowed address",
+            "account": "account address",
+            "since": "when it was opened",
+            "closed_at": "when it was closed",
+            "initial_amount": "initial borrowed amount",
+            "credit_manager": "credit manager address",
+            "borrowed_amount": "current borrowed amount",
+            "balances": "balances of the credit session",
+            "liquidator": "liquidator address, if it is liquidated",
+            "version": "version of gearbox protocol to which this credit session belongs",
+            "remaining_funds": "remaining funds in the credit session, after closure",
+            "collateral": "collateral of the credit session",
+            "close_transfers": "transfers related to the credit session, after closure",
+            "teritary_status": "stores the block number at which the credit session is liquidated, for v3, as the account status is still active for liquidated accounts",
+            "entry_price": "reduntant field",
+            "close_price": "reduntant field"
+        }
+    },
+    {
+        "table": "current_debts",
+        "category": "all",
+        "desc": "latest debt details of the account",
+        "columns": {
+            "block_num": "block number at which debt details are updated",
+            "cal_health_factor": "health factor of the account",
+            "cal_threshold_value_bi": "threshold value of the account",
+            "cal_borrowed_amt_with_interest_bi": "borrowed amount with interest of the account",
+            "cal_total_value_bi": "total value of the account",
+            "profit_underlying": "profit in underlying of the account",
+            "profit_usd": "profit in usd of the account",
+            "collateral_usd": "collateral in usd of the account",
+            "collateral_underlying": "collateral in underlying of the account",
+            "id": "unique monotonously increasing number acting as primary key",
+            "session_id": "session id of the account",
+            "total_value_usd": "total value in usd of the account"
+        }
+    },
+    {
+        "table": "dao_operations",
+        "category": "all",
+        "desc": "operation dao event",
+        "columns": {
+            "log_id": "log id of evnet",
+            "tx_hash": "tx hash of the transaction",
+            "block_num": "block number of the block in which this event happened",
+            "contract": "contract address",
+            "type": "type of the event, https://github.com/Gearbox-protocol/sdk-go/blob/v3/core/schemas/dao.go#L56-L112",
+            "args": "arguments of the event"
+        }
+    },
+    {
+        "table": "debt_sync",
+        "category": "all",
+        "desc": "latest block at which debt was calculated",
+        "columns": {
+            "last_calculated_at": "latest block at which debt was calculated",
+            "field_set": "just used to track if the last_calculated_at is set or not"
+        }
+    },
+    {
+        "table": "debts",
+        "category": "all",
+        "desc": "history of debt details of the account",
+        "columns": {
+            "block_num": "block number at which debt details are updated",
+            "cal_health_factor": "health factor of the account",
+            "cal_threshold_value_bi": "threshold value of the account",
+            "cal_borrowed_amt_with_interest_bi": "borrowed amount with interest of the account",
+            "cal_total_value_bi": "total value of the account",
+            "profit_underlying": "profit in underlying of the account",
+            "profit_usd": "profit in usd of the account",
+            "collateral_usd": "collateral in usd of the account",
+            "collateral_underlying": "collateral in underlying of the account",
+            "id": "unique monotonously increasing number acting as primary key",
+            "session_id": "session_id",
+            "total_value_usd": "total_value_usd"
+        }
+    },
+    {
+        "table": "diesel_balances",
+        "category": "all",
+        "desc": "diesel balance of the account",
+        "columns": {
+            "user_address": "user address",
+            "balance_bi": "balance in bigint",
+            "balance": "balance, format decimals",
+            "pool": "pool"
+        }
+    },
+    {
+        "table": "diesel_transfers",
+        "category": "all",
+        "desc": "tracking diesel transfers, only used for gearbox v2",
+        "columns": {
+            "block_num": "block number",
+            "from_user": "from user",
+            "to_user": "to user",
+            "token_sym": "token symbol",
+            "amount": "amount",
+            "log_id": "log id of transfer event"
+        }
+    },
+    {
+        "table": "farm_v3",
+        "category": "all",
+        "desc": "farm v3 details",
+        "columns": {
+            "pool": "pool",
+            "farm": "farm",
+            "checkpoint": "checkpoint",
+            "farmed_per_token": "farmed_per_token",
+            "reward": "reward",
+            "period": "period",
+            "end_ts": "end_ts",
+            "total_supply": "total_supply of underlying token deposited in farm contract",
+            "diesel_token": "diesel token",
+            "reward_token": "reward token",
+            "synced_till": "block number at which farm details were last synced",
+            "pool_synced_till": "pool diesel transfer synced till"
+        }
+    },
+    {
+        "table": "fast_check_params",
+        "category": "v1",
+        "desc": "used for gearbox v1, not used now",
+        "columns": {
+            "block_num": "block number at which fast check params were updated",
+            "credit_manager": "credit manager",
+            "chi_threshold": "chi threshold",
+            "hf_checkinterval": "hf check interval"
+        }
+    },
+    {
+        "table": "gear_balances",
+        "category": "all",
+        "desc": "tracking balance of gear token ",
+        "columns": {
+            "user_address": "user address",
+            "balance": "balance"
+        }
+    },
+    {
+        "table": "liquidable_accounts",
+        "category": "all",
+        "desc": "accounts that can be liquidated, but are not liquidated yet",
+        "columns": {
+            "session_id": "session id",
+            "block_num": "block number since when the account is liquidatable",
+            "notified_if_liquidable": "indicator whether the account is liquidatable notifiaction has been sent or not"
+        }
+    },
+    {
+        "table": "lm_rewards",
+        "category": "all",
+        "desc": "liquidity mining rewards",
+        "columns": {
+            "user_address": "user address",
+            "pool": "for corresponding pool",
+            "reward": "reward amount",
+            "reward_token": "reward token"
+        }
+    },
+    {
+        "table": "no_session_transfers",
+        "category": "all",
+        "desc": "tracking token transfers without session id",
+        "columns": {
+            "amount": "amount of token transfer",
+            "token": "token",
+            "source": "source of token transfer",
+            "destination": "destination of token transfer",
+            "block_num": "block_num",
+            "log_id": "log_id of transfer event",
+            "tx_hash": "tx_hash of transfer event",
+            "isfrom_account": "is from account",
+            "isto_account": "is to account"
+        }
+    },
+    {
+        "table": "old_snapshots",
+        "category": "all",
+        "desc": "used in pure.gearbox.fi",
+        "columns": {
+            "session_id": "session id",
+            "data": "json of the fields used for showing the last day stats of that account"
+        }
+    },
+    {
+        "table": "operations",
+        "desc": "reduntant field",
+        "columns": {}
+    },
+    {
+        "table": "parameters",
+        "category": "all",
+        "desc": "parameters of the credit manager",
+        "columns": {
+            "block_num": "block number at which parameters were updated",
+            "credit_manager": "credit manager",
+            "min_amount": "min amount",
+            "max_amount": "max amount",
+            "max_leverage": "max leverage",
+            "fee_interest": "fee interest",
+            "fee_liquidation": "fee_liquidation",
+            "liq_discount": "liq_discount",
+            "liq_discount_expired": "liq_discount_expired",
+            "fee_liquidation_expired": "fee_liquidation_expired",
+            "emergency_liq_discount": "emergency_liq_discount"
+        }
+    },
+    {
+        "table": "pool_ledger",
+        "category": "all",
+        "desc": "pool ledger details",
+        "columns": {
+            "id": "id",
+            "block_num": "block_num",
+            "log_id": "log_id",
+            "pool": "pool",
+            "event": "event",
+            "tx_hash": "tx_hash",
+            "session_id": "session_id",
+            "user_address": "user address",
+            "amount": "amount ",
+            "amount_bi": "amount_bi",
+            "shares": "shares",
+            "shares_bi": "shares_bi",
+            "executor": "executor",
+            "receiver": "receiver"
+        }
+    },
+    {
+        "table": "pool_stats",
+        "category": "all",
+        "desc": "pool stats",
+        "columns": {
+            "id": "unique monotonously increasing number acting as primary key",
+            "pool": " pool address",
+            "block_num": "block number at which pool stats were updated",
+            "unique_users": "unique users that added liquidity to the pool",
+            "total_borrowed": "total borrowed amount",
+            "total_borrowed_bi": "total borrowed amount in bigint",
+            "total_profit": "total profit",
+            "total_profit_bi": "total profit in bigint",
+            "total_losses": "total losses",
+            "total_losses_bi": "total losses in bigint",
+            "deposit_apy": "deposit apy",
+            "deposit_apy_bi": "deposit apy in bigint",
+            "expected_liquidity": "expected liquidity",
+            "expected_liquidity_bi": "expected liquidity in bigint",
+            "expected_liquidity_limit_bi": "expected liquidity limit in bigint",
+            "available_liquidity": "available liquidity",
+            "available_liquidity_bi": "available liquidity in bigint",
+            "withdraw_fee": "withdraw fee",
+            "diesel_rate_bi": "diesel rate in bigint",
+            "diesel_rate": "diesel rate",
+            "cumulative_index_ray": "cumulative index in ray",
+            "base_borrow_apy": "base borrow apy",
+            "base_borrow_apy_bi": "base borrow apy in bigint"
+        }
+    },
+    {
+        "table": "pools",
+        "category": "all",
+        "desc": "pool details",
+        "columns": {
+            "address": "address",
+            "underlying_token": "underlying token",
+            "diesel_token": "diesel token",
+            "is_weth": "is weth pool?",
+            "expected_liq_limit": "expected liq limit",
+            "withdraw_fee": "withdraw fee",
+            "deposit_apy_bi": "deposit apy in bigint",
+            "base_borrow_apy_bi": "base borrow apy in bigint",
+            "_version": "version",
+            "name": "name"
+        }
+    },
+    {
+        "table": "price_feeds",
+        "category": "all",
+        "desc": "price feeds",
+        "columns": {
+            "id": "id",
+            "block_num": "block_num",
+            "token": "token",
+            "feed": "feed",
+            "price_bi": "price_bi",
+            "price": "price",
+            "round_id": "round_id",
+            "merged_pf_version": "merged_pf_version"
+        }
+    },
+    {
+        "table": "quota_details",
+        "category": "all",
+        "desc": "quota details for pool/token",
+        "columns": {
+            "block_num": "block_num",
+            "pool_quota_keeper": "pool quota keeper for given pool",
+            "token": "token",
+            "pool": "pool",
+            "cum_quota_index": "cum_quota_index",
+            "timestamp": "timestamp",
+            "max_limit": "max_limit",
+            "rate": "rate",
+            "increase_fee": "increase_fee"
+        }
+    },
+    {
+        "table": "rebase_details",
+        "category": "all",
+        "desc": "rebase details for rebase token only stETH",
+        "columns": {
+            "total_eth": "total eth",
+            "total_shares": "total shares",
+            "block_num": "block_num"
+        }
+    },
+    {
+        "table": "sync_adapters",
+        "category": "all",
+        "desc": "gearbox related contracts are tracked as sync_adapters, so that we can know when they are added, disabled and till when we have synced these contracts.",
+        "columns": {
+            "address": "address",
+            "discovered_at": "at which block number was this contract added to gearbox related contracts",
+            "last_sync": "adapter synced till block number",
+            "firstlog_at": "first log on this contract has found at",
+            "details": "adapter specific details",
+            "disabled_at": "disabled block number, used rarely now, used to disable v2 related adapters",
+            "type": "pool, credit_manager, query price feed, ACL, chainlink pricefeed, lmrewardsv3 etc. ",
+            "error": "reduntant field",
+            "version": "version",
+            "disabled": "disabled"
+        }
+    },
+    {
+        "table": "token_current_price",
+        "category": "all",
+        "desc": "current price of tokens from 1inch spot(spot), or gearbox related price oracles(chainlink)",
+        "columns": {
+            "token": "token",
+            "price": "price",
+            "price_bi": "price_bi",
+            "block_num": "block number",
+            "price_source": "price source, spot or chainlink"
+        }
+    },
+    {
+        "table": "token_ltramp",
+        "category": "all",
+        "desc": "lt ramp for v3 for gradual change btw two lt values for token",
+        "columns": {
+            "block_num": "block at which lt was added",
+            "credit_manager": "credit manager",
+            "token": "token",
+            "lt_initial": "initial lt",
+            "lt_final": "final lt",
+            "ramp_start": "start of ramping btw initial and final lt",
+            "ramp_end": "end of ramping",
+            "log_id": "log id of the lt ramp event"
+        }
+    },
+    {
+        "table": "token_oracle",
+        "category": "all",
+        "desc": "history of token price feeds being added to the price oracles",
+        "columns": {
+            "token": "token",
+            "oracle": "same as price feed address in non-chainlink price feed, in chainlink aggregator address",
+            "feed": "price feed address in non-chainlink price feed, in chainlink underlying address used in chahinlink aggregator",
+            "block_num": "block number at which feed was added",
+            "version": "version",
+            "feed_type": "curve price feed, chainlink price feed, zeroPF etc.",
+            "reserve": "reserve or not , added from gearbox v3"
+        }
+    },
+    {
+        "table": "tokens",
+        "category": "all",
+        "desc": "token details",
+        "columns": {
+            "address": "token",
+            "decimals": "decimals like 18 for weth",
+            "symbol": "symbol of token"
+        }
+    },
+    {
+        "table": "transfer_account_allowed",
+        "category": "v2",
+        "desc": "based on transfer account allowed event, only v2",
+        "columns": {
+            "log_id": "log id of event",
+            "block_num": "block number of this event",
+            "sender": "user address which is allowing to transfer the account",
+            "receiver": "which can get the account",
+            "allowed": "allowed or not"
+        }
+    },
+    {
+        "table": "treasury_snapshots",
+        "category": "all",
+        "desc": "snapshot of treasury holding at the end of each day",
+        "columns": {
+            "date_str": "date in format of 2024-09-06",
+            "block_num": "block number at which we added the holding details, it is zero for latest day value will be saved at current date at the eod",
+            "prices_in_usd": "price in usd of total holding",
+            "balances": "balance of holding - sum of funding + operational holding",
+            "operational_balances": "due to closing/opening of accounts balance that we get",
+            "operational_value_in_usd": "value in usd of the operational balance",
+            "value_in_usd": "value in usd of total holding"
+        }
+    },
+    {
+        "table": "treasury_transfers",
+        "category": "all",
+        "desc": "treausry transfer due to operational event or funding event ",
+        "columns": {
+            "amount": "amount",
+            "token": "token",
+            "log_id": "log id of event",
+            "block_num": "block_num of event",
+            "operational_transfer": " funding or operational type"
+        }
+    },
+    {
+        "table": "tvl_snapshots",
+        "category": "all",
+        "desc": " total value of all funds avaialbel in  pools+ ca_locked_value (borrowed amount+ user added funds to accounts (i.e. collateral))",
+        "columns": {
+            "block_num": "block  number at which the available liquidity + ca_locked_value is calculated",
+            "available_liquidity": "available liquidity in pool",
+            "ca_total_value": "ca total value"
+        }
+    },
+    {
+        "table": "user_lmdetails_v3",
+        "category": "all",
+        "desc": "",
+        "columns": {
+            "correction": "correction for calculating lm rewards for v3",
+            "account": "account address",
+            "farm": "farm address",
+            "diesel_sym": "diesel symbol of the underlying pool",
+            "farmed_balance_bi": "amount of farmed reward token in bigint",
+            "farmed_balance": "amount of farmed rewards token in decimals",
+            "diesel_balance_bi": "diesel token balance of user"
+        }
+    },
+    {
+        "table": "ranking_30d",
+        "category": "all",
+        "desc": "",
+        "columns": {}
+    },
+    {
+        "table": "ranking_7d",
+        "category": "all",
+        "desc": "",
+        "columns": {}
+    },
+    {
+        "table": "closed_trading_sessions",
+        "category": "pure",
+        "desc": "related to pure.gearbox.fi backend, not related to charts or third-eye, stores closed account details as a json for display purpose in pure.gearbox.fi",
+        "columns": {
+            "session_id": "session id of the credit session/account",
+            "data": "json of credit account"
+        }
+    },
+    {
+        "table": "farmed_pnl_calc",
+        "category": "pure",
+        "desc": "farmed pnl calculating details for pure.gearbox.fi backend",
+        "columns": {
+            "session_id": "credit session id",
+            "data": "json of credit account"
+        }
+    },
+    {
+        "table": "entry_prices",
+        "category": "pure",
+        "desc": "entry price of the account, used for backend of pure.gearbox.fi",
+        "columns": {
+            "session_id": "session id",
+            "price": "entry price"
+        }
+    },
+    {
+        "table": "last_fetched",
+        "category": "pure",
+        "desc": "used in pure.gearbox.fi backend",
+        "columns": {
+            "block_num": "last block number till which we have calculated the old_snapshots"
+        }
+    },
+    {
+        "table": "price_for_token_and_block",
+        "category": "pure",
+        "desc": "price for token and block, used in pure.gearbox.fi",
+        "columns": {
+            "price": "price",
+            "token": "token",
+            "block_num": "block"
+        }
+    },
+    {
+        "table": "account_quota_info",
+        "category": "reduntant",
+        "desc": "reduntant field",
+        "columns": {}
+    },
+    {
+        "table": "dao_descriptions",
+        "category": "reduntant",
+        "desc": "dao event descriptions, added manually via siganture, it is not used",
+        "columns": {
+            "tx_hash": "tx hash of the transaction",
+            "description": "description of dao event, like add/remove protocol, toten, update lt etc.",
+            "signature": "signature of the signed tx"
+        }
+    },
+    {
+        "table": "last_synced_till",
+        "category": "reduntant",
+        "desc": "",
+        "columns": {}
+    },
+    {
+        "table": "profiles",
+        "category": "reduntant",
+        "desc": "used for debugging if their is some error in debt, reduntant field",
+        "columns": {}
+    }
+]
