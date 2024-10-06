@@ -5,16 +5,18 @@ import (
 
 	dcv3 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
-	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 )
 
-func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans []core.RedStonePF) {
-	feeds := mdl.Repo.GetTokenOracles()[schemas.V3PF_MAIN]
+func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans []redstone.TokenAndFeedType) {
+	pool := mdl.State.PoolAddress
+	priceOracle := mdl.Repo.GetAdapter(pool).(*pool_v3.Poolv3).State.PriceOracle
+	feeds := mdl.Repo.GetTokenOracles()[priceOracle]
 	for token := range balances {
 		var con ds.QueryPriceFeedI
 		{

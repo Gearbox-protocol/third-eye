@@ -2,7 +2,6 @@ package aggregated_block_feed
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
-	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/composite_redstone_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/curve_price_feed"
@@ -11,18 +10,18 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/yearn_price_feed"
 )
 
-func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion, underlyingFeeds []string) ds.QueryPriceFeedI {
+func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) ds.QueryPriceFeedI {
 	switch pfType {
 	case ds.RedStonePF:
-		return redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+		return redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	case ds.CurvePF:
-		return curve_price_feed.NewCurvePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+		return curve_price_feed.NewCurvePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	case ds.CompositeRedStonePF:
-		return composite_redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+		return composite_redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	case ds.YearnPF:
-		return yearn_price_feed.NewYearnPriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+		return yearn_price_feed.NewYearnPriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	case ds.SingleAssetPF:
-		return single_asset_feed.NewSingleAsset(token, oracle, pfType, discoveredAt, client, repo, pfVersion, underlyingFeeds)
+		return single_asset_feed.NewSingleAsset(token, oracle, pfType, discoveredAt, client, repo, version, underlyingFeeds)
 	default:
 		return nil
 	}

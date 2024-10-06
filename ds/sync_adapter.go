@@ -172,6 +172,7 @@ func NewSyncAdapter(addr, name string, discoveredAt int64, client core.ClientI, 
 	obj := &SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: schemas.NewContract(addr, name, discoveredAt, client),
+			Details: core.Json{},
 		},
 		Repo: repo,
 	}

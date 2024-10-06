@@ -25,7 +25,7 @@ type CompositeChainlinkPF struct {
 
 // compositeChainlink price feed has token base  oracle and base usd oracle for calculating the price of token in usd.
 // address is set as identifier(random), as same oracle can be added for different tokens.
-func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, reserve bool) *CompositeChainlinkPF {
+func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, priceOracle schemas.PriceOracleT) *CompositeChainlinkPF {
 	oracleAddr := common.HexToAddress(oracle)
 	tokenETHPF := getAddrFromRPC(client, "targetETH", oracleAddr, discoveredAt)
 	// get decimals
@@ -51,7 +51,6 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 				"oracle":          oracle,
 				"token":           token,
 				"decimals":        decimalsToBasePF,
-				"mergedPFVersion": schemas.MergedPFVersion(schemas.VersionToPFVersion(version, reserve)),
 				"secAddrs": map[string]interface{}{
 					"target":      tokenETHPF.Hex(),
 					"base":        ethUSDPF.Hex(),
