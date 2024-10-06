@@ -65,14 +65,14 @@ func (eng *DebtEngine) calAmountToPoolAndProfit(debt *schemas.Debt, session *sch
 		debt.RepayAmountBI = (*core.BigInt)(repayAmount)
 	}
 
-	remainingFundsInUSD := eng.GetAmountInUSD(cumIndexAndUToken.Token, remainingFunds, schemas.VersionToPFVersion(session.Version, false))
+	remainingFundsInUSD := eng.GetAmountInUSD(session.CreditManager, cumIndexAndUToken.Token, remainingFunds, session.Version)
 	debt.ProfitInUnderlying = utils.GetFloat64Decimal(remainingFunds, cumIndexAndUToken.Decimals) - debt.CollateralInUnderlying
 	// debt.CollateralInUnderlying = sessionSnapshot.CollateralInUnderlying
 	// fields in USD
 	debt.CollateralInUSD = sessionSnapshot.CollateralInUSD
 	debt.ProfitInUSD = utils.GetFloat64Decimal(remainingFundsInUSD, 8) - sessionSnapshot.CollateralInUSD
 	debt.TotalValueInUSD = utils.GetFloat64Decimal(
-		eng.GetAmountInUSD(cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert(), schemas.VersionToPFVersion(session.Version, false)), 8)
+		eng.GetAmountInUSD(session.CreditManager, cumIndexAndUToken.Token, debt.CalTotalValueBI.Convert(), session.Version), 8)
 }
 
 func (eng *DebtEngine) remainingFundsv3(session *schemas.CreditSession, debt *schemas.Debt, cumIndexAndUToken *ds.CumIndexAndUToken,
@@ -81,7 +81,7 @@ func (eng *DebtEngine) remainingFundsv3(session *schemas.CreditSession, debt *sc
 	if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
 		prices := core.JsonFloatMap{}
 		for token, transferAmt := range *session.CloseTransfers {
-			tokenPrice := eng.GetTokenLastPrice(token, schemas.VersionToPFVersion(session.Version, false))
+			tokenPrice := eng.priceHandler.GetLastPrice(session.CreditManager, token, session.Version)
 			price := utils.GetFloat64Decimal(tokenPrice, 8)
 			prices[token] = price
 			if transferAmt < 0 {
@@ -95,7 +95,7 @@ func (eng *DebtEngine) remainingFundsv3(session *schemas.CreditSession, debt *sc
 		// remainingFunds calculation
 		// set price for underlying token
 		prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(
-			eng.GetTokenLastPrice(cumIndexAndUToken.Token, schemas.VersionToPFVersion(session.Version, false)), 8)
+			eng.priceHandler.GetLastPrice(session.CreditManager, cumIndexAndUToken.Token, session.Version), 8)
 		remainingFunds = session.CloseTransfers.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
 	} else if secStatus := session.StatusAt(debt.BlockNumber + 1); schemas.IsStatusLiquidated(secStatus) {
 		//
@@ -129,7 +129,7 @@ func (eng *DebtEngine) remainingFundsv2(session *schemas.CreditSession, debt *sc
 	if session.Status == schemas.Closed && session.ClosedAt == debt.BlockNumber+1 {
 		prices := core.JsonFloatMap{}
 		for token, transferAmt := range *session.CloseTransfers {
-			tokenPrice := eng.GetTokenLastPrice(token, schemas.VersionToPFVersion(session.Version, false))
+			tokenPrice := eng.priceHandler.GetLastPrice(session.CreditManager,token, session.Version)
 			price := utils.GetFloat64Decimal(tokenPrice, 8)
 			prices[token] = price
 			if transferAmt < 0 {
@@ -143,7 +143,7 @@ func (eng *DebtEngine) remainingFundsv2(session *schemas.CreditSession, debt *sc
 		// remainingFunds calculation
 		// set price for underlying token
 		prices[cumIndexAndUToken.Token] = utils.GetFloat64Decimal(
-			eng.GetTokenLastPrice(cumIndexAndUToken.Token, schemas.VersionToPFVersion(session.Version, false)), 8)
+			eng.priceHandler.GetLastPrice(session.CreditManager,cumIndexAndUToken.Token, session.Version), 8)
 		remainingFunds = session.CloseTransfers.ValueInUnderlying(cumIndexAndUToken.Token, cumIndexAndUToken.Decimals, prices)
 	} else if session.ClosedAt == debt.BlockNumber+1 && schemas.IsStatusLiquidated(session.Status) {
 		remainingFunds = session.RemainingFunds.Convert()

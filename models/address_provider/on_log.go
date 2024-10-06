@@ -12,7 +12,9 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
-	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/market_configurator"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle/po_v2"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle/po_v3"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
 
 	"fmt"
@@ -70,7 +72,7 @@ func (mdl *AddressProvider) v2LogParse(txLog types.Log) {
 		case "PRICE_ORACLE":
 			//
 			mdl.addPriceOracle(blockNum, address)
-			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			po := po_v2.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(po)
 		case "DATA_COMPRESSOR":
 			if mdl.Details == nil {
@@ -96,9 +98,14 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("AddressSet(bytes32,address)"):
 		mdl.v2LogParse(txLog)
-	case core.Topic("SetAddress(bytes32,address,uint256)"):
+	case core.Topic("SetAddress(bytes32,address,uint256)"): // can be used for version 310 address provider too. set PriceOracle acl contractregister are not emitted thought
 		mdl.v3LogParse(txLog)
+	case core.Topic("AddMarketConfigurator(address)"):
+		mdl.addMarketConfigurator(txLog.BlockNumber, common.BytesToAddress(txLog.Topics[1][:]))
 	}
+}
+func (mdl *AddressProvider) addMarketConfigurator(block uint64, configurator common.Address) {
+	market_configurator.NewMarketConfigurator( configurator.Hex(), int64(block), mdl.Client, mdl.Repo)
 }
 
 func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
@@ -141,7 +148,7 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
 			return
 		}
 		mdl.addPriceOracle(blockNum, address)
-		po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+		po := po_v3.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 		mdl.Repo.AddSyncAdapter(po)
 	default:
 		mdl.commonLogParse(blockNum, contract, address)

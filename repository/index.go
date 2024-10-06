@@ -28,6 +28,7 @@ type Repository struct {
 	*handlers.SyncAdaptersRepo
 	*handlers.TokenOracleRepo
 	*treasury.TreasuryRepo
+	//
 	// mutex
 	mu *sync.Mutex
 	// object fx objects
