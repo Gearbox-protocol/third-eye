@@ -54,8 +54,8 @@ type storeForCalc struct {
 func (s storeForCalc) GetToken(token string) *schemas.Token {
 	return s.inner.repo.GetToken(token)
 }
-func (s storeForCalc) GetPrices(token string, version schemas.PFVersion, blockNums ...int64) *big.Int {
-	return s.inner.GetTokenLastPrice(token, version)
+func (s storeForCalc) GetPrices(cm, token string, version core.VersionType, blockNums ...int64) *big.Int {
+	return s.inner.priceHandler.GetLastPrice(cm, token, version)
 }
 
 func (s storeForCalc) GetLiqThreshold(ts uint64, cm, token string) *big.Int {

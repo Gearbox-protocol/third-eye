@@ -17,8 +17,8 @@ type CurvePriceFeed struct {
 	*base_price_feed.BasePriceFeed
 }
 
-func NewCurvePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *CurvePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+func NewCurvePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *CurvePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	return NewCurvePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 

@@ -21,8 +21,8 @@ type RedstonePriceFeed struct {
 	*base_price_feed.BasePriceFeed
 }
 
-func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *RedstonePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *RedstonePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
@@ -62,7 +62,7 @@ func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multic
 }
 
 func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
-	validTokens := mdl.TokensValidAtBlock(blockNum)
+	validTokens := mdl.Repo.TokensValidAtBlock(mdl.GetAddress(), blockNum)
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
 	{
 		if len(results) != 1 {
@@ -85,12 +85,12 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 		//
 		priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 		if priceBI.Cmp(new(big.Int)) == 0 {
-			log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceBI)
+			log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0]).Symbol, blockNum, priceBI)
 			return nil
 		}
 
 		priceData := parsePriceForRedStone(priceBI, isPriceInUSD)
-		log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceData.Price)
+		log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0]).Symbol, blockNum, priceData.Price)
 		//
 		return priceData
 	}

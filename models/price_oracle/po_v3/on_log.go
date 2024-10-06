@@ -1,4 +1,4 @@
-package price_oracle
+package po_v3
 
 import (
 	"context"
@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"gorm.io/gorm/utils"
 )
 
 // QueryPriceFeed stores in details reserve status via PFVersion in details.Tokens.pfversion
@@ -65,9 +64,10 @@ func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
-	case core.Topic("NewPriceFeed(address,address)"),
-		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),
-		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
+	case
+		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),   // v3
+		core.Topic("SetPriceFeed(address,address,uint32,bool"),         //v310
+		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"): // v3, v310
 		//
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
@@ -125,6 +125,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			// - Query price feed: price fetched from curve or yearn
 			mdl.Repo.GetToken(token)
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
+				PriceOracle: schemas.PriceOracleT(mdl.Address),
 				Token:       token,
 				Oracle:      oracle,
 				Feed:        oracle, // feed is same as oracle

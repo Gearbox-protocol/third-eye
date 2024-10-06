@@ -77,25 +77,4 @@ func (eng *DebtEngine) AddTokenLTRamp(atoken *schemas_v3.TokenLTRamp) {
 	eng.tokenLTRamp[atoken.CreditManager][atoken.Token] = atoken
 }
 
-// token price from feeds
-func (eng *DebtEngine) loadTokenLastPrice(lastDebtSync int64) {
-	defer utils.Elapsed("Debt(loadTokenLastPrice)")()
-	data := []*schemas.PriceFeed{}
-	query := `select * from (SELECT distinct on (token, merged_pf_version) * FROM price_feeds WHERE block_num <= ? ORDER BY token, merged_pf_version, block_num DESC) t order by block_num;`
-	err := eng.db.Raw(query, lastDebtSync).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, tokenPrice := range data {
-		eng.AddTokenLastPrice(tokenPrice)
-	}
-}
 
-func (eng *DebtEngine) AddTokenLastPrice(pf *schemas.PriceFeed) {
-	for _, pfVersion := range pf.MergedPFVersion.MergedPFVersionToList() {
-		if eng.tokenLastPrice[pfVersion] == nil {
-			eng.tokenLastPrice[pfVersion] = make(map[string]*schemas.PriceFeed)
-		}
-		eng.tokenLastPrice[pfVersion][pf.Token] = pf
-	}
-}

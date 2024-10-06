@@ -107,18 +107,14 @@ func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 	)
 	log.Info(blockNum, mdl.Address)
 	// only usd price feed
-	for _, token := range mdl.mergedPFManager.GetTokens(blockNum) {
-		priceFeed := &schemas.PriceFeed{
-			BlockNumber:     blockNum,
-			Token:           token,
-			Feed:            mdl.GetDetailsByKey("oracle"),
-			RoundId:         0,
-			PriceBI:         (*core.BigInt)(answerBI),
-			Price:           utils.GetFloat64Decimal(answerBI, 8),
-			MergedPFVersion: mdl.mergedPFManager.GetMergedPFVersion(token, blockNum, mdl.Address),
-		}
-		mdl.Repo.AddPriceFeed(priceFeed)
+	priceFeed := &schemas.PriceFeed{
+		BlockNumber:     blockNum,
+		Feed:            mdl.GetDetailsByKey("oracle"),
+		RoundId:         0,
+		PriceBI:         (*core.BigInt)(answerBI),
+		Price:           utils.GetFloat64Decimal(answerBI, 8),
 	}
+	mdl.Repo.AddPriceFeed(priceFeed)
 }
 
 func (mdl *CompositeChainlinkPF) OnLog(types.Log) {
@@ -143,20 +139,20 @@ func (mdl *CompositeChainlinkPF) OnLog(types.Log) {
 // 	return nil
 // }
 
-func (mdl *CompositeChainlinkPF) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
-	if mdl.GetDetailsByKey("token") != token {
-		log.Fatal("miss match in stored token from newly added token", mdl.GetDetailsByKey("token"), token)
-	}
-	// tokens := mdl.getTokens()
-	// if !utils.Contains(tokens, token) {
-	// 	mdl.Details["token"] = append(tokens, token)
-	// }
-	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
-}
+// func (mdl *CompositeChainlinkPF) AddToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
+// 	if mdl.GetDetailsByKey("token") != token {
+// 		log.Fatal("miss match in stored token from newly added token", mdl.GetDetailsByKey("token"), token)
+// 	}
+// 	// tokens := mdl.getTokens()
+// 	// if !utils.Contains(tokens, token) {
+// 	// 	mdl.Details["token"] = append(tokens, token)
+// 	// }
+// 	mdl.mergedPFManager.AddToken(token, blockNum, pfVersion)
+// }
 
-func (mdl CompositeChainlinkPF) DisableToken(token string, blockNum int64, pfVersion schemas.PFVersion) {
-	mdl.mergedPFManager.DisableToken(blockNum, token, pfVersion)
-	// if len(mdl.mergedPFManager.GetTokens(blockNum+1)) == 0 {
-	// 	mdl.SetBlockToDisableOn(blockNum)
-	// }
-}
+// func (mdl CompositeChainlinkPF) DisableToken(token string, blockNum int64, priceOracle schemas.PriceOracleT) {
+// 	mdl.mergedPFManager.DisableToken(blockNum, token, w)
+// 	// if len(mdl.mergedPFManager.GetTokens(blockNum+1)) == 0 {
+// 	// 	mdl.SetBlockToDisableOn(blockNum)
+// 	// }
+// }

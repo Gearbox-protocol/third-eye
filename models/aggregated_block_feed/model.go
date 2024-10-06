@@ -73,24 +73,16 @@ func (mdl *AQFWrapper) GetQueryFeeds() []ds.QueryPriceFeedI {
 	return feeds
 }
 
-func (mdl *AQFWrapper) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, pfVersion schemas.PFVersion, underlyingFeeds []string) {
-	log.Infof("Add new %s:pfversion(%d) for token(%s): %s discovered at %d", pfType, pfVersion, token, oracle, discoveredAt)
-	// MAINNET: yearn yvUSDC has changed over time, previous token was 0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9(only added in gearbox v1 priceOracle) and 0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE, so we can ignore 0xc1 yvUSDC token dependency
-	if token != "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
-		mdl.queryPFdeps.checkInDepGraph(token, oracle, discoveredAt)
-	}
-	if mdl.QueryFeeds[oracle] != nil {
-		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt, pfVersion)
-	} else {
-		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, pfVersion, underlyingFeeds))
+func (mdl *AQFWrapper) AddFeedOrToken(token, feed string, pfType string, discoveredAt int64, version core.VersionType) {
+	log.Infof("Add new %s:pfversion(%d) for token(%s): %s discovered at %d", pfType, version, token, feed, discoveredAt)
+	// if token != "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
+	// 	mdl.queryPFdeps.checkInDepGraph(token, oracle, discoveredAt)
+	// }
+	if mdl.QueryFeeds[feed] == nil {
+		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, feed, pfType, discoveredAt, mdl.Client, mdl.Repo, version))
 		// MAINNET: old yvUSDC added on gearbox v1
-		if token == "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
-			mdl.QueryFeeds[oracle].DisableToken(token, 13856183, pfVersion) // new yvUSDC added on gearbox v1
-		}
+		createPriceFeedOnInit(mdl.QueryFeeds[feed], mdl.Client, token, discoveredAt, version)
 	}
-	// when token is added to the queryPricefeed, add price object at discoveredAt
-	// so that  accounts opened just after discoveredAt can get the price from db
-	mdl.updateQueryPrices(createPriceFeedOnInit(mdl.QueryFeeds[oracle], mdl.Client, token, discoveredAt))
 }
 
 func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) schemas.MergedPFVersion {
@@ -103,26 +95,19 @@ func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) sch
 	}
 	return pfVersion
 }
-func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, token string, discoveredAt int64) []*schemas.PriceFeed {
+func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, token string, discoveredAt int64, version core.VersionType) []*schemas.PriceFeed {
 	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.GetAddress()), client)
 	log.CheckFatal(err)
 	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
 	log.CheckFatal(err)
 	//
-	pfVersion := mergePFVersionAt(discoveredAt, qpf.GetTokens()[token])
 	return []*schemas.PriceFeed{{
-		BlockNumber:     discoveredAt,
-		Feed:            qpf.GetAddress(),
-		Token:           token,
-		RoundId:         data.RoundId.Int64(),
-		MergedPFVersion: pfVersion,
-		PriceBI:         (*core.BigInt)(data.Answer),
-		Price:           utils.GetFloat64Decimal(data.Answer, pfVersion.Decimals()),
+		BlockNumber: discoveredAt,
+		Feed:        qpf.GetAddress(),
+		RoundId:     data.RoundId.Int64(),
+		PriceBI:     (*core.BigInt)(data.Answer),
+		Price:       utils.GetFloat64Decimal(data.Answer, version.Decimals()),
 	}}
-}
-
-func (mdl *AQFWrapper) DisableYearnFeed(token, oracle string, disabledAt int64, pfVersion schemas.PFVersion) {
-	mdl.QueryFeeds[oracle].DisableToken(token, disabledAt, pfVersion)
 }
 
 func (mdl AQFWrapper) GetDepFetcher() *QueryPFDependencies {
@@ -139,9 +124,9 @@ func (mdl AQFWrapper) getFeedAdapters(blockNum int64, neededTokens map[string]bo
 		if !adapter.GetVersion().MoreThan(core.NewVersion(1)) {
 			continue
 		}
-		tokensForAdapter := adapter.TokensValidAtBlock(blockNum)
-		for _, entry := range tokensForAdapter {
-			if neededTokens[entry.Token] {
+		tokensForAdapter := mdl.Repo.TokensValidAtBlock(adapter.GetAddress(), blockNum)
+		for _, token := range tokensForAdapter {
+			if neededTokens[token] {
 				result = append(result, adapter)
 				break
 			}

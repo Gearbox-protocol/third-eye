@@ -2,6 +2,7 @@ package contract_register
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -59,7 +60,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int
 			lmRewards := repo.GetAdapter(adapters[0])
 			lmRewards.(*v3.LMRewardsv3).AddPoolv3(blockNum, addr)
 			// add pool
-			return pool_v3.NewPool(addr, client, repo, blockNum)
+			return pool_v3.NewPool(addr, client, repo, blockNum, core.NULL_ADDR.Hex(),schemas.PriceOracleT(core.NULL_ADDR.Hex()))
 		}
 	}
 	log.Fatalf("Version(%d) of pool can't be created.", version)

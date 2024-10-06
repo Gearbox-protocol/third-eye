@@ -22,7 +22,7 @@ type ChainlinkPriceFeed struct {
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on 'vm execution error' or 'execution reverted'.
 // if oracle and adress are same we try to get the pricefeed.
-func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, token, oracle string, discoveredAt int64, mergedPFVersion schemas.MergedPFVersion, includeLastLogBeforeDiscover ...bool) *ChainlinkPriceFeed {
+func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, oracle string, discoveredAt int64, version core.VersionType, includeLastLogBeforeDiscover ...bool) *ChainlinkPriceFeed {
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{
@@ -32,9 +32,9 @@ func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, token, orac
 				ContractName: ds.ChainlinkPriceFeed,
 				Client:       client,
 			},
-			Details:  map[string]interface{}{"oracle": oracle, "token": token, "mergedPFVersion": mergedPFVersion},
+			Details:  map[string]interface{}{"oracle": oracle},
 			LastSync: discoveredAt - 1,
-			V:        mergedPFVersion.MergedPFVersionToList()[0].ToVersion(),
+			V:        version,
 		},
 		Repo: repo,
 	}

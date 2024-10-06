@@ -28,9 +28,8 @@ func (feed CompositeRedStonePriceFeed) GetRedstonePF() []*core.RedStonePF {
 		feed.DetailsDS.Info[feed.GetAddress()],
 	}
 }
-
-func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *CompositeRedStonePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *CompositeRedStonePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
@@ -102,11 +101,11 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 			// 	}
 		}
 	}
-	validTokens := mdl.TokensValidAtBlock(blockNum)
+	validTokens := mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))
 	targetPrice := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 	if targetPrice.Cmp(new(big.Int)) == 0 {
-		log.Warnf("RedStone composite targetprice for %s at %d is %s", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, targetPrice)
+		log.Warnf("RedStone composite targetprice for %s at %d is %s", mdl.Repo.GetToken(validTokens[0]).Symbol, blockNum, targetPrice)
 		return nil
 	}
 	//
@@ -118,7 +117,7 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 		}
 		return *abi.ConvertType(values[1], new(*big.Int)).(**big.Int)
 	}()
-	log.Infof("RedStone composite targetprice for %s at %d is %f, basePrice, %s", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, utils.GetFloat64Decimal(targetPrice, mdl.Decimals), basePrice)
+	log.Infof("RedStone composite targetprice for %s at %d is %f, basePrice, %s", mdl.Repo.GetToken(validTokens[0]).Symbol, blockNum, utils.GetFloat64Decimal(targetPrice, mdl.Decimals), basePrice)
 	if basePrice == nil {
 		return nil
 	}

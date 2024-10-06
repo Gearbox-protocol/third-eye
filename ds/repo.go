@@ -62,11 +62,10 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	GetTokenOracles() map[schemas.PFVersion]map[string]*schemas.TokenOracle
+	GetTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
 	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, forChainlinkNewFeed ...bool)
 	//
-	GetPrice(token string) *big.Int
 	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol)
@@ -80,6 +79,7 @@ type RepositoryI interface {
 	UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	TransferAccountAllowed(*schemas.TransferAccountAllowed)
 	GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap
+	GetPriceInUSD(blockNum int64, tokenAddrs string) *big.Int
 	//
 	GetToken(addr string) *schemas.Token
 	GetTokens() []string
@@ -143,6 +143,10 @@ type RepositoryI interface {
 	IsBlockRecent(block int64, dur time.Duration) bool
 	GetFeedToTicker(feed string, composite string) common.Address
 	AddFeedToTicker(feed string, ticker common.Address)
+	//  v310
+	AddRelation(details *schemas.Relation)
+	TokensValidAtBlock(string, int64) []string
+	GetActivePriceOracleByBlockNum(blockNum int64) (string, core.VersionType, error)
 }
 
 func IsTestnet(client core.ClientI) bool {

@@ -48,6 +48,14 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 	return priceByToken
 }
 
+
+func (repo *TreasuryRepo) GetPriceInUSD(blockNum int64, token string) *big.Int {
+	priceInUSD := repo.GetPricesInUSD( blockNum, []string{token})
+	if priceInUSD == nil || priceInUSD[token] == 0 {
+		return nil
+	}
+	return utils.FloatDecimalsTo64(priceInUSD[token], 8)
+}
 // multicall for getting price in batch
 // For only getting the prices for calculating the treasury value
 func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionType, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []*schemas.UTokenAndPool) (prices []*big.Int, dieselRates []*big.Int) {

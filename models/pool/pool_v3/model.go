@@ -32,7 +32,7 @@ func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
 	return ans
 }
 
-func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *Poolv3 {
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT) *Poolv3 {
 	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
 	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
@@ -53,6 +53,8 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		DieselToken:     dieselToken,
 		UnderlyingToken: underlyingToken.Hex(),
 		Version:         core.NewVersion(300),
+		Market: market,
+		PriceOracle: priceOracle,
 		Name: func() string {
 			con, err := poolv3.NewPoolv3(common.HexToAddress(addr), client)
 			log.CheckFatal(err)
