@@ -128,7 +128,8 @@ type adapterAndNoCall struct {
 func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []adapterAndNoCall) {
 	//
 	for _, adapter := range mdl.QueryFeeds {
-		if blockNum <= adapter.GetLastSync() || len(mdl.Repo.TokensValidAtBlock(adapter.GetAddress(), blockNum)) == 0 {
+		log.Info(adapter.GetAddress(), len(mdl.Repo.TokenAddrsValidAtBlock(adapter.GetAddress(), blockNum)))
+		if blockNum <= adapter.GetLastSync() || len(mdl.Repo.TokenAddrsValidAtBlock(adapter.GetAddress(), blockNum)) == 0 {
 			continue
 		}
 		moreCalls, isQueryable := adapter.GetCalls(blockNum)
@@ -153,5 +154,6 @@ func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeed
 		return nil
 	}
 	priceData.Feed = adapter.GetAddress()
+	priceData.BlockNumber = blockNum
 	return []*schemas.PriceFeed{priceData}
 }

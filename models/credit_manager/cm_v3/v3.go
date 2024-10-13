@@ -7,6 +7,8 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds/multicall_processor"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -90,7 +92,9 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			Action:      "StartMultiCall(address,address)",
 		})
 	case core.Topic("FinishMultiCall()"):
-		mdl.MulticallMgr.End(txLog.Index)
+		poolv3 := mdl.Repo.GetAdapter(mdl.State.PoolAddress).(*pool_v3.Poolv3)
+		debts := poolv3.GetDebt(txLog.TxHash, mdl.Address, txLog.Index)
+		mdl.MulticallMgr.End(txLog.Index, debts, mdl.GetUnderlyingToken())
 	case core.Topic("IncreaseDebt(address,uint256)"):
 		increaseBorrowEvent, err := mdl.facadeContractv3.ParseIncreaseDebt(txLog)
 		if err != nil {
@@ -98,6 +102,36 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		}
 		mdl.onIncreaseBorrowedAmountV3(&txLog, increaseBorrowEvent.CreditAccount.Hex(),
 			increaseBorrowEvent.Amount, "IncreaseDebt")
+	case core.Topic("PartiallyLiquidateCreditAccount(address,address,address,uint256,uint256,uint256)"):
+		creditAccount := common.BytesToAddress(txLog.Topics[1][:]) // CA
+		token := common.BytesToAddress(txLog.Topics[2][:])         // CA
+		repaidDebt := new(big.Int).SetBytes(txLog.Data[:32])
+		seizedCol := new(big.Int).SetBytes(txLog.Data[32:64])
+		fee := new(big.Int).SetBytes(txLog.Data[64:96])
+		sessionId, borrower := mdl.GetSessionIdAndBorrower(creditAccount.Hex())
+		accountOp := &schemas.AccountOperation{
+			TxHash:      txLog.TxHash.Hex(),
+			BlockNumber: int64(txLog.BlockNumber),
+			LogId:       txLog.Index,
+			Borrower:    borrower,
+			SessionId:   sessionId,
+			Dapp:        mdl.GetCreditFacadeAddr(),
+			AdapterCall: false,
+			Action:      "PartialLiquidation",
+			Args: &core.Json{
+				"creditAccount": creditAccount,
+				"token":         token,
+				"repaidDebt":    repaidDebt,
+				"seizedCol":     seizedCol,
+				"fee":           fee,
+			},
+			Transfers: &core.Transfers{},
+		}
+		poolv3 := mdl.Repo.GetAdapter(mdl.State.PoolAddress).(*pool_v3.Poolv3)
+		debts := poolv3.GetDebt(txLog.TxHash, mdl.Address, txLog.Index)
+		multicall_processor.AddManageDebtsToMain(accountOp, debts, mdl.GetUnderlyingToken())
+		mdl.Repo.AddAccountOperation(accountOp)
+		//
 	case core.Topic("DecreaseDebt(address,uint256)"):
 		decreaseBorrowEvent, err := mdl.facadeContractv3.ParseDecreaseDebt(txLog)
 		if err != nil {

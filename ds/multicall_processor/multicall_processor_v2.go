@@ -5,6 +5,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 )
 
 type MultiCallProcessorv2 struct {
@@ -85,7 +86,7 @@ func (p *MultiCallProcessorv2) AddLiquidateEvent(event *schemas.AccountOperation
 	})
 }
 
-func (p *MultiCallProcessorv2) End(logId uint) {
+func (p *MultiCallProcessorv2) End(logId uint, _ []pool_v3.ManageDebt, _ string) {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
 	}

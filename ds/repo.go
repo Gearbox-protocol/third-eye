@@ -145,7 +145,8 @@ type RepositoryI interface {
 	AddFeedToTicker(feed string, ticker common.Address)
 	//  v310
 	AddRelation(details *schemas.Relation)
-	TokensValidAtBlock(string, int64) []string
+	TokensValidAtBlock(string, int64) []*schemas.TokenOracle
+	TokenAddrsValidAtBlock(string, int64) map[string]bool
 	GetActivePriceOracleByBlockNum(blockNum int64) (string, core.VersionType, error)
 }
 

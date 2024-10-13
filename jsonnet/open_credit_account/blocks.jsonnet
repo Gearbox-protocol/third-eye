@@ -196,11 +196,9 @@
     {
       blockNum: 3,
       feed: '#ChainlinkPriceFeed_1',
-      mergedPFVersion: 1,
       price: 1e-18,
       priceBI: '1',
       roundId: 300000000000000,
-      token: '#Token_1',
     },
   ],
   timestamp: 259200,
