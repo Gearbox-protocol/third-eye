@@ -186,7 +186,7 @@ func getDepGraph(chainId int64) map[string][]string {
 		"auraB_rETH_STABLE":       {},
 		"auraB_rETH_STABLE_vault": {},
 		// redstones
-		"weETH":  {"WETH"},
+		"weETH": {"WETH"},
 		// "ezETH":  {"WETH"},
 		"rswETH": {"WETH"},
 		"pufETH": {"WETH"},

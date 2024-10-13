@@ -14,16 +14,15 @@ import (
 
 type ChainlinkPriceFeed struct {
 	*ds.SyncAdapter
-	MainAgg         *ChainlinkMainAgg
-	mergedPFManager *ds.MergedPFManager
-	tokens          []string
-	pfs             []*schemas.PriceFeed
+	MainAgg *ChainlinkMainAgg
+	tokens  []string
+	pfs     []*schemas.PriceFeed
 }
 
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on 'vm execution error' or 'execution reverted'.
 // if oracle and adress are same we try to get the pricefeed.
-func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI,  oracle string, discoveredAt int64, version core.VersionType, bounded bool, includeLastLogBeforeDiscover ...bool) *ChainlinkPriceFeed {
+func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, oracle string, discoveredAt int64, version core.VersionType, bounded bool, includeLastLogBeforeDiscover ...bool) *ChainlinkPriceFeed {
 	var upperLimit string
 	if bounded {
 		returnData, err := core.CallFuncWithExtraBytes(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound
@@ -41,7 +40,7 @@ func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI,  oracle str
 			},
 			Details:  map[string]interface{}{"oracle": oracle},
 			LastSync: discoveredAt - 1,
-			V:       version,
+			V:        version,
 		},
 		Repo: repo,
 	}
@@ -94,8 +93,6 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		}
 	}
 	obj.DataProcessType = ds.ViaMultipleLogs
-	obj.mergedPFManager = &ds.MergedPFManager{}
-	obj.mergedPFManager.Load(obj.Details, obj.FirstLogAt)
 	return obj
 }
 
@@ -120,24 +117,21 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 		}
 		// log.Info(mdl.Address, discoveredAt, newPriceFeed)
 		mdl.flushPrices(discoveredAt)
-		for _, token := range mdl.mergedPFManager.GetTokens(discoveredAt) {
-			for _, pfVersion := range mdl.mergedPFManager.GetMergedPFVersion(token, discoveredAt, mdl.Address).MergedPFVersionToList() {
-				mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
-					Token:       token,
-					Oracle:      mdl.MainAgg.Addr.Hex(),
-					Feed:        mdl.MainAgg.Addr.Hex(), // feed is same as oracle
-					BlockNumber: discoveredAt,
-					Version:     pfVersion.ToVersion(),
-					Reserve:     (pfVersion & 8) != 0,
-					FeedType:    ds.ChainlinkPriceFeed,
-				}, mdl.upperLimit().Cmp(new(big.Int)) != 0, false) // if upperLImit is not zero, then the price is bounded by upperLimit
-			}
+		for _, tokenDetails := range mdl.Repo.TokensValidAtBlock(mdl.Address, discoveredAt) {
+			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
+				PriceOracle: tokenDetails.PriceOracle,
+				Token:       tokenDetails.Token,
+				Oracle:      mdl.MainAgg.Addr.Hex(),
+				Feed:        mdl.MainAgg.Addr.Hex(), // feed is same as oracle
+				BlockNumber: discoveredAt,
+				Version:     tokenDetails.Version,
+				Reserve:     tokenDetails.Reserve,
+				FeedType:    ds.ChainlinkPriceFeed,
+			}, mdl.upperLimit().Cmp(new(big.Int)) != 0, false) // if upperLImit is not zero, then the price is bounded by upperLimit
 		}
 	}
 	mdl.flushPrices(math.MaxInt64)
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
-	mdl.mergedPFManager.CloseV2(mdl.Client, syncedTill, mdl.Address)
-	mdl.mergedPFManager.Save(&mdl.Details)
 }
 
 func (mdl *ChainlinkPriceFeed) upperLimit() *big.Int {

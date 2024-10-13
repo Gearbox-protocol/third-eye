@@ -6,7 +6,6 @@
       details: {
         token: { '#Token_1': [1] },  // removed at 50
         pfType: 'YearnPF',
-        mergedPFVersion: 2,
       },
       lastSync: 1,
       version: 2,
@@ -15,9 +14,7 @@
       type: 'QueryPriceFeed',
       address: '#CurvePriceFeed_1',
       details: {
-        token: { '#Token_2': [1] },
         pfType: 'CurvePF',
-        mergedPFVersion: 4,
       },
       lastSync: 1,
       version: 2,
@@ -26,9 +23,7 @@
       type: 'QueryPriceFeed',
       address: '#SingleAsset_1',
       details: {
-        token: { '#Token_3': [1] },
         pfType: 'SingleAssetPF',
-        mergedPFVersion: 4,
       },
       lastSync: 1,
       version: 2,
@@ -37,9 +32,7 @@
       type: 'QueryPriceFeed',
       address: '#Redstone_1',
       details: {
-        token: { '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599': [1] },
         pfType: 'RedStonePF',
-        mergedPFVersion: 4,
         info: {
           '#Redstone_1': {
             type: 15,
@@ -57,9 +50,7 @@
       type: 'QueryPriceFeed',
       address: '#CompositeRedstone_1',
       details: {
-        token: { '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee': [1] },
         pfType: 'CompositeRedStonePF',
-        mergedPFVersion: 4,
         info: {
           '#CompositeRedstone_1': {
             type: 15,
@@ -80,4 +71,38 @@
       address: '#Token_1',
     },
   ],
+  poToTokenOracles: {
+    '#PriceOracle_1': {
+      '#Token_1': {
+        feed: '#YearnFeed_1',
+        type: 'YearnFeed',
+        blockNum: 1,
+        version: 2,
+      },
+      '#Token_2': {
+        feed: '#CurvePriceFeed_1',
+        type: 'CurvePF',
+        blockNum: 1,
+        version: 2,
+      },
+      '#Token_3': {
+        feed: '#SingleAsset_1',
+        type: 'SingleAsset',
+        blockNum: 1,
+        version: 2,
+      },
+      '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599': {
+        feed: '#Redstone_1',
+        type: 'Redstone',
+        blockNum: 1,
+        version: 2,
+      },
+      '0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee': {
+        feed: '#CompositeRedstone_1',
+        type: 'CompositeRedstone',
+        blockNum: 1,
+        version: 2,
+      },
+    },
+  },
 }

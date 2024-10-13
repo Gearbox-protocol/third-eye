@@ -2,7 +2,6 @@ package composite_redstone_price_feed
 
 import (
 	"math/big"
-	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -94,18 +93,18 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
 			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
 			return parsePriceForRedStone(price, isPriceInUSD)
-		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) < time.Hour {
-			// } else {
-			// 	if len(force) == 0 || !force[0] {
-			// 		return nil
-			// 	}
+			// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+		} else {
+			if len(force) == 0 || !force[0] {
+				return nil
+			}
 		}
 	}
 	validTokens := mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))
 	targetPrice := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 	if targetPrice.Cmp(new(big.Int)) == 0 {
-		log.Warnf("RedStone composite targetprice for %s at %d is %s", mdl.Repo.GetToken(validTokens[0]).Symbol, blockNum, targetPrice)
+		log.Warnf("RedStone composite targetprice for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, targetPrice)
 		return nil
 	}
 	//
@@ -117,7 +116,7 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 		}
 		return *abi.ConvertType(values[1], new(*big.Int)).(**big.Int)
 	}()
-	log.Infof("RedStone composite targetprice for %s at %d is %f, basePrice, %s", mdl.Repo.GetToken(validTokens[0]).Symbol, blockNum, utils.GetFloat64Decimal(targetPrice, mdl.Decimals), basePrice)
+	log.Infof("RedStone composite targetprice for %s at %d is %f, basePrice, %s", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, utils.GetFloat64Decimal(targetPrice, mdl.Decimals), basePrice)
 	if basePrice == nil {
 		return nil
 	}

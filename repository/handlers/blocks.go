@@ -44,7 +44,7 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	data := []*schemas.Block{}
 	err := repo.db.
 		Preload("RebaseDetailsForDB").Preload("Params").Preload("QuotaDetails").
-		Preload("CSS").Preload("PoolStats").
+		Preload("CSS").Preload("PoolStats").Preload("TokenOracles").
 		Preload("LTRamp").Preload("AllowedTokens").Preload("PriceFeeds").Preload("Relations"). // relations due to v310
 		// v3
 		// quotadetails, ltramp
@@ -69,8 +69,6 @@ func (repo *BlocksRepo) Save(tx *gorm.DB) {
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
 }
-
-
 
 func (repo *BlocksRepo) GetBlocks() map[int64]*schemas.Block {
 	return repo.blocks.GetInner()
@@ -203,7 +201,6 @@ func (repo *BlocksRepo) AddTokenLTRamp(details *schemas_v3.TokenLTRamp) {
 func (repo *BlocksRepo) AddQuotaDetails(details *schemas_v3.QuotaDetails) {
 	repo.SetAndGetBlock(details.BlockNum).AddQuotaDetails(details)
 }
-
 
 func (repo *BlocksRepo) AddPoolStat(ps *schemas.PoolStat) {
 	repo.SetAndGetBlock(ps.BlockNum).AddPoolStat(ps)

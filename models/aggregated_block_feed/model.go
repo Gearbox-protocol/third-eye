@@ -124,8 +124,8 @@ func (mdl AQFWrapper) getFeedAdapters(blockNum int64, neededTokens map[string]bo
 		if !adapter.GetVersion().MoreThan(core.NewVersion(1)) {
 			continue
 		}
-		tokensForAdapter := mdl.Repo.TokensValidAtBlock(adapter.GetAddress(), blockNum)
-		for _, token := range tokensForAdapter {
+		tokensForAdapter := mdl.Repo.TokenAddrsValidAtBlock(adapter.GetAddress(), blockNum)
+		for token := range tokensForAdapter {
 			if neededTokens[token] {
 				result = append(result, adapter)
 				break

@@ -126,7 +126,7 @@ func (repo AdapterKitHandler) GetAdaptersFromWrapper() (adapters []ds.SyncAdapte
 }
 
 func (repo AdapterKitHandler) GetRetryFeedForDebts() (addrs []ds.QueryPriceFeedI) {
-	return  repo.aggregatedBlockFeed.GetQueryFeeds()
+	return repo.aggregatedBlockFeed.GetQueryFeeds()
 }
 
 // TODO: find eng.repo.GetAdapterAddressByName(ds.CreditManager)
@@ -134,6 +134,9 @@ func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string {
 	// REVERT_CM_WRAPPER
 	if name == ds.CreditManager {
 		return repo.cmWrapper.GetUnderlyingAdapterAddrs()
+	}
+	if name == ds.Pool {
+		return repo.poolWrapper.GetUnderlyingAdapterAddrs()
 	}
 	// REVERT_ADMIN_WRAPPER
 	if utils.Contains([]string{ds.ContractRegister, ds.ACL, ds.AccountFactory,
