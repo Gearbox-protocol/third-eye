@@ -92,6 +92,15 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 		eng.AddTokenLTRamp(ltRamp)
 	}
 
+	for _, to := range block.TokenOracles {
+		eng.priceHandler.AddTokenOracle(to)
+	}
+	//
+	for _, relation := range block.Relations {
+		if relation.Type == "PoolOracle" {
+			eng.priceHandler.poolToPriceOracle[relation.Owner] = schemas.PriceOracleT(relation.Dependent)
+		}
+	}
 	// C3.b: updated price
 	for _, pf := range block.GetPriceFeeds() {
 		// L5
@@ -307,14 +316,16 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 		retryFeeds := eng.repo.GetRetryFeedForDebts()
 		for tokenAddr, details := range *sessionSnapshot.Balances {
 			if details.IsEnabled && details.HasBalanceMoreThanOne() {
-				lastPriceEvent := eng.priceHandler.GetLastPriceFeed(session.CreditManager, tokenAddr, session.Version) // don't use reserve
 				//
-				if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
-					feedAddr := lastPriceEvent.Feed
-					for _, retryFeed := range retryFeeds {
-						if retryFeed.GetAddress() == feedAddr {
-							eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr)
+				if tokenAddr != eng.repo.GetWETHAddr() { // REDUNDANT
+					lastPriceEvent := eng.priceHandler.GetLastPriceFeed(session.CreditManager, tokenAddr, session.Version) // don't use reserve
+					if lastPriceEvent.BlockNumber != blockNum {
+						feedAddr := lastPriceEvent.Feed
+						for _, retryFeed := range retryFeeds {
+							if retryFeed.GetAddress() == feedAddr {
+								eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr)
 
+							}
 						}
 					}
 				}

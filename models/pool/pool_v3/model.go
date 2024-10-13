@@ -24,6 +24,7 @@ type Poolv3 struct {
 	updatesForPoolv2  []UpdatePoolLedger
 	removeLiqUpdate   *UpdatePoolLedger
 	zappers           *Zappers
+	CMDebtHandler
 }
 
 func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
@@ -32,8 +33,12 @@ func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
 	return ans
 }
 
-func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT) *Poolv3 {
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT, version core.VersionType) *Poolv3 {
 	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
+	if syncAdapter.Details == nil {
+		syncAdapter.Details = core.Json{}
+	}
+	syncAdapter.Details["actualVersion"] = version
 	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
 		syncAdapter,
@@ -82,6 +87,7 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 			return contract
 		}(),
 		zappers: &Zappers{},
+		CMDebtHandler: NewCMDebtHandler(adapter.GetDetailsByKey("actualV") == "310"),
 	}
 	obj.setPoolQuotaKeeper()
 	data := &schemas.PoolState{}

@@ -275,7 +275,10 @@ func (DieselBalance) TableName() string {
 	return "diesel_balances"
 }
 
-func (DummyRepo) TokensValidAtBlock(string, int64) []string {
+func (DummyRepo) TokensValidAtBlock(string, int64) []*schemas.TokenOracle {
+	return nil
+}
+func (DummyRepo) TokenAddrsValidAtBlock(string, int64) map[string]bool {
 	return nil
 }
 

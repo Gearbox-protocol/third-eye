@@ -366,11 +366,9 @@
       {
         blockNum: 5,
         feed: '#ChainlinkPriceFeed_3',
-        mergedPFVersion: 2,
         price: 2500,
         priceBI: '250000000000',
         roundId: 1,
-        token: '#Token_3',
       },
     ],
     timestamp: 432000,
@@ -629,11 +627,9 @@
       {
         blockNum: 7,
         feed: '#ChainlinkPriceFeed_2',
-        mergedPFVersion: 2,
         price: 20000,
         priceBI: '2000000000000',
         roundId: 1,
-        token: '#Token_2',
       },
     ],
     timestamp: 604800,

@@ -20,7 +20,6 @@ type CompositeChainlinkPF struct {
 	TokenETHPrice    *big.Int
 	ETHUSDPrice      *big.Int
 	decimalsOfBasePF int8
-	mergedPFManager  *ds.MergedPFManager
 }
 
 // compositeChainlink price feed has token base  oracle and base usd oracle for calculating the price of token in usd.
@@ -48,9 +47,9 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 				Client:       client,
 			},
 			Details: map[string]interface{}{
-				"oracle":          oracle,
-				"token":           token,
-				"decimals":        decimalsToBasePF,
+				"oracle":   oracle,
+				"token":    token,
+				"decimals": decimalsToBasePF,
 				"secAddrs": map[string]interface{}{
 					"target":      tokenETHPF.Hex(),
 					"base":        ethUSDPF.Hex(),
@@ -92,8 +91,6 @@ func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChain
 	compositeMdl.DataProcessType = ds.ViaMultipleLogs
 	compositeMdl.setPrices(adapter.LastSync)
 	//
-	compositeMdl.mergedPFManager = &ds.MergedPFManager{}
-	compositeMdl.mergedPFManager.Load(compositeMdl.Details, compositeMdl.FirstLogAt)
 	return compositeMdl
 }
 
@@ -151,8 +148,6 @@ func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 
 
 func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
-	mdl.mergedPFManager.CloseV2(mdl.Client, syncedTill, mdl.Address)
-	mdl.mergedPFManager.Save(&mdl.Details)
 }
 
 // there are two type of composite oracle

@@ -107,14 +107,16 @@ func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 	)
 	log.Info(blockNum, mdl.Address)
 	// only usd price feed
-	priceFeed := &schemas.PriceFeed{
-		BlockNumber:     blockNum,
-		Feed:            mdl.GetDetailsByKey("oracle"),
-		RoundId:         0,
-		PriceBI:         (*core.BigInt)(answerBI),
-		Price:           utils.GetFloat64Decimal(answerBI, 8),
+	if len(mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)) != 0 {
+		priceFeed := &schemas.PriceFeed{
+			BlockNumber: blockNum,
+			Feed:        mdl.GetDetailsByKey("oracle"),
+			RoundId:     0,
+			PriceBI:     (*core.BigInt)(answerBI),
+			Price:       utils.GetFloat64Decimal(answerBI, 8),
+		}
+		mdl.Repo.AddPriceFeed(priceFeed)
 	}
-	mdl.Repo.AddPriceFeed(priceFeed)
 }
 
 func (mdl *CompositeChainlinkPF) OnLog(types.Log) {

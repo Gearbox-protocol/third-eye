@@ -23,5 +23,6 @@ func NewEngs(t *testing.T, inputFiles []string) (MockRepo, ds.DebtEngineI) {
 	eng := engine.NewEngine(cfg, client, debtEng, nil, repo)
 	r := NewMockRepo(repo, client, t, eng, ep)
 	r.Init(inputFiles)
+	debtEng.InitTest()
 	return r, debtEng
 }

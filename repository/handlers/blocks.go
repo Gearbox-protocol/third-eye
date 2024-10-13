@@ -43,7 +43,7 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	data := []*schemas.Block{}
 	err := repo.db.
 		Preload("RebaseDetailsForDB").Preload("Params").Preload("QuotaDetails").
-		Preload("CSS").Preload("PoolStats").
+		Preload("CSS").Preload("PoolStats").Preload("TokenOracles").
 		Preload("LTRamp").Preload("AllowedTokens").Preload("PriceFeeds").Preload("Relations"). // relations due to v310
 		// v3
 		// quotadetails, ltramp

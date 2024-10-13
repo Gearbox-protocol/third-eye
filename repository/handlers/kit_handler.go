@@ -155,6 +155,9 @@ func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string { //
 	if name == ds.CreditManager {
 		return repo.cmWrapper.GetUnderlyingAdapterAddrs()
 	}
+	if name == ds.Pool {
+		return repo.poolWrapper.GetUnderlyingAdapterAddrs()
+	}
 	// REVERT_ADMIN_WRAPPER
 	if utils.Contains([]string{
 		ds.ContractRegister,

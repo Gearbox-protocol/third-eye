@@ -10,23 +10,30 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/repository/handlers"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
 )
 
 type repoForAQF struct {
 	mgr redstone.RedStoneMgrI
 	ds.DummyRepo
-	tokens map[string]*schemas.Token
+	tokens      map[string]*schemas.Token
+	tokenOracle *handlers.TokenOracleRepo
 }
 
 func NewrepoForAQF(mgr redstone.RedStoneMgrI) *repoForAQF {
 	return &repoForAQF{
-		mgr:    mgr,
-		tokens: map[string]*schemas.Token{},
+		mgr:         mgr,
+		tokens:      map[string]*schemas.Token{},
+		tokenOracle: handlers.NewTokenOracleRepo(nil, nil, nil, nil),
 	}
 }
 func (r *repoForAQF) GetRedStonemgr() redstone.RedStoneMgrI {
 	return r.mgr
+}
+
+func (r *repoForAQF) TokenAddrsValidAtBlock(s string, b int64) map[string]bool {
+	return r.tokenOracle.TokenAddrsValidAtBlock(s, b)
 }
 
 func (r *repoForAQF) SetAndGetBlock(blockNum int64) *schemas.Block {
@@ -62,6 +69,13 @@ func TestAQFMultipleAdapter(t *testing.T) {
 			adapter.Client = client
 			adapter.Repo = r
 			aqf.AddQueryPriceFeed(aggregated_block_feed.NewQueryPriceFeedFromAdapter(adapter))
+		}
+		for po, details := range syncAdapterObj.PoToTokenOracle {
+			for token, tokenOracle := range details {
+				tokenOracle.PriceOracle = po
+				tokenOracle.Token = token
+				r.tokenOracle.DirectlyAddTokenOracleTest(tokenOracle)
+			}
 		}
 	}
 	//

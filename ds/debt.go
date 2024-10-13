@@ -17,6 +17,7 @@ type DebtEngineI interface {
 	CalCurrentDebts(to int64)
 	CalculateDebt()
 	GetDebts() core.Json
+	InitTest()
 }
 
 type TokenDetails struct {

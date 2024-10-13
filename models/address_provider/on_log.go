@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -71,7 +72,7 @@ func (mdl *AddressProvider) v2LogParse(txLog types.Log) {
 		switch contract {
 		case "PRICE_ORACLE":
 			//
-			mdl.addPriceOracle(blockNum, address)
+			mdl.addPriceOracle(blockNum, schemas.PriceOracleT(address))
 			po := po_v2.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(po)
 		case "DATA_COMPRESSOR":
@@ -105,7 +106,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 	}
 }
 func (mdl *AddressProvider) addMarketConfigurator(block uint64, configurator common.Address) {
-	market_configurator.NewMarketConfigurator( configurator.Hex(), int64(block), mdl.Client, mdl.Repo)
+	market_configurator.NewMarketConfigurator(configurator.Hex(), int64(block), mdl.Client, mdl.Repo)
 }
 
 func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
@@ -147,7 +148,7 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
 		if version < 300 { // don't except v2,v2.10 or v1 priceOracle , why are already know from v1 addressProvider
 			return
 		}
-		mdl.addPriceOracle(blockNum, address)
+		mdl.addPriceOracle(blockNum, schemas.PriceOracleT(address))
 		po := po_v3.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 		mdl.Repo.AddSyncAdapter(po)
 	default:

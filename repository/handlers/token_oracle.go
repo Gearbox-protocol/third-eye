@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/address_provider"
 	"github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/composite_chainlink"
 	"gorm.io/gorm"
@@ -19,6 +21,11 @@ type tokenAndPriceOracle struct {
 	_token       string
 	_priceOracle schemas.PriceOracleT
 }
+
+func (z tokenAndPriceOracle) MarshalText() (text []byte, err error) {
+	return []byte(fmt.Sprintf("{\"token\":\"%s\", \"priceOracle\":\"%s\"}", z._token, z._priceOracle)), nil
+}
+
 type inner struct {
 	// priceOracle  to token to oracle
 	tokensCurrentOracle map[schemas.PriceOracleT]map[string]*schemas.TokenOracle // done
@@ -27,13 +34,22 @@ type inner struct {
 	disabledTokens []*schemas.TokenOracle
 }
 
-func (repo *inner) TokensValidAtBlock(feed string, blockNum int64) (valid []string) {
+func (repo *inner) TokensValidAtBlock(feed string, blockNum int64) (valid []*schemas.TokenOracle) {
 	for _, entry := range repo.feedToTokens[feed] {
 		if entry.BlockNumber <= blockNum && (entry.DisabledAt == 0 || entry.DisabledAt > blockNum) {
-			valid = append(valid, entry.Token)
+			valid = append(valid, entry)
 		}
 	}
 	return valid
+}
+
+func (repo *inner) TokenAddrsValidAtBlock(feed string, blockNum int64) (addr map[string]bool) {
+	valid := repo.TokensValidAtBlock(feed, blockNum)
+	addr = map[string]bool{}
+	for _, entry := range valid {
+		addr[entry.Token] = true
+	}
+	return addr
 }
 
 func (repo *inner) addTokenCurrentOracle(oracle *schemas.TokenOracle) {
@@ -51,6 +67,18 @@ func (repo *inner) addTokenCurrentOracle(oracle *schemas.TokenOracle) {
 }
 
 func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64, latestOracle string) {
+	var v2CloseBlock int64 = 19752044
+	if blockNum > v2CloseBlock { // disable v1 and v2
+		addrs := repo.adapters.GetAdapterAddressByName(ds.AddressProvider)
+		adapter := repo.adapters.GetAdapter(addrs[0]).(*address_provider.AddressProvider)
+		for _, v := range []int16{1, 2} {
+			po := adapter.GetPriceOracleByVersion(core.NewVersion(v))
+			for _, d := range repo.tokensCurrentOracle[po] {
+				d.DisabledAt = v2CloseBlock
+				repo.disabledTokens = append(repo.disabledTokens, d)
+			}
+		}
+	}
 	err := tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(repo.disabledTokens, 50).Error
 	log.CheckFatal(err)
 	repo.disabledTokens = nil
@@ -134,15 +162,20 @@ func (repo *inner) removeTokenLastOracle(newTokenOracle *schemas.TokenOracle) {
 	if repo.tokensCurrentOracle[newTokenOracle.PriceOracle] != nil &&
 		repo.tokensCurrentOracle[newTokenOracle.PriceOracle][newTokenOracle.Token] != nil {
 		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.PriceOracle][newTokenOracle.Token]
-		oldFeed := oldTokenOracle.Feed
-		delete(repo.feedToTokens[oldFeed], tokenAndPriceOracle{
-			_token:       newTokenOracle.Token,
-			_priceOracle: newTokenOracle.PriceOracle,
-		})
+		// oldFeed := oldTokenOracle.Feed
+		// delete(repo.feedToTokens[oldFeed], tokenAndPriceOracle{
+		// 	_token:       newTokenOracle.Token,
+		// 	_priceOracle: newTokenOracle.PriceOracle,
+		// })
 		oldTokenOracle.DisabledAt = newTokenOracle.BlockNumber
-		oldTokenOracle.Dirty = true
 		repo.disabledTokens = append(repo.disabledTokens, oldTokenOracle)
 	}
+}
+
+func (repo *TokenOracleRepo) DirectlyAddTokenOracleTest(newTokenOracle *schemas.TokenOracle) {
+	repo.addTokenCurrentOracle(
+		newTokenOracle,
+	)
 }
 func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOracle *schemas.TokenOracle) {
 	repo.removeTokenLastOracle(
@@ -174,7 +207,6 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 	if newTokenOracle.Feed == "0xBc1c306920309F795fB5A740083eCBf5057349e9" && newTokenOracle.BlockNumber == 15371802 {
 		return
 	}
-	pfVersion := schemas.VersionToPFVersion(newTokenOracle.Version, newTokenOracle.Reserve)
 	switch newTokenOracle.FeedType {
 	case ds.ZeroPF, ds.AlmostZeroPF,
 		ds.CurvePF, ds.SingleAssetPF, ds.YearnPF, ds.RedStonePF, ds.CompositeRedStonePF:
@@ -193,7 +225,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 				Feed:        newTokenOracle.Oracle,
 				RoundId:     0,
 				PriceBI:     (*core.BigInt)(priceBI),
-				Price:       utils.GetFloat64Decimal(priceBI, pfVersion.Decimals()),
+				Price:       utils.GetFloat64Decimal(priceBI, newTokenOracle.Version.Decimals()),
 			})
 			repo.zeroPFs[newTokenOracle.Oracle] = true // oracle and feed are same for non-chainlink price feed
 		} else {

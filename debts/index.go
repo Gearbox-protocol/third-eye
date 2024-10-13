@@ -55,8 +55,13 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
 		v3DebtDetails:          Newv3DebtDetails(),
 		tokenLTRamp:            map[string]map[string]*schemas_v3.TokenLTRamp{},
-		priceHandler:           NewPriceHandler(),
+		priceHandler:           NewPriceHandler(repo),
 	}
+}
+
+func (eng *DebtEngine) InitTest() {
+	eng.priceHandler.poTotokenOracle = eng.repo.GetTokenOracles()
+	eng.priceHandler.init(eng.repo)
 }
 
 func NewDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI) ds.DebtEngineI {

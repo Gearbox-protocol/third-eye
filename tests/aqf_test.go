@@ -16,26 +16,28 @@ import (
 type tr struct {
 	ds.DummyRepo
 	addressMap map[string]string
+	// t          handlers.TokenOracleRepo
 }
 
-func (mdl tr) TokensValidAtBlock(addr string, blockNum int64) []string {
+// TokensValidAtBlock not implemented
+func (mdl tr) TokenAddrsValidAtBlock(addr string, blockNum int64) map[string]bool {
 	switch addr {
-	case mdl.addressMap["#YearnFeed_1"]:
-		if blockNum > 50 {
+	case mdl.addressMap["YearnFeed_1"]:
+		if blockNum >= 50 {
 			return nil
 		}
-		return []string{mdl.addressMap["#Token_2"], mdl.addressMap["#Token_3"], mdl.addressMap["#Token_4"]}
-	case mdl.addressMap["#YearnFeed_3"]:
-		if blockNum > 56 {
-			return []string{mdl.addressMap["#Token_2"], mdl.addressMap["#Token_3"]}
+		return map[string]bool{mdl.addressMap["Token_2"]: true, mdl.addressMap["Token_3"]: true, mdl.addressMap["Token_4"]: true}
+	case mdl.addressMap["YearnFeed_3"]:
+		if blockNum >= 56 {
+			return map[string]bool{mdl.addressMap["Token_2"]: true, mdl.addressMap["Token_3"]: true}
 		}
-		if blockNum > 50 {
-			return []string{mdl.addressMap["#Token_2"], mdl.addressMap["#Token_3"], mdl.addressMap["#Token_4"]}
+		if blockNum >= 50 {
+			return map[string]bool{mdl.addressMap["Token_2"]: true, mdl.addressMap["Token_3"]: true, mdl.addressMap["Token_4"]: true}
 		}
 		return nil
-	case mdl.addressMap["#YearnFeed_4"]:
-		if blockNum > 56 {
-			return []string{mdl.addressMap["#Token_4"]}
+	case mdl.addressMap["YearnFeed_4"]:
+		if blockNum >= 56 {
+			return map[string]bool{mdl.addressMap["Token_4"]: true}
 		}
 		return nil
 	}
@@ -85,6 +87,7 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 		"Token_4": "stkcvxOHMFRAXBP",
 	} {
 		addr := common.HexToAddress(addressMap[tokenVar])
+		log.Info(addr)
 		tokenSymMap.UpdateForTest(sym, addr)
 	}
 	aqf.GetDepFetcher().TokenSymMap = tokenSymMap
@@ -92,12 +95,4 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 	//
 	// aqf.DisableYearnFeed(addressMap["Token_4"], addressMap["YearnFeed_3"], 56, schemas.V2PF)
 	// aqf.AddFeedOrToken(addressMap["Token_4"], addressMap["YearnFeed_4"], ds.YearnPF, 56, schemas.V2PF)
-}
-
-func reverseMap(in map[string]string) (r map[string]string) {
-	r = map[string]string{}
-	for k, v := range in {
-		r[v] = k
-	}
-	return
 }
