@@ -12,8 +12,8 @@ import (
 
 type BasePriceFeed struct {
 	*ds.SyncAdapter
-	mu        *sync.Mutex
-	DetailsDS DetailsDS
+	mu *sync.Mutex
+	// DetailsDS DetailsDS
 }
 
 // single querypricefeed can be valid for multiple tokens so we have to maintain tokens within the details
@@ -53,7 +53,7 @@ func NewBasePriceFeedFromAdapter(adapter *ds.SyncAdapter) *BasePriceFeed {
 		mu:          &sync.Mutex{},
 	}
 	obj.DataProcessType = ds.ViaQuery
-	obj.DetailsDS.Load(obj.Details, obj.GetVersion())
+	// obj.DetailsDS.Load(obj.Details, obj.GetVersion())
 	return obj
 }
 
@@ -134,6 +134,6 @@ func (mdl *BasePriceFeed) AfterSyncHook(b int64) {
 			}
 		}
 	}
-	mdl.Details = mdl.DetailsDS.Save()
+	// mdl.Details = mdl.DetailsDS.Save()
 	mdl.SyncAdapter.AfterSyncHook(b)
 }

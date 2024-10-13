@@ -102,14 +102,13 @@ func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, token st
 	log.CheckFatal(err)
 	//
 	return []*schemas.PriceFeed{{
-		BlockNumber:     discoveredAt,
-		Feed:            qpf.GetAddress(),
-		RoundId:         data.RoundId.Int64(),
-		PriceBI:         (*core.BigInt)(data.Answer),
-		Price:           utils.GetFloat64Decimal(data.Answer, version.Decimals()),
+		BlockNumber: discoveredAt,
+		Feed:        qpf.GetAddress(),
+		RoundId:     data.RoundId.Int64(),
+		PriceBI:     (*core.BigInt)(data.Answer),
+		Price:       utils.GetFloat64Decimal(data.Answer, version.Decimals()),
 	}}
 }
-
 
 func (mdl AQFWrapper) GetDepFetcher() *QueryPFDependencies {
 	return mdl.queryPFdeps
@@ -125,8 +124,8 @@ func (mdl AQFWrapper) getFeedAdapters(blockNum int64, neededTokens map[string]bo
 		if !adapter.GetVersion().MoreThan(core.NewVersion(1)) {
 			continue
 		}
-		tokensForAdapter := mdl.Repo.TokensValidAtBlock(adapter.GetAddress(), blockNum)
-		for _, token := range tokensForAdapter {
+		tokensForAdapter := mdl.Repo.TokenAddrsValidAtBlock(adapter.GetAddress(), blockNum)
+		for token := range tokensForAdapter {
 			if neededTokens[token] {
 				result = append(result, adapter)
 				break

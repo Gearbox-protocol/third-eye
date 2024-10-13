@@ -4,9 +4,7 @@
       type: 'QueryPriceFeed',
       address: '#YearnFeed_1',
       details: {
-        token: { '#Token_2': [1, 50], '#Token_3': [1, 50], '#Token_4': [1, 50] },  // removed at 50
         pfType: 'YearnPF',
-        mergedPFVersion: 2,
       },
       lastSync: 1,
       version: 2,
@@ -15,9 +13,16 @@
       type: 'QueryPriceFeed',
       address: '#YearnFeed_3',
       details: {
-        token: { '#Token_2': [50], '#Token_3': [50], '#Token_4': [50] },
         pfType: 'YearnPF',
-        mergedPFVersion: 2,
+      },
+      lastSync: 1,
+      version: 2,
+    },
+    {
+      type: 'QueryPriceFeed',
+      address: '#YearnFeed_4',
+      details: {
+        pfType: 'YearnPF',
       },
       lastSync: 1,
       version: 2,
@@ -27,5 +32,11 @@
     {
       address: '#Token_1',
     },
+  ],
+  tokens: [
+    '#Token_1',
+    '#Token_2',
+    '#Token_3',
+    '#Token_4',
   ],
 }

@@ -142,7 +142,8 @@ type RepositoryI interface {
 	IsBlockRecent(block int64, dur time.Duration) bool
 	//  v310
 	AddRelation(details *schemas.Relation)
-	TokensValidAtBlock(string, int64) []string
+	TokensValidAtBlock(string, int64) []*schemas.TokenOracle
+	TokenAddrsValidAtBlock(string, int64) map[string]bool
 	GetActivePriceOracleByBlockNum(blockNum int64) (string, core.VersionType, error)
 }
 

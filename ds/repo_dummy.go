@@ -75,7 +75,7 @@ func (DummyRepo) GetExecuteParser() ExecuteParserI {
 // price feed/oracle funcs
 func (DummyRepo) DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle) {
 }
-func (DummyRepo) GetPriceInUSD(blockNum int64, tokenAddrs string) *big.Int{
+func (DummyRepo) GetPriceInUSD(blockNum int64, tokenAddrs string) *big.Int {
 	return nil
 }
 func (DummyRepo) GetActivePriceOracleByBlockNum(blockNum int64) (string, core.VersionType, error) {
@@ -267,7 +267,10 @@ func (DieselBalance) TableName() string {
 	return "diesel_balances"
 }
 
-func (DummyRepo) TokensValidAtBlock(string, int64) []string {
+func (DummyRepo) TokensValidAtBlock(string, int64) []*schemas.TokenOracle {
+	return nil
+}
+func (DummyRepo) TokenAddrsValidAtBlock(string, int64) map[string]bool {
 	return nil
 }
 

@@ -21,12 +21,15 @@ type OnLogsChecker struct {
 func (x *OnLogsChecker) AddPriceFeed(pf *schemas.PriceFeed) {
 	x.pfs = append(x.pfs, pf)
 }
+func (x *OnLogsChecker) TokensValidAtBlock(string, int64) []*schemas.TokenOracle {
+	return []*schemas.TokenOracle{&schemas.TokenOracle{}}
+}
 func TestOnLogs(t *testing.T) {
 	validPf := &schemas.PriceFeed{
-		Feed:            utils.RandomAddr(),
-		BlockNumber:     1,
-		PriceBI:         (*core.BigInt)(big.NewInt(222)),
-		RoundId:         3,
+		Feed:        utils.RandomAddr(),
+		BlockNumber: 1,
+		PriceBI:     (*core.BigInt)(big.NewInt(222)),
+		RoundId:     3,
 	}
 	repo := &OnLogsChecker{}
 	obj := &ChainlinkPriceFeed{SyncAdapter: &ds.SyncAdapter{
@@ -40,8 +43,7 @@ func TestOnLogs(t *testing.T) {
 			V:       core.NewVersion(1),
 			Details: core.Json{},
 		},
-	}, mergedPFManager: &ds.MergedPFManager{}}
-	obj.mergedPFManager.Load(obj.Details, obj.FirstLogAt)
+	}}
 	txLogs := []types.Log{
 		{
 			BlockNumber: 1,

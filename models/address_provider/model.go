@@ -7,13 +7,14 @@ import (
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 type blockAndOracle struct {
-	priceOracle string
+	priceOracle schemas.PriceOracleT
 	blockNum    int64
 }
 type AddressProvider struct {
@@ -76,7 +77,7 @@ func (mdl *AddressProvider) setPriceOracle() {
 			log.CheckFatal(err)
 			mdl.priceOracles = append(mdl.priceOracles, blockAndOracle{
 				blockNum:    oracleBlockNum,
-				priceOracle: oracle.(string),
+				priceOracle: schemas.PriceOracleT(oracle.(string)),
 			})
 		}
 		sort.SliceStable(mdl.priceOracles, func(i, j int) bool {
@@ -95,12 +96,25 @@ func (mdl *AddressProvider) GetDetailsByKey(strBlockNum string) string {
 	ind := sort.Search(len(mdl.priceOracles), func(i int) bool {
 		return mdl.priceOracles[i].blockNum > blockNum
 	})
-	return mdl.priceOracles[ind-1].priceOracle
+	return string(mdl.priceOracles[ind-1].priceOracle)
 }
 
-func (mdl *AddressProvider) addPriceOracle(blockNum int64, priceOracle string) {
+// only valid for 1,2 version , can implement for v3 but not required . After 310 , each pool has different priceoracle
+// and the address provider no longer register the priceoracle.
+func (mdl *AddressProvider) GetPriceOracleByVersion(version core.VersionType) schemas.PriceOracleT {
+	mdl.setPriceOracle()
+	if version.Eq(1) {
+		return mdl.priceOracles[0].priceOracle
+	} else if version.Eq(2) {
+		return mdl.priceOracles[1].priceOracle
+	}
+	log.Fatal("only valid for 1 and 2 version")
+	return ""
+}
+
+func (mdl *AddressProvider) addPriceOracle(blockNum int64, priceOracle schemas.PriceOracleT) {
 	priceOraclesMap := mdl.getPriceOracleMap()
-	priceOraclesMap[fmt.Sprintf("%d", blockNum)] = priceOracle
+	priceOraclesMap[fmt.Sprintf("%d", blockNum)] = string(priceOracle)
 	mdl.Details["priceOracles"] = priceOraclesMap
 	//
 	mdl.setPriceOracle()

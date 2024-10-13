@@ -41,7 +41,7 @@ func (mdl *MarketConfigurator) OnLog(txLog types.Log) {
 			mdl.Repo.AddSyncAdapter(po)
 		}
 		if poolAdapter == nil {
-			pool := pool_v3.NewPool(poolAddr, mdl.Client, mdl.Repo, blockNum, mdl.Address, schemas.PriceOracleT(priceOracleAddr))
+			pool := pool_v3.NewPool(poolAddr, mdl.Client, mdl.Repo, blockNum, mdl.Address, schemas.PriceOracleT(priceOracleAddr), core.NewVersion(310))
 			mdl.Repo.AddSyncAdapter(pool)
 		} else {
 			if poolv3, ok := poolAdapter.(*pool_v3.Poolv3); ok {

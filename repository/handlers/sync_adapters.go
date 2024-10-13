@@ -141,9 +141,9 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 		return credit_manager.NewCMFromAdapter(adapter)
 	case ds.PriceOracle:
 		if adapter.GetVersion().LessThan(core.NewVersion(300)) {
-			po_v2.NewPriceOracleFromAdapter(adapter)
+			return po_v2.NewPriceOracleFromAdapter(adapter)
 		} else {
-			po_v3.NewPriceOracleFromAdapter(adapter)
+			return po_v3.NewPriceOracleFromAdapter(adapter)
 		}
 	case ds.ChainlinkPriceFeed:
 		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter, false)
@@ -185,13 +185,13 @@ func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 		return
 	}
 	if newAdapterI.GetName() == ds.PriceOracle {
-		switch  newAdapterI.GetAddress() {
+		switch newAdapterI.GetAddress() {
 		case "0x6385892aCB085eaa24b745a712C9e682d80FF681": // v2
-		oldPriceOracle := repo.GetAdapter("0x0e74a08443c5E39108520589176Ac12EF65AB080") // v1
-		oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
+			oldPriceOracle := repo.GetAdapter("0x0e74a08443c5E39108520589176Ac12EF65AB080") // v1
+			oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
 		case "0x599f585D1042A14aAb194AC8031b2048dEFdFB85": // v3
-		oldPriceOracle := repo.GetAdapter("0x6385892aCB085eaa24b745a712C9e682d80FF681") // v2
-		oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
+			oldPriceOracle := repo.GetAdapter("0x6385892aCB085eaa24b745a712C9e682d80FF681") // v2
+			oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
 		}
 	}
 	repo.addSyncAdapter(newAdapterI)
@@ -213,28 +213,28 @@ func (repo *SyncAdaptersRepo) GetPoolWrapper() *pool_wrapper.PoolWrapper {
 // blockNum ==0 is latest
 func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle string, version core.VersionType, err error) {
 	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
-	data :=make([]ds.SyncAdapterI, 0, len(oracles))
+	data := make([]ds.SyncAdapterI, 0, len(oracles))
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
-		if blockNum >= oracleAdapter.GetDiscoveredAt() || blockNum ==0  {
+		if blockNum >= oracleAdapter.GetDiscoveredAt() || blockNum == 0 {
 			data = append(data, oracleAdapter)
 		}
 	}
-	sort.Slice(data, func (a,b int) bool {
-		return data[a].GetDiscoveredAt() > data[b].GetDiscoveredAt() 
+	sort.Slice(data, func(a, b int) bool {
+		return data[a].GetDiscoveredAt() > data[b].GetDiscoveredAt()
 	})
 	//
 	err = fmt.Errorf("not found")
 	var ans ds.SyncAdapterI
 	//
-	for _, e:= range data {
+	for _, e := range data {
 		if ans != nil && ans.GetVersion() != e.GetVersion() {
 			break
 		}
 		ans = e
 		err = nil
 	}
-	latestOracle= ans.GetAddress()
+	latestOracle = ans.GetAddress()
 	version = ans.GetVersion()
 	return
 }
