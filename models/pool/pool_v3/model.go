@@ -1,6 +1,8 @@
 package pool_v3
 
 import (
+	"fmt"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -33,7 +35,7 @@ func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
 	return ans
 }
 
-func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT, version core.VersionType) *Poolv3 {
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT, version int16) *Poolv3 {
 	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
 	if syncAdapter.Details == nil {
 		syncAdapter.Details = core.Json{}
@@ -57,9 +59,9 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		Address:         pool.Address,
 		DieselToken:     dieselToken,
 		UnderlyingToken: underlyingToken.Hex(),
-		Version:         core.NewVersion(300),
-		Market: market,
-		PriceOracle: priceOracle,
+		Version:         core.NewVersion(version),
+		Market:          market,
+		PriceOracle:     priceOracle,
 		Name: func() string {
 			con, err := poolv3.NewPoolv3(common.HexToAddress(addr), client)
 			log.CheckFatal(err)
@@ -68,6 +70,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 			return name
 		}(),
 	})
+	pool.Details["actualV"] = fmt.Sprintf("%d", version)
 
 	// create a pool stat snapshot at first log of the pool
 	pool.onBlockChangeInternally()
@@ -86,8 +89,8 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 			log.CheckFatal(err)
 			return contract
 		}(),
-		zappers: &Zappers{},
-		CMDebtHandler: NewCMDebtHandler(adapter.GetDetailsByKey("actualV") == "310"),
+		zappers:       &Zappers{},
+		CMDebtHandler: NewCMDebtHandler(!(adapter.Details["actualV"] == nil || adapter.GetDetailsByKey("actualV") != "310")), // v310 is inverse of this
 	}
 	obj.setPoolQuotaKeeper()
 	data := &schemas.PoolState{}
