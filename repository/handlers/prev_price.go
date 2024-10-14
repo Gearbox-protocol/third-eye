@@ -41,7 +41,7 @@ func (repo *PrevPriceStore) loadPrevPriceFeed(db *gorm.DB) {
 	defer utils.Elapsed("loadPrevPriceFeed")()
 	data := []*schemas.PriceFeed{}
 	err := db.Raw(`SELECT * FROM 
-		(SELECT distinct on(token, merged_pf_version) * FROM price_feeds ORDER BY token, merged_pf_version, block_num DESC) t ORDER BY block_num`).Find(&data).Error
+		(SELECT distinct on(feed) * FROM price_feeds ORDER BY feed, block_num DESC) t ORDER BY block_num`).Find(&data).Error
 	log.CheckFatal(err)
 	for _, pf := range data {
 		repo.canPFAdded(pf)
@@ -51,8 +51,8 @@ func (repo *PrevPriceStore) loadPrevPriceFeed(db *gorm.DB) {
 // isUSD -> token -> feed -> price feed object
 func (repo *PrevPriceStore) canPFAdded(pf *schemas.PriceFeed) bool {
 	oldPF := repo.prevPriceFeeds[pf.Feed]
-	if oldPF != nil  {
-		if  oldPF.BlockNumber >= pf.BlockNumber {
+	if oldPF != nil {
+		if oldPF.BlockNumber >= pf.BlockNumber {
 			log.Warnf("oldPF %s.\n NewPF %s.", oldPF, pf)
 			return false
 		}
@@ -64,9 +64,8 @@ func (repo *PrevPriceStore) canPFAdded(pf *schemas.PriceFeed) bool {
 	return true
 }
 
-
 func (repo *PrevPriceStore) getCurrentPrice(tokenToFeed map[string]*schemas.TokenOracle) (ans []*schemas.TokenCurrentPrice) {
-	for _, entry:= range tokenToFeed {
+	for _, entry := range tokenToFeed {
 		price := repo.prevPriceFeeds[entry.Feed]
 		ans = append(ans, &schemas.TokenCurrentPrice{
 			PriceBI:  price.PriceBI,

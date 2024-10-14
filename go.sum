@@ -9,6 +9,8 @@ github.com/Gearbox-protocol/sdk-go v0.0.0-20240911121255-9b0a316c1959 h1:ZCZGjQX
 github.com/Gearbox-protocol/sdk-go v0.0.0-20240911121255-9b0a316c1959/go.mod h1:jRBSOG94bpGc5ci8EWIPUVXZdaGEaekMNmhajbmWFVU=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20241006141817-7e88ee86dde7 h1:gxB3XXax0nCqN+sr5VCBmA0eeV4RE4Opos3s4lamboU=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20241006141817-7e88ee86dde7/go.mod h1:jRBSOG94bpGc5ci8EWIPUVXZdaGEaekMNmhajbmWFVU=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20241014151518-1f8ff13e301c h1:1AIrr0E66yLX8jBo5eHJt3/ssJMlHBEqmEEM5ZqbAU8=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20241014151518-1f8ff13e301c/go.mod h1:jRBSOG94bpGc5ci8EWIPUVXZdaGEaekMNmhajbmWFVU=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227 h1:+/3TrD+q+BP36jGj2Bycdmrc/joKLNbc5ImePQzKRLM=

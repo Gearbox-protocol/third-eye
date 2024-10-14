@@ -60,7 +60,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, blockNum int
 			lmRewards := repo.GetAdapter(adapters[0])
 			lmRewards.(*v3.LMRewardsv3).AddPoolv3(blockNum, addr)
 			// add pool
-			return pool_v3.NewPool(addr, client, repo, blockNum, core.NULL_ADDR.Hex(),schemas.PriceOracleT(core.NULL_ADDR.Hex()), core.NewVersion(300))
+			return pool_v3.NewPool(addr, client, repo, blockNum, core.NULL_ADDR.Hex(), schemas.PriceOracleT(core.NULL_ADDR.Hex()), 300)
 		}
 	}
 	log.Fatalf("Version(%d) of pool can't be created.", version)
