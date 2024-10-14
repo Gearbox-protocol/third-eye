@@ -36,14 +36,14 @@ func NewPriceHandler(repo ds.RepositoryI) *PriceHandler {
 
 func (eng *PriceHandler) loadPoolToPriceOracle(lastDebtSync int64, db *gorm.DB) {
 	data := []schemas.Relation{}
-	err := db.Raw(`(select * from relations where type='PoolOracle' where block_num <=? order by block_num)`, lastDebtSync).Find(&data).Error
+	err := db.Raw(`(select * from relations where category='PoolOracle' and block_num <=? order by block_num)`, lastDebtSync).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
 		eng.poolToPriceOracle[entry.Owner] = schemas.PriceOracleT(entry.Dependent)
 	}
 
 	cms := []schemas.CreditManagerState{}
-	err = db.Raw(`(select address, pool from credit_managers)`).Find(&cms).Error
+	err = db.Raw(`(select address, pool_address from credit_managers)`).Find(&cms).Error
 	log.CheckFatal(err)
 	for _, entry := range cms {
 		eng.cmToPool[entry.Address] = entry.PoolAddress

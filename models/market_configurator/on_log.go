@@ -15,33 +15,32 @@ func (mdl *MarketConfigurator) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
 	case core.Topic("CreateMarket(address,address,string,string)"):
-		// details := mdl.GetDetails()
-		// if val := details["legacy"]; val == nil {
-		// 	details["legacy"] = "set"
-		// 	mdl.Details = details
-		// 	return
-		// } // first one is the legacy one is no need to set that.
+		// create marketpool and pooloracle relations
+		// add priceoracle adapter and add pool is not present
 		poolAddr := common.BytesToAddress(txLog.Topics[1][:]).Hex()
-		poolAdapter := mdl.Repo.GetAdapter(poolAddr)
+
 		priceOracleAddr := mdl.GetPriceOracle(poolAddr, blockNum)
 		mdl.Repo.AddRelation(&schemas.Relation{
-			Type:"MarketPool",
-			Owner: mdl.Address,
+			Type:      "MarketPool",
+			Owner:     mdl.Address,
 			Dependent: poolAddr,
-			BlockNum: blockNum,
+			BlockNum:  blockNum,
 		})
 		mdl.Repo.AddRelation(&schemas.Relation{
-			Type:"PoolOracle",
-			Owner: poolAddr,
+			Type:      "PoolOracle",
+			Owner:     poolAddr,
 			Dependent: priceOracleAddr,
-			BlockNum: blockNum,
+			BlockNum:  blockNum,
 		})
+		//
 		if priceOracle := mdl.Repo.GetAdapter(priceOracleAddr); priceOracle == nil {
 			po := po_v3.NewPriceOracle(priceOracleAddr, blockNum, mdl.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(po)
 		}
+		//
+		poolAdapter := mdl.Repo.GetAdapter(poolAddr)
 		if poolAdapter == nil {
-			pool := pool_v3.NewPool(poolAddr, mdl.Client, mdl.Repo, blockNum, mdl.Address, schemas.PriceOracleT(priceOracleAddr), core.NewVersion(310))
+			pool := pool_v3.NewPool(poolAddr, mdl.Client, mdl.Repo, blockNum, mdl.Address, schemas.PriceOracleT(priceOracleAddr), 310)
 			mdl.Repo.AddSyncAdapter(pool)
 		} else {
 			if poolv3, ok := poolAdapter.(*pool_v3.Poolv3); ok {
@@ -52,14 +51,14 @@ func (mdl *MarketConfigurator) OnLog(txLog types.Log) {
 			}
 		}
 	case core.Topic("CreateCreditManager(address)"):
-		cm :=cm_v3.NewCMv3(common.BytesToAddress(txLog.Topics[1][:]).Hex(), mdl.Client, mdl.Repo, blockNum)
+		cm := cm_v3.NewCMv3(common.BytesToAddress(txLog.Topics[1][:]).Hex(), mdl.Client, mdl.Repo, blockNum)
 		mdl.Repo.AddSyncAdapter(cm)
 	}
 }
 
 func (mdl *MarketConfigurator) GetPriceOracle(pool string, blockNum int64) string {
-	hash :=common.HexToHash(pool)
-	data , err:=core.CallFuncWithExtraBytes(mdl.Client, "01374518", common.HexToAddress(mdl.Address) ,blockNum, hash[:])
+	hash := common.HexToHash(pool)
+	data, err := core.CallFuncWithExtraBytes(mdl.Client, "01374518", common.HexToAddress(mdl.Address), blockNum, hash[:])
 	log.CheckFatal(err)
-	return  common.BytesToAddress(data).Hex()
+	return common.BytesToAddress(data).Hex()
 }
