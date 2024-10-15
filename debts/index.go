@@ -14,12 +14,12 @@ import (
 )
 
 type DebtEngine struct {
-	repo           ds.RepositoryI
-	db             *gorm.DB
-	client         core.ClientI
-	config         *config.Config
-	lastCSS        map[string]*schemas.CreditSessionSnapshot
-	tokenLastPrice map[schemas.PFVersion]map[string]*schemas.PriceFeed
+	repo    ds.RepositoryI
+	db      *gorm.DB
+	client  core.ClientI
+	config  *config.Config
+	lastCSS map[string]*schemas.CreditSessionSnapshot
+
 	//// credit_manager -> token -> liquidity threshold
 	poolLastInterestData   map[string]*schemas.PoolInterestData
 	debts                  []*schemas.Debt
@@ -36,7 +36,8 @@ type DebtEngine struct {
 	// used for v3 calc account fields
 	currentTs uint64
 	v3DebtDetails
-	tokenLTRamp map[string]map[string]*schemas_v3.TokenLTRamp
+	tokenLTRamp  map[string]map[string]*schemas_v3.TokenLTRamp
+	priceHandler *PriceHandler
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -46,7 +47,6 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		client:                 client,
 		config:                 config,
 		lastCSS:                make(map[string]*schemas.CreditSessionSnapshot),
-		tokenLastPrice:         make(map[schemas.PFVersion]map[string]*schemas.PriceFeed),
 		poolLastInterestData:   make(map[string]*schemas.PoolInterestData),
 		lastDebts:              make(map[string]*schemas.Debt),
 		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),
@@ -55,7 +55,13 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
 		v3DebtDetails:          Newv3DebtDetails(),
 		tokenLTRamp:            map[string]map[string]*schemas_v3.TokenLTRamp{},
+		priceHandler:           NewPriceHandler(repo),
 	}
+}
+
+func (eng *DebtEngine) InitTest() {
+	eng.priceHandler.poTotokenOracle = eng.repo.GetTokenOracles()
+	eng.priceHandler.init(eng.repo)
 }
 
 func NewDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI) ds.DebtEngineI {
@@ -79,13 +85,14 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.loadLastTvlSnapshot()
 	eng.loadLastCSS(lastDebtSynced)
 	eng.loadLastRebaseDetails(lastDebtSynced)
-	eng.loadTokenLastPrice(lastDebtSynced)
 	eng.loadAllowedTokenThreshold(lastDebtSynced)
 	eng.loadLastLTRamp(lastDebtSynced)
 	eng.loadPoolLastInterestData(lastDebtSynced)
 	eng.loadLastDebts(lastDebtSynced)
 	eng.loadParameters(lastDebtSynced)
 	eng.loadLiquidableAccounts(lastDebtSynced)
+	//
+	eng.priceHandler.load(lastDebtSynced, eng.db)
 	// v3
 	// eng.loadAccounQuotaInfo(lastDebtSynced, eng.db)
 	eng.loadPoolQuotaDetails(lastDebtSynced, eng.db)

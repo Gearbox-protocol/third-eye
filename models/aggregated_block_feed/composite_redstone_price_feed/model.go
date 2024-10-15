@@ -21,8 +21,8 @@ type CompositeRedStonePriceFeed struct {
 	Decimals   int8
 }
 
-func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *CompositeRedStonePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *CompositeRedStonePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
@@ -49,7 +49,7 @@ func (mdl *CompositeRedStonePriceFeed) GetCalls(blockNum int64) (calls []multica
 	return []multicall.Multicall2Call{{
 		Target:   common.HexToAddress(mdl.Address),
 		CallData: data,
-	},{
+	}, {
 		Target:   mdl.priceFeed1,
 		CallData: data,
 	}}, true
@@ -64,17 +64,17 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 		if results[0].Success {
 			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", results[0].ReturnData)
 			log.CheckFatal(err)
-			price :=  *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
+			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
 			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
 			return parsePriceForRedStone(price, isPriceInUSD)
-		// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+			// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
 		} else {
-			if (len(force) ==0 || !force[0] ) {
+			if len(force) == 0 || !force[0] {
 				return nil
 			}
 		}
 	}
-	validTokens := mdl.TokensValidAtBlock(blockNum)
+	validTokens := mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))
 	targetPrice := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token, true)
 	if targetPrice.Cmp(new(big.Int)) == 0 {

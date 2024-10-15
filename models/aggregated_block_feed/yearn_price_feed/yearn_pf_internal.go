@@ -66,7 +66,7 @@ func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, 
 		RoundId:         roundData.RoundId.Int64(),
 		PriceBI:         (*core.BigInt)(newAnswer),
 		Price:           utils.GetFloat64Decimal(newAnswer, pfVersion.Decimals()),
-		MergedPFVersion: schemas.MergedPFVersion(pfVersion), // only used for v1,v2 so can convert from pfVersion to MergedPFVersion
+		Feed: mdl.mainPFAddress.Hex() ,
 	}, nil
 }
 

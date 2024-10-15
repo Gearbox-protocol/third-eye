@@ -23,12 +23,13 @@
     },
     {
       address: '#PriceOracle_1',
-      disabled: true,
-      disabled_at: 5,
+      disabled: false,
+      disabled_at: 0,
       discoveredAt: 3,
+      details: {},
       'error': '',
       firstLogAt: 3,
-      lastSync: 5,
+      lastSync: 10,
       type: 'PriceOracle',
       version: 1,
     },
@@ -36,6 +37,7 @@
       address: '#PriceOracle_2',
       disabled: false,
       disabled_at: 0,
+      details: {},
       discoveredAt: 5,
       'error': '',
       firstLogAt: 6,
@@ -45,17 +47,10 @@
     },
     {
       address: '#ChainlinkPriceFeed_1',
+      disabled: false,
       details: {
         oracle: '#Oracle_1',
-        token: '#Token_1',
-        mergedPFVersion: {
-          '#Token_1': [{
-            blockNum: 3,
-            mergedPFVersion: 1,
-          }],
-        },
       },
-      disabled: false,
       disabled_at: 0,
       discoveredAt: 3,
       'error': '',
@@ -68,13 +63,6 @@
       address: '#ChainlinkPriceFeed_5',
       details: {
         oracle: '#Oracle_5',
-        token: '#Token_1',
-        mergedPFVersion: {
-          '#Token_1': [{
-            blockNum: 6,
-            mergedPFVersion: 2,
-          }],
-        },
       },
       disabled: false,
       disabled_at: 0,
@@ -89,6 +77,7 @@
       address: '#ACL_1',
       disabled: false,
       disabled_at: 0,
+      details: {},
       discoveredAt: 3,
       'error': '',
       firstLogAt: 0,
@@ -99,6 +88,7 @@
     {
       address: '#ContractRegister_1',
       disabled: false,
+      details: {},
       disabled_at: 0,
       discoveredAt: 3,
       'error': '',
@@ -138,6 +128,7 @@
     {
       address: '#CreditManager_1',
       disabled: false,
+      details: {},
       disabled_at: 0,
       discoveredAt: 4,
       'error': '',
@@ -164,6 +155,7 @@
     {
       address: '#Pool_1',
       disabled: false,
+      details: {},
       disabled_at: 0,
       discoveredAt: 4,
       'error': '',
@@ -175,6 +167,7 @@
     {
       address: '#Pool_2',
       disabled: false,
+      details: {},
       disabled_at: 0,
       discoveredAt: 7,
       'error': '',

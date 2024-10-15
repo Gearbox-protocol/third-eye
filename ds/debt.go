@@ -17,6 +17,7 @@ type DebtEngineI interface {
 	CalCurrentDebts(to int64)
 	CalculateDebt()
 	GetDebts() core.Json
+	InitTest()
 }
 
 type TokenDetails struct {
@@ -34,7 +35,7 @@ type DebtProfile struct {
 	Tokens                         map[string]TokenDetails `json:"tokens"`
 	UnderlyingDecimals             int8                    `json:"underlyingDecimals"`
 	*CumIndexAndUToken             `json:"poolDetails"`
-	CalcString 				   string `json:"calcString"`
+	CalcString                     string `json:"calcString"`
 }
 
 type CumIndexAndUToken struct {

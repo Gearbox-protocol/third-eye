@@ -100,6 +100,15 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, withdrawal.Assets, blockNum, txLog.TxHash.Hex(), "withdraw")
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Borrow(address,address,uint256)"):
+		mdl.AddDebt(ManageDebt{
+			BlockNum: int64(txLog.BlockNumber),
+			TxHash:   txLog.TxHash.Hex(),
+			Amount:   new(big.Int).SetBytes(txLog.Data),
+			Account:  common.BytesToAddress(txLog.Topics[2][:]).Hex(),
+			Type:     INCREASE_DEBT,
+			LogId: txLog.Index,
+			CreditManager:  common.BytesToAddress(txLog.Topics[1][:]).Hex(),
+		})
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Repay(address,uint256,uint256,uint256)"):
 		repayEvent, err := mdl.contract.ParseRepay(txLog)
@@ -111,6 +120,15 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			BorrowedAmount: repayEvent.BorrowedAmount,
 			Profit:         repayEvent.Profit,
 			Loss:           repayEvent.Loss,
+		})
+		mdl.AddDebt(ManageDebt{
+			BlockNum: int64(txLog.BlockNumber),
+			TxHash:   txLog.TxHash.Hex(),
+			Amount:   new(big.Int).SetBytes(txLog.Data[:32]),
+			// Account:  common.BytesToAddress(txLog.Topics[2][:]).Hex(),
+			Type:     DECREASE_DEBT,
+			LogId: txLog.Index,
+			CreditManager:  common.BytesToAddress(txLog.Topics[1][:]).Hex(),
 		})
 		amount := new(big.Int).Sub(new(big.Int).Add(repayEvent.BorrowedAmount, repayEvent.Profit), repayEvent.Loss)
 		mdl.repayEvents = append(mdl.repayEvents, &schemas.PoolLedger{
@@ -175,4 +193,8 @@ func (mdl Poolv3) setPoolKeeperAdapter(poolQuotaKeeper string, blockNum int64) {
 	pqk := pool_quota_keeper.NewPoolQuotaKeeper(poolQuotaKeeper, mdl.Address, blockNum, mdl.Client, mdl.Repo)
 	mdl.setDetailsByKey("PoolKeeper", poolQuotaKeeper)
 	mdl.Repo.AddSyncAdapter(pqk)
+}
+
+func (mdl Poolv3) GetDebt(txHash common.Hash, cm string, lastLogId uint) []ManageDebt {
+	return mdl.CMDebtHandler.Get(txHash.Hex(), cm, lastLogId)
 }

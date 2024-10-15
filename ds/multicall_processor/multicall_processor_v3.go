@@ -1,6 +1,7 @@
 package multicall_processor
 
 import (
+	"math/big"
 	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -8,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -54,7 +56,7 @@ func (p *MultiCallProcessorv3) Start(txHash string, startEvent *schemas.AccountO
 		log.Fatalf("Previously started multicall(%s) is not ended for txHash(%s)",
 			utils.ToJson(lastMainAction), txHash)
 	}
-	if lastMainAction == nil || lastMainAction.ended { // since open is before the multicall.
+	if lastMainAction == nil || lastMainAction.ended { // since open is before the multicall, this will result in all the multicall events being added directly to the open credit account
 		p.facadeActions = append(p.facadeActions, &FacadeAccountAction{
 			Data: startEvent,
 			Type: GBFacadeMulticallEvent,
@@ -65,27 +67,64 @@ func (p *MultiCallProcessorv3) Start(txHash string, startEvent *schemas.AccountO
 
 func (p *MultiCallProcessorv3) AddCloseEvent(event *schemas.AccountOperation) {
 	p.facadeActions = append(p.facadeActions, &FacadeAccountAction{
-		Data: event,
-		Type: GBFacadeCloseEvent,
+		Data:  event,
+		ended: true,
+		Type:  GBFacadeCloseEvent,
 	})
 }
 func (p *MultiCallProcessorv3) AddLiquidateEvent(event *schemas.AccountOperation) {
 	p.facadeActions = append(p.facadeActions, &FacadeAccountAction{
-		Data: event,
-		Type: GBFacadev3LiqUpdateEvent,
+		Data:  event,
+		Type:  GBFacadev3LiqUpdateEvent,
+		ended: true,
 	})
 }
 
-func (p *MultiCallProcessorv3) End(logId uint) {
+func (p *MultiCallProcessorv3) End(logId uint, debts []pool_v3.ManageDebt, underlying string) {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
 	}
 	lastMainAction := p.lastMainAction()
 	if lastMainAction != nil {
+		AddManageDebtsToMain(lastMainAction.Data, debts, underlying)
 		lastMainAction.ended = true
 		lastMainAction.logId = logId
 	}
 	p.running = false
+}
+
+func AddManageDebtsToMain(lastMainAction *schemas.AccountOperation, debts []pool_v3.ManageDebt, underlying string) {
+	for _, event := range debts {
+		account := event.Account
+		if event.Type == pool_v3.INCREASE_DEBT {
+			if account != lastMainAction.Borrower {
+				log.Fatal("The borrower of the increase debt is not same as the borrower on multicall", account, lastMainAction.Borrower)
+			}
+		} else if event.Type == pool_v3.DECREASE_DEBT {
+			account = lastMainAction.Borrower
+		}
+		accountOperation := &schemas.AccountOperation{
+			TxHash:      event.TxHash,
+			BlockNumber: event.BlockNum,
+			LogId:       event.LogId,
+			Borrower:    account,
+			SessionId:   lastMainAction.SessionId,
+			AdapterCall: false,
+			Action:      string(event.Type),
+			Args:        &core.Json{"creditAccount": account, "amount": event.Amount.Int64()},
+			Transfers: &core.Transfers{
+				underlying: func() *big.Int {
+					if event.Type == pool_v3.INCREASE_DEBT {
+						return event.Amount
+					} else {
+						return new(big.Int).Neg(event.Amount)
+					}
+				}(),
+			},
+			Dapp: event.CreditManager,
+		}
+		lastMainAction.MultiCall = append(lastMainAction.MultiCall, accountOperation)
+	}
 }
 
 // pops
