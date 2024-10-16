@@ -50,6 +50,9 @@ func (repo *PrevPriceStore) loadPrevPriceFeed(db *gorm.DB) {
 
 // isUSD -> token -> feed -> price feed object
 func (repo *PrevPriceStore) isPFAdded(pf *schemas.PriceFeed) bool {
+	if pf.Feed == "0xD478C66Baf4B9ED1185Db9886DdCA1e1403e1C4e" {
+		pf.Token = "0x0000000000000000000000000000000000001234"
+	}
 	for _, pfVersion := range pf.MergedPFVersion.MergedPFVersionToList() {
 		if repo.prevPriceFeeds[pfVersion] == nil {
 			repo.prevPriceFeeds[pfVersion] = map[string]*schemas.PriceFeed{}

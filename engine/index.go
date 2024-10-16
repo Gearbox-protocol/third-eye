@@ -106,6 +106,7 @@ func (e *Engine) SyncHandler() {
 	e.init()
 	latestBlockNum := e.GetLatestFinalizedBlock(4)
 	lastSyncedTill := e.getLastSyncedTill()
+	latestBlockNum = 19752044
 	e.syncedBlock.Store(lastSyncedTill)
 	//
 	// only do batch sync if latestblock is far from currently synced block
@@ -115,6 +116,7 @@ func (e *Engine) SyncHandler() {
 	}
 	for {
 		latestBlockNum = e.GetLatestFinalizedBlock(4)
+		latestBlockNum = 19752044
 		e.SyncAndFlush(latestBlockNum)
 		log.Infof("Synced till %d sleeping for 2 mins", latestBlockNum)
 		time.Sleep(2 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
