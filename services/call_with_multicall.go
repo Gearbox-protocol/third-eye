@@ -43,13 +43,13 @@ func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade co
 				}
 				mainEvents = append(mainEvents, event)
 				// v3
-			case "ebe4107c", // multicall(address,calls)
+			case "ebe4107c", // multicall(address,calls) // v310 , v3
 				"7e2ca9db", // botMulticall(address,calls)
-				"e3f46b26", // liquidateCreditAccount (v3)
-				"36b2ced3", // closeCreditAccount(creditAccount,to,skipTokenMask,convertToETH,calls)
+				"e3f46b26", // liquidateCreditAccount (v3) // v310, v3
+				"36b2ced3", // closeCreditAccount(creditAccount,to,skipTokenMask,convertToETH,calls)  // v310, v3
 				// "5d91a0e0", // liquidateCreditAccount
-				"92beab1d": // openCreditAccount(onBehalfOf,calls,referralCode)
-				log.Info("v3 main event", call.Input[2:10])
+				"92beab1d": // openCreditAccount(onBehalfOf,calls,referralCode) // v310, v3
+				// log.Info("v3 main event", call.Input[2:10])
 				event, err := getCreditFacadeMainEvent(call.To, call.Input, creditFacadev3Parser)
 				if err != nil {
 					return nil, err

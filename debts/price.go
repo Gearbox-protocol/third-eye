@@ -102,7 +102,7 @@ func (eng *PriceHandler) GetLastPriceFeed(cm string, token string, version core.
 		priceOracle = obj.GetPriceOracleByVersion(version)
 	}
 	feed := eng.poTotokenOracle[priceOracle][token]
-	if feed != nil { // has feed
+	if feed != nil && eng.feedLastPrice[feed.Feed] != nil { // has feed
 		return eng.feedLastPrice[feed.Feed]
 		// feed.Feed
 	}
@@ -111,9 +111,10 @@ func (eng *PriceHandler) GetLastPriceFeed(cm string, token string, version core.
 	// }
 	//
 	if len(dontFail) > 0 && dontFail[0] {
+		log.Infof("Price not found for %s pfversion: %d, priceoracle:%s, feed:%s", token, version, priceOracle, feed.Feed)
 		return nil
 	}
-	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d", token, version))
+	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d, priceoracle:%s, feed:%s", token, version, priceOracle, feed.Feed))
 	return nil
 }
 func (eng *PriceHandler) GetLastPriceFeedByOracle(priceOracle schemas.PriceOracleT, token string, version core.VersionType, dontFail ...bool) *schemas.PriceFeed {
@@ -133,31 +134,43 @@ func (eng *PriceHandler) GetLastPrice(cm string, token string, version core.Vers
 	if version.Eq(1) && eng.repo.GetWETHAddr() == token { // for mainnet on ethereum
 		return core.WETHPrice
 	}
-	a := eng.GetLastPriceFeed(cm, token, version).PriceBI.Convert()
-	return a
+	a := eng.GetLastPriceFeed(cm, token, version)
+	if a == nil {
+		log.Fatal(cm, token, version)
+	}
+
+	return a.PriceBI.Convert()
 }
 
-func (eng *PriceHandler) requestPriceFeed(blockNum int64, client core.ClientI, retryFeed ds.QueryPriceFeedI, token string) {
-	// defer func() {
-	// 	if err:= recover(); err != nil {
-	// 		log.Warn("err", err, "in getting yearn price feed in debt", feed, token, blockNum, pfVersion)
-	// 	}
-	// }()
+func (eng *PriceHandler) requestPriceFeed(blockNum int64, client core.ClientI, retryFeed ds.QueryPriceFeedI, token string, misHFOrTValue bool) {
+	defer func() {
+		// if err := recover(); err != nil {
+		// 	log.Warn("err", err, "in getting query price feed in debt", token, blockNum)
+		// }
+	}()
 	// PFFIX
 	calls, isQueryable := retryFeed.GetCalls(blockNum)
 	if !isQueryable {
 		return
 	}
-	log.Info("getting price for ", token, "at", blockNum)
+	category := ""
+	if misHFOrTValue {
+		category = "due to missed hf/total_value"
+	} else {
+		category = "due to hf <1"
+	}
+	log.Info("getting price for ", token, "at", blockNum, category)
 	results := core.MakeMultiCall(client, blockNum, false, calls)
 	price := retryFeed.ProcessResult(blockNum, results, true)
-	eng.AddTokenLastPrice(&schemas.PriceFeed{
-		BlockNumber: blockNum,
-		Feed:        retryFeed.GetAddress(),
-		RoundId:     price.RoundId,
-		PriceBI:     price.PriceBI,
-		Price:       price.Price,
-	})
+	if price != nil {
+		eng.AddTokenLastPrice(&schemas.PriceFeed{
+			BlockNumber: blockNum,
+			Feed:        retryFeed.GetAddress(),
+			RoundId:     price.RoundId,
+			PriceBI:     price.PriceBI,
+			Price:       price.Price,
+		})
+	}
 }
 
 func (eng *PriceHandler) init(repo ds.RepositoryI) {
