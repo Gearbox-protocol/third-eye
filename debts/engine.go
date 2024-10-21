@@ -325,8 +325,8 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 						feedAddr := lastPriceEvent.Feed
 						for _, retryFeed := range retryFeeds {
 							if retryFeed.GetAddress() == feedAddr {
-								eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr)
-
+								// log.Info("hf ", debt.CalHealthFactor.Convert(), "of", sessionId, "at", blockNum)
+								eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr, profile != nil)
 							}
 						}
 					}
@@ -437,12 +437,15 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			notMatched = true
 		}
 		// even if data compressor matching is disabled check the calc values  with session data at block where last credit snapshot was taken
-	} else if sessionSnapshot.BlockNum == blockNum && sessionSnapshot.HealthFactor.Convert().Cmp(new(big.Int)) != 0 { // it is 0 when the issuccessful is false for redstone credit accounts
+		//  // 20563217 and 0xe8f5F52842D7AF4BbcF5Fe731A336147B51F09D5_19980779_297 on mainnet has creditsessionsnapshot but isSuccessful for dv3 is false.
+	} else if sessionSnapshot.BlockNum == blockNum && sessionSnapshot.HealthFactor.Convert().Cmp(new(big.Int)) != 0 &&
+		!(utils.Contains([]int64{20563217, 20671148}, blockNum) && sessionSnapshot.TotalValueBI.Convert().Cmp(new(big.Int)) == 0) {
+		// it is 0 when the issuccessful is false for redstone credit accounts
 		if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.001)) ||
 			// hf value calculated are on different side of 1
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor) ||
 			// if healhFactor diff by 4 %
-			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)) {
+			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.01)) {
 			// log.Info(debt.CalHealthFactor, sessionSnapshot.HealthFactor, blockNum)
 			// log.Info(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, blockNum)
 			if log.GetBaseNet(core.GetChainId(eng.client)) == "ARBITRUM" {
@@ -459,12 +462,12 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 				notMatched = true
 			}
 			log.Info(
-				debt.CalTotalValueBI, sessionSnapshot.TotalValueBI,
+				debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, sessionId,
 				IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.001)),
 				// hf value calculated are on different side of 1
 				core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor),
 				// if healhFactor diff by 4 %
-				core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)),
+				core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.01)),
 			)
 		}
 	}

@@ -109,6 +109,9 @@ func (eng *DebtEngine) AddDebt(debt *schemas.Debt, forceAdd bool) {
 			core.DiffMoreThanFraction(lastDebt.CalDebtBI, debt.CalDebtBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, lastDebt.CalHealthFactor) {
+			if lastDebt.CalHealthFactor.Cmp(debt.CalDebtBI) == 0 && lastDebt.CalTotalValueBI.Cmp(debt.CalTotalValueBI) == 0 {
+				return
+			}
 			eng.addDebt(debt)
 		}
 	} else {
