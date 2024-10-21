@@ -91,7 +91,9 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	}
 
 	for _, to := range block.TokenOracles {
-		eng.priceHandler.AddTokenOracle(to)
+		if !to.Reserve { // only main
+			eng.priceHandler.AddTokenOracle(to)
+		}
 	}
 	//
 	for _, relation := range block.Relations {
@@ -449,6 +451,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 				notMatched = true
 			}
 			log.Info(
+				debt.CalTotalValueBI, sessionSnapshot.TotalValueBI,
 				IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.001)),
 				// hf value calculated are on different side of 1
 				core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor),
