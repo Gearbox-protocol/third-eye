@@ -35,7 +35,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 	}
 
 	if version.IsGBv1() {
-		poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
+		poContract, err := priceOracle.NewPriceOracle(oracle.Hex(), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
@@ -43,7 +43,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 		}
 		return new(big.Int).Mul(usdcAmount, sig)
 	} else { // v2 and above
-		poContract, err := priceOraclev2.NewPriceOraclev2(common.HexToAddress(oracle), repo.client)
+		poContract, err := priceOraclev2.NewPriceOraclev2(oracle.Hex(), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
