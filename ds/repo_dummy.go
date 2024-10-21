@@ -79,7 +79,7 @@ func (DummyRepo) DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle) {
 func (DummyRepo) GetPriceInUSD(blockNum int64, tokenAddrs string) *big.Int {
 	return nil
 }
-func (DummyRepo) GetActivePriceOracleByBlockNum(blockNum int64) (string, core.VersionType, error) {
+func (DummyRepo) GetActivePriceOracleByBlockNum(blockNum int64) (schemas.PriceOracleT, core.VersionType, error) {
 	return "", core.VersionType{}, nil
 }
 func (r *DummyRepo) AddPriceFeed(pf *schemas.PriceFeed) {
