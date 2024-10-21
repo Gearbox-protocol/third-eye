@@ -114,7 +114,7 @@ func (eng *PriceHandler) GetLastPriceFeed(cm string, token string, version core.
 		log.Infof("Price not found for %s pfversion: %d, priceoracle:%s, feed:%s", token, version, priceOracle, feed.Feed)
 		return nil
 	}
-	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d, priceoracle:%s, feed:%s", token, version, priceOracle, feed.Feed))
+	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d, priceoracle:%s, feed:%s", token, version, priceOracle, utils.ToJson(feed)))
 	return nil
 }
 func (eng *PriceHandler) GetLastPriceFeedByOracle(priceOracle schemas.PriceOracleT, token string, version core.VersionType, dontFail ...bool) *schemas.PriceFeed {

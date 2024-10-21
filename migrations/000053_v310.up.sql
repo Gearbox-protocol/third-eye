@@ -11,6 +11,8 @@ alter table price_feeds drop column merged_pf_version, drop column token;
 
 alter table pools add market varchar(42), add price_oracle varchar(42);
 
+alter table price_feeds add PRIMARY KEY (block_num, feed);
+
 CREATE TABLE relations (
     block_num integer,
     owner varchar(42),
@@ -21,6 +23,7 @@ CREATE TABLE relations (
 
 update pools p set price_oracle=sa.address from  sync_adapters sa where type='PriceOracle' and p._version=sa.version;
 
+update token_oracle set disabled_at=19752044 where version=1 or version=2;
 
 
 

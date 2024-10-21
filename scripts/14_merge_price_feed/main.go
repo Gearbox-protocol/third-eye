@@ -49,4 +49,7 @@ func main() {
 		log.Info("saved till", end)
 		b.BlockNum += 500_000
 	}
+
+	err = db.Exec(`alter table price_feeds add PRIMARY KEY (block_num, feed)`).Error
+	log.CheckFatal(err)
 }
