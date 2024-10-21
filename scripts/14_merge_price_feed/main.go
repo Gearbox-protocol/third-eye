@@ -30,7 +30,7 @@ func main() {
 			log.CheckFatal(err.Error)
 			log.Info("drop")
 			tx.Commit()
-			return
+			break
 		}
 		err = tx.Exec(`delete from price_feeds where block_num >=? and block_num <=?`, start, end)
 		log.CheckFatal(err.Error)

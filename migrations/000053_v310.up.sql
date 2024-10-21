@@ -11,7 +11,7 @@ alter table price_feeds drop column merged_pf_version, drop column token;
 
 alter table pools add market varchar(42), add price_oracle varchar(42);
 
-alter table price_feeds add PRIMARY KEY (block_num, feed);
+-- alter table price_feeds add PRIMARY KEY (block_num, feed);
 
 CREATE TABLE relations (
     block_num integer,
