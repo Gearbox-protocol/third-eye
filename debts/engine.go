@@ -484,20 +484,20 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 }
 
 // helper methods
-func (eng *DebtEngine) GetAmountInUSDByOracle(priceOracle string, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
-	tokenPrice := eng.priceHandler.GetLastPrice(priceOracle, tokenAddr, version)
+func (eng *DebtEngine) GetAmountInUSDByOracle(priceOracle schemas.PriceOracleT, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
+	tokenPrice := eng.priceHandler.GetLastPriceFeedByOracle(priceOracle, tokenAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
 	if version.MoreThan(core.NewVersion(1)) { // than decimals 8
-		return utils.GetInt64(new(big.Int).Mul(tokenPrice, amount), tokenDecimals)
+		return utils.GetInt64(new(big.Int).Mul(tokenPrice.PriceBI.Convert(), amount), tokenDecimals)
 	}
 	// for v1
 	usdcAddr := eng.repo.GetUSDCAddr()
-	usdcPrice := eng.priceHandler.GetLastPrice(priceOracle, usdcAddr, version)
+	usdcPrice := eng.priceHandler.GetLastPriceFeedByOracle(priceOracle, usdcAddr, version)
 	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
 
-	value := new(big.Int).Mul(amount, tokenPrice)
+	value := new(big.Int).Mul(amount, tokenPrice.PriceBI.Convert())
 	value = utils.GetInt64(value, tokenDecimals-usdcDecimals)
-	value = new(big.Int).Quo(value, usdcPrice)
+	value = new(big.Int).Quo(value, usdcPrice.PriceBI.Convert())
 	return new(big.Int).Mul(value, big.NewInt(100))
 }
 func (eng *DebtEngine) GetAmountInUSD(cm string, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {

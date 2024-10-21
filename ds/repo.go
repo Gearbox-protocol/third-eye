@@ -147,7 +147,7 @@ type RepositoryI interface {
 	AddRelation(details *schemas.Relation)
 	TokensValidAtBlock(string, int64) []*schemas.TokenOracle
 	TokenAddrsValidAtBlock(string, int64) map[string]bool
-	GetActivePriceOracleByBlockNum(blockNum int64) (string, core.VersionType, error)
+	GetActivePriceOracleByBlockNum(blockNum int64) (schemas.PriceOracleT, core.VersionType, error)
 }
 
 func IsTestnet(client core.ClientI) bool {

@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -211,7 +212,7 @@ func (repo *SyncAdaptersRepo) GetPoolWrapper() *pool_wrapper.PoolWrapper {
 // return the active first oracle under blockNum
 // if all disabled return the last one
 // blockNum ==0 is latest
-func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle string, version core.VersionType, err error) {
+func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle schemas.PriceOracleT, version core.VersionType, err error) {
 	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
 	data := make([]ds.SyncAdapterI, 0, len(oracles))
 	for _, addr := range oracles {
@@ -234,7 +235,7 @@ func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (la
 		ans = e
 		err = nil
 	}
-	latestOracle = ans.GetAddress()
+	latestOracle = schemas.PriceOracleT(ans.GetAddress())
 	version = ans.GetVersion()
 	return
 }

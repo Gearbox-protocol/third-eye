@@ -53,7 +53,7 @@ func dieselAnswers(entries []multicall.Multicall2Result) (dieselRates []*big.Int
 	return
 }
 
-func v1PriceCalls(oracle common.Address, tokenAddrs []string, repo *handlers.TokensRepo) (calls []multicall.Multicall2Call) {
+func v1PriceCalls(oracle schemas.PriceOracleT, tokenAddrs []string, repo *handlers.TokensRepo) (calls []multicall.Multicall2Call) {
 	oracleABI := core.GetAbi("PriceOracle")
 	usdcToken := common.HexToAddress(repo.GetUSDCAddr())
 	for _, tokenAddr := range tokenAddrs {
@@ -61,7 +61,7 @@ func v1PriceCalls(oracle common.Address, tokenAddrs []string, repo *handlers.Tok
 		data, err := oracleABI.Pack("convert", amount, common.HexToAddress(tokenAddr), usdcToken)
 		log.CheckFatal(err)
 		calls = append(calls, multicall.Multicall2Call{
-			Target:   oracle,
+			Target:   oracle.Hex(),
 			CallData: data,
 		})
 	}
@@ -83,13 +83,13 @@ func v1PriceAnswers(entries []multicall.Multicall2Result) (prices []*big.Int) {
 	return
 }
 
-func v2PriceCalls(oracle common.Address, tokenAddrs []string) (calls []multicall.Multicall2Call) {
+func v2PriceCalls(oracle schemas.PriceOracleT, tokenAddrs []string) (calls []multicall.Multicall2Call) {
 	oracleABI := core.GetAbi("PriceOraclev2")
 	for _, token := range tokenAddrs {
 		data, err := oracleABI.Pack("getPrice", common.HexToAddress(token))
 		log.CheckFatal(err)
 		calls = append(calls, multicall.Multicall2Call{
-			Target:   oracle,
+			Target:   oracle.Hex(),
 			CallData: data,
 		})
 	}
