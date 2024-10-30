@@ -38,8 +38,9 @@ func (mdl *PriceOracle) GetDataProcessType() int {
 func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
 	for _, txLog := range txLogs {
 		switch txLog.Topics[0] {
-		case core.Topic("NewPriceFeed(address,address)"),
-			core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"):
+		case core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"), // v3
+			core.Topic("SetPriceFeed(address,address,uint32,bool"), //v310
+			core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
 			token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 			oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
 			// on mainnet, these are the tickers added as weETH redstone composite oracle is made up of ticker oracle weETH/ETH redstone and ETH/USD chainlink oracle
@@ -173,7 +174,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
 func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, error) {
-	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
+	data, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
 	if err != nil {
 		{ // redstone feed without price on demand doesn't have priceFeedType method.
 			//https://etherscan.io/address/0xbC5FBcf58CeAEa19D523aBc76515b9AEFb5cfd58#readProxyContract
@@ -203,12 +204,12 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			// I will treat them as query feed to be periodic synced every 10-15 blocks.
 
 			pf0 := func() common.Address {
-				pf, err := core.CallFuncWithExtraBytes(mdl.Client, "385aee1b", common.HexToAddress(oracle), 0, nil) // priceFeed0
+				pf, err := core.CallFuncGetSingleValue(mdl.Client, "385aee1b", common.HexToAddress(oracle), 0, nil) // priceFeed0
 				log.CheckFatal(err)
 				return common.BytesToAddress(pf)
 			}()
 			pf0Type := func() int {
-				pf0Type, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf0, 0, nil) // priceFeedType
+				pf0Type, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", pf0, 0, nil) // priceFeedType
 				if err != nil && strings.Contains(err.Error(), "execution reverted") {
 					// this means that it can be from outside of gearbox protocol, like redstone own oracle.
 					pf0Type := func() int {

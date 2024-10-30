@@ -2,6 +2,7 @@ package configurator_v3
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditConfiguratorv3"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditConfiguratorv310"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -10,7 +11,8 @@ import (
 
 type Configuratorv3 struct {
 	*ds.SyncAdapter
-	cfgContract *creditConfiguratorv3.CreditConfiguratorv3
+	cfgContract     *creditConfiguratorv3.CreditConfiguratorv3
+	cfgContractv310 *creditConfiguratorv310.CreditConfiguratorv310
 }
 
 func NewConfiguratorv3(addr, creditManager string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI) *Configuratorv3 {

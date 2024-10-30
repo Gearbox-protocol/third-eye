@@ -132,14 +132,14 @@ func getAddrFromRPC(client core.ClientI, targetMethod string, oracle common.Addr
 	chainId, err := client.ChainID(context.TODO())
 	log.CheckFatal(err)
 	sig := getSig(targetMethod, blockNum, chainId.Int64())
-	tokenETHPFData, err := core.CallFuncWithExtraBytes(client, sig, oracle, blockNum, nil)
+	tokenETHPFData, err := core.CallFuncGetSingleValue(client, sig, oracle, blockNum, nil)
 	if err != nil {
 		log.Fatalf("Oracle(%s) at blockNum %d doesn't have valid %s: %s", oracle, blockNum, targetMethod, err)
 	}
 	return common.BytesToAddress(tokenETHPFData)
 }
 func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 {
-	decimals, err := core.CallFuncWithExtraBytes(client, "313ce567", addr, blockNum, nil) // decimals
+	decimals, err := core.CallFuncGetSingleValue(client, "313ce567", addr, blockNum, nil) // decimals
 	if err != nil {
 		log.Fatalf("Can't get decimals for addr(%s) : %s", addr, err)
 	}

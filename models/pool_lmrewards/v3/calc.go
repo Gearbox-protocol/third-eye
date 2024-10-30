@@ -31,7 +31,7 @@ func (mdl *LMRewardsv3) performTransfer(farmAddr, from, to string, amount *big.I
 			mdl.farms[farmAddr].TotalSupply.Convert(),
 			diff,
 		))
-		// totalSupplyData, err := core.CallFuncWithExtraBytes(mdl.Client, "18160ddd", common.HexToAddress(farmAddr), blockNum, nil)
+		// totalSupplyData, err := core.CallFuncGetSingleValue(mdl.Client, "18160ddd", common.HexToAddress(farmAddr), blockNum, nil)
 		// log.CheckFatal(err)
 		// totalSupply := new(big.Int).SetBytes(totalSupplyData)
 		// if totalSupply.Cmp(mdl.farms[farmAddr].TotalSupply.Convert()) != 0 {

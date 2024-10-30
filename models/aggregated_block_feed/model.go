@@ -73,13 +73,13 @@ func (mdl *AQFWrapper) GetQueryFeeds() []ds.QueryPriceFeedI {
 	return feeds
 }
 
-func (mdl *AQFWrapper) AddFeedOrToken(token, feed string, pfType string, discoveredAt int64, version core.VersionType) {
+func (mdl *AQFWrapper) AddFeedOrToken(token, feed string, pfType string, discoveredAt int64, version core.VersionType, underlyings []string) {
 	log.Infof("Add new %s:pfversion(%d) for token(%s): %s discovered at %d", pfType, version, token, feed, discoveredAt)
 	// if token != "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
 	// 	mdl.queryPFdeps.checkInDepGraph(token, oracle, discoveredAt)
 	// }
 	if mdl.QueryFeeds[feed] == nil {
-		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, feed, pfType, discoveredAt, mdl.Client, mdl.Repo, version))
+		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, feed, pfType, discoveredAt, mdl.Client, mdl.Repo, version, underlyings))
 		// MAINNET: old yvUSDC added on gearbox v1
 		createPriceFeedOnInit(mdl.QueryFeeds[feed], mdl.Client, token, discoveredAt, version)
 	}

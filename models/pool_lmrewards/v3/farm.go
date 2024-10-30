@@ -24,10 +24,11 @@ type Farmv3 struct {
 	Period uint64       `gorm:"column:period"`
 	EndTs  uint64       `gorm:"column:end_ts"`
 	//
-	TotalSupply *core.BigInt `gorm:"column:total_supply"`
-	FarmSyncedTill  int64        `gorm:"column:synced_till"`
+	TotalSupply    *core.BigInt `gorm:"column:total_supply"`
+	FarmSyncedTill int64        `gorm:"column:synced_till"`
 	PoolSyncedTill int64        `gorm:"column:pool_synced_till"`
 }
+
 func (farm Farmv3) GetMinSyncedTill() int64 {
 	if farm.FarmSyncedTill < farm.PoolSyncedTill {
 		return farm.FarmSyncedTill
@@ -35,7 +36,7 @@ func (farm Farmv3) GetMinSyncedTill() int64 {
 	return farm.PoolSyncedTill
 }
 
-func (farm *Farmv3) SetSyncedTill(synedTill int64)   {
+func (farm *Farmv3) SetSyncedTill(synedTill int64) {
 	if farm.FarmSyncedTill < synedTill {
 		farm.FarmSyncedTill = synedTill
 	}
@@ -46,7 +47,7 @@ func (farm *Farmv3) SetSyncedTill(synedTill int64)   {
 
 func (farm *Farmv3) setRewardToken(client core.ClientI) {
 	if farm.RewardToken == "" || farm.RewardToken == core.NULL_ADDR.Hex() {
-		rewardToken, err := core.CallFuncWithExtraBytes(client, "d1af0c7d", common.HexToAddress(farm.Farm), 0, nil) // rewardToken
+		rewardToken, err := core.CallFuncGetSingleValue(client, "d1af0c7d", common.HexToAddress(farm.Farm), 0, nil) // rewardToken
 		log.CheckFatal(err)
 		farm.RewardToken = common.BytesToAddress(rewardToken).Hex()
 	}

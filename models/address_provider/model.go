@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -19,8 +20,9 @@ type blockAndOracle struct {
 }
 type AddressProvider struct {
 	*ds.SyncAdapter
-	priceOracles []blockAndOracle `json:"-"`
-	otherAddrs   []common.Address `json:"-"`
+	priceOracles       []blockAndOracle       `json:"-"`
+	otherAddrs         []common.Address       `json:"-"`
+	hashToContractName map[common.Hash]string `json:"-"`
 }
 
 func GetAddressProvider(client core.ClientI, addressProviderAddrs string) (firstAddressProvider string, otherAddrs []common.Address) {
@@ -62,11 +64,20 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 	_, otherAddrProviders := GetAddressProvider(obj.Client, apAddrs)
 	obj.Details["others"] = otherAddrProviders
 	obj.otherAddrs = otherAddrProviders
+
+	addrv310 := core.GetAddressProvider(core.GetChainId(adapter.Client), core.NewVersion(300))
+	obj.hashToContractName = pkg.Initv310ContractHashMap(adapter.Client, common.HexToAddress(addrv310))
+
 	return obj
 }
 
 func (mdl *AddressProvider) GetAllAddrsForLogs() []common.Address {
-	return append(mdl.otherAddrs, common.HexToAddress(mdl.Address))
+	all := append(mdl.otherAddrs, common.HexToAddress(mdl.Address))
+	if mdl.Details["MARKET_FACTORY"] != nil {
+		addr := mdl.Details["MARKET_FACTORY"].(string)
+		all = append(all, common.HexToAddress(addr))
+	}
+	return all
 }
 
 func (mdl *AddressProvider) setPriceOracle() {

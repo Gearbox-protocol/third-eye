@@ -47,11 +47,11 @@ func (calc FarmingCalculator) addFarmingVal(debt *schemas.Debt, session *schemas
 			if session.Version.Eq(1) {
 				priceDecimals = 18
 			}
-			farmingVal += balance.F * utils.GetFloat64Decimal(priceStore.GetPrices(session.CreditManager, token, session.Version), priceDecimals)
+			farmingVal += balance.F * utils.GetFloat64Decimal(priceStore.GetPriceOnBlock(session.CreditManager, token, session.Version), priceDecimals)
 		}
 	}
 	if session.Version.Eq(1) {
-		farmingVal = farmingVal / utils.GetFloat64Decimal(priceStore.GetPrices(session.CreditManager, calc.usdc, session.Version), 18) // convert to usd
+		farmingVal = farmingVal / utils.GetFloat64Decimal(priceStore.GetPriceOnBlock(session.CreditManager, calc.usdc, session.Version), 18) // convert to usd
 		// by dividing by usdc price in eth
 	}
 	// farming val is zero for closed accounts

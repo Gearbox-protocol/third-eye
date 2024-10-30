@@ -102,7 +102,7 @@ func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.A
 		return newPhaseAgg, int16(phaseId)
 	} else { // goerli and kovan
 		// get priceFeed
-		underlyingBoundedFeed, err3 := core.CallFuncWithExtraBytes(mdl.Client, "741bef1a",
+		underlyingBoundedFeed, err3 := core.CallFuncGetSingleValue(mdl.Client, "741bef1a",
 			mdl.Addr, blockNum, nil) // priceFeed for [bounded chainlink oracle]
 		if err != nil {
 			log.Fatalf("For bounded oracle(%s) underlying priceFeed not found, err: %s", mdl.Addr, err3)
@@ -112,7 +112,7 @@ func (mdl *ChainlinkMainAgg) getPriceFeedAddrOnBounded(blockNum int64) (common.A
 		extras[31] = byte(phaseId)
 		var phaseAggregatorData []byte
 		// phaseAggregator only on goerli
-		phaseAggregatorData, err := core.CallFuncWithExtraBytes(mdl.Client, "d6bcd745",
+		phaseAggregatorData, err := core.CallFuncGetSingleValue(mdl.Client, "d6bcd745",
 			common.BytesToAddress(underlyingBoundedFeed), blockNum, extras[:])
 		log.CheckFatal(err)
 		newPhaseAgg := common.BytesToAddress(phaseAggregatorData)

@@ -46,7 +46,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		syncAdapter,
 	)
 	// underlyingToken
-	underlyingTokenData, err := core.CallFuncWithExtraBytes(client, "2495a599", common.HexToAddress(addr), 0, nil)
+	underlyingTokenData, err := core.CallFuncGetSingleValue(client, "2495a599", common.HexToAddress(addr), 0, nil)
 	log.CheckFatal(err)
 	underlyingToken := common.BytesToAddress(underlyingTokenData[:])
 	repo.GetToken(underlyingToken.Hex())
