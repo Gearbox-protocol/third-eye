@@ -90,7 +90,6 @@
       sessionId: '#Account_1_3_0',
       totalValue: 5000,
       totalValueBI: '5000000000',
-      extraQuotaAPY: 0,
     },
   ],
   daoOperations: [

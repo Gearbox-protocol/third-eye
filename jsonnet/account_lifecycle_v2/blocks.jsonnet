@@ -122,7 +122,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 6000,
         totalValueBI: '6000000000',
-        extraQuotaAPY: 0,
       },
     ],
     poolLedgers: [
@@ -297,7 +296,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 8000,
         totalValueBI: '8000000000',
-        extraQuotaAPY: 0,
       },
     ],
     daoOperations: [
@@ -505,7 +503,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 8000,
         totalValueBI: '8000000000',
-        extraQuotaAPY: 0,
       },
     ],
     timestamp: 518400,
@@ -593,7 +590,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 9000,
         totalValueBI: '9000000000',
-        extraQuotaAPY: 0,
       },
     ],
     daoOperations: [
