@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -39,8 +40,8 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 		{ // ignore LBTC price on mainnet as the pf0 of composite is not updated, so can't provide the pod
 			client := mdl.Client
 			chainId := core.GetChainId(client)
-			addrToSym:=core.GetTokenToSymbolByChainId(chainId)
-			if (addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" ){
+			addrToSym := core.GetTokenToSymbolByChainId(chainId)
+			if addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" {
 				continue
 			}
 		}
@@ -53,7 +54,7 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 	return
 }
 func (mdl *CommonCMAdapter) retry(oldaccount dc.CreditAccountCallData, blockNum int64) (dc.CreditAccountCallData, error) {
-	_, addr := mdl.Repo.GetDCWrapper().GetKeyAndAddress(core.NewVersion(300), blockNum)
+	_, addr := mdl.Repo.GetDCWrapper().GetKeyAndAddress(core.NewVersion(300), blockNum, dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR)
 	dcw, err := dcv3.NewDataCompressorv3(addr, mdl.Client)
 	log.CheckFatal(err)
 	ts := mdl.Repo.SetAndGetBlock(blockNum).Timestamp

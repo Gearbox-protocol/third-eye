@@ -51,13 +51,13 @@ func (mdl *Cmv3State) SetUnderlyingState(obj interface{}) {
 
 func (mdl *CMv3) InitState() {
 	underlying := func() common.Address {
-		data, err := core.CallFuncWithExtraBytes(mdl.Client, "6f307dc3", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil) // [underlying] on credit manager v2
+		data, err := core.CallFuncGetSingleValue(mdl.Client, "6f307dc3", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil) // [underlying] on credit manager v2
 		log.CheckFatal(err)
 		return common.BytesToAddress(data)
 	}()
 
 	poolAddr := func() common.Address {
-		data, err := core.CallFuncWithExtraBytes(mdl.Client, "16f0115b", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
+		data, err := core.CallFuncGetSingleValue(mdl.Client, "16f0115b", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
 		// [pool] on creditManager
 		log.CheckFatal(err)
 		return common.BytesToAddress(data)
