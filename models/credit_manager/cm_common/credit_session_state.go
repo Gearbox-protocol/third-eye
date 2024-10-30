@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -143,7 +144,7 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionI
 	}
 	return call, func(result multicall.Multicall2Result) {
 		if !result.Success {
-			key, dc := mdl.Repo.GetDCWrapper().GetKeyAndAddress(session.Version, closedAt-1)
+			key, dc := mdl.Repo.GetDCWrapper().GetKeyAndAddress(session.Version, closedAt-1, dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR)
 			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v, dc: %s(%s)", mdl.GetAddress(), session.Borrower, closedAt-1, result.ReturnData, key, dc)
 		}
 		dcAccountData, err := resultFn(result.ReturnData)
@@ -220,7 +221,7 @@ func (mdl *CommonCMAdapter) createCSSnapshot(blockNum int64, session *schemas.Cr
 	//
 	// set balances
 	css.Balances = mdl.addFloatValue(session.Account, blockNum, data.Balances)
-	css.ExtraQuotaAPY = schemas.QuotaBorrowRate(*css.Balances, css.TotalValueBI)
+	// css.ExtraQuotaAPY = schemas.QuotaBorrowRate(*css.Balances, css.TotalValueBI)
 	// for close credit account operation on gearbox v2
 	// https://github.com/Gearbox-protocol/contracts-v2/blob/main/contracts/credit/CreditFacade.sol#L235
 	// there is a skipTokenMask which can be used to skip certain tokens from getting transferred to borrower
@@ -326,7 +327,7 @@ func AddStETHBalance(account string, blockNum int64, dcv2Balances []core.TokenBa
 			//
 			if stETH == token {
 				accountData := common.HexToHash(account)
-				_v, err := core.CallFuncWithExtraBytes(
+				_v, err := core.CallFuncGetSingleValue(
 					client, "f5eb42dc", // shareOf, https://etherscan.io/token/0xae7ab96520de3a18e5e111b5eaab095312d7fe84#readProxyContract
 					common.HexToAddress(token), blockNum, accountData[:],
 				)

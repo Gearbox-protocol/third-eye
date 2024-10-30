@@ -33,12 +33,12 @@ func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int6
 }
 
 func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStonePriceFeed {
-	pf0, err := core.CallFuncWithExtraBytes(adapter.Client, "385aee1b", common.HexToAddress(adapter.Address), 0, nil) // priceFeed0
+	pf0, err := core.CallFuncGetSingleValue(adapter.Client, "385aee1b", common.HexToAddress(adapter.Address), 0, nil) // priceFeed0
 	log.CheckFatal(err)
-	pf1, err := core.CallFuncWithExtraBytes(adapter.Client, "ab0ca0e1", common.HexToAddress(adapter.Address), 0, nil) // priceFeed1
+	pf1, err := core.CallFuncGetSingleValue(adapter.Client, "ab0ca0e1", common.HexToAddress(adapter.Address), 0, nil) // priceFeed1
 	log.CheckFatal(err)
 	//
-	decimals, err := core.CallFuncWithExtraBytes(adapter.Client, "313ce567", common.BytesToAddress(pf0), 0, nil) // decimals
+	decimals, err := core.CallFuncGetSingleValue(adapter.Client, "313ce567", common.BytesToAddress(pf0), 0, nil) // decimals
 	log.CheckFatal(err)
 	obj := &CompositeRedStonePriceFeed{
 		BasePriceFeed: base_price_feed.NewBasePriceFeedFromAdapter(adapter),

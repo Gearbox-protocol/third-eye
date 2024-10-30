@@ -176,6 +176,9 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	return nil
 }
 
+// if adapter is already present for that address don't add .
+// if the price oracle for v2 is diabled when v3 price oracle is added,
+// if the price oracle for v2 is added, v1 po is disabled.
 func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()

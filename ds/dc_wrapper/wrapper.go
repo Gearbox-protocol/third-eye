@@ -2,15 +2,19 @@ package dc_wrapper
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
+	"math/big"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditAccountCompressor"
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
 	dcv3 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/marketCompressor"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -34,6 +38,10 @@ type DataCompressorWrapper struct {
 	versionToAddress map[core.VersionType][]addressAndBlock
 	// for v1
 	creditManagerToFilter map[common.Address]common.Address
+	// for v310
+
+	compressorByBlock map[CompressorType][]addressAndBlock
+
 	//
 	testing *DCTesting
 
@@ -44,6 +52,7 @@ var DCV1 = "DCV1"
 var DCV2 = "DCV2"
 var TESTING = "TESTING"
 var DCV3 = "DCV3"
+var DCV310 = "DCV310"
 var NODC = "NODC"
 var NO_DC_FOUND_ERR = fmt.Errorf("No data compressor found")
 
@@ -55,6 +64,7 @@ func NewDataCompressorWrapper(client core.ClientI) *DataCompressorWrapper {
 		client:             client,
 		// for v1
 		creditManagerToFilter: make(map[common.Address]common.Address),
+		compressorByBlock:     make(map[CompressorType][]addressAndBlock),
 		testing: &DCTesting{
 			calls:  map[int64]*dc.DCCalls{},
 			client: client,
@@ -68,7 +78,7 @@ func (dcw *DataCompressorWrapper) SetCalls(blockNum int64, calls *dc.DCCalls) {
 	dcw.testing.calls[blockNum] = calls
 }
 
-func (dcw *DataCompressorWrapper) addDataCompressorByBlock(blockNum int64, addr string) {
+func (dcw *DataCompressorWrapper) addDataCompressorv1v2(blockNum int64, addr string) {
 	if len(dcw.DCBlockNum) > 0 && dcw.DCBlockNum[len(dcw.DCBlockNum)-1] >= blockNum {
 		log.Fatalf("Current dc added at :%v, new dc:%s added at %d  ", dcw.DCBlockNum, addr, blockNum)
 	}
@@ -112,19 +122,21 @@ func (dcw *DataCompressorWrapper) addDataCompressorByBlock(blockNum int64, addr 
 	dcw.DCBlockNum = append(dcw.DCBlockNum, blockNum)
 }
 
-// the data compressor are added in increasing order of blockNum
+// the data compressor are added in increasing order of blockNum for v1, v2
 func (dcw *DataCompressorWrapper) AddDataCompressor(blockNum int64, addr string) {
 	dcw.mu.Lock()
 	defer dcw.mu.Unlock()
-	dcw.addDataCompressorByBlock(blockNum, addr)
-}
-func (dcw *DataCompressorWrapper) AddDataCompressorByVersion(version core.VersionType, addr string, blockNum int64) {
-	dcw.mu.Lock()
-	defer dcw.mu.Unlock()
-	dcw.addDataCompressorByVersion(version, addr, blockNum)
+	dcw.addDataCompressorv1v2(blockNum, addr)
 }
 
-func (dcw *DataCompressorWrapper) addDataCompressorByVersion(version core.VersionType, addr string, discoveredAt int64) {
+// for v300
+func (dcw *DataCompressorWrapper) AddDataCompressorv300(version core.VersionType, addr string, blockNum int64) {
+	dcw.mu.Lock()
+	defer dcw.mu.Unlock()
+	dcw.addDataCompressorv300(version, addr, blockNum)
+}
+
+func (dcw *DataCompressorWrapper) addDataCompressorv300(version core.VersionType, addr string, discoveredAt int64) {
 	dcw.versionToAddress[version] = append(dcw.versionToAddress[version], addressAndBlock{
 		address: common.HexToAddress(addr),
 		block:   discoveredAt,
@@ -132,6 +144,22 @@ func (dcw *DataCompressorWrapper) addDataCompressorByVersion(version core.Versio
 	sort.Slice(dcw.versionToAddress[version], func(i, j int) bool {
 		return dcw.versionToAddress[version][i].block < dcw.versionToAddress[version][j].block
 	})
+}
+
+func (dcw *DataCompressorWrapper) AddCompressorType(addr common.Address, cType CompressorType, discoveredAt int64) {
+	if cType != CREDIT_ACCOUNT_COMPRESSOR && cType != MARKET_COMPRESSOR {
+		log.Fatal("ctype is wrong, ", cType)
+	}
+	if len(dcw.compressorByBlock[cType]) > 0 {
+		last := dcw.compressorByBlock[cType][len(dcw.compressorByBlock[cType])-1]
+		if last.block > discoveredAt {
+			log.Fatalf("last %s has blocknum more than (%s) and new addr is %s", last, discoveredAt, addr)
+		}
+		dcw.compressorByBlock[cType] = append(dcw.compressorByBlock[cType], addressAndBlock{
+			address: addr,
+			block:   discoveredAt,
+		})
+	}
 }
 
 func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
@@ -157,17 +185,39 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 		//
 		if strings.Contains(dcAddr, "_") {
 			addrs := strings.Split(dcAddr, "_")
-			version, err := strconv.ParseInt(addrs[1], 10, 64)
-			log.CheckFatal(err)
-			dcw.addDataCompressorByVersion(core.NewVersion(int16(version)), addrs[0], blockNum)
+			if addrs[1] == "300" {
+				version, err := strconv.ParseInt(addrs[1], 10, 64)
+				log.CheckFatal(err)
+				dcw.addDataCompressorv300(core.NewVersion(int16(version)), addrs[0], blockNum)
+			} else {
+				dcw.AddCompressorType(common.HexToAddress(addrs[0]), CompressorType(addrs[1]), blockNum)
+			}
 		} else {
-			dcw.addDataCompressorByBlock(blockNum, dcAddr)
+			dcw.addDataCompressorv1v2(blockNum, dcAddr)
 		}
 	}
 }
 
-func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blockNum int64) (string, common.Address) {
+type CompressorType string
+
+const (
+	MARKET_COMPRESSOR CompressorType = "MARKET"
+	// CM_COMPRESSOR             CompressorType = "CM"
+	CREDIT_ACCOUNT_COMPRESSOR CompressorType = "ACCOUNT"
+)
+
+// checks in versionToAddress for v300 and then checks in addrByBlock for v1,v2
+func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blockNum int64, cType CompressorType) (string, common.Address) {
+	// v300
 	if version.MoreThanEq(core.NewVersion(300)) {
+		// v310
+		for i := len(dcw.compressorByBlock[cType]) - 1; i >= 0; i-- {
+			compressorDetails := dcw.compressorByBlock[cType][i]
+			if compressorDetails.block <= blockNum {
+				return DCV310, compressorDetails.address
+			}
+		}
+		// v300
 		arr := dcw.versionToAddress[version]
 		for i := len(arr) - 1; i >= 0; i-- {
 			if arr[i].block <= blockNum {
@@ -176,9 +226,12 @@ func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blo
 		}
 		return NODC, core.NULL_ADDR
 	}
+	// for v2, v1
 	key, discoveredAt := dcw.getDataCompressorIndex(blockNum)
 	return key, dcw.getDCAddr(discoveredAt)
 }
+
+// checks in versionToAddress for v300 and then checks in addrByBlock for v1,v2
 func (dcw *DataCompressorWrapper) GetLatestv3DC() (common.Address, bool) {
 	version := core.NewVersion(300)
 	if len(dcw.versionToAddress[version]) == 0 {
@@ -196,10 +249,16 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType,
 	resultFn func([]byte) (dc.CreditAccountCallData, error),
 	errReturn error) {
 	//
-	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
+	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum, CREDIT_ACCOUNT_COMPRESSOR)
 	switch key {
 	case NODC:
 		errReturn = NO_DC_FOUND_ERR
+	case DCV310:
+		data, err := core.GetAbi("CreditAccountCompressor").Pack("getCreditAccountData", account)
+		call, errReturn = multicall.Multicall2Call{
+			Target:   dcAddr,
+			CallData: data,
+		}, err
 	case DCV3:
 		data, err := core.GetAbi("DataCompressorv3").Pack("getCreditAccountData", account, []dcv3.PriceOnDemand{})
 		call, errReturn = multicall.Multicall2Call{
@@ -231,6 +290,13 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType,
 		switch key {
 		case NODC:
 			log.Fatal("No data compressor found for credit account data")
+		case DCV310:
+			out, err := core.GetAbi("CreditAccountCompressor").Unpack("getCreditAccountData", bytes)
+			if err != nil {
+				return dc.CreditAccountCallData{}, err
+			}
+			accountData := *abi.ConvertType(out[0], new(creditAccountCompressor.CreditAccountData)).(*creditAccountCompressor.CreditAccountData)
+			return dcw.addFieldsToAccountv310(blockNum, accountData)
 		case DCV3:
 			out, err := core.GetAbi("DataCompressorv3").Unpack("getCreditAccountData", bytes)
 			if err != nil {
@@ -262,15 +328,28 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType,
 
 // blockNum can't be zero
 
-func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType, blockNum int64, _creditManager common.Address) (
+func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType, blockNum int64, _creditManager common.Address, cf string) (
 	call multicall.Multicall2Call,
 	resultFn func([]byte) (dc.CMCallData, error),
 	errReturn error) {
 	//
-	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
+	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum, MARKET_COMPRESSOR)
 	switch key {
 	case NODC:
 		errReturn = NO_DC_FOUND_ERR
+	case DCV310:
+		// data, err := core.GetAbi("PoolCompressor").Pack("getCreditManagerData", _creditManager)
+		// call, errReturn = multicall.Multicall2Call{
+		// 	Target:   dcAddr,
+		// 	CallData: data,
+		// }, err
+		data, err := hex.DecodeString("166bf9d9")
+		log.CheckFatal(err)
+		call = multicall.Multicall2Call{
+			Target:   common.HexToAddress(cf),
+			CallData: data,
+		}
+		errReturn = nil
 	case DCV3:
 		data, err := core.GetAbi("DataCompressorv3").Pack("getCreditManagerData", _creditManager)
 		call, errReturn = multicall.Multicall2Call{
@@ -301,6 +380,21 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType,
 		switch key {
 		case NODC:
 			log.Fatal("No data compressor found for credit manager data")
+		case DCV310:
+			out, err := core.GetAbi("CreditFacadev3").Unpack("debtLimits", bytes)
+			if err != nil {
+				return dc.CMCallData{}, err
+			}
+			type debts struct {
+				MinDebt *big.Int
+				MaxDebt *big.Int
+			}
+			cmData := *abi.ConvertType(out[0], new(debts)).(*debts)
+			return dc.CMCallData{
+				Addr:    _creditManager,
+				MinDebt: (*core.BigInt)(cmData.MinDebt),
+				MaxDebt: (*core.BigInt)(cmData.MaxDebt),
+			}, nil
 		case DCV3:
 			out, err := core.GetAbi("DataCompressorv3").Unpack("getCreditManagerData", bytes)
 			if err != nil {
@@ -348,10 +442,16 @@ func (dcw *DataCompressorWrapper) GetPoolData(version core.VersionType, blockNum
 	resultFn func([]byte) (dc.PoolCallData, error),
 	errReturn error) {
 	//
-	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum)
+	key, dcAddr := dcw.GetKeyAndAddress(version, blockNum, MARKET_COMPRESSOR)
 	switch key {
 	case NODC:
 		errReturn = NO_DC_FOUND_ERR
+	case DCV310:
+		data, err := core.GetAbi("MarketCompressor").Pack("getMarketData0", _pool)
+		call, errReturn = multicall.Multicall2Call{
+			Target:   dcAddr,
+			CallData: data,
+		}, err
 	case DCV3:
 		data, err := core.GetAbi("DataCompressorv3").Pack("getPoolData", _pool)
 		call, errReturn = multicall.Multicall2Call{
@@ -384,6 +484,13 @@ func (dcw *DataCompressorWrapper) GetPoolData(version core.VersionType, blockNum
 		switch key {
 		case NODC:
 			log.Fatal("No data compressor found for pool data")
+		case DCV310:
+			out, err := core.GetAbi("MarketCompressor").Unpack("getMarketData0", bytes)
+			if err != nil {
+				return dc.PoolCallData{}, err
+			}
+			poolData := *abi.ConvertType(out[0], new(marketCompressor.MarketData)).(*marketCompressor.MarketData)
+			return dc.GetPoolDataFromDCCall(poolData.Pool)
 		case DCV3:
 			out, err := core.GetAbi("DataCompressorv3").Unpack("getPoolData", bytes)
 			if err != nil {
