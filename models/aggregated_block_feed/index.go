@@ -10,7 +10,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/yearn_price_feed"
 )
 
-func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) ds.QueryPriceFeedI {
+func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, underlyingFeeds []string) ds.QueryPriceFeedI {
 	switch pfType {
 	case ds.RedStonePF:
 		return redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)

@@ -196,7 +196,7 @@ func (eng *DebtEngine) CalculateDebt() {
 }
 
 func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD float64) {
-	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
+	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr(eng.client) { // tvl snapshot every hour
 		return
 	}
 	var totalAvailableLiquidityInUSD float64 = 0

@@ -58,7 +58,7 @@ func (mdl *MarketConfigurator) OnLog(txLog types.Log) {
 
 func (mdl *MarketConfigurator) GetPriceOracle(pool string, blockNum int64) string {
 	hash := common.HexToHash(pool)
-	data, err := core.CallFuncWithExtraBytes(mdl.Client, "01374518", common.HexToAddress(mdl.Address), blockNum, hash[:])
+	data, err := core.CallFuncGetSingleValue(mdl.Client, "01374518", common.HexToAddress(mdl.Address), blockNum, hash[:])
 	log.CheckFatal(err)
 	return common.BytesToAddress(data).Hex()
 }

@@ -25,7 +25,7 @@ type ChainlinkPriceFeed struct {
 func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, oracle string, discoveredAt int64, version core.VersionType, bounded bool, includeLastLogBeforeDiscover ...bool) *ChainlinkPriceFeed {
 	var upperLimit string
 	if bounded {
-		returnData, err := core.CallFuncWithExtraBytes(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound
+		returnData, err := core.CallFuncGetSingleValue(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound
 		log.CheckFatal(err)
 		upperLimit = new(big.Int).SetBytes(returnData).String()
 	}
