@@ -147,7 +147,7 @@ func (dcw *DataCompressorWrapper) addDataCompressorv300(version core.VersionType
 }
 
 func (dcw *DataCompressorWrapper) AddCompressorType(addr common.Address, cType CompressorType, discoveredAt int64) {
-	if cType != CREDIT_ACCOUNT_COMPRESSOR && cType != MARKET_COMPRESSOR {
+	if !utils.Contains([]CompressorType{MARKET_COMPRESSOR, CREDIT_ACCOUNT_COMPRESSOR}, cType) {
 		log.Fatal("ctype is wrong, ", cType)
 	}
 	if len(dcw.compressorByBlock[cType]) > 0 {
