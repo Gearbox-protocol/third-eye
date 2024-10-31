@@ -29,7 +29,7 @@ func GetAddressProvider(client core.ClientI, addressProviderAddrs string) (first
 	minVersion := core.NewVersion(10_000)
 	for _, addr := range strings.Split(addressProviderAddrs, ",") {
 		version := core.FetchVersion(addr, 0, client)
-		if !version.MoreThan(minVersion) {
+		if version.LessThan(minVersion) {
 			minVersion = version
 			firstAddressProvider = addr
 		}
