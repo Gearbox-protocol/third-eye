@@ -106,13 +106,21 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 	case core.Topic("SetAddress(bytes32,address,uint256)"): // can be used for version 310 address provider too. set PriceOracle acl contractregister are not emitted thought
 		contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
 		address := common.BytesToAddress(txLog.Topics[2][:])
-		mdl.v3LogParse(txLog, contract, address.Hex())
+		version := func() int16 {
+			version :=
+				new(big.Int).SetBytes(txLog.Topics[3].Bytes()).Int64()
+			if version == 0 {
+				version = 1
+			}
+			return int16(version)
+		}()
+		mdl.v3LogParse(txLog, contract, address.Hex(), version)
 	case core.Topic("SetAddress(string,address,uint256)"): // can be used for version 310 address provider too. set PriceOracle acl contractregister are not emitted thought
 		event, err := addrv310.ParseSetAddress(txLog)
 		log.CheckFatal(err)
 		contractName := event.Key
 		address := event.Value
-		mdl.v3LogParse(txLog, contractName, address.Hex())
+		mdl.v3LogParse(txLog, contractName, address.Hex(), int16(event.Version.Int64()))
 	case core.Topic("AddMarketConfigurator(address)"):
 		mdl.addMarketConfigurator(txLog.BlockNumber, common.BytesToAddress(txLog.Topics[1][:]))
 	}
@@ -121,32 +129,26 @@ func (mdl *AddressProvider) addMarketConfigurator(block uint64, configurator com
 	market_configurator.NewMarketConfigurator(configurator.Hex(), int64(block), mdl.Client, mdl.Repo)
 }
 
-func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address string) {
+func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address string, version int16) {
 	// contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
 	// address := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
-	version := func() int16 {
-		version :=
-			new(big.Int).SetBytes(txLog.Topics[3].Bytes()).Int64()
-		if version == 0 {
-			version = 1
-		}
-		return int16(version)
-	}()
 	blockNum := int64(txLog.BlockNumber)
 	//
 	log.Infof("AddressSet: %s(%d), %s at blockNum %d", contract, version, address, blockNum)
 	switch contract {
-	case "POOL_COMPRESSOR", "CREDIT_ACCOUNT_COMPRESSOR":
-		var newValue string
-		if contract == "POOL_COMPRESSOR" {
-			newValue = fmt.Sprintf("%s_POOL", txLog.Address.Hex())
-		} else if contract == "CREDIT_ACCOUNT_COMPRESSOR" {
-			newValue = fmt.Sprintf("%s_ACCOUNT", txLog.Address.Hex())
+	case "POOL_COMPRESSOR", "CREDIT_ACCOUNT_COMPRESSOR", "MARKET_COMPRESSOR":
+		m := map[string]dc_wrapper.CompressorType{
+			"POOL_COMPRESSOR":           dc_wrapper.POOL_COMPRESSOR,
+			"MARKET_COMPRESSOR":         dc_wrapper.MARKET_COMPRESSOR,
+			"CREDIT_ACCOUNT_COMPRESSOR": dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR,
 		}
+		cType := m[contract]
+		newValue := fmt.Sprintf("%s_%s", txLog.Address.Hex(), cType)
+		//
 		dcObj, fn := mdl.updateDetailsField_dc()
 		dcObj[fmt.Sprintf("%d", blockNum)] = newValue
 		fn(dcObj)
-		mdl.Repo.GetDCWrapper().AddCompressorType(common.HexToAddress(address), dc_wrapper.CompressorType(contract), int64(txLog.BlockNumber))
+		mdl.Repo.GetDCWrapper().AddCompressorType(common.HexToAddress(address), cType, int64(txLog.BlockNumber))
 	case "DATA_COMPRESSOR":
 		dcObj, fn := mdl.updateDetailsField_dc()
 		if version < 300 { // don't add dataCompressor with version 2.1

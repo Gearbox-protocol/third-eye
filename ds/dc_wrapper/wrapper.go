@@ -145,7 +145,7 @@ func (dcw *DataCompressorWrapper) addDataCompressorv300(version core.VersionType
 }
 
 func (dcw *DataCompressorWrapper) AddCompressorType(addr common.Address, cType CompressorType, discoveredAt int64) {
-	if cType != CREDIT_ACCOUNT_COMPRESSOR && cType != POOL_COMPRESSOR {
+	if !utils.Contains([]CompressorType{POOL_COMPRESSOR, MARKET_COMPRESSOR, CREDIT_ACCOUNT_COMPRESSOR}, cType) {
 		log.Fatal("ctype is wrong, ", cType)
 	}
 	if len(dcw.compressorByBlock[cType]) > 0 {
@@ -199,7 +199,8 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 type CompressorType string
 
 const (
-	POOL_COMPRESSOR CompressorType = "POOL"
+	POOL_COMPRESSOR   CompressorType = "POOL"
+	MARKET_COMPRESSOR CompressorType = "MARKET"
 	// CM_COMPRESSOR             CompressorType = "CM"
 	CREDIT_ACCOUNT_COMPRESSOR CompressorType = "ACCOUNT"
 )
