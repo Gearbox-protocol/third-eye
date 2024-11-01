@@ -87,7 +87,6 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 		"Token_4": "stkcvxOHMFRAXBP",
 	} {
 		addr := common.HexToAddress(addressMap[tokenVar])
-		log.Info(addr)
 		tokenSymMap.UpdateForTest(sym, addr)
 	}
 	aqf.GetDepFetcher().TokenSymMap = tokenSymMap

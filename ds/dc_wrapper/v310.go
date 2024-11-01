@@ -44,8 +44,8 @@ func (dcw *DataCompressorWrapper) addFieldsToAccountv310(blockNum int64, callDat
 	// indexes
 	tokenQuotaIndex := map[string]*big.Int{}
 	for ind, token := range tokens {
-		if index, ok := core.MulticallAnsBigInt(results[ind]); ok {
-			tokenQuotaIndex[token.Hex()] = index
+		if results[ind].Success {
+			tokenQuotaIndex[token.Hex()] = new(big.Int).SetBytes(results[ind].ReturnData[32:])
 		}
 	}
 
