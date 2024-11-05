@@ -66,7 +66,7 @@ func (repo *inner) addTokenCurrentOracle(oracle *schemas.TokenOracle) {
 	}] = oracle
 }
 
-func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64, latestOracle schemas.PriceOracleT) {
+func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64) {
 	var v2CloseBlock int64 = 19752044
 	if blockNum > v2CloseBlock { // disable v1 and v2
 		addrs := repo.adapters.GetAdapterAddressByName(ds.AddressProvider)
@@ -83,8 +83,7 @@ func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64, latestOracle sche
 	log.CheckFatal(err)
 	repo.disabledTokens = nil
 	//
-	tokens := repo.tokensCurrentOracle[latestOracle]
-	repo.blocks.prevStore.SaveCurrentPrices(repo.client, tx, blockNum, repo.blocks.SetAndGetBlock(blockNum).Timestamp, tokens)
+	repo.blocks.prevStore.SaveCurrentPrices(repo.client, tx, blockNum, repo.blocks.SetAndGetBlock(blockNum).Timestamp, repo.tokensCurrentOracle)
 }
 
 func newinner() inner {
