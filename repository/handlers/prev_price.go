@@ -64,20 +64,23 @@ func (repo *PrevPriceStore) canPFAdded(pf *schemas.PriceFeed) bool {
 	return true
 }
 
-func (repo *PrevPriceStore) getCurrentPrice(tokenToFeed map[string]*schemas.TokenOracle) (ans []*schemas.TokenCurrentPrice) {
-	for _, entry := range tokenToFeed {
-		price := repo.prevPriceFeeds[entry.Feed]
-		ans = append(ans, &schemas.TokenCurrentPrice{
-			PriceBI:  price.PriceBI,
-			Price:    price.Price,
-			BlockNum: price.BlockNumber,
-			Token:    entry.Token,
-			PriceSrc: string(core.SOURCE_CHAINLINK),
-		})
+func (repo *PrevPriceStore) getCurrentPrice(tokenOracleToFeed map[schemas.PriceOracleT]map[string]*schemas.TokenOracle) (ans []*schemas.TokenCurrentPrice) {
+	for priceOracle, tokenToFeed := range tokenOracleToFeed {
+		for _, entry := range tokenToFeed {
+			price := repo.prevPriceFeeds[entry.Feed]
+			ans = append(ans, &schemas.TokenCurrentPrice{
+				PriceBI:     price.PriceBI,
+				Price:       price.Price,
+				BlockNum:    price.BlockNumber,
+				Token:       entry.Token,
+				PriceOracle: priceOracle,
+				PriceSrc:    string(core.SOURCE_CHAINLINK),
+			})
+		}
 	}
 	return
 }
-func (repo *PrevPriceStore) SaveCurrentPrices(client core.ClientI, tx *gorm.DB, blockNum int64, ts uint64, tokenToFeed map[string]*schemas.TokenOracle) {
+func (repo *PrevPriceStore) SaveCurrentPrices(client core.ClientI, tx *gorm.DB, blockNum int64, ts uint64, tokenToFeed map[schemas.PriceOracleT]map[string]*schemas.TokenOracle) {
 	{
 		a := struct {
 			BlockNum int64 `gorm:"column:block_num"`
