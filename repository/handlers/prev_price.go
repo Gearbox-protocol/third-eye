@@ -66,27 +66,31 @@ func (repo *PrevPriceStore) isPFAdded(pf *schemas.PriceFeed) bool {
 	return true
 }
 
-func (repo *PrevPriceStore) getCurrentPrice(tokenToFeed map[string]*schemas.TokenOracle) (ans []*schemas.TokenCurrentPrice) {
-	for _, entry := range tokenToFeed {
-		pf := repo.prevPriceFeeds[entry.Feed]
-		ans = append(ans, &schemas.TokenCurrentPrice{
-			PriceBI:  pf.PriceBI,
-			Price:    pf.Price,
-			BlockNum: pf.BlockNumber,
-			Token:    entry.Token,
-			PriceSrc: string(core.SOURCE_GEARBOX),
-		})
-		ans = append(ans, &schemas.TokenCurrentPrice{
-			PriceBI:  pf.PriceBI,
-			Price:    pf.Price,
-			BlockNum: pf.BlockNumber,
-			Token:    entry.Token,
-			PriceSrc: "chainlink",
-		})
+func (repo *PrevPriceStore) getCurrentPrice(tokenOracleToFeed map[schemas.PriceOracleT]map[string]*schemas.TokenOracle) (ans []*schemas.TokenCurrentPrice) {
+	for priceOracle, tokenToFeed := range tokenOracleToFeed {
+		for _, entry := range tokenToFeed {
+			pf := repo.prevPriceFeeds[entry.Feed]
+			ans = append(ans, &schemas.TokenCurrentPrice{
+				PriceBI:     pf.PriceBI,
+				Price:       pf.Price,
+				BlockNum:    pf.BlockNumber,
+				Token:       entry.Token,
+				PriceOracle: priceOracle,
+				PriceSrc:    string(core.SOURCE_GEARBOX),
+			})
+			ans = append(ans, &schemas.TokenCurrentPrice{
+				PriceBI:     pf.PriceBI,
+				Price:       pf.Price,
+				BlockNum:    pf.BlockNumber,
+				Token:       entry.Token,
+				PriceOracle: priceOracle,
+				PriceSrc:    "chainlink",
+			})
+		}
 	}
 	return
 }
-func (repo *PrevPriceStore) SaveCurrentPrices(client core.ClientI, tx *gorm.DB, blockNum int64, ts uint64, tokenToFeed map[string]*schemas.TokenOracle) {
+func (repo *PrevPriceStore) SaveCurrentPrices(client core.ClientI, tx *gorm.DB, blockNum int64, ts uint64, tokenToFeed map[schemas.PriceOracleT]map[string]*schemas.TokenOracle) {
 	{
 		a := struct {
 			BlockNum int64 `gorm:"column:block_num"`

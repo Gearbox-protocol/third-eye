@@ -84,6 +84,6 @@ require (
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-replace github.com/Gearbox-protocol/sdk-go v0.0.0-20241021192611-afbca24394b5 => ../sdk-go
+replace github.com/Gearbox-protocol/sdk-go v0.0.0-20241030045531-ad52913a6d01 => ../sdk-go
 
 replace github.com/ethereum/go-ethereum v1.13.14 => github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227
