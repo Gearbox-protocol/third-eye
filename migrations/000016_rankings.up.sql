@@ -35,7 +35,7 @@ DECLARE
 BEGIN
     RETURN QUERY 
 	WITH cm_prices AS (SELECT cm.address credit_manager, price FROM 
-		token_current_price tcp JOIN credit_managers cm ON cm.underlying_token = tcp.token WHERE price_source='chainlink')
+		public.token_current_price tcp JOIN public.credit_managers cm ON cm.underlying_token = tcp.token WHERE price_source='chainlink')
 	SELECT t1.*, t2.*, 
 
 		price * t1.old_collateral_underlying old_collateral, price * t1.old_profit_underlying old_profit,
@@ -57,15 +57,15 @@ BEGIN
 			(cal_threshold_value_bi::float8 * total_value_usd)/ cal_total_value_bi::float8
 			end) old_twv_usd,
 			cal_health_factor old_hf, d.session_id sid
-			FROM debts d WHERE block_num >= (SELECT min(id) FROM blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
+			FROM public.debts d WHERE block_num >= (SELECT min(id) FROM public.blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
             order by d.session_id, block_num) t1
         JOIN (SELECT distinct on (d.session_id) d.total_value_usd new_total,
 			d.collateral_underlying new_collateral_underlying, d.profit_underlying as new_profit_underlying,
 			d.session_id, block_num current_block
-			FROM debts d WHERE block_num >= (SELECT min(id) FROM blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
+			FROM public.debts d WHERE block_num >= (SELECT min(id) FROM public.blocks WHERE timestamp > (extract(epoch from now())::bigint - $1)) 
             order by d.session_id, block_num DESC) t2
             ON t1.sid = t2.session_id
-		JOIN credit_sessions cs ON cs.id = t2.session_id
+		JOIN public.credit_sessions cs ON cs.id = t2.session_id
 		LEFT JOIN cm_prices ON cm_prices.credit_manager = cs.credit_manager;
 END $$;
 
