@@ -61,5 +61,5 @@ func (mdl *YearnPriceFeed) ProcessResult(blockNum int64, results []multicall.Mul
 		}
 	}
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
-	return base_price_feed.ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, mdl.GetAddress(), blockNum, mdl.HasReversePF())
+	return base_price_feed.ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, mdl.GetAddress(), blockNum)
 }

@@ -162,9 +162,9 @@ func (mdl MergedPFManager) CloseV2(client core.ClientI, syncedTill int64, addres
 	if syncedTill >= v2CloseBlock && log.GetBaseNet(core.GetChainId(client)) == "MAINNET" {
 		for _, token := range mdl.GetTokens(v2CloseBlock) {
 			pfversion := mdl.GetMergedPFVersion(token, v2CloseBlock, address)
-			if pfversion&schemas.MergedPFVersion(schemas.V1PF) != 0 {
-				mdl.DisableToken(v2CloseBlock, token, schemas.V1PF)
-			}
+			// if pfversion&schemas.MergedPFVersion(schemas.V1PF) != 0 {
+			// 	mdl.DisableToken(v2CloseBlock, token, schemas.V1PF)
+			// }
 			if pfversion&schemas.MergedPFVersion(schemas.V2PF) != 0 {
 				mdl.DisableToken(v2CloseBlock, token, schemas.V2PF)
 			}

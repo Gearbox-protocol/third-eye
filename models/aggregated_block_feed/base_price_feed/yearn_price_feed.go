@@ -124,7 +124,9 @@ func (mdl *BasePriceFeed) AfterSyncHook(b int64) {
 	if log.GetBaseNet(core.GetChainId(mdl.Client)) == "MAINNET" {
 		var v1CloseBlock int64 = 18577104 // v1 all accounts closed at
 		if b >= v1CloseBlock {
-			for token, details := range mdl.DetailsDS.Tokens {
+			for token, details := range mdl.DetailsDS.Tokens { // only 2 yearn are disabled.
+				// 0x614f9486Ab9C7a217526c097656D2F6bD2DB631C
+				// 0x172971182351e00C2D700bA1e8c5586Ad2CFa38c
 				if len(details[schemas.V1PF]) == 1 {
 					mdl.DisableToken(token, v1CloseBlock, schemas.V1PF)
 				}
