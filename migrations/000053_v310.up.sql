@@ -29,7 +29,12 @@ CREATE TABLE relations (
 
 update pools p set price_oracle=sa.address from  sync_adapters sa where type='PriceOracle' and p._version=sa.version;
 
-update token_oracle set disabled_at=19752044 where version=1 or version=2;
+update token_oracle set disabled_at=19752044 where version=2; -- don't disable for v1
+update token_oracle set disabled_at=13856183 where address='0xc170DC3C2e8809AC6197D56b86bF421c8a7f8c67';
+update token_oracle set disabled_at=18577104 where address='0x172971182351e00C2D700bA1e8c5586Ad2CFa38c';
+update token_oracle set disabled_at=18577104 where address='0x614f9486Ab9C7a217526c097656D2F6bD2DB631C';
+update token_oracle set disabled_at=14769098 where address='0x1a8AC67A1B64F7fd71bB91c21581f036AbE6AEc2';
+update token_oracle set disabled_at=14956928 where address='0x91401cedCBFd9680cE193A5F54E716504233e998';
 
 
 
