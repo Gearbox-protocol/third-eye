@@ -74,7 +74,7 @@ func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall
 		}
 	}
 	isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
-	return base_price_feed.ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, adapter.GetAddress(), blockNum)
+	return base_price_feed.ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, adapter.GetAddress(), blockNum, adapter.HasReversePF())
 }
 
 func GetCurveVirtualPrice(blockNum int64, oracleAddr common.Address, version core.VersionType, client core.ClientI) *big.Int {

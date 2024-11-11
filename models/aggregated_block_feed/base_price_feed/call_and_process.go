@@ -27,12 +27,14 @@ func (mdl *BasePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2
 	}}, true
 }
 
-func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, blockNum int64) *schemas.PriceFeed {
+func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, blockNum int64, reserve bool) *schemas.PriceFeed {
 	priceFeedABI := core.GetAbi("PriceFeed")
 	roundData := schemas.LatestRounData{}
 	value, err := priceFeedABI.Unpack("latestRoundData", returnData)
 	if err != nil {
-		log.Warnf("For feed(%s) can't get the latestRounData: %s at %d", feed, err, blockNum)
+		if !reserve {
+			log.Warnf("For feed(%s) can't get the latestRounData: %s at %d", feed, err, blockNum)
+		}
 		return nil
 	}
 	roundData.RoundId = *abi.ConvertType(value[0], new(*big.Int)).(**big.Int)
@@ -67,6 +69,32 @@ func (mdl *BasePriceFeed) ProcessResult(blockNum int64, results []multicall.Mult
 			}
 		}
 	}
-	return ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, mdl.GetAddress(), blockNum)
+
+	return ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, mdl.GetAddress(), blockNum, mdl.HasReversePF())
 	//
+}
+
+func (mdl *BasePriceFeed) HasReversePF() bool {
+	var reversePF, exact bool
+	for token, pfVersion := range mdl.GetTokens() {
+		for version := range pfVersion {
+			if version&schemas.V3PF_REVERSE != 0 {
+				if exact && (version != schemas.V3PF_REVERSE) { // if already exact but not exact now.
+					log.Error("not exact", token, version, "pf", mdl.GetAddress())
+				}
+				exact = exact || (version == schemas.V3PF_REVERSE)
+
+				if reversePF && (version&schemas.V3PF_REVERSE != 0) {
+					log.Error("not reverse pf, not one of the pf is reserve", token, version, "pf", mdl.GetAddress())
+				}
+				reversePF = reversePF || (version&schemas.V3PF_REVERSE != 0)
+			}
+		}
+	}
+	if reversePF {
+		if !exact {
+			log.Error("reverse PF is set and exact not set", mdl.GetAddress())
+		}
+	}
+	return reversePF
 }
