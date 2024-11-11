@@ -2,6 +2,7 @@ package composite_redstone_price_feed
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -49,7 +50,7 @@ func (mdl *CompositeRedStonePriceFeed) GetCalls(blockNum int64) (calls []multica
 	return []multicall.Multicall2Call{{
 		Target:   common.HexToAddress(mdl.Address),
 		CallData: data,
-	},{
+	}, {
 		Target:   mdl.priceFeed1,
 		CallData: data,
 	}}, true
@@ -64,14 +65,14 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 		if results[0].Success {
 			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", results[0].ReturnData)
 			log.CheckFatal(err)
-			price :=  *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
+			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
 			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
 			return parsePriceForRedStone(price, isPriceInUSD)
-		// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
-		} else {
-			if (len(force) ==0 || !force[0] ) {
-				return nil
-			}
+		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) < time.Hour {
+			// } else {
+			// 	if len(force) == 0 || !force[0] {
+			// 		return nil
+			// 	}
 		}
 	}
 	validTokens := mdl.TokensValidAtBlock(blockNum)

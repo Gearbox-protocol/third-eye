@@ -3,6 +3,7 @@ package redstone_price_feed
 import (
 	"encoding/hex"
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -31,10 +32,10 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *RedstonePriceFeed
 }
 
 func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
-	data, _:=hex.DecodeString("feaf968c")
+	data, _ := hex.DecodeString("feaf968c")
 	return []multicall.Multicall2Call{
 		{
-			Target: common.HexToAddress(obj.Address),
+			Target:   common.HexToAddress(obj.Address),
 			CallData: data,
 		},
 	}, true
@@ -50,14 +51,14 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 		if results[0].Success {
 			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", results[0].ReturnData)
 			log.CheckFatal(err)
-			price :=  *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
+			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
 			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
 			return parsePriceForRedStone(price, isPriceInUSD)
-		// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
-		} else {
-			if (len(force) ==0 || !force[0] ) {
-				return nil
-			}
+		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) < time.Hour {
+			// } else {
+			// 	if (len(force) ==0 || !force[0] ) {
+			// 		return nil
+			// 	}
 		}
 	}
 	{
@@ -67,7 +68,7 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceBI)
 			return nil
 		}
-	
+
 		priceData := parsePriceForRedStone(priceBI, isPriceInUSD)
 		log.Infof("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceData.Price)
 		//
