@@ -28,11 +28,11 @@ type DebtEngine struct {
 	currentDebts           []*schemas.CurrentDebt
 	liquidableBlockTracker map[string]*schemas.LiquidableAccount
 	// cm to paramters
-	lastParameters    map[string]*schemas.Parameters
-	isTesting         bool
-	farmingCalc       *FarmingCalculator
-	lastTvlSnapshot   *schemas.TvlSnapshots
-	lastRebaseDetails *schemas.RebaseDetailsForDB
+	lastParameters          map[string]*schemas.Parameters
+	isTesting               bool
+	farmingCalc             *FarmingCalculator
+	marketTolastTvlSnapshot map[string]*schemas.TvlSnapshots
+	lastRebaseDetails       *schemas.RebaseDetailsForDB
 	// used for v3 calc account fields
 	currentTs uint64
 	v3DebtDetails
@@ -42,20 +42,21 @@ type DebtEngine struct {
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
 	return &DebtEngine{
-		repo:                   repo,
-		db:                     db,
-		client:                 client,
-		config:                 config,
-		lastCSS:                make(map[string]*schemas.CreditSessionSnapshot),
-		poolLastInterestData:   make(map[string]*schemas.PoolInterestData),
-		lastDebts:              make(map[string]*schemas.Debt),
-		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),
-		lastParameters:         make(map[string]*schemas.Parameters),
-		isTesting:              testing,
-		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
-		v3DebtDetails:          Newv3DebtDetails(),
-		tokenLTRamp:            map[string]map[string]*schemas_v3.TokenLTRamp{},
-		priceHandler:           NewPriceHandler(repo),
+		repo:                    repo,
+		db:                      db,
+		client:                  client,
+		config:                  config,
+		lastCSS:                 make(map[string]*schemas.CreditSessionSnapshot),
+		poolLastInterestData:    make(map[string]*schemas.PoolInterestData),
+		lastDebts:               make(map[string]*schemas.Debt),
+		liquidableBlockTracker:  make(map[string]*schemas.LiquidableAccount),
+		lastParameters:          make(map[string]*schemas.Parameters),
+		isTesting:               testing,
+		farmingCalc:             NewFarmingCalculator(core.GetChainId(client), testing),
+		v3DebtDetails:           Newv3DebtDetails(),
+		tokenLTRamp:             map[string]map[string]*schemas_v3.TokenLTRamp{},
+		priceHandler:            NewPriceHandler(repo),
+		marketTolastTvlSnapshot: make(map[string]*schemas.TvlSnapshots),
 	}
 }
 
@@ -107,11 +108,13 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.processBlocksInBatch(lastDebtSynced, adaptersSyncedTill)
 }
 func (eng *DebtEngine) loadLastTvlSnapshot() {
-	lastTvlSnapshot := &schemas.TvlSnapshots{}
-	if err := eng.db.Raw(`SELECT * FROM tvl_snapshots ORDER BY block_num DESC LIMIT 1`).Find(lastTvlSnapshot).Error; err != nil {
+	tvlsnaps := []*schemas.TvlSnapshots{}
+	if err := eng.db.Raw(`SELECT * FROM tvl_snapshots ORDER BY block_num,market DESC LIMIT 1`).Find(&tvlsnaps).Error; err != nil {
 		log.Fatal(err)
 	}
-	eng.lastTvlSnapshot = lastTvlSnapshot
+	for _, entry := range tvlsnaps {
+		eng.marketTolastTvlSnapshot[entry.Market] = entry
+	}
 }
 
 // load blocks from > and to <=
