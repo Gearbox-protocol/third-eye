@@ -86,6 +86,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			Borrower:    borrower,
 			Dapp:        txLog.Address.Hex(),
 			LogId:       txLog.Index,
+			Args:        &core.Json{},
 			Action:      "StartMultiCall(address,address)",
 		})
 	case core.Topic("FinishMultiCall()"):
