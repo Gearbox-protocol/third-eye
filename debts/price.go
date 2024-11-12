@@ -173,6 +173,10 @@ func (eng *PriceHandler) requestPriceFeed(blockNum int64, client core.ClientI, r
 	}
 }
 
+func (eng *PriceHandler) GetPoolFromCM(cm string) string {
+	return eng.cmToPool[cm]
+}
+
 func (eng *PriceHandler) init(repo ds.RepositoryI) {
 	// poolToPriceOracle
 	for _, pool := range repo.GetAdapterAddressByName(ds.Pool) {
