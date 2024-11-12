@@ -3,7 +3,6 @@ package debts
 import (
 	"math/big"
 	"sort"
-	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
@@ -141,7 +140,7 @@ func (eng *DebtEngine) CalculateDebt() {
 		cmToPoolDetails := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
 
 		//
-		var caTotalValueInUSD float64 = 0
+		marketToTvl := make(MarketToTvl)
 		// check if session's debt needs to be recalculated
 		for _, session := range sessions {
 			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
@@ -153,12 +152,23 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 			// #C3
 			sessionSnapshot := eng.lastCSS[session.ID]
-			caTotalValueInUSD += utils.GetFloat64Decimal(
+			caValue := utils.GetFloat64Decimal(
 				eng.GetAmountInUSD(
 					session.CreditManager,
 					cmToPoolDetails[session.CreditManager].Token,
 					sessionSnapshot.TotalValueBI.Convert(), session.Version,
 				), 8)
+			{
+				pool := eng.priceHandler.GetPoolFromCM(session.CreditManager)
+				adapter := eng.repo.GetAdapter(pool)
+				state := adapter.GetUnderlyingState()
+				if state == nil {
+					log.Fatal("State for pool not found for address: ", pool)
+				}
+				//
+				market := state.(*schemas.PoolState).UnderlyingToken
+				marketToTvl.add(market, caValue, 0, 0)
+			}
 
 			for token, tokenBalance := range *sessionSnapshot.Balances {
 				if tokenBalance.IsEnabled && tokenBalance.HasBalanceMoreThanOne() {
@@ -190,18 +200,17 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 		}
 		//
-		eng.createTvlSnapshots(blockNum, caTotalValueInUSD)
+		eng.createTvlSnapshots(blockNum, marketToTvl)
 		if len(sessionsUpdated) > 0 {
 			log.Debugf("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
 		}
 	}
 }
 
-func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD float64) {
-	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.BlockPer(core.GetChainId(eng.client), time.Hour) { // tvl snapshot every hour
-		return
-	}
-	var totalAvailableLiquidityInUSD, expectedLiqInUSD float64 = 0, 0
+func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTvl) {
+	// if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
+	// 	return
+	// }
 	log.Info("tvl for block", blockNum)
 	for _, entry := range eng.poolLastInterestData {
 		adapter := eng.repo.GetAdapter(entry.Address)
@@ -215,26 +224,33 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 		latestOracle, version, err := eng.repo.GetActivePriceOracleByBlockNum(blockNum)
 		log.CheckFatal(err)
 		//
-		totalAvailableLiquidityInUSD += utils.GetFloat64Decimal(
-			eng.GetAmountInUSDByOracle(
-				latestOracle,
-				underlyingToken,
-				entry.AvailableLiquidityBI.Convert(), version), 8)
-		expectedLiqInUSD += utils.GetFloat64Decimal(
-			eng.GetAmountInUSD(
-				underlyingToken,
-				entry.ExpectedLiqBI.Convert(), version), 8)
-
+		fn := func(amount *core.BigInt) float64 {
+			return utils.GetFloat64Decimal(
+				eng.GetAmountInUSDByOracle(
+					latestOracle,
+					underlyingToken,
+					amount.Convert(), version), 8)
+		}
+		availLiq := fn(entry.AvailableLiquidityBI)
+		expectedLiqInUSD := fn(entry.ExpectedLiqBI)
+		marketToTvl.add(state.(*schemas.PoolState).Market, 0, availLiq, expectedLiqInUSD)
 	}
 	// save as last tvl snapshot and add to db
-	tvls := &schemas.TvlSnapshots{
-		BlockNum:           blockNum,
-		AvailableLiquidity: totalAvailableLiquidityInUSD,
-		ExpectedLiq:        expectedLiqInUSD,
-		CATotalValue:       caTotalValueInUSD,
+	for market, details := range marketToTvl {
+		if lastTvlBlock, ok := eng.marketTolastTvlBlock[market]; ok && blockNum-lastTvlBlock < core.NoOfBlocksPerHr(eng.client) { // only snap her hr.
+			continue
+		}
+		//
+		tvl := &schemas.TvlSnapshots{
+			BlockNum:           blockNum,
+			AvailableLiquidity: details.totalAvailableLiquidity,
+			CATotalValue:       details.caTotalValue,
+			ExpectedLiq:        details.expectedLiq,
+			Market:             market,
+		}
+		eng.tvlSnapshots = append(eng.tvlSnapshots, tvl)
+		eng.marketTolastTvlBlock[tvl.Market] = tvl.BlockNum
 	}
-	eng.tvlSnapshots = append(eng.tvlSnapshots, tvls)
-	eng.lastTvlSnapshot = tvls
 }
 
 func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt int64, status int) {
