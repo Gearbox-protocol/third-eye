@@ -37,7 +37,7 @@
     {
       type: 'PriceOracle',
       address: '#PriceOracle_0',
-      lastSync: 2,
+      lastSync: 1,
       version: 1,
       disabled_at: 2,
       disabled: true,
