@@ -102,6 +102,7 @@ func (eng *PriceHandler) GetLastPriceFeed(cm string, token string, version core.
 		priceOracle = obj.GetPriceOracleByVersion(version)
 	}
 	feed := eng.poTotokenOracle[priceOracle][token]
+	log.Info(utils.ToJson(eng.feedLastPrice[feed.Feed]))
 	if feed != nil && eng.feedLastPrice[feed.Feed] != nil { // has feed
 		return eng.feedLastPrice[feed.Feed]
 		// feed.Feed
