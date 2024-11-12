@@ -58,8 +58,8 @@ func (m *MockRepo) Init(fileNames []string) {
 		m.Repo.AddTokenObj(token)
 	}
 	m.AddressMap = addressMap
-	log.Info(utils.ToJson(addressMap))
 	m.processInputTestFile(inputFile)
+	log.Info(utils.ToJson(addressMap))
 }
 
 // key/name to address
