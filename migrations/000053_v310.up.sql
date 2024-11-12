@@ -30,14 +30,19 @@ CREATE TABLE relations (
 update pools p set price_oracle=sa.address from  sync_adapters sa where type='PriceOracle' and p._version=sa.version;
 
 update token_oracle set disabled_at=19752044 where version=2; -- don't disable for v1
-update token_oracle set disabled_at=13856183 where address='0xc170DC3C2e8809AC6197D56b86bF421c8a7f8c67';
+update token_oracle set disabled_at=13856183 where address='0xc170DC3C2e8809AC6197D56b86bF421c8a7f8c67'; -- all for v1
 update token_oracle set disabled_at=18577104 where address='0x172971182351e00C2D700bA1e8c5586Ad2CFa38c';
 update token_oracle set disabled_at=18577104 where address='0x614f9486Ab9C7a217526c097656D2F6bD2DB631C';
 update token_oracle set disabled_at=14769098 where address='0x1a8AC67A1B64F7fd71bB91c21581f036AbE6AEc2';
-update token_oracle set disabled_at=14956928 where address='0x91401cedCBFd9680cE193A5F54E716504233e998';
+update token_oracle set disabled_at=14956928 where address='0x91401cedCBFd9680cE193A5F54E716504233e998'; -- all for v1
 
 
 
 -- insert into relations(block_num, owner, dependent, category) (select discovered_at, pool,oracle , 'PoolOracle'  from (select address pool from pools where _version=1) l join (select address oracle, discovered_at from sync_adapters where type='PriceOracle' and version=2) on true);
 -- insert into relations(block_num, owner, dependent, category)  (select discovered_at, pool,oracle , 'PoolOracle'  from (select address pool from pools where _version=1) l join (select address oracle, discovered_at from sync_adapters where type='PriceOracle' and version=1) on true);
 insert into relations(block_num, owner, dependent, category)  (select discovered_at, pool,oracle , 'PoolOracle'  from (select address pool from pools where _version=300) l join (select address oracle, discovered_at from sync_adapters where type='PriceOracle' and version=300) on true);
+
+alter table tvl_snapshots add market varchar(42);
+update tvl_snapshots set market='0x0000000000000000000000000000000000000000';
+alter table tvl_snapshots drop constraint tvl_snapshots_pkey;
+alter table tvl_snapshots add PRIMARY KEY (market, block_num);
