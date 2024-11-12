@@ -81,7 +81,7 @@ func (mdl *AQFWrapper) AddFeedOrToken(token, feed string, pfType string, discove
 	if mdl.QueryFeeds[feed] == nil {
 		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, feed, pfType, discoveredAt, mdl.Client, mdl.Repo, version, underlyings))
 		// MAINNET: old yvUSDC added on gearbox v1
-		createPriceFeedOnInit(mdl.QueryFeeds[feed], mdl.Client, token, discoveredAt, version)
+		createPriceFeedOnInit(mdl.QueryFeeds[feed], mdl.Client, discoveredAt, version)
 	}
 }
 
@@ -95,7 +95,10 @@ func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) sch
 	}
 	return pfVersion
 }
-func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, token string, discoveredAt int64, version core.VersionType) []*schemas.PriceFeed {
+func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, discoveredAt int64, version core.VersionType) []*schemas.PriceFeed {
+	if qpf.GetAddress() == "0x7C879DBde7569F00c378Ca124046B9E1b31327F5" {
+		log.Fatal("discoveredAt", discoveredAt)
+	}
 	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.GetAddress()), client)
 	log.CheckFatal(err)
 	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
