@@ -116,7 +116,6 @@ func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle string, token 
 		return nil
 	}
 	adapter := repo.adapters.GetAdapter(priceFeed.Hex())
-	log.Info(adapter, token, oracle, priceFeed)
 	if adapter != nil && // for chainlink or composite chainlink oracle
 		adapter.GetName() == ds.QueryPriceFeed &&
 		utils.Contains([]string{ds.RedStonePF, ds.CompositeRedStonePF}, adapter.GetDetailsByKey("pfType")) {

@@ -37,8 +37,8 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 		{ // ignore LBTC price on mainnet as the pf0 of composite is not updated, so can't provide the pod
 			client := mdl.Client
 			chainId := core.GetChainId(client)
-			addrToSym:=core.GetTokenToSymbolByChainId(chainId)
-			if (addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" ){
+			addrToSym := core.GetTokenToSymbolByChainId(chainId)
+			if addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" {
 				continue
 			}
 		}
@@ -60,7 +60,7 @@ func (mdl *CommonCMAdapter) retry(oldaccount dc.CreditAccountCallData, blockNum 
 	newaccountData, err := dcw.GetCreditAccountData(&bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	},
-		common.HexToAddress(mdl.GetAddress()),
+		oldaccount.Addr,
 		pod,
 	)
 	if err != nil {

@@ -151,7 +151,7 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionI
 			dcAccountData, err = mdl.retry(dcAccountData, closedAt-1)
 		}
 		if err != nil {
-			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", closedAt, mdl.GetAddress(), session.Borrower, err)
+			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v %s", closedAt, mdl.GetAddress(), session.Borrower, err, sessionId)
 		}
 		mdl.closeSession(closedAt, session, dcAccountData, closeDetails)
 		// // set close price for v3
@@ -257,7 +257,6 @@ func (mdl *CommonCMAdapter) poolRepay(blockNum int64, session *schemas.CreditSes
 		amountToPool)
 
 }
-
 
 func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, blockNum int64) (
 	multicall.Multicall2Call, func(multicall.Multicall2Result)) {
