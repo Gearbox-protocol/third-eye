@@ -5,9 +5,11 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 )
 
+var _arrayOfGearBalanceUpdates []*schemas.GearBalance
+
 func (mdl *GearToken) GetUnderlyingState() interface{} {
-	arr := mdl.arrayOfGearBalanceUpdates
-	mdl.arrayOfGearBalanceUpdates = []*schemas.GearBalance{}
+	arr := _arrayOfGearBalanceUpdates
+	_arrayOfGearBalanceUpdates = []*schemas.GearBalance{}
 	return arr
 }
 
@@ -32,6 +34,6 @@ func (mdl *GearToken) HasUnderlyingStateToSave() bool {
 			entry.Updated = false
 		}
 	}
-	mdl.arrayOfGearBalanceUpdates = gb
+	_arrayOfGearBalanceUpdates = gb
 	return len(gb) > 0
 }

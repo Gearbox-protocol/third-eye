@@ -146,7 +146,9 @@ func (s *SyncAdapter) GetBlockToDisableOn() int64 {
 }
 
 func (s *SyncAdapter) setLastSync(lastSync int64) {
-	s.LastSync = lastSync
+	if s.LastSync < lastSync {
+		s.LastSync = lastSync
+	}
 }
 
 func (s *SyncAdapter) SetError(err error) {

@@ -11,9 +11,8 @@ import (
 
 type GearToken struct {
 	*ds.SyncAdapter
-	contractETH               *eRC20.ERC20
-	State                     map[string]*schemas.GearBalance
-	arrayOfGearBalanceUpdates []*schemas.GearBalance
+	contractETH *eRC20.ERC20
+	State       map[string]*schemas.GearBalance
 }
 
 func NewGearToken(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *GearToken {

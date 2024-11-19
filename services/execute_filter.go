@@ -16,6 +16,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveuint256"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/daiUSDs"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
@@ -116,6 +117,7 @@ var abiJSONs = []string{
 	erc4626Adapter.Erc4626AdapterABI,
 	swapRouterv3.SwapRouterv3ABI,
 	mellowR7.MellowR7ABI,
+	daiUSDs.DaiUSDsABI,
 }
 
 var abiParsers []abi.ABI
