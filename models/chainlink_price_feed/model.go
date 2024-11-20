@@ -121,14 +121,14 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 		// log.Info(mdl.Address, discoveredAt, newPriceFeed)
 		mdl.flushPrices(discoveredAt)
 		for _, token := range mdl.mergedPFManager.GetTokens(discoveredAt) {
-			for _, pfVersion  := range mdl.mergedPFManager.GetMergedPFVersion(token, discoveredAt, mdl.Address).MergedPFVersionToList() {
+			for _, pfVersion := range mdl.mergedPFManager.GetMergedPFVersion(token, discoveredAt, mdl.Address).MergedPFVersionToList() {
 				mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
 					Token:       token,
 					Oracle:      mdl.MainAgg.Addr.Hex(),
 					Feed:        mdl.MainAgg.Addr.Hex(), // feed is same as oracle
 					BlockNumber: discoveredAt,
 					Version:     pfVersion.ToVersion(),
-					Reserve:     (pfVersion & 8) !=0 ,
+					Reserve:     (pfVersion & 8) != 0,
 					FeedType:    ds.ChainlinkPriceFeed,
 				}, mdl.upperLimit().Cmp(new(big.Int)) != 0, false) // if upperLImit is not zero, then the price is bounded by upperLimit
 			}

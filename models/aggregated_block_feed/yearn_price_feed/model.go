@@ -40,6 +40,7 @@ func (mdl *YearnPriceFeed) ProcessResult(blockNum int64, results []multicall.Mul
 			"0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB",
 			"0xf4bc1D894F23e85bF666dA647CA573fB13109811",
 			"0x5e6ee42dD1D1A8299CB0aC4C7641F597C434aC5e",
+			"0x228C64cA6ece0ECeB3593e9838996CD5851e3797",                 // reverse v300 feed failing as the underlying token price is not updated. redstone price feed on mainnet
 			"0x77BB9d857a5FfB6Db01581887312F68B1C9832A6"}, mdl.Address) { // https://optimistic.etherscan.io/address/0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB // yvWETH, v3
 			return nil
 		}

@@ -33,7 +33,7 @@ func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, bloc
 	roundData := schemas.LatestRounData{}
 	value, err := priceFeedABI.Unpack("latestRoundData", returnData)
 	if err != nil {
-		if !utils.Contains([]string{"0x7B7C81748f311Cf3B9dfe90Ec7F23e9F06813323", "0x2E65c16Fe6CFd0519Ae1F80448FCa0E0B07c1911", "0x228C64cA6ece0ECeB3593e9838996CD5851e3797"}, feed) { // only for curve
+		if !utils.Contains([]string{"0x7B7C81748f311Cf3B9dfe90Ec7F23e9F06813323", "0x2E65c16Fe6CFd0519Ae1F80448FCa0E0B07c1911"}, feed) { // only for curve
 			log.Warnf("For feed(%s) can't get the latestRounData: %s at %d", feed, err, blockNum)
 		}
 		return nil
