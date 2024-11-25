@@ -224,8 +224,9 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		// SingleAssetLPPriceFeed
 	case core.V3_WSTETH_ORACLE, core.V3_WRAPPED_AAVE_V2_ORACLE, // lido, aave,
 		core.V3_BALANCER_STABLE_LP_ORACLE, core.V3_BALANCER_WEIGHTED_LP_ORACLE, // balancer
-		core.V3_COMPOUND_V2_ORACLE,   // compounder
-		core.V3_MELLOW_LRT_ORACLE,	// mellow is SingleAssetPriceFeed
+		core.V3_COMPOUND_V2_ORACLE, // compounder
+		core.V3_MELLOW_LRT_ORACLE,  // mellow is SingleAssetPriceFeed
+		core.V3_PENDLE_PT_TWAP_ORACLE,
 		core.V3_ERC4626_VAULT_ORACLE: // erc4626
 		return ds.SingleAssetPF, false, nil
 	case core.V3_REDSTONE_ORACLE:
