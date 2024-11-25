@@ -17,6 +17,9 @@ type DetailsDS struct {
 	// redunantt
 	Reduntant       map[string][]int64       `json:"token,omitempty"` // token enabled and disabled at block numbers
 	MergedPFVersion *schemas.MergedPFVersion `json:"mergedPFVersion,omitempty"`
+	// for single asset
+	Underlyings []string                    `json:"underlyings"`
+	Info        map[string]*core.RedStonePF `json:"info"`
 }
 
 //	func NewDetailsDS(pfType string, token string, discoveredAt int64, pfVersion schemas.PFVersion) *DetailsDS {
@@ -52,6 +55,16 @@ func (obj *DetailsDS) Load(in core.Json, version core.VersionType) {
 			}
 		}
 	}
+	//
+	a := in["info"]
+	redstoneMap := map[string]*core.RedStonePF{}
+	if a != nil {
+		str := utils.ToJson(a)
+		err := utils.ReadJsonReaderAndSetInterface(bytes.NewBufferString(str), redstoneMap)
+		log.CheckFatal(err)
+	}
+	obj.Info = redstoneMap
+	//
 	obj.Reduntant = nil
 	obj.MergedPFVersion = nil
 	// log.Info(utils.ToJson(obj))

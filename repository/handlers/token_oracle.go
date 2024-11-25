@@ -172,6 +172,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 				newTokenOracle.FeedType,
 				newTokenOracle.BlockNumber,
 				pfVersion,
+				newTokenOracle.Underlyings,
 			)
 		}
 	case ds.ChainlinkPriceFeed:

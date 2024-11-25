@@ -73,7 +73,7 @@ func (mdl *AQFWrapper) GetQueryFeeds() []ds.QueryPriceFeedI {
 	return feeds
 }
 
-func (mdl *AQFWrapper) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, pfVersion schemas.PFVersion) {
+func (mdl *AQFWrapper) AddFeedOrToken(token, oracle string, pfType string, discoveredAt int64, pfVersion schemas.PFVersion, underlyingFeeds []string) {
 	log.Infof("Add new %s:pfversion(%d) for token(%s): %s discovered at %d", pfType, pfVersion, token, oracle, discoveredAt)
 	// MAINNET: yearn yvUSDC has changed over time, previous token was 0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9(only added in gearbox v1 priceOracle) and 0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE, so we can ignore 0xc1 yvUSDC token dependency
 	if token != "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
@@ -82,7 +82,7 @@ func (mdl *AQFWrapper) AddFeedOrToken(token, oracle string, pfType string, disco
 	if mdl.QueryFeeds[oracle] != nil {
 		mdl.QueryFeeds[oracle].AddToken(token, discoveredAt, pfVersion)
 	} else {
-		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, pfVersion))
+		mdl.AddQueryPriceFeed(NewQueryPriceFeed(token, oracle, pfType, discoveredAt, mdl.Client, mdl.Repo, pfVersion, underlyingFeeds))
 		// MAINNET: old yvUSDC added on gearbox v1
 		if token == "0x5f18C75AbDAe578b483E5F43f12a39cF75b973a9" {
 			mdl.QueryFeeds[oracle].DisableToken(token, 13856183, pfVersion) // new yvUSDC added on gearbox v1

@@ -7,10 +7,11 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/composite_redstone_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/curve_price_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/redstone_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/single_asset_feed"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/yearn_price_feed"
 )
 
-func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) ds.QueryPriceFeedI {
+func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion, underlyingFeeds []string) ds.QueryPriceFeedI {
 	switch pfType {
 	case ds.RedStonePF:
 		return redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
@@ -18,8 +19,10 @@ func NewQueryPriceFeed(token, oracle string, pfType string, discoveredAt int64, 
 		return curve_price_feed.NewCurvePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
 	case ds.CompositeRedStonePF:
 		return composite_redstone_price_feed.NewRedstonePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
-	case ds.YearnPF, ds.SingleAssetPF:
+	case ds.YearnPF:
 		return yearn_price_feed.NewYearnPriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+	case ds.SingleAssetPF:
+		return single_asset_feed.NewSingleAsset(token, oracle, pfType, discoveredAt, client, repo, pfVersion, underlyingFeeds)
 	default:
 		return nil
 	}
@@ -33,8 +36,10 @@ func NewQueryPriceFeedFromAdapter(adapter *ds.SyncAdapter) ds.QueryPriceFeedI {
 	case ds.CompositeRedStonePF:
 		return composite_redstone_price_feed.NewRedstonePriceFeedFromAdapter(adapter)
 		// return curve_price_feed.NewCurvePriceFeedFromAdapter(adapter)
-	case ds.YearnPF, ds.SingleAssetPF:
+	case ds.YearnPF:
 		return yearn_price_feed.NewYearnPriceFeedFromAdapter(adapter)
+	case ds.SingleAssetPF:
+		return single_asset_feed.NewSingleAssetFromAdapter(adapter)
 	default:
 		return nil
 	}
@@ -48,6 +53,8 @@ func FromAdapter(obj ds.SyncAdapterI) ds.QueryPriceFeedI {
 	case *redstone_price_feed.RedstonePriceFeed:
 		return adapter
 	case *composite_redstone_price_feed.CompositeRedStonePriceFeed:
+		return adapter
+	case *single_asset_feed.SingleAssetFeed:
 		return adapter
 	default:
 		return nil
