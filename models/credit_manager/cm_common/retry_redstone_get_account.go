@@ -38,7 +38,7 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 			client := mdl.Client
 			chainId := core.GetChainId(client)
 			addrToSym := core.GetTokenToSymbolByChainId(chainId)
-			if addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" {
+			if addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" && t == core.V3_BACKEND_COMPOSITE_REDSTONE_ORACLE { // lbtc as redstone can be updated
 				continue
 			}
 		}
