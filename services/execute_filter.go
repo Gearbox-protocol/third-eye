@@ -21,6 +21,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/mellowR7"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/pendleRouterv4"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/swapRouterv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
@@ -118,6 +119,7 @@ var abiJSONs = []string{
 	swapRouterv3.SwapRouterv3ABI,
 	mellowR7.MellowR7ABI,
 	daiUSDs.DaiUSDsABI,
+	pendleRouterv4.PendleRouterv4ABI,
 }
 
 var abiParsers []abi.ABI

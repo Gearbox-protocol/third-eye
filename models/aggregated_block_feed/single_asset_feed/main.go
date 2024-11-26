@@ -30,7 +30,6 @@ func NewSingleAssetFromAdapter(adapter *ds.SyncAdapter) *SingleAssetFeed {
 
 func (mdl *SingleAssetFeed) GetUnderlyings() (ans []string) {
 	underlyings := mdl.Details["underlyings"]
-	log.Info("here", underlyings)
 	if underlyings != nil {
 		_underlyings, ok := underlyings.([]interface{})
 		if ok {
@@ -45,7 +44,6 @@ func (mdl *SingleAssetFeed) GetUnderlyings() (ans []string) {
 func (mdl *SingleAssetFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 	updateABI := core.GetAbi("UpdatePriceFeed")
 	for _, entry := range mdl.GetUnderlyings() {
-		log.Info("here2", entry)
 		contract, err := redstone.NewRedstone(common.HexToAddress(entry), mdl.Client)
 		log.CheckFatal(err)
 		var tokenDetails *core.RedStonePF
