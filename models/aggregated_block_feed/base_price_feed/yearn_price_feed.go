@@ -16,6 +16,10 @@ type BasePriceFeed struct {
 	DetailsDS DetailsDS
 }
 
+func (feed BasePriceFeed) GetRedstonePF() *core.RedStonePF {
+	return nil
+}
+
 // single querypricefeed can be valid for multiple tokens so we have to maintain tokens within the details
 // details->token is token map to start and end block
 func NewBasePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *BasePriceFeed {

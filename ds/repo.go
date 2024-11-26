@@ -10,6 +10,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
+	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
 )
 
@@ -140,6 +141,8 @@ type RepositoryI interface {
 	AddQuotaDetails(*schemas_v3.QuotaDetails)
 	GetAccountQuotaMgr() *AccountQuotaMgr
 	IsBlockRecent(block int64, dur time.Duration) bool
+	GetFeedToTicker(feed string) common.Address
+	AddFeedToTicker(feed string, ticker common.Address)
 }
 
 func IsTestnet(client core.ClientI) bool {

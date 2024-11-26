@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,51 +29,30 @@ func NewSingleAssetFromAdapter(adapter *ds.SyncAdapter) *SingleAssetFeed {
 	}
 }
 
-func (mdl *SingleAssetFeed) GetUnderlyings() (ans []string) {
-	underlyings := mdl.Details["underlyings"]
-	if underlyings != nil {
-		_underlyings, ok := underlyings.([]interface{})
-		if ok {
-			for _, entry := range _underlyings {
-				ans = append(ans, entry.(string))
-			}
-		}
+func (feed SingleAssetFeed) GetRedstonePF() *core.RedStonePF {
+	if len(feed.DetailsDS.Underlyings) == 0 {
+		return nil
 	}
-	return
+	return feed.DetailsDS.Info[feed.DetailsDS.Underlyings[0]]
 }
 
 func (mdl *SingleAssetFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 	updateABI := core.GetAbi("UpdatePriceFeed")
-	for _, entry := range mdl.GetUnderlyings() {
+	for _, entry := range mdl.DetailsDS.Underlyings {
 		contract, err := redstone.NewRedstone(common.HexToAddress(entry), mdl.Client)
 		log.CheckFatal(err)
 		var tokenDetails *core.RedStonePF
 		if _, ok := mdl.DetailsDS.Info[entry]; ok {
 			tokenDetails = mdl.DetailsDS.Info[entry]
-		} else if dataIdBytes, err := contract.DataFeedId(nil); err == nil {
-			dataId := func() string {
-				var s []byte
-				for _, b := range dataIdBytes {
-					if b != 0 {
-						s = append(s, b)
-					} else {
-						break
-					}
-				}
-				return string(s)
-
-			}()
+		} else if _, err := contract.DataFeedId(nil); err == nil {
+			feedToken, signThreshold, dataId := priceFetcher.RedstoneDetails(common.HexToAddress(entry), mdl.Client)
 			//
-			signThreshold, err := contract.GetUniqueSignersThreshold(nil)
-			log.CheckFatal(err)
-			token, err := contract.Token(nil)
-			log.CheckFatal(err)
 			tokenDetails = &core.RedStonePF{
 				Type:             15,
 				DataServiceId:    "redstone-primary-prod",
 				DataId:           dataId,
-				SignersThreshold: int(signThreshold),
-				UnderlyingToken:  token,
+				SignersThreshold: signThreshold,
+				UnderlyingToken:  feedToken,
 			}
 			mdl.DetailsDS.Info[entry] = tokenDetails
 		}

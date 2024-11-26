@@ -60,7 +60,7 @@ func (obj *DetailsDS) Load(in core.Json, version core.VersionType) {
 	redstoneMap := map[string]*core.RedStonePF{}
 	if a != nil {
 		str := utils.ToJson(a)
-		err := utils.ReadJsonReaderAndSetInterface(bytes.NewBufferString(str), redstoneMap)
+		err := utils.ReadJsonReaderAndSetInterface(bytes.NewBufferString(str), &redstoneMap)
 		log.CheckFatal(err)
 	}
 	obj.Info = redstoneMap

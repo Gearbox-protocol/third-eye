@@ -13,7 +13,9 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers/treasury"
+	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Repository struct {
@@ -36,6 +38,8 @@ type Repository struct {
 	config          *config.Config
 	accountManager  *ds.DirectTransferManager
 	AccountQuotaMgr *ds.AccountQuotaMgr
+	//
+	feedToTicker map[string]common.Address // feed to ticker
 }
 
 func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras *handlers.ExtrasRepo) *Repository {
@@ -54,6 +58,7 @@ func GetRepository(db *gorm.DB, client core.ClientI, cfg *config.Config, extras 
 		client:           client,
 		config:           cfg,
 		accountManager:   ds.NewDirectTransferManager(),
+		feedToTicker:     map[string]common.Address{},
 	}
 	repo.SyncAdaptersRepo = handlers.NewSyncAdaptersRepo(client, repo, cfg, extras)
 	repo.TokenOracleRepo = handlers.NewTokenOracleRepo(repo.SyncAdaptersRepo, blocksRepo, repo, client)
@@ -107,6 +112,7 @@ func (repo *Repository) Init() {
 	repo.loadAccountLastSession()
 	// credit_sessions
 	repo.LoadCreditSessions(repo.db, lastDebtSync)
+	repo.loadTicker()
 
 	repo.initChecks()
 }
@@ -174,4 +180,39 @@ func (repo *Repository) AfterSync(syncTill int64) {
 
 func (repo *Repository) ChainlinkPriceUpdatedAt(token string, blockNums []int64) {
 	repo.GetAggregatedFeed().ChainlinkPriceUpdatedAt(token, blockNums)
+}
+
+func (repo *Repository) GetFeedToTicker(feed string) common.Address {
+	return repo.feedToTicker[feed]
+}
+func (repo *Repository) AddFeedToTicker(feed string, ticker common.Address) {
+	repo.feedToTicker[feed] = ticker
+}
+func (repo *Repository) saveTicker(tx *gorm.DB) {
+	data := []ticker{}
+	for feed, token := range repo.feedToTicker {
+		data = append(data, ticker{
+			Feed:   feed,
+			Ticker: token.Hex(),
+		})
+	}
+	err := tx.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).CreateInBatches(data, 10).Error
+	log.CheckFatal(err)
+	//
+}
+
+type ticker struct {
+	Feed   string `gorm:"column:feed"`
+	Ticker string `gorm:"column:ticker;primaryKey"`
+}
+
+func (repo *Repository) loadTicker() {
+	data := []ticker{}
+	err := repo.db.Raw(`select * from tickers`).Find(&data).Error
+	log.CheckFatal(err)
+	for _, entry := range data {
+		repo.feedToTicker[entry.Feed] = common.HexToAddress(entry.Ticker)
+	}
 }

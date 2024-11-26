@@ -34,6 +34,7 @@ func (repo *Repository) Flush(syncTill int64) error {
 
 	// save current treasury snapshot
 	repo.TreasuryRepo.Save(tx)
+	repo.saveTicker(tx)
 
 	// fix pool v2 ledger
 	repo.GetPoolWrapper().UpdatePoolv2Ledger(tx)

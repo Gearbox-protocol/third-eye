@@ -8,14 +8,12 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
-	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 )
 
-func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans []redstone.TokenAndFeedType) {
+func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans []core.RedStonePF) {
 	feeds := mdl.Repo.GetTokenOracles()[schemas.V3PF_MAIN]
 	for token := range balances {
 		var con ds.QueryPriceFeedI
@@ -28,25 +26,12 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 			con = adapter.(ds.QueryPriceFeedI)
 		}
 		pfType := con.GetPFType()
-		t := 0
-		if pfType == ds.CompositeRedStonePF {
-			t = core.V3_BACKEND_COMPOSITE_REDSTONE_ORACLE
-		} else if pfType == ds.RedStonePF {
-			t = core.V3_REDSTONE_ORACLE
-		}
-		{ // ignore LBTC price on mainnet as the pf0 of composite is not updated, so can't provide the pod
-			client := mdl.Client
-			chainId := core.GetChainId(client)
-			addrToSym := core.GetTokenToSymbolByChainId(chainId)
-			if addrToSym[common.HexToAddress(token)] == "LBTC" && log.GetBaseNet(chainId) == "MAINNET" && t == core.V3_BACKEND_COMPOSITE_REDSTONE_ORACLE { // lbtc as redstone can be updated
-				continue
+		if pfType == ds.CompositeRedStonePF || pfType == ds.RedStonePF || pfType == ds.SingleAssetPF {
+			red := con.GetRedstonePF()
+			if red != nil {
+				ans = append(ans, *red)
 			}
 		}
-		ans = append(ans, redstone.TokenAndFeedType{
-			Token:    common.HexToAddress(token),
-			Reversed: false,
-			PFType:   t,
-		})
 	}
 	return
 }
@@ -56,7 +41,7 @@ func (mdl *CommonCMAdapter) retry(oldaccount dc.CreditAccountCallData, blockNum 
 	log.CheckFatal(err)
 	ts := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
 	bal := moreThan1Balance(oldaccount.Balances)
-	pod := mdl.Repo.GetRedStonemgr().GetPodSign(int64(ts), mdl.priceFeedNeeded(bal), bal)
+	pod := mdl.Repo.GetRedStonemgr().GetPodSign(int64(ts), mdl.priceFeedNeeded(bal))
 	newaccountData, err := dcw.GetCreditAccountData(&bind.CallOpts{
 		BlockNumber: big.NewInt(blockNum),
 	},

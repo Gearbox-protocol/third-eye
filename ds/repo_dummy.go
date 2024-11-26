@@ -11,6 +11,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
+	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
 )
 
@@ -90,6 +91,13 @@ func (DummyRepo) DisableProtocol(blockNum int64, logID uint, txHash, cm, creditF
 func (DummyRepo) AddAllowedToken(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken) {
 }
 func (DummyRepo) DisableAllowedToken(blockNum int64, logID uint, txHash string, creditManager, creditFilter, token string) {
+}
+
+func (DummyRepo) GetFeedToTicker(feed string) common.Address {
+	return core.NULL_ADDR
+}
+
+func (DummyRepo) AddFeedToTicker(feed string, ticker common.Address) {
 }
 
 // v2
@@ -262,7 +270,6 @@ func (DieselBalance) TableName() string {
 	return "diesel_balances"
 }
 
-
 type QueryPriceFeedI interface {
 	TokensValidAtBlock(blockNum int64) []schemas.TokenAndMergedPFVersion
 	GetPFType() string
@@ -272,4 +279,5 @@ type QueryPriceFeedI interface {
 	DisableToken(token string, disabledAt int64, pfVersion schemas.PFVersion)
 	AddToken(token string, discoveredAt int64, pfVersion schemas.PFVersion)
 	GetTokens() map[string]map[schemas.PFVersion][]int64
+	GetRedstonePF() *core.RedStonePF
 }

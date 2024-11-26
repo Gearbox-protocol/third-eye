@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
@@ -25,10 +26,27 @@ func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int6
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
+func (feed RedstonePriceFeed) GetRedstonePF() *core.RedStonePF {
+	return feed.DetailsDS.Info[feed.GetAddress()]
+}
+
 func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *RedstonePriceFeed {
-	return &RedstonePriceFeed{
+	obj := &RedstonePriceFeed{
 		BasePriceFeed: base_price_feed.NewBasePriceFeedFromAdapter(adapter),
 	}
+	if obj.DetailsDS.Info[adapter.GetAddress()] == nil {
+		feedToken, signThreshold, dataId := priceFetcher.RedstoneDetails(common.HexToAddress(adapter.GetAddress()), adapter.Client)
+		//
+		tokenDetails := &core.RedStonePF{
+			Type:             15,
+			DataServiceId:    "redstone-primary-prod",
+			DataId:           dataId,
+			SignersThreshold: signThreshold,
+			UnderlyingToken:  feedToken,
+		}
+		obj.DetailsDS.Info[adapter.GetAddress()] = tokenDetails
+	}
+	return obj
 }
 
 func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
@@ -63,7 +81,7 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 	}
 	{
 		//
-		priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), validTokens[0].Token, false)
+		priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 		if priceBI.Cmp(new(big.Int)) == 0 {
 			log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceBI)
 			return nil

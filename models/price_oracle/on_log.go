@@ -23,7 +23,7 @@ import (
 // QueryPriceFeed stores in details reserve status via PFVersion in details.Tokens.pfversion
 // chainlinkPriceFeed and compositeChainlinkPriceFeed stores pfversion as reserve status in details
 
-func getDesc(client core.ClientI, addr common.Address) string {
+func GetDesc(client core.ClientI, addr common.Address) string {
 	data, err := hex.DecodeString("06fdde03") // enabledTokens
 	log.CheckFatal(err)
 	bytes, err := client.CallContract(context.TODO(), ethereum.CallMsg{
@@ -40,21 +40,23 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),
 		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
 		//
-		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex() // token
+		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
+		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
 		// on mainnet, these are the tickers added as weETH redstone composite oracle is made up of ticker oracle weETH/ETH redstone and ETH/USD chainlink oracle
 
 		{
 			// 0x8C23b9E4CB9884e807294c4b4C33820333cC613c weETH/ETH
 			// 0xFb56Fb16B4F33A875b01881Da7458E09D286208e ezETH/ETH
 			if log.GetNetworkName(core.GetChainId(mdl.Client)) != "TEST" {
-				desc := getDesc(mdl.Client, common.HexToAddress(token))
+				desc := GetDesc(mdl.Client, common.HexToAddress(token))
 				if strings.Contains(desc, "Ticker Token") { // ezETH/ETH and weETH/ETH
-					log.Warnf("Ingore [%s](%s) in priceOracle", token, desc)
+					log.Warnf("AddTicker [%s](%s) in priceOracle", token, desc)
+					mdl.Repo.AddFeedToTicker(oracle, common.HexToAddress(token))
 					return
 				}
 			}
 		}
-		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
+
 		isReverse := core.Topic("SetReservePriceFeed(address,address,uint32,bool)") == txLog.Topics[0]
 		// if isReverse {
 		// 	log.Fatal("token", token, "oracle", oracle)
