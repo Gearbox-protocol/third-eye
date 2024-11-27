@@ -141,7 +141,7 @@ type RepositoryI interface {
 	AddQuotaDetails(*schemas_v3.QuotaDetails)
 	GetAccountQuotaMgr() *AccountQuotaMgr
 	IsBlockRecent(block int64, dur time.Duration) bool
-	GetFeedToTicker(feed string) common.Address
+	GetFeedToTicker(feed string, composite string) common.Address
 	AddFeedToTicker(feed string, ticker common.Address)
 }
 

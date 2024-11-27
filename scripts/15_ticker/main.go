@@ -16,8 +16,8 @@ import (
 )
 
 type ticker struct {
-	Feed   string `gorm:"column:feed"`
-	Ticker string `gorm:"column:ticker;primaryKey"`
+	Feed   string `gorm:"column:feed;primaryKey"`
+	Ticker string `gorm:"column:ticker"`
 }
 
 func main() {
@@ -40,7 +40,8 @@ func main() {
 		token := common.BytesToAddress(txLog.Topics[1].Bytes())        // token
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
 		desc := price_oracle.GetDesc(client, token)
-		if strings.Contains(desc, "Ticker Token") { // ezETH/ETH and weETH/ETH
+		if strings.Contains(desc, "Ticker Token") || oracle == "0x14497e822B70554537dB9950126461C23dC4f237" { // ezETH/ETH and weETH/ETH
+			// for arbitrum token 0x144
 			log.Info("here")
 			ls = append(ls, ticker{
 				Feed:   oracle,

@@ -54,7 +54,7 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStone
 			DataServiceId:    "redstone-primary-prod",
 			DataId:           dataId,
 			SignersThreshold: signThreshold,
-			UnderlyingToken:  obj.Repo.GetFeedToTicker(obj.priceFeed0.Hex()),
+			UnderlyingToken:  obj.Repo.GetFeedToTicker(obj.priceFeed0.Hex(), obj.Address),
 		}
 		obj.DetailsDS.Info[adapter.GetAddress()] = tokenDetails
 	}

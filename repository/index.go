@@ -81,6 +81,7 @@ func (repo *Repository) Init() {
 	lastDebtSync := repo.LoadLastDebtSync()
 	// token should be loaded before syncAdapters as credit manager adapter uses underlying token details
 	repo.TokensRepo.LoadTokens(repo.db)
+	repo.loadTicker()
 
 	repo.loadDieselToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
@@ -112,7 +113,6 @@ func (repo *Repository) Init() {
 	repo.loadAccountLastSession()
 	// credit_sessions
 	repo.LoadCreditSessions(repo.db, lastDebtSync)
-	repo.loadTicker()
 
 	repo.initChecks()
 }
@@ -182,8 +182,12 @@ func (repo *Repository) ChainlinkPriceUpdatedAt(token string, blockNums []int64)
 	repo.GetAggregatedFeed().ChainlinkPriceUpdatedAt(token, blockNums)
 }
 
-func (repo *Repository) GetFeedToTicker(feed string) common.Address {
-	return repo.feedToTicker[feed]
+func (repo *Repository) GetFeedToTicker(feed string, composite string) common.Address {
+	ans := repo.feedToTicker[feed]
+	if ans == core.NULL_ADDR {
+		log.Fatal(feed, "don't have ticker token for composite oracle", composite)
+	}
+	return ans
 }
 func (repo *Repository) AddFeedToTicker(feed string, ticker common.Address) {
 	repo.feedToTicker[feed] = ticker
@@ -204,8 +208,8 @@ func (repo *Repository) saveTicker(tx *gorm.DB) {
 }
 
 type ticker struct {
-	Feed   string `gorm:"column:feed"`
-	Ticker string `gorm:"column:ticker;primaryKey"`
+	Feed   string `gorm:"column:feed;primaryKey"`
+	Ticker string `gorm:"column:ticker"`
 }
 
 func (repo *Repository) loadTicker() {

@@ -93,7 +93,7 @@ func (DummyRepo) AddAllowedToken(logID uint, txHash, creditFilter string, atoken
 func (DummyRepo) DisableAllowedToken(blockNum int64, logID uint, txHash string, creditManager, creditFilter, token string) {
 }
 
-func (DummyRepo) GetFeedToTicker(feed string) common.Address {
+func (DummyRepo) GetFeedToTicker(feed string, _ string) common.Address {
 	return core.NULL_ADDR
 }
 
