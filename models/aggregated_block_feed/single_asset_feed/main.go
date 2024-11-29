@@ -2,6 +2,8 @@ package single_asset_feed
 
 import (
 	"encoding/hex"
+	"fmt"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/redstone"
@@ -75,14 +77,16 @@ func (mdl *SingleAssetFeed) GetCalls(blockNum int64) (calls []multicall.Multical
 	return calls, true
 }
 
+var counter = log.SendMsgIfCountMoreThan(24*time.Hour, 10)
+
 // same as query price feed
 // func (*YearnPriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 
 func (mdl *SingleAssetFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
 	result := results[len(results)-1]
 	if !result.Success {
-		log.Warnf("Can't get latestRounData for YearnModule in AQFWrapper for %s(%s) at %d",
-			mdl.GetDetailsByKey("pfType"), mdl.GetAddress(), blockNum)
+		counter(mdl.GetAddress(), fmt.Sprintf("Can't get latestRounData for YearnModule in AQFWrapper for %s(%s) at %d",
+			mdl.GetDetailsByKey("pfType"), mdl.GetAddress(), blockNum))
 		return nil
 		//
 	}
