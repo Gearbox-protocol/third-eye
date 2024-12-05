@@ -17,6 +17,9 @@ psql -U $SUPERUSER -d postgres -c "drop database $TMP_DB"
 psql -U $SUPERUSER -d postgres -c "create database $TMP_DB"
 pg_dump "$REMOTE_DB" | psql  -U $SUPERUSER -d $TMP_DB
 set -e 
+set +e
+pg_dump "$REMOTE_DB" --table public.schema_migrations  | psql  -U $SUPERUSER -d $TMP_DB
+set -e
 
 # psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
 psql -U $SUPERUSER -d $TMP_DB < $PARENT_DIR/../../migrations/000016_rankings.up.sql
