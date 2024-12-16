@@ -15,7 +15,7 @@ export TMP_DB_URL="postgres://$SUPERUSER@localhost:5432/$TMP_DB?sslmode=disable"
 set +e
 psql -U $SUPERUSER -d postgres -c "drop database $TMP_DB"
 psql -U $SUPERUSER -d postgres -c "create database $TMP_DB"
-pg_dump "$REMOTE_DB" | psql  -U $SUPERUSER -d $TMP_DB
+pg_dump --no-owner "$REMOTE_DB" | psql  -U $SUPERUSER -d $TMP_DB
 set -e 
 set +e
 pg_dump "$REMOTE_DB" --table public.schema_migrations  | psql  -U $SUPERUSER -d $TMP_DB

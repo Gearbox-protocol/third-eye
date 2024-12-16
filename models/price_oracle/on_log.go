@@ -33,6 +33,32 @@ func GetDesc(client core.ClientI, addr common.Address) string {
 	log.CheckFatal(err)
 	return strings.Trim(string(bytes), "\x00")
 }
+func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
+	for _, txLog := range txLogs {
+		switch txLog.Topics[0] {
+		case core.Topic("NewPriceFeed(address,address)"),
+			core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"):
+			token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
+			oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
+			// on mainnet, these are the tickers added as weETH redstone composite oracle is made up of ticker oracle weETH/ETH redstone and ETH/USD chainlink oracle
+
+			{
+				// 0x8C23b9E4CB9884e807294c4b4C33820333cC613c weETH/ETH
+				// 0xFb56Fb16B4F33A875b01881Da7458E09D286208e ezETH/ETH
+				if log.GetNetworkName(core.GetChainId(mdl.Client)) != "TEST" {
+					desc := GetDesc(mdl.Client, common.HexToAddress(token))
+					if strings.Contains(desc, "Ticker Token") { // ezETH/ETH and weETH/ETH
+						log.Warnf("AddTicker [%s](%s) in priceOracle", token, desc)
+						mdl.Repo.AddFeedToTicker(oracle, common.HexToAddress(token))
+					}
+				}
+			}
+		}
+	}
+	for _, txLog := range txLogs {
+		mdl.OnLog(txLog)
+	}
+}
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
@@ -42,26 +68,22 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		//
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
-		// on mainnet, these are the tickers added as weETH redstone composite oracle is made up of ticker oracle weETH/ETH redstone and ETH/USD chainlink oracle
-
-		{
-			// 0x8C23b9E4CB9884e807294c4b4C33820333cC613c weETH/ETH
-			// 0xFb56Fb16B4F33A875b01881Da7458E09D286208e ezETH/ETH
-			if log.GetNetworkName(core.GetChainId(mdl.Client)) != "TEST" {
-				desc := GetDesc(mdl.Client, common.HexToAddress(token))
-				if strings.Contains(desc, "Ticker Token") { // ezETH/ETH and weETH/ETH
-					log.Warnf("AddTicker [%s](%s) in priceOracle", token, desc)
-					mdl.Repo.AddFeedToTicker(oracle, common.HexToAddress(token))
-					return
-				}
-			}
-		}
 
 		isReverse := core.Topic("SetReservePriceFeed(address,address,uint32,bool)") == txLog.Topics[0]
 		// if isReverse {
 		// 	log.Fatal("token", token, "oracle", oracle)
 		// }
 		//
+		{
+			// 0x8C23b9E4CB9884e807294c4b4C33820333cC613c weETH/ETH
+			// 0xFb56Fb16B4F33A875b01881Da7458E09D286208e ezETH/ETH
+			if log.GetNetworkName(core.GetChainId(mdl.Client)) != "TEST" {
+				desc := GetDesc(mdl.Client, common.HexToAddress(token))
+				if strings.Contains(desc, "Ticker Token") { // ezETH/ETH and weETH/ETH
+					return
+				}
+			}
+		}
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,

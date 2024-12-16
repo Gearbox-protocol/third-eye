@@ -42,7 +42,7 @@ func main() {
 		desc := price_oracle.GetDesc(client, token)
 		if strings.Contains(desc, "Ticker Token") || oracle == "0x14497e822B70554537dB9950126461C23dC4f237" { // ezETH/ETH and weETH/ETH
 			// for arbitrum token 0x144
-			log.Info("here")
+			log.Info("txhash", txLog.TxHash, "logid", txLog.Index, "feed0", oracle, "ticker", token)
 			ls = append(ls, ticker{
 				Feed:   oracle,
 				Ticker: token.Hex(),
