@@ -4,6 +4,8 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/activeMiscv3"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/activeSwapYTv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/aavev2LendingPool"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/aavev2WrappedAToken"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/balancerv2Vault"
@@ -120,6 +122,8 @@ var abiJSONs = []string{
 	mellowR7.MellowR7ABI,
 	daiUSDs.DaiUSDsABI,
 	pendleRouterv4.PendleRouterv4ABI,
+	activeSwapYTv3.ActiveSwapYTv3ABI,
+	activeMiscv3.ActiveMiscv3ABI,
 }
 
 var abiParsers []abi.ABI
