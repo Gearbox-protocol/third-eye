@@ -65,8 +65,10 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 	obj.Details["others"] = otherAddrProviders
 	obj.otherAddrs = otherAddrProviders
 
-	addrv310 := core.GetAddressProvider(core.GetChainId(adapter.Client), core.NewVersion(300))
-	obj.hashToContractName = pkg.Initv310ContractHashMap(adapter.Client, common.HexToAddress(addrv310))
+	if core.GetChainId(adapter.Client) != 1337 {
+		addrv310 := core.GetAddressProvider(core.GetChainId(adapter.Client), core.NewVersion(300))
+		obj.hashToContractName = pkg.Initv310ContractHashMap(adapter.Client, common.HexToAddress(addrv310))
+	}
 
 	return obj
 }
