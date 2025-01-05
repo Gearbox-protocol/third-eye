@@ -23,9 +23,13 @@ func (mdl *CMv2) addProtocolAdaptersLocally() {
 	if blockToFetchCMData < mdl.LastSync {
 		blockToFetchCMData = mdl.LastSync
 	}
+	var cf string
+	if cfInterface := mdl.Details["facade"]; cfInterface != nil {
+		cf = cfInterface.(string)
+	}
 	//
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(mdl.GetVersion(),
-		blockToFetchCMData, common.HexToAddress(mdl.GetAddress()), mdl.GetCreditFacadeAddr())
+		blockToFetchCMData, common.HexToAddress(mdl.GetAddress()), cf)
 	if err != nil {
 		log.Fatal("Failed preparing credit manager data", err)
 	}
