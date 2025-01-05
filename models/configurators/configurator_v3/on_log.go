@@ -7,6 +7,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 )
@@ -74,6 +75,32 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 			LiquidationDiscount:        10000 - feesEvent.LiquidationPremium,
 			FeeLiquidationExpired:      feesEvent.FeeLiquidationExpired,
 			LiquidationDiscountExpired: 10000 - feesEvent.LiquidationPremiumExpired,
+		}
+		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), params)
+	case core.Topic("UpdateFees(uint16,uint16,uint16,uint16)"):
+		// feesEvent, err := mdl.cfgContractv310.ParseUpdateFees(txLog)
+		// log.CheckFatal(err)
+		cmabi := core.GetAbi("CreditManagerv3")
+		data, err := core.CallFuncGetAllData(mdl.Client, "9af1d35a", common.HexToAddress(mdl.GetCM()), blockNum, nil)
+		log.CheckFatal(err)
+		values, err := cmabi.Unpack("fees", data)
+		log.CheckFatal(err)
+		type feesDS struct {
+			FeeInterest                uint16
+			FeeLiquidation             uint16
+			LiquidationDiscount        uint16
+			FeeLiquidationExpired      uint16
+			LiquidationDiscountExpired uint16
+		}
+		feesEvent := abi.ConvertType(values, new(feesDS)).(*feesDS)
+		params := &schemas.Parameters{
+			BlockNum:                   blockNum,
+			CreditManager:              creditManager,
+			FeeInterest:                feesEvent.FeeInterest,
+			FeeLiquidation:             feesEvent.FeeLiquidation,
+			LiquidationDiscount:        feesEvent.LiquidationDiscount,
+			FeeLiquidationExpired:      feesEvent.FeeLiquidationExpired,
+			LiquidationDiscountExpired: feesEvent.LiquidationDiscountExpired,
 		}
 		mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), params)
 	case core.Topic("SetCreditFacade(address)"):

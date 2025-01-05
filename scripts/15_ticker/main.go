@@ -9,7 +9,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
-	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle/po_v3"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm/clause"
@@ -39,7 +39,7 @@ func main() {
 	for _, txLog := range txLogs {
 		token := common.BytesToAddress(txLog.Topics[1].Bytes())        // token
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
-		desc := price_oracle.GetDesc(client, token)
+		desc := po_v3.GetDesc(client, token)
 		if strings.Contains(desc, "Ticker Token") || oracle == "0x14497e822B70554537dB9950126461C23dC4f237" { // ezETH/ETH and weETH/ETH
 			// for arbitrum token 0x144
 			log.Info("txhash", txLog.TxHash, "logid", txLog.Index, "feed0", oracle, "ticker", token)

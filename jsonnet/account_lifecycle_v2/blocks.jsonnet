@@ -122,7 +122,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 6000,
         totalValueBI: '6000000000',
-        extraQuotaAPY: 0,
       },
     ],
     poolLedgers: [
@@ -297,7 +296,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 8000,
         totalValueBI: '8000000000',
-        extraQuotaAPY: 0,
       },
     ],
     daoOperations: [
@@ -366,11 +364,9 @@
       {
         blockNum: 5,
         feed: '#ChainlinkPriceFeed_3',
-        mergedPFVersion: 2,
         price: 2500,
         priceBI: '250000000000',
         roundId: 1,
-        token: '#Token_3',
       },
     ],
     timestamp: 432000,
@@ -507,7 +503,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 8000,
         totalValueBI: '8000000000',
-        extraQuotaAPY: 0,
       },
     ],
     timestamp: 518400,
@@ -595,7 +590,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 9000,
         totalValueBI: '9000000000',
-        extraQuotaAPY: 0,
       },
     ],
     daoOperations: [
@@ -629,11 +623,9 @@
       {
         blockNum: 7,
         feed: '#ChainlinkPriceFeed_2',
-        mergedPFVersion: 2,
         price: 20000,
         priceBI: '2000000000000',
         roundId: 1,
-        token: '#Token_2',
       },
     ],
     timestamp: 604800,

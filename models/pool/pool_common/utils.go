@@ -10,9 +10,10 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
+// only use for estimation
 func CheckIfAmountMoreThan1Mil(client core.ClientI, repo ds.RepositoryI, state *schemas.PoolState, amount *big.Int, blockNum int64, txHash string, operation string) {
 	token := state.UnderlyingToken
-	priceInUSD := repo.GetPrice(token)
+	priceInUSD := repo.GetPriceInUSD( blockNum, token)
 	if priceInUSD == nil {
 		return
 	}

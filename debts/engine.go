@@ -1,7 +1,6 @@
 package debts
 
 import (
-	"fmt"
 	"math/big"
 	"sort"
 
@@ -91,11 +90,30 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 		eng.AddTokenLTRamp(ltRamp)
 	}
 
+	for _, to := range block.TokenOracles {
+		if !to.Reserve { // only main
+			eng.priceHandler.AddTokenOracle(to)
+		}
+	}
+	//
+	for _, relation := range block.Relations {
+		if relation.Type == "PoolOracle" {
+			eng.priceHandler.poolToPriceOracle[relation.Owner] = schemas.PriceOracleT(relation.Dependent)
+		}
+	}
 	// C3.b: updated price
 	for _, pf := range block.GetPriceFeeds() {
 		// L5
-		eng.AddTokenLastPrice(pf)
-		tokensUpdated[pf.Token] = true
+		eng.priceHandler.AddTokenLastPrice(pf)
+		// TIMECOMPLEX
+		// use mdl.repo.getsyncadapter(pf.Feed).gettokens(block_num)
+		for _, oracles := range eng.priceHandler.poTotokenOracle {
+			for _, oracle := range oracles {
+				if pf.Feed == oracle.Feed {
+					tokensUpdated[oracle.Token] = true
+				}
+			}
+		}
 	}
 	// updates complete
 	return poolsUpdated, tokensUpdated, sessionsUpdated
@@ -121,7 +139,7 @@ func (eng *DebtEngine) CalculateDebt() {
 		cmToPoolDetails := eng.GetCumulativeIndexAndDecimalForCMs(blockNum, block.Timestamp)
 
 		//
-		var caTotalValueInUSD float64 = 0
+		marketToTvl := make(MarketToTvl)
 		// check if session's debt needs to be recalculated
 		for _, session := range sessions {
 			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
@@ -133,11 +151,23 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 			// #C3
 			sessionSnapshot := eng.lastCSS[session.ID]
-			caTotalValueInUSD += utils.GetFloat64Decimal(
+			caValue := utils.GetFloat64Decimal(
 				eng.GetAmountInUSD(
+					session.CreditManager,
 					cmToPoolDetails[session.CreditManager].Token,
-					sessionSnapshot.TotalValueBI.Convert(), schemas.VersionToPFVersion(session.Version, false),
+					sessionSnapshot.TotalValueBI.Convert(), session.Version,
 				), 8)
+			{
+				pool := eng.priceHandler.GetPoolFromCM(session.CreditManager)
+				adapter := eng.repo.GetAdapter(pool)
+				state := adapter.GetUnderlyingState()
+				if state == nil {
+					log.Fatal("State for pool not found for address: ", pool)
+				}
+				//
+				market := state.(*schemas.PoolState).UnderlyingToken
+				marketToTvl.add(market, caValue, 0)
+			}
 
 			for token, tokenBalance := range *sessionSnapshot.Balances {
 				if tokenBalance.IsEnabled && tokenBalance.HasBalanceMoreThanOne() {
@@ -169,18 +199,17 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 		}
 		//
-		eng.createTvlSnapshots(blockNum, caTotalValueInUSD)
+		eng.createTvlSnapshots(blockNum, marketToTvl)
 		if len(sessionsUpdated) > 0 {
 			log.Debugf("Calculated %d debts for block %d", len(sessionsUpdated), blockNum)
 		}
 	}
 }
 
-func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD float64) {
-	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
-		return
-	}
-	var totalAvailableLiquidityInUSD float64 = 0
+func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTvl) {
+	// if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
+	// 	return
+	// }
 	log.Info("tvl for block", blockNum)
 	for _, entry := range eng.poolLastInterestData {
 		adapter := eng.repo.GetAdapter(entry.Address)
@@ -191,27 +220,31 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 		//
 		underlyingToken := state.(*schemas.PoolState).UnderlyingToken
 		//
-		version := schemas.V1PF
-		if eng.tokenLastPrice[schemas.V2PF] != nil {
-			version = schemas.V2PF
-		}
-		if eng.tokenLastPrice[schemas.V3PF_MAIN] != nil {
-			version = schemas.V3PF_MAIN
-		}
+		latestOracle, version, err := eng.repo.GetActivePriceOracleByBlockNum(blockNum)
+		log.CheckFatal(err)
 		//
-		totalAvailableLiquidityInUSD += utils.GetFloat64Decimal(
-			eng.GetAmountInUSD(
+		availLiq := utils.GetFloat64Decimal(
+			eng.GetAmountInUSDByOracle(
+				latestOracle,
 				underlyingToken,
 				entry.AvailableLiquidityBI.Convert(), version), 8)
+		marketToTvl.add(state.(*schemas.PoolState).Market, 0, availLiq)
 	}
 	// save as last tvl snapshot and add to db
-	tvls := &schemas.TvlSnapshots{
-		BlockNum:           blockNum,
-		AvailableLiquidity: totalAvailableLiquidityInUSD,
-		CATotalValue:       caTotalValueInUSD,
+	for market, details := range marketToTvl {
+		if last, ok := eng.marketTolastTvlSnapshot[market]; ok && blockNum-last.BlockNum < core.NoOfBlocksPerHr(eng.client) { // only snap her hr.
+			continue
+		}
+		//
+		tvl := &schemas.TvlSnapshots{
+			BlockNum:           blockNum,
+			AvailableLiquidity: details.totalAvailableLiquidity,
+			CATotalValue:       details.caTotalValue,
+			Market:             market,
+		}
+		eng.tvlSnapshots = append(eng.tvlSnapshots, tvl)
+		eng.marketTolastTvlSnapshot[tvl.Market] = tvl
 	}
-	eng.tvlSnapshots = append(eng.tvlSnapshots, tvls)
-	eng.lastTvlSnapshot = tvls
 }
 
 func (eng *DebtEngine) ifAccountLiquidated(sessionId, cmAddr string, closedAt int64, status int) {
@@ -283,10 +316,6 @@ func (eng *DebtEngine) GetCumulativeIndexAndDecimalForCMs(blockNum int64, ts uin
 	return cmToCumIndex
 }
 
-func (eng *DebtEngine) getTokenPriceFeed(token string, pfVersion schemas.PFVersion) *schemas.PriceFeed {
-	return eng.tokenLastPrice[pfVersion][token]
-}
-
 func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.CreditSession, cumIndexAndUToken *ds.CumIndexAndUToken) {
 	sessionId := session.ID
 	sessionSnapshot := eng.lastCSS[sessionId]
@@ -299,14 +328,16 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 		retryFeeds := eng.repo.GetRetryFeedForDebts()
 		for tokenAddr, details := range *sessionSnapshot.Balances {
 			if details.IsEnabled && details.HasBalanceMoreThanOne() {
-				lastPriceEvent := eng.getTokenPriceFeed(tokenAddr, schemas.VersionToPFVersion(session.Version, false)) // don't use reserve
 				//
-				if tokenAddr != eng.repo.GetWETHAddr() && lastPriceEvent.BlockNumber != blockNum {
-					feedAddr := lastPriceEvent.Feed
-					for _, retryFeed := range retryFeeds {
-						if retryFeed.GetAddress() == feedAddr {
-							eng.requestPriceFeed(blockNum, retryFeed, tokenAddr, lastPriceEvent.MergedPFVersion)
-
+				if tokenAddr != eng.repo.GetWETHAddr() {
+					lastPriceEvent := eng.priceHandler.GetLastPriceFeed(session.CreditManager, tokenAddr, session.Version) // don't use reserve
+					if lastPriceEvent.BlockNumber != blockNum {
+						feedAddr := lastPriceEvent.Feed
+						for _, retryFeed := range retryFeeds {
+							if retryFeed.GetAddress() == feedAddr {
+								// log.Info("hf ", debt.CalHealthFactor.Convert(), "of", sessionId, "at", blockNum)
+								eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr, profile != nil)
+							}
 						}
 					}
 				}
@@ -392,7 +423,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 	for tokenAddr, details := range *sessionSnapshot.Balances {
 		if details.IsEnabled {
 			profile.Tokens[tokenAddr] = ds.TokenDetails{
-				Price:             eng.GetTokenLastPrice(tokenAddr, schemas.VersionToPFVersion(session.Version, false)), // don't use reserve
+				Price:             eng.priceHandler.GetLastPrice(session.CreditManager, tokenAddr, session.Version), // don't use reserve
 				Decimals:          eng.repo.GetToken(tokenAddr).Decimals,
 				TokenLiqThreshold: eng.tokenLTRamp[session.CreditManager][tokenAddr].GetLTForTs(eng.currentTs),
 			}
@@ -416,12 +447,15 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 			notMatched = true
 		}
 		// even if data compressor matching is disabled check the calc values  with session data at block where last credit snapshot was taken
-	} else if sessionSnapshot.BlockNum == blockNum && sessionSnapshot.HealthFactor.Convert().Cmp(new(big.Int)) != 0 { // it is 0 when the issuccessful is false for redstone credit accounts
+		//  // 20563217 and 0xe8f5F52842D7AF4BbcF5Fe731A336147B51F09D5_19980779_297 on mainnet has creditsessionsnapshot but isSuccessful for dv3 is false.
+	} else if sessionSnapshot.BlockNum == blockNum && sessionSnapshot.HealthFactor.Convert().Cmp(new(big.Int)) != 0 &&
+		!(utils.Contains([]int64{20563217, 20671148}, blockNum) && sessionSnapshot.TotalValueBI.Convert().Cmp(new(big.Int)) == 0) {
+		// it is 0 when the issuccessful is false for redstone credit accounts
 		if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.001)) ||
 			// hf value calculated are on different side of 1
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor) ||
 			// if healhFactor diff by 4 %
-			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)) {
+			core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.01)) {
 			// log.Info(debt.CalHealthFactor, sessionSnapshot.HealthFactor, blockNum)
 			// log.Info(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, blockNum)
 			if log.GetBaseNet(core.GetChainId(eng.client)) == "ARBITRUM" {
@@ -438,11 +472,12 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 				notMatched = true
 			}
 			log.Info(
+				debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, sessionId,
 				IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.001)),
 				// hf value calculated are on different side of 1
 				core.ValueDifferSideOf10000(debt.CalHealthFactor, sessionSnapshot.HealthFactor),
 				// if healhFactor diff by 4 %
-				core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.04)),
+				core.DiffMoreThanFraction(debt.CalHealthFactor, sessionSnapshot.HealthFactor, big.NewFloat(0.01)),
 			)
 		}
 	}
@@ -459,36 +494,37 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 }
 
 // helper methods
-func (eng *DebtEngine) GetAmountInUSD(tokenAddr string, amount *big.Int, pfVersion schemas.PFVersion) *big.Int {
-	tokenPrice := eng.GetTokenLastPrice(tokenAddr, pfVersion)
+func (eng *DebtEngine) GetAmountInUSDByOracle(priceOracle schemas.PriceOracleT, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
+	tokenPrice := eng.priceHandler.GetLastPriceFeedByOracle(priceOracle, tokenAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
-	if pfVersion.Decimals() == 8 {
+	if version.MoreThan(core.NewVersion(1)) { // than decimals 8
+		return utils.GetInt64(new(big.Int).Mul(tokenPrice.PriceBI.Convert(), amount), tokenDecimals)
+	}
+	// for v1
+	usdcAddr := eng.repo.GetUSDCAddr()
+	usdcPrice := eng.priceHandler.GetLastPriceFeedByOracle(priceOracle, usdcAddr, version)
+	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
+
+	value := new(big.Int).Mul(amount, tokenPrice.PriceBI.Convert())
+	value = utils.GetInt64(value, tokenDecimals-usdcDecimals)
+	value = new(big.Int).Quo(value, usdcPrice.PriceBI.Convert())
+	return new(big.Int).Mul(value, big.NewInt(100))
+}
+func (eng *DebtEngine) GetAmountInUSD(cm string, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
+	tokenPrice := eng.priceHandler.GetLastPrice(cm, tokenAddr, version)
+	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
+	if version.MoreThan(core.NewVersion(1)) { // than decimals 8
 		return utils.GetInt64(new(big.Int).Mul(tokenPrice, amount), tokenDecimals)
 	}
 	// for v1
 	usdcAddr := eng.repo.GetUSDCAddr()
-	usdcPrice := eng.GetTokenLastPrice(usdcAddr, pfVersion)
+	usdcPrice := eng.priceHandler.GetLastPrice(cm, usdcAddr, version)
 	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
 
 	value := new(big.Int).Mul(amount, tokenPrice)
 	value = utils.GetInt64(value, tokenDecimals-usdcDecimals)
 	value = new(big.Int).Quo(value, usdcPrice)
 	return new(big.Int).Mul(value, big.NewInt(100))
-}
-
-func (eng *DebtEngine) GetTokenLastPrice(addr string, pfVersion schemas.PFVersion, dontFail ...bool) *big.Int {
-	if pfVersion.ToVersion().Eq(1) && eng.repo.GetWETHAddr() == addr {
-		return core.WETHPrice
-	}
-	if eng.tokenLastPrice[pfVersion][addr] != nil {
-		return eng.tokenLastPrice[pfVersion][addr].PriceBI.Convert()
-	}
-	//
-	if len(dontFail) > 0 && dontFail[0] {
-		return nil
-	}
-	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d", addr, pfVersion))
-	return nil
 }
 
 func (eng *DebtEngine) SessionDataFromDC(version core.VersionType, blockNum int64, cmAddr, borrower, account string) dc.CreditAccountCallData {
@@ -509,29 +545,4 @@ func (eng *DebtEngine) SessionDataFromDC(version core.VersionType, blockNum int6
 		log.Fatalf("cm:%s borrower:%s blocknum:%d err:%s", cmAddr, borrower, blockNum, err)
 	}
 	return data
-}
-
-func (eng *DebtEngine) requestPriceFeed(blockNum int64, retryFeed ds.QueryPriceFeedI, token string, pfVersion schemas.MergedPFVersion) {
-	// defer func() {
-	// 	if err:= recover(); err != nil {
-	// 		log.Warn("err", err, "in getting yearn price feed in debt", feed, token, blockNum, pfVersion)
-	// 	}
-	// }()
-	// PFFIX
-	calls, isQueryable := retryFeed.GetCalls(blockNum)
-	if !isQueryable {
-		return
-	}
-	log.Info("getting price for ", token, "at", blockNum)
-	results := core.MakeMultiCall(eng.client, blockNum, false, calls)
-	price := retryFeed.ProcessResult(blockNum, results, true)
-	eng.AddTokenLastPrice(&schemas.PriceFeed{
-		BlockNumber:     blockNum,
-		Token:           token,
-		Feed:            retryFeed.GetAddress(),
-		RoundId:         price.RoundId,
-		PriceBI:         price.PriceBI,
-		Price:           price.Price,
-		MergedPFVersion: pfVersion,
-	})
 }

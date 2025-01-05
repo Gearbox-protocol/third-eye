@@ -49,7 +49,7 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 			}
 			// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
 			if zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
-				_, err := core.CallFuncWithExtraBytes(mdl.Client, "bfe10928", zapper.TokenOut, 0, nil) // distributor on the farm
+				_, err := core.CallFuncGetSingleValue(mdl.Client, "bfe10928", zapper.TokenOut, 0, nil) // distributor on the farm
 				if err != nil {
 					continue
 				}
@@ -62,7 +62,7 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 					TotalSupply:    (*core.BigInt)(new(big.Int)),
 					Reward:         (*core.BigInt)(new(big.Int)),
 					FarmSyncedTill: mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
-					PoolSyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
+					PoolSyncedTill: mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
 				}
 				if mdl.farms[farm.Farm] == nil {
 					farm.setRewardToken(mdl.Client)

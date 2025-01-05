@@ -59,9 +59,6 @@
       address: '#ChainlinkPriceFeed_1',
       details: {
         oracle: '#Oracle_1',
-        token: '#Token_1',
-        dieselToken: '#DieselToken_1',
-        mergedPFVersion: 1,
       },
       lastSync: 2,
       version: 1,
@@ -80,8 +77,6 @@
       address: '#ChainlinkPriceFeed_2',
       details: {
         oracle: '#Oracle_2',
-        token: '#Token_2',
-        mergedPFVersion: 1,
       },
       lastSync: 2,
       version: 1,
@@ -93,6 +88,7 @@
       address: '#Pool_1',
       dieselToken: '#DieselToken_1',
       underlyingToken: '#Token_1',
+      priceOracle: '#PriceOracle_1',
     },
   ],
   cmState: [
@@ -102,4 +98,20 @@
       address: '#CreditManager_1',
     },
   ],
+  poToTokenOracles: {
+    '#PriceOracle_1': {
+      '#Token_2': {
+        feed: '#ChainlinkPriceFeed_2',
+        type: 'ChainlinkPriceFeed',
+        blockNum: 2,
+        version: 1,
+      },
+      '#Token_1': {
+        feed: '#ChainlinkPriceFeed_1',
+        type: 'ChainlinkPriceFeed',
+        blockNum: 2,
+        version: 1,
+      },
+    },
+  },
 }

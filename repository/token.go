@@ -14,7 +14,7 @@ import (
 
 // This function is used for getting the collateral value in usd and underlying
 func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int {
-	oracle, err := repo.GetPriceOracleByDiscoveredAt(blockNum)
+	oracle, _, err := repo.GetActivePriceOracleByBlockNum(blockNum)
 	if err != nil {
 		log.Fatalf("err %s version: %d", err, version)
 	}
@@ -35,7 +35,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 	}
 
 	if version.IsGBv1() {
-		poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
+		poContract, err := priceOracle.NewPriceOracle(oracle.Hex(), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {
@@ -43,7 +43,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 		}
 		return new(big.Int).Mul(usdcAmount, sig)
 	} else { // v2 and above
-		poContract, err := priceOraclev2.NewPriceOraclev2(common.HexToAddress(oracle), repo.client)
+		poContract, err := priceOraclev2.NewPriceOraclev2(oracle.Hex(), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
 		if err != nil {

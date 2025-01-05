@@ -2,6 +2,7 @@ package cm_common
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
@@ -51,8 +52,12 @@ func (mdl *CommonCMAdapter) OnBlockChange(lastBlockNum int64) (calls []multicall
 }
 
 func (mdl *CommonCMAdapter) getCMCallAndProcessFn(blockNum int64) (call multicall.Multicall2Call, processFn func(multicall.Multicall2Result)) {
-	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(mdl.GetVersion(), blockNum, common.HexToAddress(mdl.Address))
-	if err != nil && err.Error() == "No data compressor found" {
+	cf := core.NULL_ADDR
+	if cfInterface := mdl.Details["facade"]; cfInterface != nil {
+		cf = common.HexToAddress(cfInterface.(string))
+	}
+	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(mdl.GetVersion(), blockNum, common.HexToAddress(mdl.Address), cf.Hex())
+	if (err != nil && err.Error() == "No data compressor found") || call.Target == core.NULL_ADDR {
 		return multicall.Multicall2Call{}, nil
 	}
 	if err != nil {

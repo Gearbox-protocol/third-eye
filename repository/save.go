@@ -28,9 +28,10 @@ func (repo *Repository) Flush(syncTill int64) error {
 	repo.saveLMRewardDetailsv3(tx, syncTill)
 
 	repo.SessionRepo.Save(tx)
-	repo.BlocksRepo.Save(tx, syncTill)
+	repo.BlocksRepo.Save(tx)
 
 	repo.AllowedTokenRepo.Save(tx)
+	repo.TokenOracleRepo.Save(tx, syncTill)
 
 	// save current treasury snapshot
 	repo.TreasuryRepo.Save(tx)
