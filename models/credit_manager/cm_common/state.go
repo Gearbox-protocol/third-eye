@@ -7,11 +7,12 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func (mdl *CommonCMAdapter) CalculateCMStat(blockNum int64, state dc.CMCallData) {
 	//
-	mdl.State.IsWETH = dc.IsWETH(mdl.Client, state.Underlying)
+	mdl.State.IsWETH = dc.IsWETH(mdl.Client, common.HexToAddress(mdl.State.UnderlyingToken))
 	//
 	bororwAmountForBlock := mdl.GetBorrowAmountForBlockAndClear()
 	// add borrowed amount
