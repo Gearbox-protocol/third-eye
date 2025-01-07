@@ -5,8 +5,8 @@ contrib.go.opencensus.io/exporter/ocagent v0.6.0/go.mod h1:zmKjrJcdo0aYcVS7bmEeS
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20241226022059-6a0c99edf8a8 h1:lB8gDC6dlcA9ZPQ1d56iTIK5VVktAign07cDe00pyOE=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20241226022059-6a0c99edf8a8/go.mod h1:jRBSOG94bpGc5ci8EWIPUVXZdaGEaekMNmhajbmWFVU=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20250107033912-c0e0ab77a2ce h1:kM8oX0/mLPpTDvhll926dBchnq/5/kg0Pk8zZRwOGnw=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20250107033912-c0e0ab77a2ce/go.mod h1:jRBSOG94bpGc5ci8EWIPUVXZdaGEaekMNmhajbmWFVU=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227 h1:+/3TrD+q+BP36jGj2Bycdmrc/joKLNbc5ImePQzKRLM=
