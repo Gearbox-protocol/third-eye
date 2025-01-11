@@ -93,7 +93,7 @@ func (repo *BlocksRepo) GetBlockDatePairs(ts int64) *schemas.BlockDate {
 	return repo.blockDatePairs.Get(ts)
 }
 
-func (repo *BlocksRepo) fetchBlockTime(blockNum int64) uint64 {
+func (repo *BlocksRepo) _fetchBlockTime(blockNum int64) (uint64, error) {
 	b, err := repo.client.BlockByNumber(context.Background(), big.NewInt(blockNum))
 	// if err != nil && err.Error() == "server returned empty uncle list but block header indicates uncles" {
 	// 	repo.blocks[blockNum] = &core.Block{BlockNumber: blockNum}
@@ -104,11 +104,25 @@ func (repo *BlocksRepo) fetchBlockTime(blockNum int64) uint64 {
 		if strings.Contains(err.Error(), "invalid transaction v, r, s values") && ds.IsTestnet(repo.client) {
 			b, err := repo.client.BlockByNumber(context.Background(), big.NewInt(blockNum-1))
 			log.CheckFatal(err)
-			return b.Time() + 1
+			return b.Time() + 1, nil
 		}
-		log.Fatalf("%s: %d", err, blockNum)
+		return 0, err
 	}
-	return b.Time()
+	return b.Time(), nil
+}
+
+func (repo *BlocksRepo) fetchBlockTime(blockNum int64) uint64 {
+	bTime, err := repo._fetchBlockTime(blockNum)
+	msg := ""
+	if err != nil && strings.Contains(err.Error(), "not found") {
+		time.Sleep(5 * time.Second)
+		bTime, err = repo._fetchBlockTime(blockNum)
+		msg = "tried again"
+	}
+	if err != nil {
+		log.Fatalf("%s: %d", err, blockNum, msg)
+	}
+	return bTime
 }
 
 func (repo *BlocksRepo) setBlock(blockNum int64) {
