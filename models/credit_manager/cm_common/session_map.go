@@ -139,6 +139,9 @@ func (mdl CommonCMAdapter) getCollateralAmountOnOpen(blockNum int64, version cor
 		//
 		totalValue = new(big.Float).Add(totalValue, new(big.Float).Quo(nomunerator, tokenDecimals))
 	}
+	if prices[underlyingToken] == 0 {
+		log.Info(underlyingToken, utils.ToJson(prices))
+	}
 	initialAmount, _ := new(big.Float).Quo(totalValue, big.NewFloat(prices[underlyingToken])).Int(nil)
 
 	if userFunds[underlyingToken] != nil { // directly add collateral for underlying token
