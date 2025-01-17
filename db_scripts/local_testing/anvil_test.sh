@@ -13,6 +13,7 @@ TMP_DB="tmp_$FINAL_DB"
 export TMP_DB_URL="postgres://$SUPERUSER@localhost:5432/$TMP_DB?sslmode=disable"
 
 set +e
+psql -U $SUPERUSER -d postgres -c " SELECT  pg_terminate_backend(pid) FROM  pg_stat_activity WHERE  pid <> pg_backend_pid() AND datname = '$TMP_DB';"
 psql -U $SUPERUSER -d postgres -c "drop database $TMP_DB"
 psql -U $SUPERUSER -d postgres -c "create database $TMP_DB"
 pg_dump --no-owner "$REMOTE_DB" | psql  -U $SUPERUSER -d $TMP_DB
