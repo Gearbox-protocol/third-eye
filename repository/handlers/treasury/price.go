@@ -12,12 +12,33 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // used for treasury calculation and for remainingFunds on close v2
-func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, pool string, tokenAddrs []string) core.JsonFloatMap {
+	priceOracle, version := func() (schemas.PriceOracleT, core.VersionType) {
+		poolState := repo.adapters.GetAdapter(pool)
+		var version core.VersionType
+		var priceOracle schemas.PriceOracleT
+		switch t := poolState.GetUnderlyingState().(type) {
+		case *pool_v2.Poolv2:
+			priceOracle = t.State.PriceOracle
+			version = core.NewVersion(2)
+		case *pool_v3.Poolv3:
+			priceOracle = t.State.PriceOracle
+			version = core.NewVersion(300)
+		default:
+			log.Fatal("can't get priceoracle")
+		}
+		return priceOracle, version
+	}()
+	return repo.getPricesInUSD(blockNum, priceOracle, version, tokenAddrs)
+}
+func (repo *TreasuryRepo) getPricesInUSD(blockNum int64, priceOracle schemas.PriceOracleT, version core.VersionType, tokenAddrs []string) core.JsonFloatMap {
 	priceByToken := core.JsonFloatMap{}
 	var tokenForCalls []string
 	var poolForDieselRate []*schemas.UTokenAndPool
@@ -30,7 +51,7 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 			tokenForCalls = append(tokenForCalls, token)
 		}
 	}
-	priceOracle, version, _ := repo.adapters.GetActivePriceOracleByBlockNum(blockNum)
+
 	prices, dieselRates := repo.getPricesInBatch(priceOracle, version, blockNum, false, tokenForCalls, poolForDieselRate)
 	var poolIndex int
 	for i, token := range tokenAddrs {
@@ -48,8 +69,8 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 	return priceByToken
 }
 
-func (repo *TreasuryRepo) GetPriceInUSD(blockNum int64, token string) *big.Int {
-	priceInUSD := repo.GetPricesInUSD(blockNum, []string{token})
+func (repo *TreasuryRepo) GetPriceInUSD(blockNum int64, pool string, token string) *big.Int {
+	priceInUSD := repo.GetPricesInUSD(blockNum, pool, []string{token})
 	if priceInUSD == nil || priceInUSD[token] == 0 {
 		return nil
 	}

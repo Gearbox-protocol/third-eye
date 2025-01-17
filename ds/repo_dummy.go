@@ -76,7 +76,7 @@ func (DummyRepo) GetExecuteParser() ExecuteParserI {
 // price feed/oracle funcs
 func (DummyRepo) DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle) {
 }
-func (DummyRepo) GetPriceInUSD(blockNum int64, tokenAddrs string) *big.Int {
+func (DummyRepo) GetPriceInUSD(blockNum int64, _ string, tokenAddrs string) *big.Int {
 	return nil
 }
 func (DummyRepo) GetActivePriceOracleByBlockNum(blockNum int64) (schemas.PriceOracleT, core.VersionType, error) {
@@ -114,7 +114,7 @@ func (DummyRepo) UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurat
 }
 func (DummyRepo) TransferAccountAllowed(*schemas.TransferAccountAllowed) {
 }
-func (DummyRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+func (DummyRepo) GetPricesInUSD(blockNum int64, _ string, tokenAddrs []string) core.JsonFloatMap {
 	return nil
 }
 

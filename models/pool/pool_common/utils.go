@@ -11,9 +11,10 @@ import (
 )
 
 // only use for estimation
+// only used in v2, v3, so has pool.state.PoolAddress
 func CheckIfAmountMoreThan1Mil(client core.ClientI, repo ds.RepositoryI, state *schemas.PoolState, amount *big.Int, blockNum int64, txHash string, operation string) {
 	token := state.UnderlyingToken
-	priceInUSD := repo.GetPriceInUSD( blockNum, token)
+	priceInUSD := repo.GetPriceInUSD(blockNum, state.Address, token)
 	if priceInUSD == nil {
 		return
 	}

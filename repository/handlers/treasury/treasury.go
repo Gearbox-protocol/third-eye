@@ -33,11 +33,11 @@ type TreasuryRepo struct {
 
 func NewTreasuryRepo(tokens *handlers.TokensRepo, blocks *handlers.BlocksRepo, adapters *handlers.SyncAdaptersRepo, client core.ClientI, cfg *config.Config) *TreasuryRepo {
 	return &TreasuryRepo{
-		tokens:       tokens,
-		client:       client,
-		adapters:     adapters,
-		blocks:       blocks,
-		redstoneMgr:  redstone.NewRedStoneMgr(client),
+		tokens:      tokens,
+		client:      client,
+		adapters:    adapters,
+		blocks:      blocks,
+		redstoneMgr: redstone.NewRedStoneMgr(client),
 	}
 }
 
@@ -133,8 +133,8 @@ func (repo *TreasuryRepo) saveTreasurySnapshot() {
 	blockDate := repo.blocks.GetBlockDatePairs(ts)
 	if blockDate == nil {
 		key := fmt.Sprintf("%s_API_KEY", log.GetNetworkName(core.GetChainId(repo.client)))
-		if utils.GetEnvOrDefault(key, "") !="" {
-			if blockNum := pkg.GetBlockNum(uint64(ts), core.GetChainId(repo.client)); blockNum!=0 {
+		if utils.GetEnvOrDefault(key, "") != "" {
+			if blockNum := pkg.GetBlockNum(uint64(ts), core.GetChainId(repo.client)); blockNum != 0 {
 				repo.blocks.SetBlock(blockNum)
 				blockDate = &schemas.BlockDate{
 					BlockNum:  blockNum,
@@ -167,7 +167,10 @@ func (repo *TreasuryRepo) calFieldsOfTreasurySnapshot(blockNum int64, tss *schem
 		}
 		tokenAddrs = append(tokenAddrs, token)
 	}
-	prices := repo.GetPricesInUSD(blockNum, tokenAddrs)
+	//
+	priceOracle, version, _ := repo.adapters.GetActivePriceOracleByBlockNum(blockNum)
+	prices := repo.getPricesInUSD(blockNum, priceOracle, version, tokenAddrs)
+	//
 	tss.PricesInUSD = &prices
 	tss.ValueInUSD = tss.Balances.ValueInUSD(prices)
 	tss.OperationalValueInUSD = tss.OperationalBalances.ValueInUSD(prices)

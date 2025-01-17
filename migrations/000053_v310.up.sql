@@ -3,6 +3,7 @@ alter table token_oracle drop constraint token_oracle_pkey;
 
 update token_oracle set price_oracle= (select address from sync_adapters where type='PriceOracle' and version=1) where version=1;
 update token_oracle set price_oracle= (select address from sync_adapters where type='PriceOracle' and version=2) where version=2;
+-- UPDATE
 update token_oracle set price_oracle= (select address from sync_adapters where type='PriceOracle' and version=300) where version=300;
 alter table token_oracle add PRIMARY KEY (price_oracle, block_num, token, reserve);
 
@@ -28,6 +29,7 @@ CREATE TABLE relations (
     id SERIAL PRIMARY KEY
 );
 
+-- UPDATE
 update pools p set price_oracle=sa.address from  sync_adapters sa where type='PriceOracle' and p._version=sa.version;
 
 update token_oracle set disabled_at=19752044 where version=2; -- don't disable for v1
