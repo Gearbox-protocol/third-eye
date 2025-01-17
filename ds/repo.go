@@ -78,8 +78,8 @@ type RepositoryI interface {
 	UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	TransferAccountAllowed(*schemas.TransferAccountAllowed)
-	GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap
-	GetPriceInUSD(blockNum int64, tokenAddrs string) *big.Int
+	GetPricesInUSD(blockNum int64, pool string, tokenAddrs []string) core.JsonFloatMap
+	GetPriceInUSD(blockNum int64, pool string, tokenAddrs string) *big.Int
 	//
 	GetToken(addr string) *schemas.Token
 	GetTokens() []string

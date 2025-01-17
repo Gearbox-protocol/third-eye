@@ -84,7 +84,7 @@ func (mdl *CMv2) onCloseCreditAccountV2(txLog *types.Log, owner, to string) {
 		tokens = append(tokens, token)
 	}
 	tokens = append(tokens, mdl.GetUnderlyingToken())
-	prices := mdl.Repo.GetPricesInUSD(blockNum, tokens)
+	prices := mdl.Repo.GetPricesInUSD(blockNum, mdl.State.Address, tokens)
 	//
 	remainingFunds := (userTransfers.ValueInUnderlying(
 		mdl.GetUnderlyingToken(), mdl.GetUnderlyingDecimal(), prices))
