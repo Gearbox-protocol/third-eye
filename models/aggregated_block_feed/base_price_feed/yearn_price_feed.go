@@ -16,8 +16,14 @@ type BasePriceFeed struct {
 	DetailsDS DetailsDS
 }
 
-func (feed BasePriceFeed) GetRedstonePF() *core.RedStonePF {
-	return nil
+func (feed BasePriceFeed) GetRedstonePF() (ans []*core.RedStonePF) {
+	if len(feed.DetailsDS.Underlyings) == 0 {
+		return nil
+	}
+	for _, d := range feed.DetailsDS.Info {
+		ans = append(ans, d)
+	}
+	return ans
 }
 
 // single querypricefeed can be valid for multiple tokens so we have to maintain tokens within the details

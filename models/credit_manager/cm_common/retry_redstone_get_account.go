@@ -25,13 +25,13 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 			}
 			con = adapter.(ds.QueryPriceFeedI)
 		}
-		pfType := con.GetPFType()
-		if pfType == ds.CompositeRedStonePF || pfType == ds.RedStonePF || pfType == ds.SingleAssetPF {
-			red := con.GetRedstonePF()
-			if red != nil {
-				ans = append(ans, *red)
-			}
+		// pfType := con.GetPFType()
+		// if pfType == ds.CompositeRedStonePF || pfType == ds.RedStonePF || pfType == ds.SingleAssetPF || pfType == ds.Cu {
+		reds := con.GetRedstonePF()
+		for _, red := range reds {
+			ans = append(ans, *red)
 		}
+		// }
 	}
 	return
 }

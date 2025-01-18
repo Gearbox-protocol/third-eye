@@ -28,13 +28,18 @@ func NewCurvePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CurvePriceFeed {
 	}
 }
 
+func (feed CurvePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
+	return feed.GetUnderlyingCalls(blockNum)
+}
+
 // same as query price feed
 // func (*CurvePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 
 var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
 
 func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
-	if !results[0].Success {
+	result := results[len(results)-1]
+	if !result.Success {
 		if adapter.GetVersion().LessThan(core.NewVersion(300)) { // failed and
 			// if virtualprice of pool for this oracle is not within lowerBound and upperBound , ignore the price
 			oracleAddr := common.HexToAddress(adapter.GetAddress())
@@ -74,7 +79,7 @@ func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall
 		}
 	}
 	isPriceInUSD := adapter.GetVersion().IsPriceInUSD()
-	return base_price_feed.ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, adapter.GetAddress(), blockNum)
+	return base_price_feed.ParseQueryRoundData(result.ReturnData, isPriceInUSD, adapter.GetAddress(), blockNum)
 }
 
 func GetCurveVirtualPrice(blockNum int64, oracleAddr common.Address, version core.VersionType, client core.ClientI) *big.Int {

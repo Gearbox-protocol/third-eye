@@ -1,12 +1,15 @@
 package base_price_feed
 
 import (
+	"encoding/hex"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/redstone"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
@@ -73,4 +76,43 @@ func (mdl *BasePriceFeed) ProcessResult(blockNum int64, results []multicall.Mult
 
 	return ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, mdl.GetAddress(), blockNum)
 	//
+}
+
+func (mdl *BasePriceFeed) GetUnderlyingCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
+	updateABI := core.GetAbi("UpdatePriceFeed")
+	for _, entry := range mdl.DetailsDS.Underlyings {
+		contract, err := redstone.NewRedstone(common.HexToAddress(entry), mdl.Client)
+		log.CheckFatal(err)
+		var tokenDetails *core.RedStonePF
+		if _, ok := mdl.DetailsDS.Info[entry]; ok {
+			tokenDetails = mdl.DetailsDS.Info[entry]
+		} else if _, err := contract.DataFeedId(nil); err == nil {
+			feedToken, signThreshold, dataId := priceFetcher.RedstoneDetails(common.HexToAddress(entry), mdl.Client)
+			//
+			tokenDetails = &core.RedStonePF{
+				Type:             15,
+				DataServiceId:    "redstone-primary-prod",
+				DataId:           dataId,
+				SignersThreshold: signThreshold,
+				UnderlyingToken:  feedToken,
+			}
+			mdl.DetailsDS.Info[entry] = tokenDetails
+		}
+		if tokenDetails != nil {
+			pod := mdl.Repo.GetRedStonemgr().GetPodSignWithRedstoneToken(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *tokenDetails)
+			update, err := updateABI.Pack("updatePrice", pod.CallData)
+			log.CheckFatal(err)
+			calls = append(calls, multicall.Multicall2Call{
+				Target:   common.HexToAddress(entry),
+				CallData: update,
+			})
+		}
+	}
+	b, err := hex.DecodeString("feaf968c") // // latestRounData
+	log.CheckFatal(err)
+	calls = append(calls, multicall.Multicall2Call{
+		Target:   common.HexToAddress(mdl.Address),
+		CallData: b,
+	})
+	return calls, true
 }

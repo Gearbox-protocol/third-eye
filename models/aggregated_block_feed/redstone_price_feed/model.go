@@ -26,8 +26,10 @@ func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int6
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
-func (feed RedstonePriceFeed) GetRedstonePF() *core.RedStonePF {
-	return feed.DetailsDS.Info[feed.GetAddress()]
+func (feed RedstonePriceFeed) GetRedstonePF() []*core.RedStonePF {
+	return []*core.RedStonePF{
+		feed.DetailsDS.Info[feed.GetAddress()],
+	}
 }
 
 func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *RedstonePriceFeed {
@@ -50,7 +52,7 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *RedstonePriceFeed
 }
 
 func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
-	data, _ := hex.DecodeString("feaf968c")
+	data, _ := hex.DecodeString("feaf968c") // latestRounData
 	return []multicall.Multicall2Call{
 		{
 			Target:   common.HexToAddress(obj.Address),

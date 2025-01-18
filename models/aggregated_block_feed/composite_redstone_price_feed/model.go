@@ -23,8 +23,10 @@ type CompositeRedStonePriceFeed struct {
 	Decimals   int8
 }
 
-func (feed CompositeRedStonePriceFeed) GetRedstonePF() *core.RedStonePF {
-	return feed.DetailsDS.Info[feed.GetAddress()]
+func (feed CompositeRedStonePriceFeed) GetRedstonePF() []*core.RedStonePF {
+	return []*core.RedStonePF{
+		feed.DetailsDS.Info[feed.GetAddress()],
+	}
 }
 
 func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *CompositeRedStonePriceFeed {
