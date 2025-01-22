@@ -22,6 +22,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/llamaethena"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/mellowR7"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/pendleRouterv4"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/swapRouterv3"
@@ -106,7 +107,7 @@ var abiJSONs = []string{
 	// v2
 	// lido, convex, curve, yearnv2, universal
 	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI, wstETHv1Adapter.WstETHv1AdapterABI,
-	convexAdapter.ConvexAdapterABI,
+	convexAdapter.ConvexAdapterABI, llamaethena.LlamaethenaABI,
 	yearnv2Adapter.Yearnv2AdapterABI,
 	curveuint256.Curveuint256ABI, curveAdapter.CurveAdapterABI,
 	universalAdapter.UniversalAdapterABI,
