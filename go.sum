@@ -7,6 +7,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20250122115256-18609468d2fb h1:VOscfelZwW1RJd6vCWpGguhTPSYrHwDXQQXryEYcxqQ=
 github.com/Gearbox-protocol/sdk-go v0.0.0-20250122115256-18609468d2fb/go.mod h1:jRBSOG94bpGc5ci8EWIPUVXZdaGEaekMNmhajbmWFVU=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20250123064548-2b5926faf8ae h1:rJcrgNitrwMs4Ln7qP1C5w3TUxvyJKGI0s63tyB16CY=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20250123064548-2b5926faf8ae/go.mod h1:jRBSOG94bpGc5ci8EWIPUVXZdaGEaekMNmhajbmWFVU=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227 h1:+/3TrD+q+BP36jGj2Bycdmrc/joKLNbc5ImePQzKRLM=
