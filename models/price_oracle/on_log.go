@@ -33,6 +33,9 @@ func GetDesc(client core.ClientI, addr common.Address) string {
 	log.CheckFatal(err)
 	return strings.Trim(string(bytes), "\x00")
 }
+func (mdl *PriceOracle) GetDataProcessType() int {
+	return ds.ViaMultipleLogs
+}
 func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
 	for _, txLog := range txLogs {
 		switch txLog.Topics[0] {
