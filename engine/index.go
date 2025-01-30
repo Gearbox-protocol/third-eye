@@ -142,7 +142,9 @@ func (e *Engine) SyncAndFlush(syncTill int64) {
 	e.Sync(syncTill)
 	e.repo.Flush(syncTill)
 	e.debtEng.CalculateDebtAndClear(syncTill)
-	e.syncedBlock.Store(syncTill)
+	if syncTill > e.syncedBlock.Load().(int64) {
+		e.syncedBlock.Store(syncTill)
+	}
 }
 
 func (e *Engine) LastSyncedBlock() (int64, uint64) {
