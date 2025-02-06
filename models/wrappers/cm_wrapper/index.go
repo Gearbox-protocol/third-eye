@@ -28,7 +28,7 @@ func NewCMWrapper(client core.ClientI) *CMWrapper {
 
 func (s CMWrapper) OnLogs(txLogs []types.Log) {
 	ind := 0
-	var lastBlockNum int64 = 0
+	var lastBlockNum int64 = s.GetLastSync()
 	for ind < len(txLogs) {
 		txLog := txLogs[ind]
 		// check block change
@@ -86,7 +86,7 @@ func (s CMWrapper) onBlockChange(lastBlockNum, newBlockNum int64) {
 	}
 	// update for direct token transfer
 	for _, adapter := range adapters {
-		if adapter.GetLastSync() >= lastBlockNum {
+		if adapter.GetLastSync() >= newBlockNum {
 			continue
 		}
 		cm := credit_manager.GetCMForWrapper(adapter)
