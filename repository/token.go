@@ -35,6 +35,7 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, version core.VersionT
 	}
 
 	if version.IsGBv1() {
+		oracle = "0x0e74a08443c5E39108520589176Ac12EF65AB080"
 		poContract, err := priceOracle.NewPriceOracle(common.HexToAddress(oracle), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
