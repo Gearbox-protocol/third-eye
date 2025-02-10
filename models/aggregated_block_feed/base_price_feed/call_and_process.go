@@ -2,7 +2,9 @@ package base_price_feed
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/redstone"
@@ -30,6 +32,8 @@ func (mdl *BasePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2
 	}}, true
 }
 
+var failedLatestRoundDataHandler = log.SendMsgIfCountMoreThan(time.Minute*30, 4) // if for the same feed, failed 4 times in 30 mins
+
 // used in yearn and curve
 func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, blockNum int64) *schemas.PriceFeed {
 	priceFeedABI := core.GetAbi("PriceFeed")
@@ -37,7 +41,8 @@ func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, bloc
 	value, err := priceFeedABI.Unpack("latestRoundData", returnData)
 	if err != nil {
 		if !utils.Contains([]string{"0x7B7C81748f311Cf3B9dfe90Ec7F23e9F06813323", "0x2E65c16Fe6CFd0519Ae1F80448FCa0E0B07c1911"}, feed) { // only for curve
-			log.Warnf("For feed(%s) can't get the latestRounData: %s at %d", feed, err, blockNum)
+			msg := fmt.Sprintf("For feed(%s) can't get the latestRounData: %s at %d", feed, err, blockNum)
+			failedLatestRoundDataHandler(feed, msg)
 		}
 		return nil
 	}
