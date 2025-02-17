@@ -51,6 +51,9 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStone
 	if obj.DetailsDS.Info[adapter.GetAddress()] == nil {
 		_, signThreshold, dataId := priceFetcher.RedstoneDetails(obj.priceFeed0, adapter.Client)
 		//
+		if dataId == "beraETH_FUNDAMENTAL" {
+			dataId = "beraSTONE_FUNDAMENTAL"
+		}
 		tokenDetails := &core.RedStonePF{
 			Type:             15,
 			DataServiceId:    "redstone-primary-prod",

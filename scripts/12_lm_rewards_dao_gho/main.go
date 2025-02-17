@@ -76,7 +76,7 @@ func getFarmsv3(client core.ClientI, repo *Repo) []*v3.Farmv3 {
 	poolAndFarms := []*v3.Farmv3{}
 	pools, found := repo.GetDCWrapper().GetPoolListv3()
 	if found {
-		farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(client))
+		farmingPools := map[common.Address]common.Address{}
 		for _, pool := range pools {
 			if !utils.Contains([]string{"0x4d56c9cBa373AD39dF69Eb18F076b7348000AE09", "0xe7146F53dBcae9D6Fa3555FE502648deb0B2F823"}, pool.Addr.Hex()) {
 				continue
