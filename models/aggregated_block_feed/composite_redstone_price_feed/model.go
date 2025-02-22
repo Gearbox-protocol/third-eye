@@ -54,6 +54,10 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStone
 		if dataId == "beraETH_FUNDAMENTAL" {
 			dataId = "beraSTONE_FUNDAMENTAL"
 		}
+		// SONIC_TEST
+		if core.GetBaseChainId(adapter.Client) == 146 && dataId == "stS_FUNDAMENTAL" {
+			obj.Repo.AddFeedToTicker(obj.priceFeed0.Hex(), common.HexToAddress("0x56a5b6267d6b8de8ade88455b9342787e49e2f1a"))
+		}
 		tokenDetails := &core.RedStonePF{
 			Type:             15,
 			DataServiceId:    "redstone-primary-prod",

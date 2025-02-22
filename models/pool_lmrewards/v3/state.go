@@ -7,7 +7,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -62,7 +61,7 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 					TotalSupply:    (*core.BigInt)(new(big.Int)),
 					Reward:         (*core.BigInt)(new(big.Int)),
 					FarmSyncedTill: mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
-					PoolSyncedTill:  mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
+					PoolSyncedTill: mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
 				}
 				if mdl.farms[farm.Farm] == nil {
 					farm.setRewardToken(mdl.Client)
@@ -91,13 +90,13 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
 	dcAddr, found := mdl.Repo.GetDCWrapper().GetLatestv3DC()
 	if !found {
-		log.Fatalf("DC not found for for %s at %d", pool, blockNum)
+		log.Fatalf("DC not found for for %s at latest", pool)
 	}
 	con, err := dataCompressorv3.NewDataCompressorv3(dcAddr, mdl.Client)
 	log.CheckFatal(err)
-	data, err := con.GetPoolData(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)}, common.HexToAddress(pool))
+	data, err := con.GetPoolData(nil, common.HexToAddress(pool))
 	if err != nil {
-		log.Fatal(err, blockNum, pool)
+		log.Fatal(err, "latest", pool)
 	}
 	mdl.SetFarm([]dataCompressorv3.PoolData{data})
 }
