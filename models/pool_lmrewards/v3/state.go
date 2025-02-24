@@ -90,7 +90,10 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
 	dcAddr, found := mdl.Repo.GetDCWrapper().GetLatestv3DC()
 	if !found {
-		log.Fatalf("DC not found for for %s at latest", pool)
+		if core.GetBaseChainId(mdl.Client) == 146 && blockNum < 9790594 {
+			return
+		}
+		log.Fatalf("DC not found for for %s at latest, blockNum %d ", pool, blockNum)
 	}
 	con, err := dataCompressorv3.NewDataCompressorv3(dcAddr, mdl.Client)
 	log.CheckFatal(err)
