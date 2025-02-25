@@ -143,7 +143,7 @@ func (eng *DebtEngine) addLastDebt(debt *schemas.Debt) {
 
 func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 	debtLen := len(eng.debts)
-	if debtLen == 0 {
+	if debtLen == 0 && len(eng.tvlSnapshots) == 0 {
 		return
 	}
 	log.Infof("Flushing %d till block:%d", debtLen, newDebtSyncTill)
