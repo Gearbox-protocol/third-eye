@@ -104,7 +104,7 @@ func (e *Engine) getLastSyncedTill() int64 {
 
 func (e *Engine) SyncHandler() {
 	e.init()
-	latestBlockNum := e.GetLatestFinalizedBlock(4)
+	latestBlockNum := e.GetLatestFinalizedBlock(2)
 	lastSyncedTill := e.getLastSyncedTill()
 	e.syncedBlock.Store(lastSyncedTill)
 	//
@@ -114,7 +114,7 @@ func (e *Engine) SyncHandler() {
 		log.Infof("Synced till %d", syncedTill)
 	}
 	for {
-		latestBlockNum = e.GetLatestFinalizedBlock(4)
+		latestBlockNum = e.GetLatestFinalizedBlock(2)
 		e.SyncAndFlush(latestBlockNum)
 		log.Infof("Synced till %d sleeping for 2 mins", latestBlockNum)
 		time.Sleep(2 * time.Minute) // on kovan 5 blocks in 1 min , sleep for 5 mins
