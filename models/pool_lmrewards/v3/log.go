@@ -132,6 +132,7 @@ func (mdl *LMRewardsv3) GetLastSync() int64 {
 // LMRewardsv2 has fake address so no need for adding .Address value to addrs
 func (mdl *LMRewardsv3) GetAllAddrsForLogs() (addrs []common.Address) {
 	//
+	addrs = append(addrs, common.HexToAddress(mdl.GetAddress())) // if no pools then no addresses were returned previous as a result the lastsync wasn't getting updated for lmrewardsv3
 	for addr, farm := range mdl.farms {
 		addrs = append(addrs, common.HexToAddress(addr))
 		addrs = append(addrs, common.HexToAddress(farm.Pool))
