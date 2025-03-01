@@ -277,6 +277,9 @@ func (mdl *CommonCMAdapter) updateSessionCallAndProcessFn(sessionId string, bloc
 			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v. account: %s", mdl.GetAddress(), session.Borrower, blockNum, result.ReturnData, session.Account)
 		}
 		dcAccountData, err := resultFn(result.ReturnData)
+		if err == nil && !dcAccountData.IsSuccessful && mdl.GetVersion() == core.NewVersion(300) {
+			dcAccountData, err = mdl.retry(dcAccountData, blockNum)
+		}
 		if err != nil {
 			log.Fatalf("For blockNum %d CM:%s Borrower:%s %v", blockNum, mdl.GetAddress(), session.Borrower, err)
 		}
