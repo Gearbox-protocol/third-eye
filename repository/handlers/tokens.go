@@ -82,7 +82,7 @@ func (repo *TokensRepo) addTokenObj(t *schemas.Token) {
 		t.Symbol = "yvWETH"
 	}
 	// set usdc addr in repo
-	if t.Symbol == "USDC" {
+	if t.Symbol == "USDC" || (core.GetBaseChainId(repo.client) == 146 && t.Symbol == "USDC.e") {
 		repo.usdcAddr = t.Address
 	}
 	if t.Symbol == "WETH" {
@@ -168,7 +168,6 @@ func (repo *TokensRepo) AddTokenObj(obj *schemas.Token) {
 	defer repo.mu.Unlock()
 	repo.addTokenObj(obj)
 }
-
 
 func (repo *TokensRepo) GetWETHAddr() string {
 	return repo.wethAddr
