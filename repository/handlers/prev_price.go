@@ -92,7 +92,14 @@ func getPrice(pfs map[string]*schemas.PriceFeed) (ans []*schemas.TokenCurrentPri
 			Price:    pf.Price,
 			BlockNum: pf.BlockNumber,
 			Token:    pf.Token,
-			PriceSrc: string(core.SOURCE_CHAINLINK),
+			PriceSrc: string(core.SOURCE_GEARBOX),
+		})
+		ans = append(ans, &schemas.TokenCurrentPrice{
+			PriceBI:  pf.PriceBI,
+			Price:    pf.Price,
+			BlockNum: pf.BlockNumber,
+			Token:    pf.Token,
+			PriceSrc: "chainlink",
 		})
 	}
 	return ans
