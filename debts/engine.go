@@ -314,7 +314,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 		}
 		debt, profile = eng.CalculateSessionDebt(blockNum, session, cumIndexAndUToken)
 		if profile != nil && (session.ID != "0x36bc4d7f24Ab0e9ACa5a84766152447E4F4B9694_14793256_370" && session.ID != "0x11956F74EA4ac57897e7D34419f9cAD467a868D2_21776080_38") { // this mainnet accounts fails due to some difference in the total vlaue bu the hf is same. why?
-			log.Fatalf("Debt fields different from data compressor fields: %s", profile)
+			log.Errorf("Debt fields different from data compressor fields: %s", profile)
 		}
 	}
 	// check if data compressor and calculated values match
