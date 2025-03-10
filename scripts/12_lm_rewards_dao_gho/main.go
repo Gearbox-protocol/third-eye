@@ -33,7 +33,9 @@ func (r *Repo) AddPoolLedger(event *schemas.PoolLedger) {
 	r.events = append(r.events, event)
 }
 func (r *Repo) GetToken(token string) *schemas.Token {
-	return r.tStore.GetToken(token)
+	x, err := r.tStore.GetToken(token)
+	log.CheckFatal(err)
+	return x
 }
 func (r *Repo) getPoolLedger() []*schemas.PoolLedger {
 	ans := r.events
