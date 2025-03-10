@@ -243,7 +243,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		return ds.CurvePF, nil, nil
 	// usd and crypto
 	case core.V3_CURVE_2LP_ORACLE, core.V3_CURVE_3LP_ORACLE, core.V3_CURVE_4LP_ORACLE: // 2lp,3lp, 4lp
-		nCoinBytes, err := core.CallFuncWithExtraBytes(mdl.Client, "c21ee162", common.HexToAddress(oracle), 0, nil)
+		nCoinBytes, err := core.CallFuncGetSingleValue(mdl.Client, "c21ee162", common.HexToAddress(oracle), 0, nil)
 		log.CheckFatal(err)
 		fn := func(n int) string {
 			var sig string
@@ -256,10 +256,10 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			} else if n == 3 {
 				sig = "427cb6fe"
 			}
-			pfBytes, err := core.CallFuncWithExtraBytes(mdl.Client, sig, common.HexToAddress(oracle), 0, nil)
+			pfBytes, err := core.CallFuncGetSingleValue(mdl.Client, sig, common.HexToAddress(oracle), 0, nil)
 			log.CheckFatal(err)
 			pf := common.BytesToAddress(pfBytes)
-			pfTypeBytes, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
+			pfTypeBytes, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
 			log.CheckFatal(err)
 			if new(big.Int).SetBytes(pfTypeBytes).Int64() == core.V3_REDSTONE_ORACLE {
 				return pf.Hex()

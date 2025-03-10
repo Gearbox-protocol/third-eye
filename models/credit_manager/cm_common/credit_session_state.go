@@ -309,12 +309,12 @@ func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Ba
 	return AddStETHBalance(account, blockNum, dcv2Balances, mdl.Client, mdl, mdl.Repo.GetTokenFromSdk("stETH"))
 }
 
-func (mdl *CommonCMAdapter) GetDecimals(token common.Address) int8 {
-	return mdl.Repo.GetToken(token.Hex()).Decimals
+func (mdl *CommonCMAdapter) GetDecimals(token string) int8 {
+	return mdl.Repo.GetToken(token).Decimals
 }
 
 type DecimalStoreI interface {
-	GetDecimals(tokenAddr common.Address) int8
+	GetDecimals(tokenAddr string) int8
 }
 
 func AddStETHBalance(account string, blockNum int64, dcv2Balances []core.TokenBalanceCallData, client core.ClientI, tStore DecimalStoreI, stETH string) *core.DBBalanceFormat {
@@ -322,7 +322,7 @@ func AddStETHBalance(account string, blockNum int64, dcv2Balances []core.TokenBa
 	for _, balance := range dcv2Balances {
 		token := balance.Token
 		if balance.HasBalanceMoreThanOne() { // is enabled not needed.
-			balance.F = utils.GetFloat64Decimal(balance.BI, tStore.GetDecimals(common.HexToAddress(token)))
+			balance.F = utils.GetFloat64Decimal(balance.BI, tStore.GetDecimals(token))
 			dbFormat[token] = balance.DBTokenBalance
 			//
 			if stETH == token {
