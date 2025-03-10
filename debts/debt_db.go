@@ -102,11 +102,14 @@ func (eng *DebtEngine) AddDebt(debt *schemas.Debt, forceAdd bool) {
 		// add debt if throttle is enabled and (last debt is missing or forced add is set)
 		if lastDebt == nil || forceAdd {
 			eng.addDebt(debt)
-		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr*eng.config.ThrottleByHrs ||
+		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr(eng.client)*eng.config.ThrottleByHrs ||
 			core.DiffMoreThanFraction(lastDebt.CalTotalValueBI, debt.CalTotalValueBI, big.NewFloat(0.05)) ||
 			core.DiffMoreThanFraction(lastDebt.CalDebtBI, debt.CalDebtBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt
 			core.ValueDifferSideOf10000(debt.CalHealthFactor, lastDebt.CalHealthFactor) {
+			if lastDebt.CalHealthFactor.Cmp(debt.CalDebtBI) == 0 && lastDebt.CalTotalValueBI.Cmp(debt.CalTotalValueBI) == 0 {
+				return
+			}
 			eng.addDebt(debt)
 		}
 	} else {

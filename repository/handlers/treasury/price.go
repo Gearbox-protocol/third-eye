@@ -2,6 +2,7 @@ package treasury
 
 import (
 	"math/big"
+	"reflect"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOraclev3"
@@ -12,12 +13,34 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // used for treasury calculation and for remainingFunds on close v2
-func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, pool string, tokenAddrs []string) core.JsonFloatMap {
+	priceOracle, version := func() (schemas.PriceOracleT, core.VersionType) {
+		pool := repo.adapters.GetAdapter(pool)
+		var version core.VersionType
+		var priceOracle schemas.PriceOracleT
+		switch t := pool.(type) {
+		case *pool_v2.Poolv2:
+			priceOracle = t.State.PriceOracle
+			version = core.NewVersion(2)
+		case *pool_v3.Poolv3:
+			priceOracle = t.State.PriceOracle
+			version = core.NewVersion(300)
+		default:
+			log.Info(reflect.TypeOf(pool))
+			log.Fatal("can't get priceoracle")
+		}
+		return priceOracle, version
+	}()
+	return repo.getPricesInUSD(blockNum, priceOracle, version, tokenAddrs)
+}
+func (repo *TreasuryRepo) getPricesInUSD(blockNum int64, priceOracle schemas.PriceOracleT, version core.VersionType, tokenAddrs []string) core.JsonFloatMap {
 	priceByToken := core.JsonFloatMap{}
 	var tokenForCalls []string
 	var poolForDieselRate []*schemas.UTokenAndPool
@@ -30,7 +53,7 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 			tokenForCalls = append(tokenForCalls, token)
 		}
 	}
-	priceOracle, version, _ := repo.adapters.GetActivePriceOracleByBlockNum(blockNum)
+
 	prices, dieselRates := repo.getPricesInBatch(priceOracle, version, blockNum, false, tokenForCalls, poolForDieselRate)
 	var poolIndex int
 	for i, token := range tokenAddrs {
@@ -48,9 +71,17 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) co
 	return priceByToken
 }
 
+func (repo *TreasuryRepo) GetPriceInUSD(blockNum int64, pool string, token string) *big.Int {
+	priceInUSD := repo.GetPricesInUSD(blockNum, pool, []string{token})
+	if priceInUSD == nil || priceInUSD[token] == 0 {
+		return nil
+	}
+	return utils.FloatDecimalsTo64(priceInUSD[token], 8)
+}
+
 // multicall for getting price in batch
 // For only getting the prices for calculating the treasury value
-func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionType, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []*schemas.UTokenAndPool) (prices []*big.Int, dieselRates []*big.Int) {
+func (repo *TreasuryRepo) getPricesInBatch(oracle schemas.PriceOracleT, version core.VersionType, blockNum int64, successRequired bool, tokenAddrs []string, poolForDieselRate []*schemas.UTokenAndPool) (prices []*big.Int, dieselRates []*big.Int) {
 	// base case
 	if oracle == "" {
 		for range tokenAddrs {
@@ -65,9 +96,9 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle string, version core.VersionTy
 	// make calls
 	calls := make([]multicall.Multicall2Call, 0, len(tokenAddrs)+len(poolForDieselRate))
 	if version.Eq(1) {
-		calls = append(calls, v1PriceCalls(common.HexToAddress(oracle), tokenAddrs, repo.tokens)...)
+		calls = append(calls, v1PriceCalls(oracle, tokenAddrs, repo.tokens)...)
 	} else if version.IsPriceInUSD() {
-		calls = append(calls, v2PriceCalls(common.HexToAddress(oracle), tokenAddrs)...)
+		calls = append(calls, v2PriceCalls(oracle, tokenAddrs)...)
 	}
 	calls = append(calls, dieselCalls(poolForDieselRate)...)
 	//
@@ -95,7 +126,7 @@ func (repo TreasuryRepo) GetRedStonemgr() redstone.RedStoneMgrI {
 	return repo.redstoneMgr
 }
 
-func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle, token string) *big.Int {
+func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle schemas.PriceOracleT, token string) *big.Int {
 	if adapter := repo.IsRedStoneAdapter(blockNum, oracle, token); adapter != nil {
 		call, isQueryable := adapter.GetCalls(blockNum)
 		if !isQueryable {
@@ -108,8 +139,8 @@ func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle, token string) 
 	return nil
 }
 
-func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle string, token string) ds.QueryPriceFeedI {
-	pon, err := priceOraclev3.NewPriceOraclev3(common.HexToAddress(oracle), repo.client)
+func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle schemas.PriceOracleT, token string) ds.QueryPriceFeedI {
+	pon, err := priceOraclev3.NewPriceOraclev3(oracle.Hex(), repo.client)
 	log.CheckFatal(err)
 	priceFeed, err := pon.PriceFeeds(&bind.CallOpts{BlockNumber: big.NewInt(blockNum)}, common.HexToAddress(token))
 	if err != nil {

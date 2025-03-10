@@ -23,7 +23,7 @@ func GetDC(client core.ClientI, db *gorm.DB) *dc_wrapper.DataCompressorWrapper {
 			log.CheckFatal(err)
 			splits := strings.Split(dcAddr.(string), "_")
 			if len(splits) == 2 {
-				dc.AddDataCompressorByVersion(core.NewVersion(300), splits[0], i)
+				dc.AddDataCompressorv300(core.NewVersion(300), splits[0], i)
 			}
 		}
 	}

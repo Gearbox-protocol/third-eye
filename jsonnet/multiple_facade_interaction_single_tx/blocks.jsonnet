@@ -136,7 +136,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 6000,
         totalValueBI: '6000000000',
-        extraQuotaAPY: 0,
       },
     ],
     poolLedgers: [
@@ -203,7 +202,6 @@
         sessionId: '#Account_1_4_0',
         totalValue: 7000,
         totalValueBI: '7000000000',
-        extraQuotaAPY: 0,
       },
     ],
     timestamp: 432000,
@@ -380,7 +378,6 @@
         sessionId: '#Account_2_6_5',
         totalValue: 6000,
         totalValueBI: '6000000000',
-        extraQuotaAPY: 0,
       },
     ],
     poolLedgers: [

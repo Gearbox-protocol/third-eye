@@ -178,7 +178,7 @@ func (mdl *Poolv2) OnLog(txLog types.Log) {
 
 func (mdl Poolv2) checkIfAmountMoreThan1Mil(amount *big.Int, blockNum int64, txHash string, operation string) {
 	token := mdl.State.UnderlyingToken
-	priceInUSD := mdl.Repo.GetPrice(token)
+	priceInUSD := mdl.Repo.GetPriceInUSD(blockNum, mdl.Address, token)
 	if priceInUSD == nil {
 		return
 	}

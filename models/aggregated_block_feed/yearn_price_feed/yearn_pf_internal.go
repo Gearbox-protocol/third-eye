@@ -38,7 +38,7 @@ func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, 
 		BlockNumber: big.NewInt(blockNum),
 	}
 	//
-	pps, err := core.CallFuncWithExtraBytes(client, "99530b06", mdl.yVaultAddr, blockNum, nil) // pps
+	pps, err := core.CallFuncGetSingleValue(client, "99530b06", mdl.yVaultAddr, blockNum, nil) // pps
 	if err != nil {
 		return nil, err
 	}
@@ -63,16 +63,16 @@ func (mdl *yearnPFInternal) calculatePrice(blockNum int64, client core.ClientI, 
 	}
 	pfVersion := schemas.VersionToPFVersion(version, false)
 	return &schemas.PriceFeed{
-		RoundId:         roundData.RoundId.Int64(),
-		PriceBI:         (*core.BigInt)(newAnswer),
-		Price:           utils.GetFloat64Decimal(newAnswer, pfVersion.Decimals()),
-		MergedPFVersion: schemas.MergedPFVersion(pfVersion), // only used for v1,v2 so can convert from pfVersion to MergedPFVersion
+		RoundId: roundData.RoundId.Int64(),
+		PriceBI: (*core.BigInt)(newAnswer),
+		Price:   utils.GetFloat64Decimal(newAnswer, pfVersion.Decimals()),
+		Feed:    mdl.mainPFAddress.Hex(),
 	}, nil
 }
 
 func (mdl *yearnPFInternal) setContracts(blockNum int64, client core.ClientI) error {
 	// set the price feed contract
-	underlyingPFAddrBytes, err := core.CallFuncWithExtraBytes(client, "741bef1a", mdl.mainPFAddress, blockNum, nil) // priceFeed
+	underlyingPFAddrBytes, err := core.CallFuncGetSingleValue(client, "741bef1a", mdl.mainPFAddress, blockNum, nil) // priceFeed
 	if err != nil {
 		return err
 	}
@@ -90,13 +90,13 @@ func (mdl *yearnPFInternal) setContracts(blockNum int64, client core.ClientI) er
 		// https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/SingleAssetLPPriceFeed.sol#L24
 		//https://github.com/Gearbox-protocol/oracles-v3/blob/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles/LPPriceFeed.sol#L69C9-
 		// LPCONTRACT_LOGIC
-		lpCOntractBytes, err := core.CallFuncWithExtraBytes(client, "8acee3cf", mdl.mainPFAddress, blockNum, nil) // lpContract
+		lpCOntractBytes, err := core.CallFuncGetSingleValue(client, "8acee3cf", mdl.mainPFAddress, blockNum, nil) // lpContract
 		if err != nil {
 			return err
 		}
 		mdl.yVaultAddr = common.BytesToAddress(lpCOntractBytes)
 	} else {
-		yVaultAddrBytes, err := core.CallFuncWithExtraBytes(client, "33303f8e", mdl.mainPFAddress, blockNum, nil) // yVault
+		yVaultAddrBytes, err := core.CallFuncGetSingleValue(client, "33303f8e", mdl.mainPFAddress, blockNum, nil) // yVault
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func (mdl *yearnPFInternal) setContracts(blockNum int64, client core.ClientI) er
 	//
 
 	// set the decimals
-	decimalsBytes, err := core.CallFuncWithExtraBytes(client, "313ce567", mdl.yVaultAddr, blockNum, nil) // decimals
+	decimalsBytes, err := core.CallFuncGetSingleValue(client, "313ce567", mdl.yVaultAddr, blockNum, nil) // decimals
 	if err != nil {
 		return err
 	}

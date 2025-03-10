@@ -13,7 +13,7 @@ TMP_DB="tmp_$FINAL_DB"
 export TMP_DB_URL="postgres://$SUPERUSER@localhost:5432/$TMP_DB?sslmode=disable"
 
 set +e
-psql -U $SUPERUSER -d postgres -c " SELECT  pg_terminate_backend(pid) FROM  pg_stat_activity WHERE  pid <> pg_backend_pid() AND datname = '$TMP_DB';"
+psql -U $SUPERUSER -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE pid <> pg_backend_pid() AND datname = '""$TMP_DB""';"
 psql -U $SUPERUSER -d postgres -c "drop database $TMP_DB"
 psql -U $SUPERUSER -d postgres -c "create database $TMP_DB"
 pg_dump --no-owner "$REMOTE_DB" | psql  -U $SUPERUSER -d $TMP_DB
@@ -23,7 +23,7 @@ pg_dump "$REMOTE_DB" --table public.schema_migrations  | psql  -U $SUPERUSER -d 
 set -e
 
 # psql -U $SUPERUSER -d sample < db_scripts/local_testing/missing_table_from_download_db.sql
-psql -U $SUPERUSER -d $TMP_DB < $PARENT_DIR/../../migrations/000016_rankings.up.sql
+# psql -U $SUPERUSER -d $TMP_DB < $PARENT_DIR/../../migrations/000016_rankings.up.sql
 migrate -path $PARENT_DIR/../../migrations/ -database "$TMP_DB_URL" up
 
 
@@ -36,7 +36,7 @@ set -e
 PWD=`pwd`
 LOCAL_DB="host=localhost user=$SUPERUSER  dbname=$TMP_DB"
 cd /home/debian/$FINAL_DB-third-eye
-go run "scripts/08_merged_pf_version_reset/main.go" "$LOCAL_DB" $FORK_BLOCK
+# go run "scripts/08_merged_pf_version_reset/main.go" "$LOCAL_DB" $FORK_BLOCK
 cd $PWD
 
 createdb -O $SUPERUSER -T $TMP_DB $FINAL_DB

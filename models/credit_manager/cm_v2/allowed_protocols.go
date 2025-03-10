@@ -15,15 +15,21 @@ func (mdl *CMv2) addProtocolAdapters(state dc.CMCallData) {
 	}
 	mdl.allowedProtocols = newProtocols
 }
+
+// only valid for v2, so call.target is not null, like for v310
 func (mdl *CMv2) addProtocolAdaptersLocally() {
 	// cm is registered with dataCompressor after discoveredAt, so we can get adapters for blockNum more than discoveredAt
 	blockToFetchCMData := mdl.DiscoveredAt
 	if blockToFetchCMData < mdl.LastSync {
 		blockToFetchCMData = mdl.LastSync
 	}
+	var cf string
+	if cfInterface := mdl.Details["facade"]; cfInterface != nil {
+		cf = cfInterface.(string)
+	}
 	//
 	call, resultFn, err := mdl.Repo.GetDCWrapper().GetCreditManagerData(mdl.GetVersion(),
-		blockToFetchCMData, common.HexToAddress(mdl.GetAddress()))
+		blockToFetchCMData, common.HexToAddress(mdl.GetAddress()), cf)
 	if err != nil {
 		log.Fatal("Failed preparing credit manager data", err)
 	}

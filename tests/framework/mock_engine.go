@@ -18,10 +18,11 @@ import (
 )
 
 type SyncAdapterMock struct {
-	Adapters  []*ds.SyncAdapter             `json:"adapters"`
-	CMState   []*schemas.CreditManagerState `json:"cmState"`
-	PoolState []*schemas.PoolState          `json:"poolState"`
-	Tokens    []*schemas.Token              `json:"tokens"`
+	Adapters        []*ds.SyncAdapter                                        `json:"adapters"`
+	CMState         []*schemas.CreditManagerState                            `json:"cmState"`
+	PoolState       []*schemas.PoolState                                     `json:"poolState"`
+	Tokens          []*schemas.Token                                         `json:"tokens"`
+	PoToTokenOracle map[schemas.PriceOracleT]map[string]*schemas.TokenOracle `json:"poToTokenOracles"`
 }
 
 type MockRepo struct {
@@ -35,6 +36,8 @@ type MockRepo struct {
 	//oracle to token
 	feedToToken   map[string]string
 	executeParser *MockExecuteParser
+	//
+	PoToTokenOracle map[schemas.PriceOracleT]map[string]*schemas.TokenOracle
 }
 
 func NewMockRepo(repo ds.RepositoryI, client *test.TestClient,
@@ -55,8 +58,8 @@ func (m *MockRepo) Init(fileNames []string) {
 		m.Repo.AddTokenObj(token)
 	}
 	m.AddressMap = addressMap
-	log.Info(utils.ToJson(addressMap))
 	m.processInputTestFile(inputFile)
+	log.Info(utils.ToJson(addressMap))
 }
 
 // key/name to address
@@ -80,9 +83,20 @@ func (m *MockRepo) processInputTestFile(inputFile *TestInput3Eye) {
 	syncAdapterObj := inputFile.GetSyncAdapter(m.AddressMap, m.t)
 	// set feed to token
 	if syncAdapterObj != nil {
-		for _, adapter := range syncAdapterObj.Adapters {
-			if adapter.GetName() == ds.ChainlinkPriceFeed {
-				m.feedToToken[adapter.GetAddress()] = adapter.GetDetailsByKey("token")
+		for po, details := range syncAdapterObj.PoToTokenOracle {
+			for token, feed := range details {
+				feed.PriceOracle = po
+				feed.Token = token
+				syncAdapterObj.PoToTokenOracle[po][token] = feed
+			}
+		}
+		m.PoToTokenOracle = syncAdapterObj.PoToTokenOracle
+		//
+		//
+		for _, details := range m.PoToTokenOracle {
+			for token, feed := range details {
+				m.feedToToken[feed.Feed] = token
+				m.Repo.DirectlyAddTokenOracle(feed)
 			}
 		}
 	}
@@ -108,18 +122,8 @@ func (m *MockRepo) setSyncAdapters(obj *SyncAdapterMock) {
 		}
 		actualAdapter := m.Repo.PrepareSyncAdapter(adapter)
 		switch actualAdapter.GetName() {
-		case ds.ChainlinkPriceFeed:
-			oracle := actualAdapter.GetDetailsByKey("oracle")
-			token := actualAdapter.GetDetailsByKey("token")
-			m.Repo.DirectlyAddTokenOracle(&schemas.TokenOracle{
-				Token:       token,
-				Oracle:      oracle,
-				Feed:        actualAdapter.GetAddress(),
-				FeedType:    ds.ChainlinkPriceFeed,
-				BlockNumber: actualAdapter.GetDiscoveredAt(),
-				Version:     actualAdapter.GetVersion(),
-			})
 		case ds.CreditManager:
+			log.Info(obj.CMState)
 			for _, state := range obj.CMState {
 				if state.Address == actualAdapter.GetAddress() {
 					actualAdapter.SetUnderlyingState(state)

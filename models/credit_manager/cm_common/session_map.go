@@ -123,7 +123,7 @@ func (mdl CommonCMAdapter) getCollateralAmountOnOpen(blockNum int64, version cor
 			tokens = append(tokens, underlyingToken)
 		}
 		//
-		return mdl.Repo.GetPricesInUSD(blockNum, tokens)
+		return mdl.Repo.GetPricesInUSD(blockNum, mdl.State.PoolAddress, tokens)
 	}()
 	//
 	totalValue := new(big.Float)

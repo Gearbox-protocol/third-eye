@@ -4,15 +4,18 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/account_factory"
 	"github.com/Gearbox-protocol/third-eye/models/acl"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
-	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle/po_v2"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle/po_v3"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
 
 	"fmt"
@@ -69,13 +72,10 @@ func (mdl *AddressProvider) v2LogParse(txLog types.Log) {
 		switch contract {
 		case "PRICE_ORACLE":
 			//
-			mdl.addPriceOracle(blockNum, address)
-			po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+			mdl.addPriceOracle(blockNum, schemas.PriceOracleT(address))
+			po := po_v2.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(po)
 		case "DATA_COMPRESSOR":
-			if mdl.Details == nil {
-				mdl.Details = make(map[string]interface{})
-			}
 			dcObj, ok := mdl.Details["dc"].(map[string]interface{})
 			log.Infof("Previous data compressors %#v\n", dcObj)
 			if !ok {
@@ -92,58 +92,102 @@ func (mdl *AddressProvider) v2LogParse(txLog types.Log) {
 	}
 }
 
+// var addrv310, _ = addrProviderv310.NewAddrProviderv310(core.NULL_ADDR, nil)
+
 func (mdl *AddressProvider) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("AddressSet(bytes32,address)"):
 		mdl.v2LogParse(txLog)
-	case core.Topic("SetAddress(bytes32,address,uint256)"):
-		mdl.v3LogParse(txLog)
+	case core.Topic("SetAddress(bytes32,address,uint256)"): // can be used for version 310 address provider too. set PriceOracle acl contractregister are not emitted thought
+		contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
+		address := common.BytesToAddress(txLog.Topics[2][:])
+		mdl.v3LogParse(txLog, contract, address.Hex(), getRealVersion(txLog.Topics[3]))
+	//
+	case core.Topic("SetAddress(bytes32,uint256,address)"): // can be used for version 310 address provider too. set PriceOracle acl contractregister are not emitted thought
+		contractName := strings.Trim(string(txLog.Topics[1][:]), "\x00")
+		address := common.BytesToAddress(txLog.Topics[3][:])
+		// if contractName == "MARKET_CONFIGURATOR_FACTORY" {
+		// mdl.Details["MARKET_FACTORY"] = address // only allow authorized market configurator
+		// }
+		mdl.v3LogParse(txLog, contractName, address.Hex(), getRealVersion(txLog.Topics[2]))
+	case core.Topic("CreateMarketConfigurator(address,string)"):
+		market := common.BytesToAddress(txLog.Topics[1][:])
+		mdl.addMarketConfig(int64(txLog.BlockNumber), market)
 	}
 }
 
-func (mdl *AddressProvider) v3LogParse(txLog types.Log) {
-	contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
-	address := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
-	version := func() int16 {
-		version :=
-			new(big.Int).SetBytes(txLog.Topics[3].Bytes()).Int64()
-		if version == 0 {
-			version = 1
-		}
-		return int16(version)
-	}()
+func (mdl *AddressProvider) addMarketConfig(blockNum int64, market common.Address) {
+	conRegisterBytes, err := core.CallFuncGetSingleValue(mdl.Client, "7a0c7b21", market, 0, nil)
+	log.CheckFatal(err)
+	crAddr := common.BytesToAddress(conRegisterBytes).Hex()
+	log.Infof("Add market %s, with cr: %s", market, crAddr)
+	// mdl.
+	mdl.commonLogParse(blockNum, "CONTRACT_REGISTER", crAddr)
+}
+
+func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address string, realversion int16) {
+	// contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
+	// address := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
 	blockNum := int64(txLog.BlockNumber)
 	//
-	log.Infof("AddressSet: %s(%d), %s at blockNum %d", contract, version, address, blockNum)
+	log.Infof("AddressSet: %s(%d), %s at blockNum %d", contract, realversion, address, blockNum)
 	switch contract {
-	case "DATA_COMPRESSOR":
+	case "POOL_COMPRESSOR", "CREDIT_ACCOUNT_COMPRESSOR", "MARKET_COMPRESSOR":
+		m := map[string]dc_wrapper.CompressorType{
+			// "POOL_COMPRESSOR": dc_wrapper.POOL_COMPRESSOR,
+			"MARKET_COMPRESSOR":         dc_wrapper.MARKET_COMPRESSOR,
+			"CREDIT_ACCOUNT_COMPRESSOR": dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR,
+		}
+		cType := m[contract]
+		newValue := fmt.Sprintf("%s_%s", txLog.Address.Hex(), cType)
 		//
-		if mdl.Details == nil {
-			mdl.Details = make(map[string]interface{})
-		}
-		dcObj, ok := mdl.Details["dc"].(map[string]interface{})
-		log.Infof("Previous data compressors %#v\n", dcObj)
-		if !ok {
-			if dcObj == nil {
-				dcObj = make(map[string]interface{})
-			}
-		}
-		if version < 300 { // don't add dataCompressor with version 2.1
-			log.Infof("Don't add %s version %d", address, version)
+		dcObj, fn := mdl.updateDetailsField_dc()
+		dcObj[fmt.Sprintf("%d", blockNum)] = newValue
+		fn(dcObj)
+		mdl.Repo.GetDCWrapper().AddCompressorType(common.HexToAddress(address), cType, int64(txLog.BlockNumber))
+	case "DATA_COMPRESSOR":
+		dcObj, fn := mdl.updateDetailsField_dc()
+		if realversion < 300 { // don't add dataCompressor with version 2.1
+			log.Infof("Don't add %s version %d", address, realversion)
 			return
 		}
-		dcObj[fmt.Sprintf("%d", blockNum)] = fmt.Sprintf("%s_%d", address, version)
-		mdl.Details["dc"] = dcObj
+		dcObj[fmt.Sprintf("%d", blockNum)] = fmt.Sprintf("%s_%d", address, realversion)
+		fn(dcObj)
 		// v3
-		mdl.Repo.GetDCWrapper().AddDataCompressorByVersion(core.NewVersion(version), address, blockNum)
+		mdl.Repo.GetDCWrapper().AddDataCompressorv300(core.NewVersion(realversion), address, blockNum)
 	case "PRICE_ORACLE":
-		if version < 300 { // don't except v2,v2.10 or v1 priceOracle , why are already know from v1 addressProvider
+		if realversion < 300 { // don't except v2,v2.10 or v1 priceOracle , why are already know from v1 addressProvider
 			return
 		}
-		mdl.addPriceOracle(blockNum, address)
-		po := price_oracle.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+		mdl.addPriceOracle(blockNum, schemas.PriceOracleT(address))
+		po := po_v3.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 		mdl.Repo.AddSyncAdapter(po)
 	default:
 		mdl.commonLogParse(blockNum, contract, address)
 	}
+}
+
+func (mdl *AddressProvider) updateDetailsField_dc() (map[string]interface{}, func(map[string]interface{})) {
+	if mdl.Details == nil {
+		mdl.Details = make(map[string]interface{})
+	}
+	dcObj, ok := mdl.Details["dc"].(map[string]interface{})
+	log.Infof("Previous data compressors %#v\n", dcObj)
+	if !ok {
+		if dcObj == nil {
+			dcObj = make(map[string]interface{})
+		}
+	}
+	return dcObj, func(obj map[string]interface{}) {
+		mdl.Details["dc"] = obj
+	}
+
+}
+
+func getRealVersion(topic common.Hash) int16 {
+	version := int16(new(big.Int).SetBytes(topic[:]).Int64())
+	if version == 0 {
+		version = 1
+	}
+	return version
 }

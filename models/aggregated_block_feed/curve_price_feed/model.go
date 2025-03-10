@@ -17,8 +17,8 @@ type CurvePriceFeed struct {
 	*base_price_feed.BasePriceFeed
 }
 
-func NewCurvePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *CurvePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+func NewCurvePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *CurvePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	return NewCurvePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
@@ -46,9 +46,9 @@ func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall
 			virtualPrice := GetCurveVirtualPrice(blockNum, oracleAddr, adapter.GetVersion(), adapter.Client)
 			//
 			withinLimits := func() bool {
-				lowerLimit, err := core.CallFuncWithExtraBytes(adapter.Client, "a384d6ff", oracleAddr, blockNum, nil) // lowerBound
+				lowerLimit, err := core.CallFuncGetSingleValue(adapter.Client, "a384d6ff", oracleAddr, blockNum, nil) // lowerBound
 				log.CheckFatal(err)
-				upperLimit, err := core.CallFuncWithExtraBytes(adapter.Client, "b09ad8a0", oracleAddr, blockNum, nil) // upperBound
+				upperLimit, err := core.CallFuncGetSingleValue(adapter.Client, "b09ad8a0", oracleAddr, blockNum, nil) // upperBound
 				log.CheckFatal(err)
 				return new(big.Int).SetBytes(lowerLimit).Cmp(virtualPrice) < 0 &&
 					new(big.Int).SetBytes(upperLimit).Cmp(virtualPrice) > 0
@@ -85,17 +85,17 @@ func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall
 func GetCurveVirtualPrice(blockNum int64, oracleAddr common.Address, version core.VersionType, client core.ClientI) *big.Int {
 	curvePool := func() common.Address {
 		if !version.MoreThanEq(core.NewVersion(300)) {
-			curvePoolBytes, err := core.CallFuncWithExtraBytes(client, "218751b2", oracleAddr, blockNum, nil) // curvePool from curvev1Adapter abi
+			curvePoolBytes, err := core.CallFuncGetSingleValue(client, "218751b2", oracleAddr, blockNum, nil) // curvePool from curvev1Adapter abi
 			log.CheckFatal(err)
 			return common.BytesToAddress(curvePoolBytes)
 		} else {
 			// LPCONTRACT_LOGIC
-			lpCOntractBytes, err := core.CallFuncWithExtraBytes(client, "8acee3cf", oracleAddr, blockNum, nil) // lpContract
+			lpCOntractBytes, err := core.CallFuncGetSingleValue(client, "8acee3cf", oracleAddr, blockNum, nil) // lpContract
 			log.CheckFatal(err)
 			return common.BytesToAddress(lpCOntractBytes)
 		}
 	}()
-	virtualPrice, err := core.CallFuncWithExtraBytes(client, "bb7b8b80", curvePool, blockNum, nil) // getVirtualPrice
+	virtualPrice, err := core.CallFuncGetSingleValue(client, "bb7b8b80", curvePool, blockNum, nil) // getVirtualPrice
 	log.CheckFatal(err)
 	return new(big.Int).SetBytes(virtualPrice)
 }

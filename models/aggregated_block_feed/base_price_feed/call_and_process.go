@@ -56,9 +56,10 @@ func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, bloc
 		decimals = 8 // for usd
 	}
 	return &schemas.PriceFeed{
-		RoundId: roundData.RoundId.Int64(),
-		PriceBI: (*core.BigInt)(roundData.Answer),
-		Price:   utils.GetFloat64Decimal(roundData.Answer, decimals),
+		RoundId:     roundData.RoundId.Int64(),
+		PriceBI:     (*core.BigInt)(roundData.Answer),
+		Price:       utils.GetFloat64Decimal(roundData.Answer, decimals),
+		BlockNumber: blockNum,
 	}
 }
 

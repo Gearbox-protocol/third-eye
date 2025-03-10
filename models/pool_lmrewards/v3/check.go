@@ -17,7 +17,7 @@ func (mdl *LMRewardsv3) check(blockNum int64, currentTs uint64, farm, from, to s
 	for _, addr := range []string{from, to} {
 		if addr != core.NULL_ADDR.Hex() {
 			s := common.HexToHash(addr)
-			farmedData, err := core.CallFuncWithExtraBytes(mdl.Client, "4216f972", common.HexToAddress(farm), blockNum, s[:])
+			farmedData, err := core.CallFuncGetSingleValue(mdl.Client, "4216f972", common.HexToAddress(farm), blockNum, s[:])
 			log.CheckFatal(err)
 			expected := new(big.Int).SetBytes(farmedData)
 			obj := mdl.farmUserRewards[common.HexToAddress(farm)][addr]

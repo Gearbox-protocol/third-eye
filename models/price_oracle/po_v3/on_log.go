@@ -1,4 +1,4 @@
-package price_oracle
+package po_v3
 
 import (
 	"context"
@@ -17,7 +17,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"gorm.io/gorm/utils"
 )
 
 // QueryPriceFeed stores in details reserve status via PFVersion in details.Tokens.pfversion
@@ -39,8 +38,9 @@ func (mdl *PriceOracle) GetDataProcessType() int {
 func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
 	for _, txLog := range txLogs {
 		switch txLog.Topics[0] {
-		case core.Topic("NewPriceFeed(address,address)"),
-			core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"):
+		case core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"), // v3
+			core.Topic("SetPriceFeed(address,address,uint32,bool"), //v310
+			core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
 			token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 			oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
 			// on mainnet, these are the tickers added as weETH redstone composite oracle is made up of ticker oracle weETH/ETH redstone and ETH/USD chainlink oracle
@@ -65,9 +65,10 @@ func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
 func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	blockNum := int64(txLog.BlockNumber)
 	switch txLog.Topics[0] {
-	case core.Topic("NewPriceFeed(address,address)"),
-		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),
-		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
+	case
+		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),   // v3
+		core.Topic("SetPriceFeed(address,address,uint32,bool"),         //v310
+		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"): // v3, v310
 		//
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 		oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
@@ -125,6 +126,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			// - Query price feed: price fetched from curve or yearn
 			mdl.Repo.GetToken(token)
 			mdl.Repo.AddNewPriceOracleEvent(&schemas.TokenOracle{
+				PriceOracle: schemas.PriceOracleT(mdl.Address),
 				Token:       token,
 				Oracle:      oracle,
 				Feed:        oracle, // feed is same as oracle
@@ -159,12 +161,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 		if strings.Contains(err.Error(), "VM execution error.") ||
 			strings.Contains(err.Error(), "Required data unavailable") ||
 			strings.Contains(err.Error(), "execution reverted") {
-			if mdl.GetVersion().MoreThanEq(core.NewVersion(300)) {
-				return mdl.V3PriceFeedType(opts, oracle, token)
-			} else {
-				a, b, c := mdl.v2PriceFeedType(opts, oracle)
-				return a, nil, b, c
-			}
+			return mdl.V3PriceFeedType(opts, oracle, token)
 		}
 	} else { //chainlink description
 		yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
@@ -181,7 +178,7 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
 func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, bool, error) {
-	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
+	data, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
 	if err != nil {
 		{ // redstone feed without price on demand doesn't have priceFeedType method.
 			//https://etherscan.io/address/0xbC5FBcf58CeAEa19D523aBc76515b9AEFb5cfd58#readProxyContract
@@ -211,12 +208,12 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			// I will treat them as query feed to be periodic synced every 10-15 blocks.
 
 			pf0 := func() common.Address {
-				pf, err := core.CallFuncWithExtraBytes(mdl.Client, "385aee1b", common.HexToAddress(oracle), 0, nil) // priceFeed0
+				pf, err := core.CallFuncGetSingleValue(mdl.Client, "385aee1b", common.HexToAddress(oracle), 0, nil) // priceFeed0
 				log.CheckFatal(err)
 				return common.BytesToAddress(pf)
 			}()
 			pf0Type := func() int {
-				pf0Type, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf0, 0, nil) // priceFeedType
+				pf0Type, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", pf0, 0, nil) // priceFeedType
 				if err != nil && strings.Contains(err.Error(), "execution reverted") {
 					// this means that it can be from outside of gearbox protocol, like redstone own oracle.
 					pf0Type := func() int {
@@ -250,7 +247,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		return ds.CurvePF, nil, false, nil
 	// usd and crypto
 	case core.V3_CURVE_2LP_ORACLE, core.V3_CURVE_3LP_ORACLE, core.V3_CURVE_4LP_ORACLE: // 2lp,3lp, 4lp
-		nCoinBytes, err := core.CallFuncWithExtraBytes(mdl.Client, "c21ee162", common.HexToAddress(oracle), 0, nil)
+		nCoinBytes, err := core.CallFuncGetSingleValue(mdl.Client, "c21ee162", common.HexToAddress(oracle), 0, nil)
 		log.CheckFatal(err)
 		fn := func(n int) string {
 			var sig string
@@ -263,10 +260,10 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			} else if n == 3 {
 				sig = "427cb6fe"
 			}
-			pfBytes, err := core.CallFuncWithExtraBytes(mdl.Client, sig, common.HexToAddress(oracle), 0, nil)
+			pfBytes, err := core.CallFuncGetSingleValue(mdl.Client, sig, common.HexToAddress(oracle), 0, nil)
 			log.CheckFatal(err)
 			pf := common.BytesToAddress(pfBytes)
-			pfTypeBytes, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
+			pfTypeBytes, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
 			log.CheckFatal(err)
 			if new(big.Int).SetBytes(pfTypeBytes).Int64() == core.V3_REDSTONE_ORACLE {
 				return pf.Hex()
@@ -291,7 +288,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		return ds.SingleAssetPF, nil, false, nil
 	case core.V3_PENDLE_PT_TWAP_ORACLE,
 		core.V3_ERC4626_VAULT_ORACLE: // erc4626
-		underlying, err := core.CallFuncWithExtraBytes(mdl.Client, "741bef1a", common.HexToAddress(oracle), 0, nil) // priceFeed
+		underlying, err := core.CallFuncGetSingleValue(mdl.Client, "741bef1a", common.HexToAddress(oracle), 0, nil) // priceFeed
 		return ds.SingleAssetPF, []string{common.BytesToAddress(underlying).Hex()}, false, err
 	case core.V3_REDSTONE_ORACLE:
 		return ds.RedStonePF, nil, false, nil
@@ -302,46 +299,4 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		log.CheckFatal(err)
 		return ds.UnknownPF, nil, false, fmt.Errorf("unknown v3 pfType %v, oracle: %s token: %s, description: %s", pfType, oracle, token, description)
 	}
-}
-
-func (mdl *PriceOracle) v2PriceFeedType(opts *bind.CallOpts, oracle string) (string, bool, error) {
-	yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
-	log.CheckFatal(err)
-	_, err = yearnContract.YVault(opts)
-	if err != nil {
-		description, err := yearnContract.Description(opts)
-		log.Infof("Add %s with desc: %s", oracle, description)
-		if strings.Contains(description, "USD Composite") {
-			// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/CompositePriceFeed.sol
-			return ds.CompositeChainlinkPF, false, nil
-		} else if strings.Contains(description, "CurveLP pricefeed") || utils.Contains([]string{
-			"PRICEFEED_OHMFRAXBP",
-			"PRICEFEED_MIM_3LP3CRV",
-			"PRICEFEED_crvCRVETH",
-			"PRICEFEED_crvCVXETH",
-			"PRICEFEED_crvUSDTWBTCWETH",
-			"PRICEFEED_LDOETH",
-			"PRICEFEED_crvUSDETHCRV",
-			"crvPlain3andSUSD price feed",
-		}, description) {
-			// https://github.com/Gearbox-protocol/integrations-v2/tree/main/contracts/oracles/curve
-			return ds.CurvePF, false, nil
-		} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
-			//https://github.com/Gearbox-protocol/integrations-v2/blob/main/contracts/oracles/lido/WstETHPriceFeed.sol
-			return ds.SingleAssetPF, false, nil
-		} else if strings.Contains(description, "Bounded") {
-			// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/BoundedPriceFeed.sol
-			return ds.ChainlinkPriceFeed, true, nil
-		} else if strings.Contains(description, "Zero pricefeed") {
-			// zero for G-OBS
-			// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/ZeroPriceFeed.sol
-			return ds.ZeroPF, false, nil
-		} else if strings.Contains(description, "ZERO (one) priceFeed") {
-			// deprecated not used.
-			return ds.AlmostZeroPF, false, nil
-		} else {
-			return ds.UnknownPF, false, fmt.Errorf("neither chainlink nor yearn nor curve price feed %v, got %s", err, description)
-		}
-	}
-	return ds.YearnPF, false, nil
 }
