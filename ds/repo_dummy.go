@@ -291,5 +291,5 @@ type QueryPriceFeedI interface {
 	// DisableToken(token string, disabledAt int64, pfVersion schemas.PFVersion)
 	// AddToken(token string, discoveredAt int64, pfVersion schemas.PFVersion)
 	// GetTokens() map[string]map[schemas.PFVersion][]int64
-	GetRedstonePF() *core.RedStonePF
+	GetRedstonePF() []*core.RedStonePF
 }

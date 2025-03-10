@@ -2,6 +2,7 @@ package treasury
 
 import (
 	"math/big"
+	"reflect"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOraclev3"
@@ -21,10 +22,10 @@ import (
 // used for treasury calculation and for remainingFunds on close v2
 func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, pool string, tokenAddrs []string) core.JsonFloatMap {
 	priceOracle, version := func() (schemas.PriceOracleT, core.VersionType) {
-		poolState := repo.adapters.GetAdapter(pool)
+		pool := repo.adapters.GetAdapter(pool)
 		var version core.VersionType
 		var priceOracle schemas.PriceOracleT
-		switch t := poolState.GetUnderlyingState().(type) {
+		switch t := pool.(type) {
 		case *pool_v2.Poolv2:
 			priceOracle = t.State.PriceOracle
 			version = core.NewVersion(2)
@@ -32,6 +33,7 @@ func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, pool string, tokenAddrs
 			priceOracle = t.State.PriceOracle
 			version = core.NewVersion(300)
 		default:
+			log.Info(reflect.TypeOf(pool))
 			log.Fatal("can't get priceoracle")
 		}
 		return priceOracle, version

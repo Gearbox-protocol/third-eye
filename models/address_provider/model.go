@@ -9,7 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/pkg"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -20,9 +20,9 @@ type blockAndOracle struct {
 }
 type AddressProvider struct {
 	*ds.SyncAdapter
-	priceOracles       []blockAndOracle       `json:"-"`
-	otherAddrs         []common.Address       `json:"-"`
-	hashToContractName map[common.Hash]string `json:"-"`
+	priceOracles []blockAndOracle `json:"-"`
+	otherAddrs   []common.Address `json:"-"`
+	// hashToContractName map[common.Hash]string `json:"-"`
 }
 
 func GetAddressProvider(client core.ClientI, addressProviderAddrs string) (firstAddressProvider string, otherAddrs []common.Address) {
@@ -65,10 +65,15 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 	obj.Details["others"] = otherAddrProviders
 	obj.otherAddrs = otherAddrProviders
 
-	if core.GetChainId(adapter.Client) != 1337 {
-		addrv310 := core.GetAddressProvider(core.GetChainId(adapter.Client), core.NewVersion(300))
-		obj.hashToContractName = pkg.Initv310ContractHashMap(adapter.Client, common.HexToAddress(addrv310))
+	for _, mcaddr := range strings.Split(utils.GetEnvOrDefault("MARKET_CONFIGURATORS", ""), ",") {
+		if mcaddr != "" {
+			obj.addMarketConfig(adapter.GetLastSync(), common.HexToAddress(mcaddr))
+		}
 	}
+	// if core.GetChainId(adapter.Client) != 1337 {
+	// addrv310 := core.GetAddressProvider(core.GetChainId(adapter.Client), core.NewVersion(300))
+	// obj.hashToContractName = pkg.Initv310ContractHashMap(adapter.Client, common.HexToAddress(addrv310))
+	// }
 
 	return obj
 }
