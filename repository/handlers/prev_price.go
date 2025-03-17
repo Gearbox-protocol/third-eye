@@ -50,6 +50,8 @@ func (repo *PrevPriceStore) loadPrevPriceFeed(db *gorm.DB) {
 
 // isUSD -> token -> feed -> price feed object
 func (repo *PrevPriceStore) isPFAdded(pf *schemas.PriceFeed) bool {
+	repo.mu.Lock()
+	defer repo.mu.Unlock()
 	if pf.Feed == "0xD478C66Baf4B9ED1185Db9886DdCA1e1403e1C4e" {
 		pf.Token = "0x0000000000000000000000000000000000001234"
 	}

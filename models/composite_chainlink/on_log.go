@@ -105,6 +105,7 @@ func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 		new(big.Int).Mul(mdl.TokenETHPrice, mdl.ETHUSDPrice),
 		mdl.decimalsOfBasePF,
 	)
+	log.Info(blockNum, mdl.Address)
 	// only usd price feed
 	for _, token := range mdl.mergedPFManager.GetTokens(blockNum) {
 		priceFeed := &schemas.PriceFeed{
