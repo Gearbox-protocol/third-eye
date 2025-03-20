@@ -14,6 +14,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/compoundv2ERC20"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/erc4626Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/savingMaker"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/balancerv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
@@ -125,6 +126,7 @@ var abiJSONs = []string{
 	pendleRouterv4.PendleRouterv4ABI,
 	activeSwapYTv3.ActiveSwapYTv3ABI,
 	activeMiscv3.ActiveMiscv3ABI,
+	balancerv3.Balancerv3ABI,
 }
 
 var abiParsers []abi.ABI
