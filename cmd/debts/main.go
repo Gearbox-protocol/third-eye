@@ -21,11 +21,8 @@ import (
 	"go.uber.org/fx"
 )
 
-func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, config *config.Config, shutdowner fx.Shutdowner, client core.ClientI) {
-	log.NewAMQPService(config.AMQPEnable, config.AMQPUrl, log.LoggingConfig{
-		ChainId:  core.GetChainId(client),
-		Exchange: "TelegramBot",
-	}, config.AppName)
+func StartServer(lc fx.Lifecycle, debtEng ds.DebtEngineI, cfg *config.Config, shutdowner fx.Shutdowner, client core.ClientI) {
+	log.InitLogging(cfg.AppName, core.GetChainId(client), cfg.CommonEnvs, cfg.EthProvider)
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

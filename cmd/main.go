@@ -32,17 +32,7 @@ import (
 // }
 
 func StartServer(lc fx.Lifecycle, engine ds.EngineI, cfg *config.Config, client core.ClientI) {
-	log.NewAMQPService(
-		cfg.AMQPEnable,
-		cfg.AMQPUrl,
-		log.LoggingConfig{
-			Exchange:     "TelegramBot",
-			ChainId:      core.GetChainId(client),
-			RiskEndpoint: cfg.RiskEndpoint,
-			RiskSecret:   cfg.RiskSecret,
-		},
-		cfg.AppName,
-	)
+	log.InitLogging(cfg.AppName, core.GetChainId(client), cfg.CommonEnvs, cfg.EthProvider)
 	// Starting server
 	lc.Append(fx.Hook{
 		// To mitigate the impact of deadlocks in application startup and

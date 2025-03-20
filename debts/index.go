@@ -77,7 +77,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	minSynced := lastSync.Min()
 	// lastDebtSynced = 227143579
 	log.Info("Debt engine started, from", minSynced)
-	eng.loadLastTvlSnapshot()
+	eng.loadLastTvlSnapshot(lastSync.Tvl)
 	eng.loadLastCSS(minSynced)
 	eng.loadLastRebaseDetails(minSynced)
 	eng.loadTokenLastPrice(minSynced)
@@ -100,11 +100,12 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	}
 	eng.processBlocksInBatch(minSynced, adaptersSyncedTill, lastSync)
 }
-func (eng *DebtEngine) loadLastTvlSnapshot() {
+func (eng *DebtEngine) loadLastTvlSnapshot(lastTvlBlock int64) {
 	lastTvlSnapshot := &schemas.TvlSnapshots{}
 	if err := eng.db.Raw(`SELECT * FROM tvl_snapshots ORDER BY block_num DESC LIMIT 1`).Find(lastTvlSnapshot).Error; err != nil {
 		log.Fatal(err)
 	}
+	lastTvlSnapshot.BlockNum = utils.Min(lastTvlBlock, lastTvlSnapshot.BlockNum)
 	eng.lastTvlSnapshot = lastTvlSnapshot
 }
 

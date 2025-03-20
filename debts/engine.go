@@ -193,10 +193,10 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 		underlyingToken := state.(*schemas.PoolState).UnderlyingToken
 		//
 		version := schemas.V1PF
-		if eng.tokenLastPrice[schemas.V2PF] != nil {
+		if eng.tokenLastPrice[schemas.V2PF] != nil && eng.tokenLastPrice[schemas.V2PF][underlyingToken] != nil {
 			version = schemas.V2PF
 		}
-		if eng.tokenLastPrice[schemas.V3PF_MAIN] != nil {
+		if eng.tokenLastPrice[schemas.V3PF_MAIN] != nil && eng.tokenLastPrice[schemas.V3PF_MAIN][underlyingToken] != nil {
 			version = schemas.V3PF_MAIN
 		}
 		//
