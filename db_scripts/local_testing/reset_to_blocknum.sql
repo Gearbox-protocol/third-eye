@@ -8,7 +8,6 @@ delete from blocks where id > 18246321;
 
 
 delete from debts where block_num> 18246321;
-update debt_sync set last_calculated_at=18246321;
 delete from token_oracle where  block_num> 18246321;
 delete from transfer_account_allowed  where  block_num> 18246321;
 delete from no_session_transfers where  block_num> 18246321;
@@ -66,8 +65,8 @@ delete from rebase_details where block_num > 18246321;
 update sync_adapters set last_sync=18246321 where type in ('ContractRegister', 'ACL');
 delete from debts where block_num > 18246321;
 delete from current_debts where block_num > 18246321;
-update debt_sync set last_calculated_at=18246321;
-
+update debt_sync set tvl_block=18246321, debt_block=18246321;
+delete from tvl_snapshots where block_num> 18246321;
 
 delete from closed_trading_sessions;
 ----

@@ -112,7 +112,7 @@ func (repo *Repository) Init() {
 	// for direct token transfer
 	repo.loadAccountLastSession()
 	// credit_sessions
-	repo.LoadCreditSessions(repo.db, lastDebtSync)
+	repo.LoadCreditSessions(repo.db, lastDebtSync.Min())
 
 	repo.initChecks()
 }

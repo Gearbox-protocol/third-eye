@@ -33,11 +33,11 @@ type TreasuryRepo struct {
 
 func NewTreasuryRepo(tokens *handlers.TokensRepo, blocks *handlers.BlocksRepo, adapters *handlers.SyncAdaptersRepo, client core.ClientI, cfg *config.Config) *TreasuryRepo {
 	return &TreasuryRepo{
-		tokens:       tokens,
-		client:       client,
-		adapters:     adapters,
-		blocks:       blocks,
-		redstoneMgr:  redstone.NewRedStoneMgr(client),
+		tokens:      tokens,
+		client:      client,
+		adapters:    adapters,
+		blocks:      blocks,
+		redstoneMgr: redstone.NewRedStoneMgr(client),
 	}
 }
 
@@ -61,7 +61,9 @@ func (repo *TreasuryRepo) LoadTreasurySnapshot(db *gorm.DB) {
 
 func (repo *TreasuryRepo) LoadLastTreasuryTs(db *gorm.DB) {
 	defer utils.Elapsed("loadLastTreasuryTs")()
-	data := schemas.DebtSync{}
+	data := struct {
+		LastCalculatedAt int64 `json:"last_calculated_at"`
+	}{}
 	if err := db.Raw(`SELECT timestamp AS last_calculated_at FROM blocks 
 		WHERE id in (SELECT max(block_num) FROM treasury_snapshots)`).Find(&data).Error; err != nil {
 		log.Fatal(err)
@@ -133,8 +135,8 @@ func (repo *TreasuryRepo) saveTreasurySnapshot() {
 	blockDate := repo.blocks.GetBlockDatePairs(ts)
 	if blockDate == nil {
 		key := fmt.Sprintf("%s_API_KEY", log.GetNetworkName(core.GetChainId(repo.client)))
-		if utils.GetEnvOrDefault(key, "") !="" {
-			if blockNum := pkg.GetBlockNum(uint64(ts), core.GetChainId(repo.client)); blockNum!=0 {
+		if utils.GetEnvOrDefault(key, "") != "" {
+			if blockNum := pkg.GetBlockNum(uint64(ts), core.GetChainId(repo.client)); blockNum != 0 {
 				repo.blocks.SetBlock(blockNum)
 				blockDate = &schemas.BlockDate{
 					BlockNum:  blockNum,

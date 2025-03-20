@@ -141,7 +141,10 @@ func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 func (e *Engine) SyncAndFlush(syncTill int64) {
 	e.Sync(syncTill)
 	e.repo.Flush(syncTill)
-	e.debtEng.CalculateDebtAndClear(syncTill)
+	e.debtEng.CalculateDebtAndClear(syncTill, schemas.LastSync{
+		Debt: 0,
+		Tvl:  0,
+	})
 	if syncTill > e.syncedBlock.Load().(int64) {
 		e.syncedBlock.Store(syncTill)
 	}

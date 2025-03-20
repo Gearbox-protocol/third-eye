@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
@@ -141,16 +142,38 @@ func (eng *DebtEngine) addLastDebt(debt *schemas.Debt) {
 	eng.lastDebts[debt.SessionId] = debt
 }
 
-func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
-	debtLen := len(eng.debts)
-	if debtLen == 0 && len(eng.tvlSnapshots) == 0 {
+func (eng *DebtEngine) flushTvl(tvlDebtSync int64, tx *gorm.DB, lastSync schemas.LastSync) {
+	tvls := []*schemas.TvlSnapshots{}
+	for _, tvl := range eng.tvlSnapshots {
+		if tvl.BlockNum > lastSync.Tvl {
+			tvls = append(tvls, tvl)
+		}
+	}
+	if len(tvls) == 0 {
+		return
+	}
+	log.Infof("Flushing tvl %d till block:%d", len(tvls), tvlDebtSync)
+	err := tx.Exec(`UPDATE debt_sync set tvl_block=?, field_set='t'`, tvlDebtSync).Error
+	log.CheckFatal(err)
+	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(tvls, 50).Error
+	log.CheckFatal(err)
+}
+func (eng *DebtEngine) flushDebt(newDebtSyncTill int64, tx *gorm.DB, lastSync schemas.LastSync) {
+	debts := []*schemas.Debt{}
+	for _, d := range eng.debts {
+		if d.BlockNumber > lastSync.Debt {
+			debts = append(debts, d)
+		}
+	}
+	debtLen := len(debts)
+	if debtLen == 0 {
 		return
 	}
 	log.Infof("Flushing %d till block:%d", debtLen, newDebtSyncTill)
-	tx := eng.db.Begin()
-	err := tx.Clauses(clause.OnConflict{
-		UpdateAll: true,
-	}).Create(&schemas.DebtSync{LastCalculatedAt: newDebtSyncTill, FieldSet: true}).Error
+	err := tx.Exec(`UPDATE debt_sync set debt_block=?, field_set='t'`, newDebtSyncTill).Error
+	// err := tx.Clauses(clause.OnConflict{
+	// 	UpdateAll: true,
+	// }).Create(&schemas.DebtSync{Debt: newDebtSyncTill, FieldSet: true}).Error
 	log.CheckFatal(err)
 	liquidableAccounts := []*schemas.LiquidableAccount{}
 	for _, la := range eng.liquidableBlockTracker {
@@ -166,14 +189,6 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64) {
 		}).CreateInBatches(liquidableAccounts, 50).Error
 		log.CheckFatal(err)
 	}
-	err = tx.CreateInBatches(eng.debts, 50).Error
+	err = tx.CreateInBatches(debts, 50).Error
 	log.CheckFatal(err)
-	err = tx.CreateInBatches(eng.tvlSnapshots, 50).Error
-	log.CheckFatal(err)
-	info := tx.Commit()
-	if info.Error != nil {
-		log.Fatal(info.Error)
-	}
-	eng.debts = []*schemas.Debt{}
-	eng.tvlSnapshots = []*schemas.TvlSnapshots{}
 }

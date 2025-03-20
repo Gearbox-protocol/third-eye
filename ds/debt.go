@@ -13,7 +13,7 @@ import (
 type DebtEngineI interface {
 	Clear()
 	ProcessBackLogs()
-	CalculateDebtAndClear(to int64)
+	CalculateDebtAndClear(to int64, lastSync schemas.LastSync)
 	CalCurrentDebts(to int64)
 	CalculateDebt()
 	GetDebts() core.Json
@@ -34,7 +34,7 @@ type DebtProfile struct {
 	Tokens                         map[string]TokenDetails `json:"tokens"`
 	UnderlyingDecimals             int8                    `json:"underlyingDecimals"`
 	*CumIndexAndUToken             `json:"poolDetails"`
-	CalcString 				   string `json:"calcString"`
+	CalcString                     string `json:"calcString"`
 }
 
 type CumIndexAndUToken struct {

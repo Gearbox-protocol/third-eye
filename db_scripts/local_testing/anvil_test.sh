@@ -27,7 +27,7 @@ psql -U $SUPERUSER -d $TMP_DB < $PARENT_DIR/../../migrations/000016_rankings.up.
 migrate -path $PARENT_DIR/../../migrations/ -database "$TMP_DB_URL" up
 
 
-psql -U $SUPERUSER -d $TMP_DB < <(cat $PARENT_DIR/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/" )
+psql -U $SUPERUSER -d $TMP_DB < <(cat $PARENT_DIR/reset_to_blocknum.sql | sed "s/18246321/$FORK_BLOCK/g" )
 set +e
 psql -U $SUPERUSER -d postgres -c "drop database $FINAL_DB"
 set -e

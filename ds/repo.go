@@ -125,7 +125,7 @@ type RepositoryI interface {
 	// oracle and uni
 	GetRetryFeedForDebts() []QueryPriceFeedI
 	//
-	LoadLastDebtSync() int64
+	LoadLastDebtSync() schemas.LastSync
 	LoadLastAdapterSync() int64
 	Clear()
 	// multicall

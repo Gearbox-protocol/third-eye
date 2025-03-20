@@ -65,6 +65,7 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 			BlockNum:             ps.BlockNum,
 			CumulativeIndexRAY:   ps.CumulativeIndexRAY,
 			AvailableLiquidityBI: ps.AvailableLiquidityBI,
+			ExpectedLiqBI:        ps.ExpectedLiquidityBI,
 			BaseBorrowAPYBI:      ps.BaseBorrowAPYBI,
 			Timestamp:            block.Timestamp,
 		})
@@ -180,7 +181,7 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
 		return
 	}
-	var totalAvailableLiquidityInUSD float64 = 0
+	var totalAvailableLiquidityInUSD, expectedLiqInUSD float64 = 0, 0
 	log.Info("tvl for block", blockNum)
 	for _, entry := range eng.poolLastInterestData {
 		adapter := eng.repo.GetAdapter(entry.Address)
@@ -203,11 +204,17 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD floa
 			eng.GetAmountInUSD(
 				underlyingToken,
 				entry.AvailableLiquidityBI.Convert(), version), 8)
+		expectedLiqInUSD += utils.GetFloat64Decimal(
+			eng.GetAmountInUSD(
+				underlyingToken,
+				entry.ExpectedLiqBI.Convert(), version), 8)
+
 	}
 	// save as last tvl snapshot and add to db
 	tvls := &schemas.TvlSnapshots{
 		BlockNum:           blockNum,
 		AvailableLiquidity: totalAvailableLiquidityInUSD,
+		ExpectedLiq:        expectedLiqInUSD,
 		CATotalValue:       caTotalValueInUSD,
 	}
 	eng.tvlSnapshots = append(eng.tvlSnapshots, tvls)

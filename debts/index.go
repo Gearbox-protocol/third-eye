@@ -73,31 +73,32 @@ func (eng *DebtEngine) ProcessBackLogs() {
 		return
 	}
 	// synced till
-	lastDebtSynced := eng.repo.LoadLastDebtSync()
+	lastSync := eng.repo.LoadLastDebtSync()
+	minSynced := lastSync.Min()
 	// lastDebtSynced = 227143579
-	log.Info("Debt engine started, from", lastDebtSynced)
+	log.Info("Debt engine started, from", minSynced)
 	eng.loadLastTvlSnapshot()
-	eng.loadLastCSS(lastDebtSynced)
-	eng.loadLastRebaseDetails(lastDebtSynced)
-	eng.loadTokenLastPrice(lastDebtSynced)
-	eng.loadAllowedTokenThreshold(lastDebtSynced)
-	eng.loadLastLTRamp(lastDebtSynced)
-	eng.loadPoolLastInterestData(lastDebtSynced)
-	eng.loadLastDebts(lastDebtSynced)
-	eng.loadParameters(lastDebtSynced)
-	eng.loadLiquidableAccounts(lastDebtSynced)
+	eng.loadLastCSS(minSynced)
+	eng.loadLastRebaseDetails(minSynced)
+	eng.loadTokenLastPrice(minSynced)
+	eng.loadAllowedTokenThreshold(minSynced)
+	eng.loadLastLTRamp(minSynced)
+	eng.loadPoolLastInterestData(minSynced)
+	eng.loadLastDebts(minSynced)
+	eng.loadParameters(minSynced)
+	eng.loadLiquidableAccounts(minSynced)
 	// v3
 	// eng.loadAccounQuotaInfo(lastDebtSynced, eng.db)
-	eng.loadPoolQuotaDetails(lastDebtSynced, eng.db)
+	eng.loadPoolQuotaDetails(minSynced, eng.db)
 	//
 	// process blocks for calculating debts
 	adaptersSyncedTill := eng.repo.LoadLastAdapterSync()
 	// adaptersSyncedTill = 227143580
 	batchSize := eng.config.BatchSizeForHistory
-	for ; lastDebtSynced+batchSize < adaptersSyncedTill; lastDebtSynced += batchSize {
-		eng.processBlocksInBatch(lastDebtSynced, lastDebtSynced+batchSize)
+	for ; minSynced+batchSize < adaptersSyncedTill; minSynced += batchSize {
+		eng.processBlocksInBatch(minSynced, minSynced+batchSize, lastSync)
 	}
-	eng.processBlocksInBatch(lastDebtSynced, adaptersSyncedTill)
+	eng.processBlocksInBatch(minSynced, adaptersSyncedTill, lastSync)
 }
 func (eng *DebtEngine) loadLastTvlSnapshot() {
 	lastTvlSnapshot := &schemas.TvlSnapshots{}
@@ -108,23 +109,34 @@ func (eng *DebtEngine) loadLastTvlSnapshot() {
 }
 
 // load blocks from > and to <=
-func (eng *DebtEngine) processBlocksInBatch(from, to int64) {
+func (eng *DebtEngine) processBlocksInBatch(from, to int64, lastSync schemas.LastSync) {
 	if from == to {
 		return
 	}
 	eng.repo.LoadBlocks(from, to)
 	if len(eng.repo.GetBlocks()) > 0 {
-		eng.CalculateDebtAndClear(to)
+		eng.CalculateDebtAndClear(to, lastSync)
 	}
 }
 
 // called for the engine/index.go and the debt engine
-func (eng *DebtEngine) CalculateDebtAndClear(to int64) {
+func (eng *DebtEngine) CalculateDebtAndClear(to int64, lastSync schemas.LastSync) {
 	if !eng.config.DisableDebtEngine {
 		eng.CalculateDebt()
-		eng.flushDebt(to)
-		eng.CalCurrentDebts(to)
-		eng.flushCurrentDebts(to)
+		//
+		tx := eng.db.Begin()
+		eng.flushDebt(to, tx, lastSync)
+		eng.flushTvl(to, tx, lastSync)
+		if info := tx.Commit(); info.Error != nil {
+			log.Fatal(info.Error)
+		}
+		eng.tvlSnapshots = []*schemas.TvlSnapshots{}
+		eng.debts = []*schemas.Debt{}
+		//
+		if to > lastSync.Debt {
+			eng.CalCurrentDebts(to)
+			eng.flushCurrentDebts(to)
+		}
 	}
 	eng.Clear()
 }
@@ -168,14 +180,16 @@ func (eng *DebtEngine) notifiedIfLiquidable(sessionId string, notified bool) {
 
 // QueryPriceFeed is updated only till the lastFetchedBlock, not the syncTill that is provided to the aqfwrapper's aftersynchook from engine/index.go in the syncmodel. So, ignore that for updating the debts.
 func (eng *DebtEngine) AreActiveAdapterSynchronized() bool {
-	data := schemas.DebtSync{}
-	query := `SELECT count(distinct last_sync) as last_calculated_at FROM sync_adapters 
+	data := struct {
+		LastSync int64 `json:"last_sync"`
+	}{}
+	query := `SELECT count(distinct last_sync) as last_sync FROM sync_adapters 
 	WHERE disabled=false AND type NOT IN ('QueryPriceFeed','RebaseToken','Treasury','LMRewardsv2','LMRewardsv3','GearToken')`
 	err := eng.db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}
-	val := data.LastCalculatedAt <= 1
+	val := data.LastSync <= 1
 	if !val {
 		log.Warn("DebtEngine disabled active adapters are not synchronised")
 	}

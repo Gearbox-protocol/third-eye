@@ -225,8 +225,8 @@ func (DummyRepo) GetRetryFeedForDebts() []QueryPriceFeedI {
 func (DummyRepo) AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool, forChainlinkNewFeed ...bool) {
 }
 
-func (DummyRepo) LoadLastDebtSync() int64 {
-	return 0
+func (DummyRepo) LoadLastDebtSync() schemas.LastSync {
+	return schemas.LastSync{}
 }
 func (DummyRepo) LoadLastAdapterSync() int64 {
 	return 0
