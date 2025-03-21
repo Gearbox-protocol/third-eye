@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
@@ -178,7 +179,7 @@ func (eng *DebtEngine) CalculateDebt() {
 }
 
 func (eng *DebtEngine) createTvlSnapshots(blockNum int64, caTotalValueInUSD float64) {
-	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
+	if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.BlockPer(core.GetChainId(eng.client), time.Hour) { // tvl snapshot every hour
 		return
 	}
 	var totalAvailableLiquidityInUSD, expectedLiqInUSD float64 = 0, 0

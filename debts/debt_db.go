@@ -2,6 +2,7 @@ package debts
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -103,7 +104,7 @@ func (eng *DebtEngine) AddDebt(debt *schemas.Debt, forceAdd bool) {
 		// add debt if throttle is enabled and (last debt is missing or forced add is set)
 		if lastDebt == nil || forceAdd {
 			eng.addDebt(debt)
-		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.NoOfBlocksPerHr*eng.config.ThrottleByHrs ||
+		} else if (debt.BlockNumber-lastDebt.BlockNumber) >= core.BlockPer(core.GetChainId(eng.client), time.Hour)*eng.config.ThrottleByHrs ||
 			core.DiffMoreThanFraction(lastDebt.CalTotalValueBI, debt.CalTotalValueBI, big.NewFloat(0.05)) ||
 			core.DiffMoreThanFraction(lastDebt.CalDebtBI, debt.CalDebtBI, big.NewFloat(0.05)) ||
 			// add debt when the health factor is on different side of 10000 from the lastdebt
@@ -169,7 +170,7 @@ func (eng *DebtEngine) flushDebt(newDebtSyncTill int64, tx *gorm.DB, lastSync sc
 	if debtLen == 0 {
 		return
 	}
-	log.Infof("Flushing %d till block:%d", debtLen, newDebtSyncTill)
+	log.Infof("Flushing debt %d till block:%d", debtLen, newDebtSyncTill)
 	err := tx.Exec(`UPDATE debt_sync set debt_block=?, field_set='t'`, newDebtSyncTill).Error
 	// err := tx.Clauses(clause.OnConflict{
 	// 	UpdateAll: true,

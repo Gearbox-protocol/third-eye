@@ -54,7 +54,7 @@ func (e *Engine) UseThreads() {
 }
 
 func (e *Engine) init() {
-	log.AMQPMsg("Third-eye started")
+	// log.AMQPMsg("Third-eye started")
 	e.repo.Init()
 	// debt engine initialisation
 	e.debtEng.ProcessBackLogs()

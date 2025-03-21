@@ -1,22 +1,35 @@
 package main
 
 import (
+	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
+	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"gorm.io/gorm/clause"
 )
 
 func main() {
 	cfg := config.NewConfig()
-	// client := ethclient.NewEthClient(cfg)
+	client := ethclient.NewEthClient(cfg)
 	db := repository.NewDBClient(cfg)
-	data := schemas.LastSync{}
-	err := db.Raw(`select * from debt_sync`).Find(&data).Error
+	tvlBlock := schemas.LastSync{}
+	err := db.Raw(`select * from debt_sync`).Find(&tvlBlock).Error
 	log.CheckFatal(err)
-	data.Tvl = utils.Max(15818887+10_000, data.Tvl)
+	if tvlBlock.Tvl == 0 {
+		data := struct {
+			Tvl int64 `gorm:"column:tvl_block"`
+		}{}
+		query := `select min(discovered_at) tvl_block from sync_adapters where type not in ('RebaseToken','Treasury','LMRewardsv2','LMRewardsv3','GearToken')`
+		err := db.Raw(query).Find(&data).Error
+		log.CheckFatal(err)
+		tvlBlock.Tvl = data.Tvl
+	}
+	if core.GetChainId(client) == 1 {
+		tvlBlock.Tvl = utils.Max(15818887+10_000, tvlBlock.Tvl)
+	}
 	//
 	type Entry = struct {
 		Pool        string  `gorm:"column:pool"`
@@ -32,15 +45,15 @@ func main() {
 			merged_pf_version>=2 
 			order by block_num desc limit 1) price  from 
 			(select distinct on (pool) pool, expected_liquidity, block_num from pool_stats  where block_num < ? order by pool, block_num desc) ps join pools p on p.address= ps.pool `
-	err = db.Raw(qyery, data.Tvl).Find(&entries).Error
+	err = db.Raw(qyery, tvlBlock.Tvl).Find(&entries).Error
 	log.CheckFatal(err)
 	expected := map[string]float64{}
 	for _, v := range entries {
 		expected[v.Pool] = v.ExpectedLiq * v.Price
 	}
-	log.Info(utils.ToJson(entries))
+	log.Info("init", tvlBlock, utils.ToJson(entries), "chainid", core.GetChainId(client))
 
-	for start := data.Tvl; data.Tvl < data.Debt; {
+	for start := tvlBlock.Tvl; start < tvlBlock.Debt; {
 		end := start + 100_000
 		entries = entries[:0]
 		query := `select pool, ps.block_num, expected_liquidity, underlying_token, 
@@ -65,8 +78,8 @@ func main() {
 				ind++
 			}
 			snap.ExpectedLiq = summ(expected)
-			if snap.ExpectedLiq < snap.AvailableLiquidity {
-				log.Fatal("Expected liquidity is less than available liquidity", utils.ToJson(snap))
+			if snap.ExpectedLiq+100 < snap.AvailableLiquidity {
+				// log.Fatal("Expected liquidity is less than available liquidity", utils.ToJson(snap))
 			}
 			ans = append(ans, snap)
 		}
@@ -74,16 +87,20 @@ func main() {
 			expected[neww.Pool] = neww.ExpectedLiq * neww.Price
 		}
 
+		// log.Fatal(end, utils.ToJson(ans))
 		tx := db.Begin()
 		err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(ans, 50).Error
 		log.CheckFatal(err)
 		tx.Exec(`UPDATE debt_sync set tvl_block=?, field_set='t'`, end)
 		err := tx.Commit().Error
 		log.CheckFatal(err)
-		log.Infof("synced till %d: %d", end, len(ans))
-		// log.Fatal(end, utils.ToJson(ans))
+		sample := schemas.TvlSnapshots{}
+		if len(ans) != 0 {
+			sample = ans[len(ans)-1]
+		}
+		log.Infof("synced till %d: %d exp liq: %f avai: %f", end, len(ans), sample.ExpectedLiq, sample.AvailableLiquidity)
 		//
-		data.Tvl = end
+		start = end
 	}
 }
 
