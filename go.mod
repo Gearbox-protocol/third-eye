@@ -5,7 +5,7 @@ go 1.21
 toolchain go1.23.2
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20250324083142-ad5ee2857c3c
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20250324125122-7379d56fd92e
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.6.0

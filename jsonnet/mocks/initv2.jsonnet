@@ -32,6 +32,15 @@ local utils = import '../utils.libsonnet';
         feed: '#ChainlinkPriceFeed_4',
       }],
     },
+    otherCalls: {
+      '245a7bfc': {
+        '#Oracle_0': '#ChainlinkPriceFeed_0',
+        '#Oracle_1': '#ChainlinkPriceFeed_1',
+        '#Oracle_2': '#ChainlinkPriceFeed_2',
+        '#Oracle_3': '#ChainlinkPriceFeed_3',
+        '#Oracle_4': '#ChainlinkPriceFeed_4',
+      },  // aggregator
+    },
   },
   blocks: {
     // block with open and borrow more underlying asset
