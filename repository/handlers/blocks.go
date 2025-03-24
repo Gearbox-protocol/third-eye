@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"strings"
 	"time"
@@ -184,11 +183,8 @@ func (repo *BlocksRepo) RecentMsgf(header log.RiskHeader, msg string, args ...in
 	}
 	if header.EventCode == "AMQP" {
 		log.AMQPMsgf(msg, args...)
-	} else {
-		log.SendRiskAlert(log.RiskAlert{
-			Msg:        fmt.Sprintf(msg, args...),
-			RiskHeader: header,
-		})
+	} else if header.EventCode == "WARN" {
+		log.Warnf(msg, args...)
 	}
 }
 

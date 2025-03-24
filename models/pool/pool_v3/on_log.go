@@ -1,6 +1,7 @@
 package pool_v3
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -69,7 +70,8 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 		} else {
 			mdl.Repo.AddPoolLedger(event)
 		}
-		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, deposit.Assets, blockNum, txLog.TxHash.Hex(), "deposit")
+		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, deposit.Assets, blockNum, txLog.TxHash.Hex(),
+			fmt.Sprintf("%s deposit", mdl.Repo.GetToken(mdl.State.UnderlyingToken).Symbol))
 		mdl.updateBorrowRate(blockNum)
 		// while processing withdrawal event, add to receiver and sub from User
 	case core.Topic("Withdraw(address,address,address,uint256,uint256)"):
@@ -97,7 +99,8 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			mdl.Repo.AddPoolLedger(event)
 		}
 		//
-		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, withdrawal.Assets, blockNum, txLog.TxHash.Hex(), "withdraw")
+		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, withdrawal.Assets, blockNum, txLog.TxHash.Hex(),
+			fmt.Sprintf("%s withdrawal", mdl.Repo.GetToken(mdl.State.UnderlyingToken).Symbol))
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Borrow(address,address,uint256)"):
 		mdl.updateBorrowRate(blockNum)

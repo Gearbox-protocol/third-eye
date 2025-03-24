@@ -168,7 +168,7 @@ func (repo *Repository) AfterSync(syncTill int64) {
 		for _, tx := range txs {
 			repo.RecentMsgf(log.RiskHeader{
 				BlockNumber: tx.BlockNum,
-				EventCode:   "AMQP",
+				EventCode:   "WARN",
 			}, "No session account token transfer: %v", tx)
 			repo.SetAndGetBlock(tx.BlockNum).AddNoSessionTx(tx)
 		}

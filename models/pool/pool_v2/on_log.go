@@ -1,6 +1,7 @@
 package pool_v2
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -48,7 +49,8 @@ func (mdl *Poolv2) OnLog(txLog types.Log) {
 			AmountBI: (*core.BigInt)(addLiquidityEvent.Amount),
 			Amount:   utils.GetFloat64Decimal(addLiquidityEvent.Amount, mdl.Repo.GetToken(mdl.State.UnderlyingToken).Decimals),
 		})
-		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, addLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "deposit")
+		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, addLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(),
+			fmt.Sprintf("%s deposit", mdl.Repo.GetToken(mdl.State.UnderlyingToken).Symbol))
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("RemoveLiquidity(address,address,uint256)"):
 		removeLiquidityEvent, err := mdl.contractETH.ParseRemoveLiquidity(txLog)
@@ -67,7 +69,8 @@ func (mdl *Poolv2) OnLog(txLog types.Log) {
 			Receiver:    removeLiquidityEvent.To.Hex(),
 			AmountBI:    (*core.BigInt)(removeLiquidityEvent.Amount),
 		})
-		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, removeLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(), "withdrawn")
+		pool_common.CheckIfAmountMoreThan1Mil(mdl.Client, mdl.Repo, mdl.State, removeLiquidityEvent.Amount, blockNum, txLog.TxHash.Hex(),
+			fmt.Sprintf("%s withdrawal", mdl.Repo.GetToken(mdl.State.UnderlyingToken).Symbol))
 
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Borrow(address,address,uint256)"):
@@ -173,21 +176,5 @@ func (mdl *Poolv2) OnLog(txLog types.Log) {
 		ind := txLog.Index - 3
 		blockNum := int64(txLog.BlockNumber)
 		mdl.gatewayHandler.CheckWithdrawETH(txLog.TxHash.Hex(), blockNum, int64(ind), mdl.Address, to)
-	}
-}
-
-func (mdl Poolv2) checkIfAmountMoreThan1Mil(amount *big.Int, blockNum int64, txHash string, operation string) {
-	token := mdl.State.UnderlyingToken
-	priceInUSD := mdl.Repo.GetPrice(token)
-	if priceInUSD == nil {
-		return
-	}
-	value := utils.GetFloat64Decimal(new(big.Int).Mul(priceInUSD, amount), mdl.Repo.GetToken(token).Decimals+8)
-	if value > 1_000_000 {
-		urls := log.NetworkUIUrl(core.GetChainId(mdl.Client))
-		mdl.Repo.RecentMsgf(log.RiskHeader{
-			BlockNumber: blockNum,
-			EventCode:   "AMQP",
-		}, "Pool %s in %s is more than 1Million USD, calculated value is %f", operation, urls.ExplorerHashUrl(txHash), value)
 	}
 }

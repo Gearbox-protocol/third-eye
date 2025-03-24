@@ -14,7 +14,7 @@ func OnDirectTokenTransfer(repo ds.RepositoryI, tx *schemas.TokenTransfer, sessi
 	}
 	repo.RecentMsgf(log.RiskHeader{
 		BlockNumber: tx.BlockNum,
-		EventCode:   "AMQP",
+		EventCode:   "WARN",
 	}, "Deposit: %s", cm_common.DirecTokenTransferString(repo, tx))
 	amount := tx.Amount.Convert()
 	repo.AddAccountOperation(&schemas.AccountOperation{

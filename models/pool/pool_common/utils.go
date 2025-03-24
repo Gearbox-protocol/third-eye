@@ -22,6 +22,6 @@ func CheckIfAmountMoreThan1Mil(client core.ClientI, repo ds.RepositoryI, state *
 		repo.RecentMsgf(log.RiskHeader{
 			BlockNumber: blockNum,
 			EventCode:   "AMQP",
-		}, "Pool %s in %s is more than 1Million USD, calculated value is %f", operation, urls.ExplorerHashUrl(txHash), value)
+		}, "Pool %s in %s is more than 1Million USD, calculated value is %.2f", operation, urls.ExplorerHashUrl(txHash), value/1_000_000)
 	}
 }

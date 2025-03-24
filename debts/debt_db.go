@@ -25,7 +25,7 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 				(debt.BlockNumber-eng.liquidableBlockTracker[debt.SessionId].BlockNum) >= sendMsgAfterXBlocks {
 				eng.repo.RecentMsgf(log.RiskHeader{
 					BlockNumber: debt.BlockNumber,
-					EventCode:   "AMQP",
+					EventCode:   "WARN",
 				}, `HealthFactor safe again: 
 				SessionId:%s
 				HF: %s@(block:%d) -> %s@(block:%d)`,
@@ -48,7 +48,7 @@ func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower str
 		eng.notifiedIfLiquidable(debt.SessionId, true)
 		eng.repo.RecentMsgf(log.RiskHeader{
 			BlockNumber: debt.BlockNumber,
-			EventCode:   "INV-LOW-HF-NOT-LIQUIDATED",
+			EventCode:   "WARN",
 		}, `After %d blocks:
 				Session: %s
 				HF: %s
