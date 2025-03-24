@@ -35,8 +35,8 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 	ethUSDPF := getAddrFromRPC(client, "ETHUSD", oracleAddr, discoveredAt)
 	baseTokenMainAgg := cpf.NewMainAgg(client, ethUSDPF)
 	//
-	mainPhaseAgg, _ := mainAgg.GetPriceFeedAddr(discoveredAt)
-	basePhaseAgg, _ := baseTokenMainAgg.GetPriceFeedAddr(discoveredAt)
+	mainPhaseAgg := mainAgg.GetPriceFeedAddr(discoveredAt)
+	basePhaseAgg := baseTokenMainAgg.GetPriceFeedAddr(discoveredAt)
 	//
 	adapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{

@@ -23,6 +23,7 @@ local newCollateral = 1;
     },
     otherCalls: {
       '54fd4d50': { '#AddressProvider_1': '1' },
+      '245a7bfc': { '#Oracle_1': '#ChainlinkPriceFeed_1', '#Oracle_2': '#ChainlinkPriceFeed_2' },  // aggregator
     },
   },
   executeParser: {

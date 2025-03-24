@@ -32,6 +32,11 @@ local extraBorrowedAmount = 1000;
     },
     otherCalls: {
       '54fd4d50': { '#AddressProvider_1': '1' },
+      '245a7bfc': {
+        '#Oracle_1': '#ChainlinkPriceFeed_1',
+        '#Oracle_2': '#ChainlinkPriceFeed_2',
+        '#Oracle_3': '#ChainlinkPriceFeed_3',
+      },
     },
   },
   blocks: {
@@ -65,6 +70,15 @@ local extraBorrowedAmount = 1000;
           data: [],
         },
       ],
+    },
+    '4': {
+      calls: {
+        others: {
+          '245a7bfc': {
+            '#Oracle_2': '#ChainlinkPriceFeed_4',
+          },
+        },
+      },
     },
     '5': {
       // new oracle on usdc

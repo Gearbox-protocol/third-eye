@@ -20,7 +20,7 @@ func NewEngs(t *testing.T, inputFiles []string) (MockRepo, ds.DebtEngineI) {
 	ep := NewMockExecuteParser()
 	repo := repository.GetRepository(nil, client, cfg, handlers.NewExtraRepo(client, ep))
 	debtEng := debts.GetDebtEngine(nil, client, cfg, repo, true)
-	eng := engine.NewEngine(cfg, client, debtEng, repo)
+	eng := engine.NewEngine(cfg, client, debtEng, nil, repo)
 	r := NewMockRepo(repo, client, t, eng, ep)
 	r.Init(inputFiles)
 	return r, debtEng

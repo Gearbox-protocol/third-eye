@@ -18,6 +18,10 @@ local utils = import '../utils.libsonnet';
         '#CreditFilter_1': '1',
         '#AddressProvider_1': '1',
       },
+      '245a7bfc': {
+        '#Oracle_1': '#ChainlinkPriceFeed_1',
+        '#Oracle_5': '#ChainlinkPriceFeed_5',
+      },
     },
     oracles: {
       '#Oracle_1': [{

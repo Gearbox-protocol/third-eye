@@ -36,6 +36,13 @@ local borrowedAmount = 4000;
     },
     otherCalls: {
       '54fd4d50': { '#AddressProvider_1': '1' },
+      '245a7bfc': {
+        '#Oracle_0': '#ChainlinkPriceFeed_0',
+        '#Oracle_1': '#ChainlinkPriceFeed_1',
+        '#Oracle_2': '#ChainlinkPriceFeed_2',
+        '#Oracle_3': '#ChainlinkPriceFeed_3',
+        '#Oracle_4': '#ChainlinkPriceFeed_4',
+      },
     },
   },
   blocks: {

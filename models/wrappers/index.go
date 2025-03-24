@@ -280,10 +280,13 @@ func (w *SyncWrapper) GetAllAddrsForLogs() (addrs []common.Address) {
 func (s *SyncWrapper) AfterSyncHook(syncTill int64) {
 	adapters := s.Adapters.GetAll()
 	for _, cf := range adapters {
-		if !cf.IsDisabled() {
+		if !cf.IsDisabled() && cf.GetLastSync() < syncTill {
 			cf.AfterSyncHook(syncTill)
 		}
 	}
+	s.lastSync = syncTill
+}
+func (s *SyncWrapper) SetLastSync(syncTill int64) {
 	s.lastSync = syncTill
 }
 

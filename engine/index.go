@@ -19,6 +19,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/repository"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type Engine struct {
@@ -28,6 +29,7 @@ type Engine struct {
 	debtEng             ds.DebtEngineI
 	syncedBlock         atomic.Value
 	batchSizeForHistory int64
+	reg                 *prometheus.Registry
 	UsingThreads        bool
 }
 
@@ -36,12 +38,14 @@ type Engine struct {
 func NewEngine(config *config.Config,
 	ec core.ClientI,
 	debtEng ds.DebtEngineI,
+	reg *prometheus.Registry,
 	repo ds.RepositoryI) ds.EngineI {
 	eng := &Engine{
 		debtEng:             debtEng,
 		config:              config,
 		repo:                repo.(*repository.Repository),
 		batchSizeForHistory: config.BatchSizeForHistory,
+		reg:                 reg,
 		Node: &pkg.Node{
 			Client: ec,
 		},
@@ -162,6 +166,9 @@ func (e *Engine) LastSyncedBlock() (int64, uint64) {
 func (e *Engine) Sync(syncTill int64) {
 	kit := e.repo.GetKit()
 	log.Info("Sync till", syncTill)
+	if e.reg != nil {
+		e.Client.(interface{ PromInit(*prometheus.Registry) }).PromInit(e.reg)
+	}
 	// log.Info("No of calls before syncing: ", e.Client.(*ethclient.Client).GetNoOfCalls())
 	for lvlIndex := 0; lvlIndex < kit.Len(); lvlIndex++ {
 		wg := &sync.WaitGroup{}

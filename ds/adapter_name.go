@@ -25,6 +25,7 @@ const (
 	RebaseToken = "RebaseToken"
 	// Wrapper
 	AggregatedQueryFeedWrapper = "AggregatedQueryFeedWrapper"
+	ChainlinkWrapper           = "ChainlinkWrapper"
 	AdminWrapper               = "AdminWrapper"
 	CFWrapper                  = "CFWrapper"
 	CMWrapper                  = "CMWrapper"
@@ -56,7 +57,7 @@ const (
 
 const (
 	FacadeMulticallCall        = "FacadeMulticall"
-	FacadeBotMulticallCall        = "FacadeBotMulticall"
+	FacadeBotMulticallCall     = "FacadeBotMulticall"
 	FacadeOpenMulticallCall    = "FacadeOpenMulticall"
 	FacadeLiquidateCall        = "FacadeLiquidate"
 	FacadeLiquidateExpiredCall = "FacadeLiquidateExpired"
