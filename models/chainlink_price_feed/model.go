@@ -16,7 +16,6 @@ type ChainlinkPriceFeed struct {
 	*ds.SyncAdapter
 	MainAgg         *ChainlinkMainAgg
 	mergedPFManager *ds.MergedPFManager
-	tokens          []string
 	pfs             []*schemas.PriceFeed
 }
 
@@ -94,7 +93,7 @@ func (mdl *ChainlinkPriceFeed) flushPrices(nextFeedAt int64) {
 	if len(mdl.pfs) == 0 {
 		return
 	}
-	log.Info("flushing prices", len(mdl.pfs))
+	log.Infof("flushing prices %d for underlyingfeed: %s", len(mdl.pfs), mdl.Address)
 	for _, pf := range mdl.pfs {
 		if pf.BlockNumber < nextFeedAt {
 			mdl.Repo.AddPriceFeed(pf)
@@ -115,7 +114,6 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 func (mdl *ChainlinkPriceFeed) AfterSyncHookWithPF(syncedTill int64, newPriceFeed common.Address) {
 	if newPriceFeed != common.HexToAddress(mdl.Address) && newPriceFeed != core.NULL_ADDR {
 		discoveredAt := mdl.MainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
-		log.Info(mdl.Address, mdl.V, len(mdl.mergedPFManager.GetTokens(discoveredAt)))
 		// log.Info(mdl.Address, discoveredAt, newPriceFeed)
 		mdl.flushPrices(discoveredAt)
 		for _, token := range mdl.mergedPFManager.GetTokens(discoveredAt) {

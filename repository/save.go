@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"time"
-
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
@@ -10,7 +8,7 @@ import (
 func (repo *Repository) Flush(syncTill int64) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	time.Sleep(time.Hour)
+	// time.Sleep(time.Hour)
 	// preferred order (adapter | token) => pools => cm => credit session => blocks => allowedTokens
 
 	// credit manager depends on pools

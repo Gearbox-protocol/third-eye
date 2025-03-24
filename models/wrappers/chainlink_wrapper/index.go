@@ -2,6 +2,7 @@ package chainlink_wrapper
 
 import (
 	"encoding/hex"
+	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -14,24 +15,43 @@ import (
 
 type ChainlinkWrapper struct {
 	*wrappers.SyncWrapper
+	adapters     []ds.SyncAdapterI
+	storeLocally bool
 }
 
 func NewChainlinkWrapper(client core.ClientI) *ChainlinkWrapper {
 	w := &ChainlinkWrapper{
-		SyncWrapper: wrappers.NewSyncWrapper(ds.ChainlinkWrapper, client),
+		SyncWrapper:  wrappers.NewSyncWrapper(ds.ChainlinkWrapper, client),
+		storeLocally: false,
 	}
 	// not using onLogs
 	w.ViaDataProcess = ds.ViaMultipleLogs
 	return w
 }
 
+func (c *ChainlinkWrapper) AddSyncAdapter(adap ds.SyncAdapterI) {
+	if c.storeLocally {
+		log.Info(adap.GetAddress())
+		c.adapters = append(c.adapters, adap)
+	} else {
+		c.SyncWrapper.AddSyncAdapter(adap)
+	}
+}
+
 func (w *ChainlinkWrapper) OnLogs(txLogs []types.Log) {
+	w.storeLocally = true // send new adapter to buffer
 	logsByAdapter := map[common.Address][]types.Log{}
 	for _, txLog := range txLogs {
 		logsByAdapter[txLog.Address] = append(logsByAdapter[txLog.Address], txLog)
 	}
-	for adapter, txLogs := range logsByAdapter {
-		w.Adapters.Get(adapter.String()).OnLogs(txLogs)
+	for addr, txLogs := range logsByAdapter {
+		adapter := w.Adapters.Get(addr.Hex())
+		lastSync := adapter.GetLastSync()
+		n := sort.Search(len(txLogs), func(i int) bool {
+			return lastSync < int64(txLogs[i].BlockNumber)
+		})
+		txLogs = txLogs[n:]
+		adapter.OnLogs(txLogs)
 	}
 }
 
@@ -58,4 +78,10 @@ func (w *ChainlinkWrapper) AfterSyncHook(syncedTill int64) {
 			}).AfterSyncHookWithPF(syncedTill, newAddr)
 		}
 	}
+	w.SyncWrapper.SetLastSync(syncedTill)
+	//
+	for _, adap := range w.adapters {
+		w.SyncWrapper.AddSyncAdapter(adap)
+	}
+	w.adapters = nil
 }

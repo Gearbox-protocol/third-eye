@@ -286,6 +286,9 @@ func (s *SyncWrapper) AfterSyncHook(syncTill int64) {
 	}
 	s.lastSync = syncTill
 }
+func (s *SyncWrapper) SetLastSync(syncTill int64) {
+	s.lastSync = syncTill
+}
 
 func (s *SyncWrapper) WillBeSyncedTo(blockNum int64) {
 	s.WillSyncTill = blockNum
