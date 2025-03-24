@@ -23,13 +23,7 @@ type ChainlinkPriceFeed struct {
 // if oracle and address are same then the normal chainlink interface is not working for this price feed
 // it maybe custom price feed of gearbox . so we will disable on 'vm execution error' or 'execution reverted'.
 // if oracle and adress are same we try to get the pricefeed.
-func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, token, oracle string, discoveredAt int64, mergedPFVersion schemas.MergedPFVersion, bounded bool, includeLastLogBeforeDiscover ...bool) *ChainlinkPriceFeed {
-	var upperLimit string
-	if bounded {
-		returnData, err := core.CallFuncWithExtraBytes(client, "b09ad8a0", common.HexToAddress(oracle), discoveredAt, nil) // upperBound
-		log.CheckFatal(err)
-		upperLimit = new(big.Int).SetBytes(returnData).String()
-	}
+func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, token, oracle string, discoveredAt int64, mergedPFVersion schemas.MergedPFVersion, includeLastLogBeforeDiscover ...bool) *ChainlinkPriceFeed {
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{
@@ -44,9 +38,6 @@ func NewChainlinkPriceFeed(client core.ClientI, repo ds.RepositoryI, token, orac
 			V:        mergedPFVersion.MergedPFVersionToList()[0].ToVersion(),
 		},
 		Repo: repo,
-	}
-	if upperLimit != "" {
-		syncAdapter.Details["upperLimit"] = upperLimit
 	}
 	x := true
 	if len(includeLastLogBeforeDiscover) > 0 {
@@ -66,11 +57,11 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 	obj := &ChainlinkPriceFeed{
 		SyncAdapter: adapter,
 	}
-	obj.MainAgg = NewMainAgg(adapter.Client, common.HexToAddress(oracleAddr), obj.upperLimit().Cmp(new(big.Int)) != 0) // isBounded if upperlimit is not 0
+	obj.MainAgg = NewMainAgg(adapter.Client, common.HexToAddress(oracleAddr)) // isBounded if upperlimit is not 0
 
 	// feed address is empty
 	if adapter.Address == "" {
-		pfAddr, _ := obj.MainAgg.GetPriceFeedAddr(adapter.DiscoveredAt)
+		pfAddr := obj.MainAgg.GetPriceFeedAddr(adapter.DiscoveredAt)
 		obj.SetAddress(pfAddr.Hex())
 	}
 	// get the last log before the chainlink feed is added to price oracle.
@@ -100,6 +91,10 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 }
 
 func (mdl *ChainlinkPriceFeed) flushPrices(nextFeedAt int64) {
+	if len(mdl.pfs) == 0 {
+		return
+	}
+	log.Info("flushing prices", len(mdl.pfs))
 	for _, pf := range mdl.pfs {
 		if pf.BlockNumber < nextFeedAt {
 			mdl.Repo.AddPriceFeed(pf)
@@ -109,15 +104,18 @@ func (mdl *ChainlinkPriceFeed) flushPrices(nextFeedAt int64) {
 	}
 	mdl.pfs = nil
 }
+
+// from Wrapper
 func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
-	newPriceFeed, newPhaseId := mdl.MainAgg.GetPriceFeedAddr(syncedTill)
+	newPriceFeed := mdl.MainAgg.GetPriceFeedAddr(syncedTill)
+	mdl.AfterSyncHookWithPF(syncedTill, newPriceFeed)
+}
+
+// direct call from syncAdapter
+func (mdl *ChainlinkPriceFeed) AfterSyncHookWithPF(syncedTill int64, newPriceFeed common.Address) {
 	if newPriceFeed != common.HexToAddress(mdl.Address) && newPriceFeed != core.NULL_ADDR {
-		var discoveredAt int64
-		if newPhaseId != -1 {
-			discoveredAt = mdl.MainAgg.GetFeedUpdateBlockUsingPhaseId(uint16(newPhaseId), mdl.LastSync+1, syncedTill)
-		} else {
-			discoveredAt = mdl.MainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
-		}
+		discoveredAt := mdl.MainAgg.GetFeedUpdateBlockAggregator(newPriceFeed, mdl.LastSync+1, syncedTill)
+		log.Info(mdl.Address, mdl.V, len(mdl.mergedPFManager.GetTokens(discoveredAt)))
 		// log.Info(mdl.Address, discoveredAt, newPriceFeed)
 		mdl.flushPrices(discoveredAt)
 		for _, token := range mdl.mergedPFManager.GetTokens(discoveredAt) {
@@ -130,9 +128,10 @@ func (mdl *ChainlinkPriceFeed) AfterSyncHook(syncedTill int64) {
 					Version:     pfVersion.ToVersion(),
 					Reserve:     (pfVersion & 8) != 0,
 					FeedType:    ds.ChainlinkPriceFeed,
-				}, mdl.upperLimit().Cmp(new(big.Int)) != 0, false) // if upperLImit is not zero, then the price is bounded by upperLimit
+				}, false) // if upperLImit is not zero, then the price is bounded by upperLimit
 			}
 		}
+		mdl.SetBlockToDisableOn(discoveredAt)
 	}
 	mdl.flushPrices(math.MaxInt64)
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)

@@ -222,7 +222,7 @@ func (DummyRepo) GetRetryFeedForDebts() []QueryPriceFeedI {
 }
 
 // has mutex lock
-func (DummyRepo) AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, bounded bool, forChainlinkNewFeed ...bool) {
+func (DummyRepo) AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, forChainlinkNewFeed ...bool) {
 }
 
 func (DummyRepo) LoadLastDebtSync() schemas.LastSync {

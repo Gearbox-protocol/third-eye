@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/admin_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/cf_wrapper"
+	"github.com/Gearbox-protocol/third-eye/models/wrappers/chainlink_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/cm_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_quota_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_wrapper"
@@ -17,9 +18,11 @@ type AdapterKitHandler struct {
 	kit                 *ds.AdapterKit
 	aggregatedBlockFeed *aggregated_block_feed.AQFWrapper
 	adminWrapper        *admin_wrapper.AdminWrapper
-	cfWrapper           *cf_wrapper.CFWrapper
-	cmWrapper           *cm_wrapper.CMWrapper
-	poolWrapper         *pool_wrapper.PoolWrapper
+	// REVERT_CHAINLINK_WRAPPER
+	chainlinkWrapper *chainlink_wrapper.ChainlinkWrapper
+	cfWrapper        *cf_wrapper.CFWrapper
+	cmWrapper        *cm_wrapper.CMWrapper
+	poolWrapper      *pool_wrapper.PoolWrapper
 	// v3
 	poolQuotaWrapper *pool_quota_wrapper.PoolQuotaWrapper
 }
@@ -29,15 +32,19 @@ func NewAdpterKitHandler(client core.ClientI, repo ds.RepositoryI, cfg *config.C
 		kit:                 ds.NewAdapterKit(),
 		aggregatedBlockFeed: aggregated_block_feed.NewAQFWrapper(client, repo, cfg.Interval),
 		adminWrapper:        admin_wrapper.NewAdminWrapper(),
-		cfWrapper:           cf_wrapper.NewCFWrapper(),
-		poolWrapper:         pool_wrapper.NewPoolWrapper(client),
-		cmWrapper:           cm_wrapper.NewCMWrapper(client),
+		// REVERT_CHAINLINK_WRAPPER
+		chainlinkWrapper: chainlink_wrapper.NewChainlinkWrapper(client),
+		cfWrapper:        cf_wrapper.NewCFWrapper(),
+		poolWrapper:      pool_wrapper.NewPoolWrapper(client),
+		cmWrapper:        cm_wrapper.NewCMWrapper(client),
 		// v3
 		poolQuotaWrapper: pool_quota_wrapper.NewPoolQuotaWrapper(client),
 	}
 	//
 	obj.kit.Add(obj.aggregatedBlockFeed)
 	obj.kit.Add(obj.adminWrapper)
+	// REVERT_CHAINLINK_WRAPPER
+	obj.kit.Add(obj.chainlinkWrapper)
 	obj.kit.Add(obj.cfWrapper)
 	obj.kit.Add(obj.cmWrapper)
 	obj.kit.Add(obj.poolWrapper)
@@ -57,6 +64,9 @@ func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 		// REVERT_ADMIN_WRAPPER
 	case ds.ContractRegister, ds.ACL, ds.AccountFactory, ds.GearToken:
 		handler.adminWrapper.AddSyncAdapter(adapterI)
+		// REVERT_CHAINLINK_WRAPPER
+	case ds.ChainlinkPriceFeed:
+		handler.chainlinkWrapper.AddSyncAdapter(adapterI)
 		// REVERT_CF_WRAPPER
 	case ds.CreditFilter, ds.CreditConfigurator:
 		handler.cfWrapper.AddSyncAdapter(adapterI)
@@ -79,6 +89,10 @@ func (repo *AdapterKitHandler) GetAdapter(addr string) ds.SyncAdapterI {
 	if adapter == nil {
 		// REVERT_ADMIN_WRAPPER
 		if adapter := repo.adminWrapper.GetAdapter(addr); adapter != nil {
+			return adapter
+		}
+		// REVERT_CHAINLINK_WRAPPER
+		if adapter := repo.chainlinkWrapper.GetAdapter(addr); adapter != nil {
 			return adapter
 		}
 		// REVERT_CF_WRAPPER
@@ -114,6 +128,8 @@ func (repo AdapterKitHandler) GetAdaptersFromWrapper() (adapters []ds.SyncAdapte
 	}
 	// REVERT_ADMIN_WRAPPER
 	adapters = append(adapters, repo.adminWrapper.GetAdapters()...)
+	// REVERT_CHAINLINK_WRAPPER
+	adapters = append(adapters, repo.chainlinkWrapper.GetAdapters()...)
 	// REVERT_CF_WRAPPER
 	adapters = append(adapters, repo.cfWrapper.GetAdapters()...)
 	// REVERT_CM_WRAPPER
@@ -126,20 +142,24 @@ func (repo AdapterKitHandler) GetAdaptersFromWrapper() (adapters []ds.SyncAdapte
 }
 
 func (repo AdapterKitHandler) GetRetryFeedForDebts() (addrs []ds.QueryPriceFeedI) {
-	return  repo.aggregatedBlockFeed.GetQueryFeeds()
+	return repo.aggregatedBlockFeed.GetQueryFeeds()
 }
 
 // TODO: find eng.repo.GetAdapterAddressByName(ds.CreditManager)
-func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string {
+func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string { // is not used by most of the wrappers only
 	// REVERT_CM_WRAPPER
 	if name == ds.CreditManager {
 		return repo.cmWrapper.GetUnderlyingAdapterAddrs()
 	}
 	// REVERT_ADMIN_WRAPPER
-	if utils.Contains([]string{ds.ContractRegister, ds.ACL, ds.AccountFactory,
+	if utils.Contains([]string{
+		ds.ContractRegister,
+		ds.ACL,
+		ds.AccountFactory,
 		ds.GearToken}, name) {
 		return repo.adminWrapper.GetAdapterAddrByName(name)
 	}
+	// LMRewardsv2 and LMRewardsv3
 	return repo.kit.GetAdapterAddressByName(name)
 }
 

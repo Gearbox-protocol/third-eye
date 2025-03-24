@@ -100,7 +100,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			},
 		})
 
-		priceFeedType, underlyingFeeds, bounded, err := mdl.checkPriceFeedContract(blockNum, oracle, token)
+		priceFeedType, underlyingFeeds, err := mdl.checkPriceFeedContract(blockNum, oracle, token)
 		if err != nil {
 			log.Fatalf("Oracle %s, err: %s, blockNum %d", oracle, err, blockNum)
 		}
@@ -133,7 +133,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 				Reserve:     isReverse,
 				FeedType:    priceFeedType,
 				Underlyings: underlyingFeeds,
-			}, bounded)
+			})
 		default:
 			log.Fatal("Unknown PriceFeed type", priceFeedType)
 		}
@@ -143,14 +143,9 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 // YearnPF covers LIDO, AAVE, COMPOUND, YEARN, ERC4626, Balancer(Stable, weighted)
 // CurvePF covers curve and convex
 // ChainlinkPF cover chainlink
-func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token string) (string, []string, bool, error) { // type, bounded , error
-	if oracle == "0xE26FB07da646138553f635c94E2a345270240e30" { // for goerli , the chainlink bounded oracle doesn't have phaseId method // LUSD price oracle
-		return ds.ChainlinkPriceFeed, nil, true, nil
-	}
+func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token string) (string, []string, error) { // type, bounded , error
 	pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracle), mdl.Client)
-	if err != nil {
-		return ds.UnknownPF, nil, false, err
-	}
+	log.CheckFatal(err)
 	opts := &bind.CallOpts{
 		BlockNumber: big.NewInt(discoveredAt),
 	}
@@ -162,25 +157,21 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 			if mdl.GetVersion().MoreThanEq(core.NewVersion(300)) {
 				return mdl.V3PriceFeedType(opts, oracle, token)
 			} else {
-				a, b, c := mdl.v2PriceFeedType(opts, oracle)
-				return a, nil, b, c
+				a, c := mdl.v2PriceFeedType(opts, oracle)
+				return a, nil, c
 			}
 		}
 	} else { //chainlink description
-		yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
-		log.CheckFatal(err)
-		description, err := yearnContract.Description(opts)
 		return ds.ChainlinkPriceFeed,
 			nil,
-			(err == nil) && strings.Contains(string(description), "Bounded"),
 			nil
 	}
-	return ds.UnknownPF, nil, false, fmt.Errorf("PriceFeed type not found")
+	return ds.UnknownPF, nil, fmt.Errorf("PriceFeed type not found")
 }
 
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
-func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, bool, error) {
+func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, error) {
 	data, err := core.CallFuncWithExtraBytes(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
 	if err != nil {
 		{ // redstone feed without price on demand doesn't have priceFeedType method.
@@ -192,7 +183,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			} else {
 				description = strings.ToLower(string(description))
 				if strings.Contains(description, "redstone") {
-					return ds.CurvePF, nil, false, nil
+					return ds.CurvePF, nil, nil
 				} else {
 					log.Fatal(oracle, token, "priceFeedType failed: ", description, err)
 				}
@@ -235,19 +226,19 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			}()
 			switch pf0Type {
 			case core.V3_REDSTONE_ORACLE:
-				return ds.CompositeRedStonePF, nil, false, nil
+				return ds.CompositeRedStonePF, nil, nil
 			case core.V3_CHAINLINK_ORACLE:
-				return ds.CompositeChainlinkPF, nil, false, nil
+				return ds.CompositeChainlinkPF, nil, nil
 			default:
-				return ds.CurvePF, nil, false, nil
+				return ds.CurvePF, nil, nil
 			}
 		}
 	case core.V3_YEARN_ORACLE:
-		return ds.YearnPF, nil, false, nil
+		return ds.YearnPF, nil, nil
 	case core.V3_CHAINLINK_ORACLE:
-		return ds.ChainlinkPriceFeed, nil, true, nil
+		log.Fatal("Chainlink oracle should be handled in v3") // as already handled by phaseId check
 	case core.V3_CURVE_USD_ORACLE, core.V3_CURVE_CRYPTO_ORACLE:
-		return ds.CurvePF, nil, false, nil
+		return ds.CurvePF, nil, nil
 	// usd and crypto
 	case core.V3_CURVE_2LP_ORACLE, core.V3_CURVE_3LP_ORACLE, core.V3_CURVE_4LP_ORACLE: // 2lp,3lp, 4lp
 		nCoinBytes, err := core.CallFuncWithExtraBytes(mdl.Client, "c21ee162", common.HexToAddress(oracle), 0, nil)
@@ -280,31 +271,32 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 				underlyings = append(underlyings, pf)
 			}
 		}
-		return ds.CurvePF, underlyings, false, nil
+		return ds.CurvePF, underlyings, nil
 	case core.V3_ZERO_ORACLE:
-		return ds.ZeroPF, nil, false, nil
+		return ds.ZeroPF, nil, nil
 		// SingleAssetLPPriceFeed
 	case core.V3_WSTETH_ORACLE, core.V3_WRAPPED_AAVE_V2_ORACLE, // lido, aave,
 		core.V3_BALANCER_STABLE_LP_ORACLE, core.V3_BALANCER_WEIGHTED_LP_ORACLE, // balancer
 		core.V3_COMPOUND_V2_ORACLE, // compounder
 		core.V3_MELLOW_LRT_ORACLE:  // mellow is SingleAssetPriceFeed
-		return ds.SingleAssetPF, nil, false, nil
+		return ds.SingleAssetPF, nil, nil
 	case core.V3_PENDLE_PT_TWAP_ORACLE,
 		core.V3_ERC4626_VAULT_ORACLE: // erc4626
 		underlying, err := core.CallFuncWithExtraBytes(mdl.Client, "741bef1a", common.HexToAddress(oracle), 0, nil) // priceFeed
-		return ds.SingleAssetPF, []string{common.BytesToAddress(underlying).Hex()}, false, err
+		return ds.SingleAssetPF, []string{common.BytesToAddress(underlying).Hex()}, err
 	case core.V3_REDSTONE_ORACLE:
-		return ds.RedStonePF, nil, false, nil
+		return ds.RedStonePF, nil, nil
 	default:
 		yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 		log.CheckFatal(err)
 		description, err := yearnContract.Description(opts)
 		log.CheckFatal(err)
-		return ds.UnknownPF, nil, false, fmt.Errorf("unknown v3 pfType %v, oracle: %s token: %s, description: %s", pfType, oracle, token, description)
+		return ds.UnknownPF, nil, fmt.Errorf("unknown v3 pfType %v, oracle: %s token: %s, description: %s", pfType, oracle, token, description)
 	}
+	return ds.UnknownPF, nil, fmt.Errorf("unknown v3 pfType %v, oracle: %s token: %s", pfType, oracle, token)
 }
 
-func (mdl *PriceOracle) v2PriceFeedType(opts *bind.CallOpts, oracle string) (string, bool, error) {
+func (mdl *PriceOracle) v2PriceFeedType(opts *bind.CallOpts, oracle string) (string, error) {
 	yearnContract, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 	log.CheckFatal(err)
 	_, err = yearnContract.YVault(opts)
@@ -313,7 +305,7 @@ func (mdl *PriceOracle) v2PriceFeedType(opts *bind.CallOpts, oracle string) (str
 		log.Infof("Add %s with desc: %s", oracle, description)
 		if strings.Contains(description, "USD Composite") {
 			// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/CompositePriceFeed.sol
-			return ds.CompositeChainlinkPF, false, nil
+			return ds.CompositeChainlinkPF, nil
 		} else if strings.Contains(description, "CurveLP pricefeed") || utils.Contains([]string{
 			"PRICEFEED_OHMFRAXBP",
 			"PRICEFEED_MIM_3LP3CRV",
@@ -325,23 +317,24 @@ func (mdl *PriceOracle) v2PriceFeedType(opts *bind.CallOpts, oracle string) (str
 			"crvPlain3andSUSD price feed",
 		}, description) {
 			// https://github.com/Gearbox-protocol/integrations-v2/tree/main/contracts/oracles/curve
-			return ds.CurvePF, false, nil
+			return ds.CurvePF, nil
 		} else if strings.Contains(description, "Wrapped liquid staked Ether 2.0") { // steth price feed will behandled like YearnPF
 			//https://github.com/Gearbox-protocol/integrations-v2/blob/main/contracts/oracles/lido/WstETHPriceFeed.sol
-			return ds.SingleAssetPF, false, nil
+			return ds.SingleAssetPF, nil
 		} else if strings.Contains(description, "Bounded") {
+			log.Fatal("Bounded price feed not supported in v2")
 			// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/BoundedPriceFeed.sol
-			return ds.ChainlinkPriceFeed, true, nil
+			// return ds.ChainlinkPriceFeed, true, nil
 		} else if strings.Contains(description, "Zero pricefeed") {
 			// zero for G-OBS
 			// https://github.com/Gearbox-protocol/core-v2/blob/main/contracts/oracles/ZeroPriceFeed.sol
-			return ds.ZeroPF, false, nil
+			return ds.ZeroPF, nil
 		} else if strings.Contains(description, "ZERO (one) priceFeed") {
 			// deprecated not used.
-			return ds.AlmostZeroPF, false, nil
+			return ds.AlmostZeroPF, nil
 		} else {
-			return ds.UnknownPF, false, fmt.Errorf("neither chainlink nor yearn nor curve price feed %v, got %s", err, description)
+			return ds.UnknownPF, fmt.Errorf("neither chainlink nor yearn nor curve price feed %v, got %s", err, description)
 		}
 	}
-	return ds.YearnPF, false, nil
+	return ds.YearnPF, nil
 }

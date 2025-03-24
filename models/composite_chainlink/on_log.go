@@ -15,16 +15,16 @@ import (
 )
 
 func (mdl *CompositeChainlinkPF) breakPoint(tokenType string, mainAgg *cpf.ChainlinkMainAgg) (common.Address, int64) {
-	newPhaseAgg, newPhaseId := mainAgg.GetPriceFeedAddr(mdl.WillSyncTill)
+	newPhaseAgg := mainAgg.GetPriceFeedAddr(mdl.WillSyncTill)
 	previousPhaseAgg := mdl.getAddrFromDetails(tokenType)
-	if previousPhaseAgg != newPhaseAgg && newPhaseAgg != core.NULL_ADDR {
-		var discoveredAt int64
-		if newPhaseId != -1 {
-			discoveredAt = mainAgg.GetFeedUpdateBlockUsingPhaseId(uint16(newPhaseId), mdl.LastSync+1, mdl.WillSyncTill)
-		} else {
-			discoveredAt = mainAgg.GetFeedUpdateBlockAggregator(newPhaseAgg, mdl.LastSync+1, mdl.WillSyncTill)
-		}
+	if previousPhaseAgg != newPhaseAgg && newPhaseAgg != core.NULL_ADDR { // newPhaseAgg is NULL_ADDR for FEI
+		// 0x7F0D2c2838c6AC24443d13e23d99490017bDe370 oracle
+		// last 0x4bE991B4d560BBa8308110Ed1E0D7F8dA60ACf6A phaseAggregator
+		discoveredAt := mainAgg.GetFeedUpdateBlockAggregator(newPhaseAgg, mdl.LastSync+1, mdl.WillSyncTill)
 		return newPhaseAgg, discoveredAt
+	}
+	if newPhaseAgg == core.NULL_ADDR {
+		log.Warnf("newPhaseAgg is NULL_ADDR for %s range ", tokenType, mdl.LastSync+1, mdl.WillSyncTill)
 	}
 	return newPhaseAgg, math.MaxInt64
 }
