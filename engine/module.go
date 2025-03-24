@@ -11,4 +11,4 @@ import (
 )
 
 var Module = fx.Option(
-	fx.Provide(NewEngine))
+	fx.Provide(NewEngine, getRegistry))

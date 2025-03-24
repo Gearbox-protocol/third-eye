@@ -26,13 +26,12 @@ type Metrics struct {
 	Uptime string `json:"uptime"`
 }
 
-func newMetEngine(eng ds.EngineI, _cfg *config.Config) {
+func newMetEngine(reg *prometheus.Registry, eng ds.EngineI, _cfg *config.Config) {
 	//
 	mux := http.NewServeMux()
 	startedAt := time.Now().UTC()
 	startUnix := float64(startedAt.Unix())
 
-	reg := prometheus.NewRegistry()
 	reg.MustRegister(
 		// pseudo-metric that provides metadata about the running binary
 		prometheus.NewGaugeFunc(prometheus.GaugeOpts{

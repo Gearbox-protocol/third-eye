@@ -4,5 +4,4 @@ import (
 	"go.uber.org/fx"
 )
 
-var Module = fx.Option(
-	fx.Provide(NewDebtEngine))
+var Module = fx.Provide(NewDebtEngine)
