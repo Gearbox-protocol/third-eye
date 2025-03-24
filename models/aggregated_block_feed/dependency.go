@@ -186,11 +186,12 @@ func getDepGraph(chainId int64) map[string][]string {
 		"auraB_rETH_STABLE":       {},
 		"auraB_rETH_STABLE_vault": {},
 		// redstones
-		"weETH":  {"WETH"},
+		"weETH": {"WETH"},
 		// "ezETH":  {"WETH"},
 		"rswETH": {"WETH"},
 		"pufETH": {"WETH"},
 		"rsETH":  {"WETH"},
+		"pzETH":  {"stETH"},
 	}
 	if log.GetBaseNet(chainId) != "MAINNET" {
 		for sym, deps := range depGraph {
@@ -202,7 +203,7 @@ func getDepGraph(chainId int64) map[string][]string {
 			}
 			depGraph[sym] = x
 		}
-		delete(depGraph, "cLINK")
+		delete(depGraph, "cLINK") // for non mainnet remove stETH.
 	}
 	return depGraph
 }
