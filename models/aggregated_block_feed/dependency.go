@@ -192,6 +192,9 @@ func getDepGraph(chainId int64) map[string][]string {
 		"pufETH": {"WETH"},
 		"rsETH":  {"WETH"},
 		"pzETH":  {"stETH"},
+		//
+		"steakLRT": {"stETH"},
+		"eBTC":     {"WBTC"},
 	}
 	if log.GetBaseNet(chainId) != "MAINNET" {
 		for sym, deps := range depGraph {

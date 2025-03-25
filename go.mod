@@ -2,7 +2,7 @@ module github.com/Gearbox-protocol/third-eye
 
 go 1.23
 
-toolchain go1.23.2
+// toolchain go1.23.2
 
 require (
 	github.com/Gearbox-protocol/sdk-go v0.0.0-20250324154851-854e9960e69d
