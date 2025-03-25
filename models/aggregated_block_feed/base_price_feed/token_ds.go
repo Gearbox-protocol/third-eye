@@ -20,6 +20,7 @@ type DetailsDS struct {
 	// for single asset
 	Underlyings []string                    `json:"underlyings"`
 	Info        map[string]*core.RedStonePF `json:"info"`
+	FetchedInfo bool                        `json:"fetchedInfo,omitempty"`
 }
 
 //	func NewDetailsDS(pfType string, token string, discoveredAt int64, pfVersion schemas.PFVersion) *DetailsDS {

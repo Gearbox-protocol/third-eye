@@ -91,17 +91,22 @@ func (mdl *BasePriceFeed) GetUnderlyingCalls(blockNum int64) (calls []multicall.
 		var tokenDetails *core.RedStonePF
 		if _, ok := mdl.DetailsDS.Info[entry]; ok {
 			tokenDetails = mdl.DetailsDS.Info[entry]
-		} else if _, err := contract.DataFeedId(nil); err == nil {
-			feedToken, signThreshold, dataId := priceFetcher.RedstoneDetails(common.HexToAddress(entry), mdl.Client)
-			//
-			tokenDetails = &core.RedStonePF{
-				Type:             15,
-				DataServiceId:    "redstone-primary-prod",
-				DataId:           dataId,
-				SignersThreshold: signThreshold,
-				UnderlyingToken:  feedToken,
+			mdl.DetailsDS.FetchedInfo = true // if the redstone info wasn't there for feed, then we were still calling dataFeedId even though we tried to fetch that info before.
+			// to prevent this we added fetchedInfo , this is just to provide the consistency for fetchedInfo as for feed where the info is already set, fetchedInfo should be true
+		} else if !mdl.DetailsDS.FetchedInfo {
+			if _, err := contract.DataFeedId(nil); err == nil {
+				feedToken, signThreshold, dataId := priceFetcher.RedstoneDetails(common.HexToAddress(entry), mdl.Client)
+				//
+				tokenDetails = &core.RedStonePF{
+					Type:             15,
+					DataServiceId:    "redstone-primary-prod",
+					DataId:           dataId,
+					SignersThreshold: signThreshold,
+					UnderlyingToken:  feedToken,
+				}
+				mdl.DetailsDS.Info[entry] = tokenDetails
 			}
-			mdl.DetailsDS.Info[entry] = tokenDetails
+			mdl.DetailsDS.FetchedInfo = true
 		}
 		if tokenDetails != nil {
 			pod := mdl.Repo.GetRedStonemgr().GetPodSignWithRedstoneToken(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *tokenDetails)
