@@ -71,8 +71,8 @@ func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64) {
 	if blockNum > v2CloseBlock { // disable v1 and v2
 		addrs := repo.adapters.GetAdapterAddressByName(ds.AddressProvider)
 		adapter := repo.adapters.GetAdapter(addrs[0]).(*address_provider.AddressProvider)
-		for _, v := range []int16{1, 2} {
-			po := adapter.GetPriceOracleByVersion(core.NewVersion(v))
+		for _, v := range []int16{2} { // 29 v1 accounts still open
+			po := adapter.GetPriceOracleLegacy(core.NewVersion(v))
 			for _, d := range repo.tokensCurrentOracle[po] {
 				d.DisabledAt = v2CloseBlock
 				repo.disabledTokens = append(repo.disabledTokens, d)

@@ -99,7 +99,7 @@ func (eng *PriceHandler) GetLastPriceFeed(cm string, token string, version core.
 		addrs := eng.repo.GetAdapterAddressByName(ds.AddressProvider)
 		adapter := eng.repo.GetAdapter(addrs[0])
 		obj := adapter.(*address_provider.AddressProvider)
-		priceOracle = obj.GetPriceOracleByVersion(version)
+		priceOracle = obj.GetPriceOracleLegacy(version)
 	}
 	feed := eng.poTotokenOracle[priceOracle][token]
 	if feed != nil && eng.feedLastPrice[feed.Feed] != nil { // has feed

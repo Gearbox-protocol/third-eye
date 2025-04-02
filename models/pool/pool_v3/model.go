@@ -1,8 +1,6 @@
 package pool_v3
 
 import (
-	"fmt"
-
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -35,12 +33,13 @@ func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
 	return ans
 }
 
-func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT, version int16) *Poolv3 {
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT) *Poolv3 {
 	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
 	if syncAdapter.Details == nil {
 		syncAdapter.Details = core.Json{}
 	}
-	syncAdapter.Details["actualVersion"] = version
+	actualVersion := core.FetchActualVersion(addr, discoveredAt, client)
+	syncAdapter.Details["actualV"] = actualVersion
 	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
 		syncAdapter,
@@ -59,7 +58,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		Address:         pool.Address,
 		DieselToken:     dieselToken,
 		UnderlyingToken: underlyingToken.Hex(),
-		Version:         core.NewVersion(version),
+		Version:         core.NewVersion(actualVersion),
 		Market:          market,
 		PriceOracle:     priceOracle,
 		Name: func() string {
@@ -70,7 +69,6 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 			return name
 		}(),
 	})
-	pool.Details["actualV"] = fmt.Sprintf("%d", version)
 
 	// create a pool stat snapshot at first log of the pool
 	pool.onBlockChangeInternally()

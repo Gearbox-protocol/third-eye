@@ -72,7 +72,7 @@ func (mdl *AddressProvider) v2LogParse(txLog types.Log) {
 		switch contract {
 		case "PRICE_ORACLE":
 			//
-			mdl.addPriceOracle(blockNum, schemas.PriceOracleT(address))
+			mdl.addPriceOracleLegacy(blockNum, schemas.PriceOracleT(address))
 			po := po_v2.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 			mdl.Repo.AddSyncAdapter(po)
 		case "DATA_COMPRESSOR":
@@ -110,19 +110,22 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		// mdl.Details["MARKET_FACTORY"] = address // only allow authorized market configurator
 		// }
 		mdl.v3LogParse(txLog, contractName, address.Hex(), getRealVersion(txLog.Topics[2]))
-	case core.Topic("CreateMarketConfigurator(address,string)"):
-		market := common.BytesToAddress(txLog.Topics[1][:])
-		mdl.addMarketConfig(int64(txLog.BlockNumber), market)
+		// case core.Topic("CreateMarketConfigurator(address,string)"): // only from MARKET_CONFIGURATORS env
+		// 	market := common.BytesToAddress(txLog.Topics[1][:])
+		// 	mdl.addMarketConfig(int64(txLog.BlockNumber), market)
 	}
 }
 
 func (mdl *AddressProvider) addMarketConfig(blockNum int64, market common.Address) {
-	conRegisterBytes, err := core.CallFuncGetSingleValue(mdl.Client, "7a0c7b21", market, 0, nil)
+	conRegisterBytes, err := core.CallFuncGetSingleValue(mdl.Client, "7a0c7b21", market, 0, nil) // contractRegister is also set on legacy marketConfigurator//
+	// https://etherscan.io/address/0x354fe9f450F60b8547f88BE042E4A45b46128a06#code has contractRegister, contractRegisterLegacy
 	log.CheckFatal(err)
 	crAddr := common.BytesToAddress(conRegisterBytes).Hex()
 	log.Infof("Add market %s, with cr: %s", market, crAddr)
 	// mdl.
-	mdl.commonLogParse(blockNum, "CONTRACT_REGISTER", crAddr)
+	cr := contract_register.NewContractRegister(crAddr, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+	cr.Details["MARKET"] = market.Hex()
+	mdl.Repo.AddSyncAdapter(cr)
 }
 
 func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address string, realversion int16) {
@@ -159,7 +162,7 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address
 		if realversion < 300 { // don't except v2,v2.10 or v1 priceOracle , why are already know from v1 addressProvider
 			return
 		}
-		mdl.addPriceOracle(blockNum, schemas.PriceOracleT(address))
+		mdl.addPriceOracleLegacy(blockNum, schemas.PriceOracleT(address))
 		po := po_v3.NewPriceOracle(address, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
 		mdl.Repo.AddSyncAdapter(po)
 	default:
