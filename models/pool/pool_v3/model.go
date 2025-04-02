@@ -96,7 +96,7 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 	log.CheckFatal(err)
 	// and poolWrapper also need all the address so we need to set underlyingstate when the obj is reported from NewPoolfromAdapter, as a result the state is set in the newpoolfromadapter
 	// setzapper requires address of diesel token of poolv2, so SetUnderlyingState should be called on all pools before calling this function
-	obj.setZapper()
+	obj.setZapper(adapter.LastSync)
 	//
 	return obj
 }

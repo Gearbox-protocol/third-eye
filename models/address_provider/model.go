@@ -7,8 +7,8 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
-	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -63,10 +63,8 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 	obj.Details["others"] = otherAddrProviders
 	obj.otherAddrs = otherAddrProviders
 
-	for _, mcaddr := range strings.Split(utils.GetEnvOrDefault("MARKET_CONFIGURATORS", ""), ",") {
-		if mcaddr != "" {
-			obj.addMarketConfig(adapter.GetLastSync(), common.HexToAddress(mcaddr))
-		}
+	for _, mcaddr := range dc_wrapper.GetMarketConfigurators() {
+		obj.addMarketConfig(adapter.GetLastSync(), mcaddr)
 	}
 	// if core.GetChainId(adapter.Client) != 1337 {
 	// addrv310 := core.GetAddressProvider(core.GetChainId(adapter.Client), core.NewVersion(300))

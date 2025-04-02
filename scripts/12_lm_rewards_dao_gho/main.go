@@ -74,9 +74,9 @@ func NewRepo(client core.ClientI) *Repo {
 	return &r
 }
 
-func getFarmsv3(client core.ClientI, repo *Repo) []*v3.Farmv3 {
+func getFarmsv3(client core.ClientI, repo *Repo, blockNum int64) []*v3.Farmv3 {
 	poolAndFarms := []*v3.Farmv3{}
-	pools, found := repo.GetDCWrapper().GetPoolListv3()
+	pools, found := repo.GetDCWrapper().GetZapperInfo(blockNum)
 	if found {
 		farmingPools := map[common.Address]common.Address{}
 		for _, pool := range pools {
@@ -135,7 +135,7 @@ func main() {
 		adapter.Repo = r
 		lm = v3.NewLMRewardsv3FromAdapter(adapter)
 	}
-	lm.SetUnderlyingState(getFarmsv3(client, r))
+	lm.SetUnderlyingState(getFarmsv3(client, r, lm.LastSync))
 	lm.SetUnderlyingState([]*v3.UserLMDetails{})
 
 	// update the logs

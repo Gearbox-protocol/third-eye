@@ -10,7 +10,7 @@ alter table token_oracle add PRIMARY KEY (price_oracle, block_num, token, reserv
 --
 alter table token_current_price add price_oracle varchar(42);
 alter table token_current_price drop constraint token_current_price_pkey;
-update token_current_price set price_oracle= (select address from sync_adapters where type='PriceOracle' and version=300) where price_source='chainlink';
+update token_current_price set price_oracle= (select address from sync_adapters where type='PriceOracle' and version=300) where price_source in ('chainlink', 'gearbox');
 update token_current_price set price_oracle= '0x0000000000000000000000000000000000000000' where price_source='spot';
 alter table token_current_price add PRIMARY KEY (price_oracle, price_source, token);
 

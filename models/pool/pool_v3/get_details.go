@@ -1,7 +1,6 @@
 package pool_v3
 
 import (
-	dcv3 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
@@ -46,23 +45,17 @@ func (mdl *Poolv3) checkIfZapAddr(addr string) bool {
 	return utils.Contains(mdl.zappers.GetZapper(), addr)
 }
 
-func (mdl *Poolv3) setZapper() {
+func (mdl *Poolv3) setZapper(blockNum int64) {
 	mdl.zappers.Load(mdl.Details)
 	if len(*mdl.zappers) != 0 { // if zapper already set
 		return
 	}
 	//
-	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
+	pools, found := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(mdl.Address))
 	if !found {
 		return
 	}
-	var poolToCheck dcv3.PoolData
-	for _, pool := range pools {
-		if pool.Addr.Hex() == mdl.Address {
-			poolToCheck = pool
-			break
-		}
-	}
+	poolToCheck := pools[0]
 
 	// eth contract has 3 zappers.
 	// 1. USDC-farmedUSDCv3

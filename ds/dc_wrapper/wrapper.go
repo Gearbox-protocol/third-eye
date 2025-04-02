@@ -21,8 +21,19 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
+
+func GetMarketConfigurators() (ans []common.Address) {
+	addrs := strings.Split(utils.GetEnvOrDefault("MARKET_CONFIGURATORS", ""), ",")
+	for _, addr := range addrs {
+		if addr != "" {
+			ans = append(ans, common.HexToAddress(addr))
+		}
+	}
+	return
+}
 
 type addressAndBlock struct {
 	address common.Address
@@ -208,6 +219,9 @@ const (
 
 // checks in versionToAddress for v300 and then checks in addrByBlock for v1,v2
 func (dcw *DataCompressorWrapper) GetKeyAndAddress(version core.VersionType, blockNum int64, cType CompressorType) (string, common.Address) {
+	if blockNum == 0 {
+		log.Fatal("blockNum can't be zero")
+	}
 	// v300
 	if version.MoreThanEq(core.NewVersion(300)) {
 		// v310
@@ -424,16 +438,70 @@ func (dcw *DataCompressorWrapper) GetCreditManagerData(version core.VersionType,
 	return
 }
 
-func (dcw *DataCompressorWrapper) GetPoolListv3() ([]dcv3.PoolData, bool) {
-	dcAddr, found := dcw.GetLatestv3DC()
-	if !found {
+type PoolZapperInfo struct {
+	Zappers     []dcv3.ZapperInfo
+	Addr        common.Address
+	Underlying  common.Address
+	DieselToken common.Address
+}
+
+// zapper info from v300 onwards
+func (dcw *DataCompressorWrapper) GetZapperInfo(blockNum int64, poolAddr ...common.Address) (ans []PoolZapperInfo, found bool) {
+	key, compressor := dcw.GetKeyAndAddress(core.NewVersion(300), blockNum, MARKET_COMPRESSOR)
+	opts := &bind.CallOpts{BlockNumber: big.NewInt(blockNum)}
+	switch key {
+	case DCV310:
+		marketConfigs := GetMarketConfigurators()
+		con, err := marketCompressor.NewMarketCompressor(compressor, dcw.client)
+		log.CheckFatal(err)
+		markets, err := con.GetMarkets(opts, marketCompressor.MarketFilter{Pools: poolAddr})
+		for _, market := range markets {
+			if !utils.Contains(marketConfigs, market.Configurator) {
+				continue
+			}
+			obj := &PoolZapperInfo{
+				Addr:        market.Pool.BaseParams.Addr,
+				Underlying:  market.Pool.Underlying,
+				DieselToken: market.Pool.BaseParams.Addr,
+			}
+			for _, zapper := range market.Zappers {
+				obj.Zappers = append(obj.Zappers, dcv3.ZapperInfo{
+					Zapper:   zapper.BaseParams.Addr,
+					TokenIn:  zapper.TokenIn.Addr,
+					TokenOut: zapper.TokenOut.Addr,
+				})
+			}
+			ans = append(ans, *obj)
+		}
+		return ans, true
+	case DCV3:
+		con, err := dcv3.NewDataCompressorv3(compressor, dcw.client)
+		log.CheckFatal(err)
+		poolList := []dcv3.PoolData{}
+		if len(poolAddr) != 0 {
+			for _, addr := range poolAddr {
+				data, err := con.GetPoolData(opts, addr)
+				log.CheckFatal(err)
+				poolList = append(poolList, data)
+			}
+		} else {
+			var err error
+			poolList, err = con.GetPoolsV3List(nil)
+			log.CheckFatal(err)
+		}
+		for _, pool := range poolList {
+			obj := &PoolZapperInfo{
+				Addr:        pool.Addr,
+				Underlying:  pool.Underlying,
+				DieselToken: pool.DieselToken,
+				Zappers:     pool.Zappers,
+			}
+			ans = append(ans, *obj)
+		}
+	default:
+		// log.Fatal("No data compressor found for zapper info")
 		return nil, false
 	}
-	con, err := dcv3.NewDataCompressorv3(dcAddr, dcw.client)
-	log.CheckFatal(err)
-	poolList, err := con.GetPoolsV3List(nil)
-	log.CheckFatal(err)
-	return poolList, true
 }
 
 // blockNum can't be zero
