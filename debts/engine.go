@@ -3,6 +3,7 @@ package debts
 import (
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/calc"
@@ -237,7 +238,7 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 	}
 	// save as last tvl snapshot and add to db
 	for market, details := range marketToTvl {
-		if lastTvlBlock, ok := eng.marketTolastTvlBlock[market]; ok && blockNum-lastTvlBlock < core.NoOfBlocksPerHr(eng.client) { // only snap her hr.
+		if lastTvlBlock, ok := eng.marketTolastTvlBlock[market]; ok && blockNum-lastTvlBlock < core.BlockPer(core.GetBaseChainId(eng.client), time.Hour) { // only snap her hr.
 			continue
 		}
 		//

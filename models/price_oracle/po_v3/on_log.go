@@ -12,6 +12,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -284,7 +285,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		return ds.SingleAssetPF, nil, nil
 	case core.V3_PENDLE_PT_TWAP_ORACLE,
 		core.V3_ERC4626_VAULT_ORACLE: // erc4626
-		underlying, err := core.CallFuncWithExtraBytes(mdl.Client, "741bef1a", common.HexToAddress(oracle), 0, nil) // priceFeed
+		underlying, err := core.CallFuncGetSingleValue(mdl.Client, "741bef1a", common.HexToAddress(oracle), 0, nil) // priceFeed
 		return ds.SingleAssetPF, []string{common.BytesToAddress(underlying).Hex()}, err
 	case core.V3_REDSTONE_ORACLE:
 		return ds.RedStonePF, nil, nil
