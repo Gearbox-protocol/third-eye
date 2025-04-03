@@ -41,7 +41,7 @@ func (mdl *ContractRegister) poolToMarketAndPriceOracleRelation(blockNum int64, 
 	poolAdapter := mdl.Repo.GetAdapter(poolAddr)
 	if poolv3, ok := poolAdapter.(*pool_v3.Poolv3); ok {
 		log.Infof("Setting on pool %s, market: %s , po: %s ", poolv3.State.Name, mdl.GetDetailsByKey("MARKET"), priceOracleAddr)
-		poolv3.State.Market = mdl.Address
+		poolv3.State.Market = marketAddr
 		poolv3.State.PriceOracle = schemas.PriceOracleT(priceOracleAddr)
 	} else {
 		log.Fatalf("the pool by the address(%s) is not poolv3", poolAddr)

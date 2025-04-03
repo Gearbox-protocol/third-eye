@@ -60,9 +60,9 @@ func (repo *BlocksRepo) Save(tx *gorm.DB) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
 	for _, block := range repo.GetBlocks() {
-		// for _, a := range block.PriceFeeds {
-		// 	log.Info(a.Feed, a.BlockNumber)
-		// }
+		if len(block.Relations) != 0 {
+			log.Info(utils.ToJson(block.Relations))
+		}
 		blocksToSync = append(blocksToSync, block)
 	}
 	// clauses not needed here

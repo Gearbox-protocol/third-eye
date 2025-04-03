@@ -71,7 +71,7 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", results[0].ReturnData)
 			log.CheckFatal(err)
 			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
-			// log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
+			// log.Info("onchain price found for ", mdl.Address, "at", blockNum, price) // ONCHAIN_REDSTONE_PRICE
 			return parsePriceForRedStone(price, isPriceInUSD)
 			// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
 		} else {

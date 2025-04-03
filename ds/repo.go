@@ -2,6 +2,8 @@ package ds
 
 import (
 	"math/big"
+	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -153,4 +155,20 @@ type RepositoryI interface {
 func IsTestnet(client core.ClientI) bool {
 	chainid := core.GetChainId(client)
 	return log.GetNetworkName(chainid) != log.GetBaseNet(chainid)
+}
+
+func ToInt(i interface{}) int64 {
+	switch i := i.(type) {
+	case string:
+		x, err := strconv.ParseInt(i, 10, 64)
+		log.WrapErrWithLineN(err, 3)
+		return x
+	case float64:
+		return int64(i)
+	case int64:
+		return int64(i)
+	default:
+		log.Fatal("", reflect.TypeOf(i))
+		return 0
+	}
 }

@@ -49,6 +49,7 @@ func (mdl *CompositeChainlinkPF) OnLogs(txLogs []types.Log) {
 		}
 		switch txLog.Topics[0] {
 		case core.Topic("AnswerUpdated(int256,uint256,uint256)"):
+			mdl.ansBlock = append(mdl.ansBlock, blockNum)
 			// roundId, err := strconv.ParseInt(txLog.Topics[2].Hex()[50:], 16, 64)
 			// if err != nil {
 			// 	log.Fatal("TxHash", txLog.TxHash.Hex(), "roundid failed", txLog.Topics[2].Hex())
@@ -105,9 +106,9 @@ func (mdl *CompositeChainlinkPF) addPriceToDB(blockNum int64) {
 		new(big.Int).Mul(mdl.TokenETHPrice, mdl.ETHUSDPrice),
 		mdl.decimalsOfBasePF,
 	)
-	log.Info(blockNum, mdl.Address)
 	// only usd price feed
 	if len(mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)) != 0 {
+		mdl.priceAdded += 1
 		priceFeed := &schemas.PriceFeed{
 			BlockNumber: blockNum,
 			Feed:        mdl.GetDetailsByKey("oracle"),

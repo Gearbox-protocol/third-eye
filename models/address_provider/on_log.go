@@ -2,10 +2,12 @@ package address_provider
 
 import (
 	"math/big"
+	"sort"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
@@ -94,6 +96,30 @@ func (mdl *AddressProvider) v2LogParse(txLog types.Log) {
 
 // var addrv310, _ = addrProviderv310.NewAddrProviderv310(core.NULL_ADDR, nil)
 
+func (mdl *AddressProvider) OnLogs(txLogs []types.Log) {
+	obj := mdl.getAll()
+	sortAgain := false
+	for addr, lastSync := range obj {
+		if lastSync < mdl.SyncAdapter.GetLastSync() {
+			newTxLogs, err := pkg.Node{Client: mdl.Client}.GetLogs(lastSync+1, mdl.SyncAdapter.GetLastSync(), []common.Address{common.HexToAddress(addr)}, nil)
+			log.CheckFatal(err)
+			log.Info("AddressProvider: ", addr, " extra logs count: ", len(newTxLogs))
+			txLogs = append(txLogs, newTxLogs...)
+			sortAgain = true
+		}
+	}
+	if sortAgain {
+		sort.SliceStable(txLogs, func(i, j int) bool {
+			return txLogs[i].BlockNumber < txLogs[j].BlockNumber ||
+				(txLogs[i].BlockNumber == txLogs[j].BlockNumber && txLogs[i].Index < txLogs[j].Index)
+		})
+	}
+	for _, txLog := range txLogs {
+		if obj[txLog.Address.Hex()] < int64(txLog.BlockNumber) {
+			mdl.OnLog(txLog)
+		}
+	}
+}
 func (mdl *AddressProvider) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("AddressSet(bytes32,address)"):
@@ -109,7 +135,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		// if contractName == "MARKET_CONFIGURATOR_FACTORY" {
 		// mdl.Details["MARKET_FACTORY"] = address // only allow authorized market configurator
 		// }
-		mdl.v3LogParse(txLog, contractName, address.Hex(), getRealVersion(txLog.Topics[2]))
+		mdl.v310LogParse(txLog, contractName, address.Hex(), getRealVersion(txLog.Topics[2]))
 		// case core.Topic("CreateMarketConfigurator(address,string)"): // only from MARKET_CONFIGURATORS env
 		// 	market := common.BytesToAddress(txLog.Topics[1][:])
 		// 	mdl.addMarketConfig(int64(txLog.BlockNumber), market)
@@ -128,18 +154,16 @@ func (mdl *AddressProvider) addMarketConfig(blockNum int64, market common.Addres
 	mdl.Repo.AddSyncAdapter(cr)
 }
 
-func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address string, realversion int16) {
-	// contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
-	// address := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
+func (mdl *AddressProvider) v310LogParse(txLog types.Log, contract string, address string, realversion int16) {
 	blockNum := int64(txLog.BlockNumber)
-	//
-	log.Infof("AddressSet: %s(%d), %s at blockNum %d", contract, realversion, address, blockNum)
 	switch contract {
-	case "POOL_COMPRESSOR", "CREDIT_ACCOUNT_COMPRESSOR", "MARKET_COMPRESSOR":
+	case "POOL_COMPRESSOR", "CREDIT_ACCOUNT_COMPRESSOR", "MARKET_COMPRESSOR": // "POOL_COMPRESSOR" ignore
+		log.Infof("AddressSet: %s(%d), %s at blockNum %d", contract, realversion, address, blockNum)
 		m := map[string]dc_wrapper.CompressorType{
 			// "POOL_COMPRESSOR": dc_wrapper.POOL_COMPRESSOR,
 			"MARKET_COMPRESSOR":         dc_wrapper.MARKET_COMPRESSOR,
 			"CREDIT_ACCOUNT_COMPRESSOR": dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR,
+			"POOL_COMPRESSOR":           dc_wrapper.POOL_COMPRESSOR,
 		}
 		cType := m[contract]
 		newValue := fmt.Sprintf("%s_%s", txLog.Address.Hex(), cType)
@@ -148,6 +172,16 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address
 		dcObj[fmt.Sprintf("%d", blockNum)] = newValue
 		fn(dcObj)
 		mdl.Repo.GetDCWrapper().AddCompressorType(common.HexToAddress(address), cType, int64(txLog.BlockNumber))
+	}
+}
+
+func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address string, realversion int16) {
+	// contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
+	// address := common.HexToAddress(txLog.Topics[2].Hex()).Hex()
+	blockNum := int64(txLog.BlockNumber)
+	//
+	log.Infof("AddressSet: %s(%d), %s at blockNum %d", contract, realversion, address, blockNum)
+	switch contract {
 	case "DATA_COMPRESSOR":
 		dcObj, fn := mdl.updateDetailsField_dc()
 		if realversion < 300 { // don't add dataCompressor with version 2.1

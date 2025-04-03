@@ -167,7 +167,7 @@ func (eng *DebtEngine) CalculateDebt() {
 					log.Fatal("State for pool not found for address: ", pool)
 				}
 				//
-				market := state.(*schemas.PoolState).UnderlyingToken
+				market := state.(*schemas.PoolState).Market
 				marketToTvl.add(market, caValue, 0, 0)
 			}
 
@@ -212,7 +212,6 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 	// if eng.lastTvlSnapshot != nil && blockNum-eng.lastTvlSnapshot.BlockNum < core.NoOfBlocksPerHr { // tvl snapshot every hour
 	// 	return
 	// }
-	log.Info("tvl for block", blockNum)
 	for _, entry := range eng.poolLastInterestData {
 		adapter := eng.repo.GetAdapter(entry.Address)
 		state := adapter.GetUnderlyingState()
@@ -237,8 +236,10 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 		marketToTvl.add(state.(*schemas.PoolState).Market, 0, availLiq, expectedLiqInUSD)
 	}
 	// save as last tvl snapshot and add to db
+	addedMarket := []string{}
 	for market, details := range marketToTvl {
 		if lastTvlBlock, ok := eng.marketTolastTvlBlock[market]; ok && blockNum-lastTvlBlock < core.BlockPer(core.GetBaseChainId(eng.client), time.Hour) { // only snap her hr.
+			addedMarket = append(addedMarket, market)
 			continue
 		}
 		//
@@ -251,6 +252,9 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 		}
 		eng.tvlSnapshots = append(eng.tvlSnapshots, tvl)
 		eng.marketTolastTvlBlock[tvl.Market] = tvl.BlockNum
+	}
+	if len(addedMarket) > 0 {
+		log.Infof("%d:Tvl snapshot added for market %s", blockNum, addedMarket)
 	}
 }
 

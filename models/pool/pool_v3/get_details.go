@@ -51,8 +51,8 @@ func (mdl *Poolv3) setZapper(blockNum int64) {
 		return
 	}
 	//
-	pools, found := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(mdl.Address))
-	if !found {
+	pools := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(mdl.Address))
+	if len(pools) == 0 {
 		return
 	}
 	poolToCheck := pools[0]

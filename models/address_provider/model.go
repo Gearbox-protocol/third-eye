@@ -1,12 +1,14 @@
 package address_provider
 
 import (
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/common"
@@ -49,6 +51,18 @@ func NewAddressProvider(client core.ClientI, repo ds.RepositoryI, apAddrs string
 	)
 }
 
+func (mdl *AddressProvider) getAll() map[string]int64 {
+	if all, ok := mdl.Details["all"].(map[string]int64); ok {
+		return all
+	}
+	all := mdl.Details["all"].(map[string]interface{})
+	ans := map[string]int64{}
+	for addr, lastSync := range all {
+		ans[addr] = ds.ToInt(lastSync)
+	}
+	mdl.Details["all"] = ans
+	return ans
+}
 func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *AddressProvider {
 	obj := &AddressProvider{
 		SyncAdapter: adapter,
@@ -60,7 +74,32 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 		apAddrs = adapter.GetAddress()
 	}
 	_, otherAddrProviders := GetAddressProvider(obj.Client, apAddrs)
-	obj.Details["others"] = otherAddrProviders
+	if obj.Details["all"] == nil {
+		obj.Details["all"] = map[string]int64{obj.Address: obj.LastSync}
+	}
+	if others, ok := obj.Details["others"].([]interface{}); ok {
+		newOther := map[string]int64{}
+		for _, other := range others {
+			newOther[common.HexToAddress(other.(string)).Hex()] = adapter.LastSync
+		}
+		newOther[obj.Address] = obj.LastSync
+		obj.Details["all"] = newOther
+		delete(obj.Details, "others")
+	} else if obj.Details["others"] != nil {
+		log.Fatal(reflect.TypeOf(obj.Details["others"]))
+	}
+
+	{
+		otherMap := obj.getAll()
+		for _, otherAddrProvider := range otherAddrProviders {
+			if otherMap[otherAddrProvider.Hex()] == 0 {
+				otherMap[otherAddrProvider.Hex()] = (&schemas.Contract{
+					Address: otherAddrProvider.Hex(),
+					Client:  adapter.Client,
+				}).DiscoverFirstLog()
+			}
+		}
+	}
 	obj.otherAddrs = otherAddrProviders
 
 	for _, mcaddr := range dc_wrapper.GetMarketConfigurators() {
@@ -72,6 +111,10 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 	// }
 
 	return obj
+}
+
+func (mdl *AddressProvider) GetDataProcessType() int {
+	return ds.ViaMultipleLogs
 }
 
 func (mdl *AddressProvider) GetAllAddrsForLogs() []common.Address {
@@ -108,4 +151,13 @@ func (mdl *AddressProvider) getPriceOracleMap() map[string]interface{} {
 		}
 	}
 	return priceOracles
+}
+func (mdl *AddressProvider) AfterSyncHook(syncedtill int64) {
+	obj := mdl.getAll()
+	for addr, lastSync := range obj {
+		if lastSync < syncedtill {
+			obj[addr] = syncedtill
+		}
+	}
+	mdl.SyncAdapter.AfterSyncHook(syncedtill)
 }

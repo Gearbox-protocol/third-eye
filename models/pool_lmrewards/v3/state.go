@@ -16,10 +16,8 @@ import (
 )
 
 func (mdl *LMRewardsv3) getFarmsAndPoolsv3(blockNum int64) {
-	pools, found := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum)
-	if found {
-		mdl.SetFarm(pools)
-	}
+	pools := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum)
+	mdl.SetFarm(pools)
 }
 
 func (mdl *LMRewardsv3) setMinPoolSyncedTill(pool common.Address, syncedTill int64, farm string) {
@@ -85,12 +83,11 @@ func (mdl *LMRewardsv3) SetFarm(pools []dc_wrapper.PoolZapperInfo) {
 }
 
 func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
-	data, found := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(pool))
-	if found {
-		mdl.SetFarm(data)
-	} else {
-		log.Warn("Pool Zapperinfo not found in DCWrapper for block:%d, pool:%s ", blockNum, pool)
-	}
+	data := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(pool))
+	mdl.SetFarm(data)
+	// if len(data) == 0 {
+	// 	log.Warnf("Pool Zapperinfo not found in DCWrapper for block:%d, pool:%s ", blockNum, pool)
+	// }
 }
 
 func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {

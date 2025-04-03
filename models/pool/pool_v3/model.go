@@ -1,6 +1,8 @@
 package pool_v3
 
 import (
+	"fmt"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -39,7 +41,7 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		syncAdapter.Details = core.Json{}
 	}
 	actualVersion := core.FetchActualVersion(addr, discoveredAt, client)
-	syncAdapter.Details["actualV"] = actualVersion
+	syncAdapter.Details["actualV"] = fmt.Sprintf("%d", actualVersion)
 	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
 		syncAdapter,

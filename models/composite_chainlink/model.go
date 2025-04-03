@@ -20,6 +20,8 @@ type CompositeChainlinkPF struct {
 	TokenETHPrice    *big.Int
 	ETHUSDPrice      *big.Int
 	decimalsOfBasePF int8
+	ansBlock         []int64
+	priceAdded       int64
 }
 
 // compositeChainlink price feed has token base  oracle and base usd oracle for calculating the price of token in usd.
@@ -147,6 +149,9 @@ func getDecimals(client core.ClientI, addr common.Address, blockNum int64) int8 
 }
 
 func (mdl *CompositeChainlinkPF) AfterSyncHook(syncedTill int64) {
+	log.Infof("Processed event:%v, added price : %d", mdl.ansBlock, mdl.priceAdded)
+	mdl.ansBlock = nil
+	mdl.priceAdded = 0
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }
 

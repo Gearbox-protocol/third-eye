@@ -11,6 +11,9 @@
           '3': '#PriceOracle_1',
           '5': '#PriceOracle_2',
         },
+        all: {
+          '#AddressProvider_1': 10,
+        },
       },
       disabled: false,
       disabled_at: 0,
