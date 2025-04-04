@@ -239,7 +239,6 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 	addedMarket := []string{}
 	for market, details := range marketToTvl {
 		if lastTvlBlock, ok := eng.marketTolastTvlBlock[market]; ok && blockNum-lastTvlBlock < core.BlockPer(core.GetBaseChainId(eng.client), time.Hour) { // only snap her hr.
-			addedMarket = append(addedMarket, market)
 			continue
 		}
 		//
@@ -250,6 +249,7 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 			ExpectedLiq:        details.expectedLiq,
 			Market:             market,
 		}
+		addedMarket = append(addedMarket, market)
 		eng.tvlSnapshots = append(eng.tvlSnapshots, tvl)
 		eng.marketTolastTvlBlock[tvl.Market] = tvl.BlockNum
 	}
