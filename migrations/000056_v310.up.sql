@@ -30,7 +30,7 @@ CREATE TABLE relations (
 );
 
 -- UPDATE
-update pools p set price_oracle=sa.address from  sync_adapters sa where type='PriceOracle' and p._version=sa.version;
+update pools p set price_oracle=sa.address from  sync_adapters sa where type='PriceOracle' and (case when p._version=1 then 2 else p._version end)=sa.version;
 
 update token_oracle set disabled_at=19752044 where version=2; -- don't disable for v1
 update token_oracle set disabled_at=13856183 where feed='0xc170DC3C2e8809AC6197D56b86bF421c8a7f8c67'; -- all for v1

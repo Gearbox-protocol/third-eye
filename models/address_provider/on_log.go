@@ -124,7 +124,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case core.Topic("AddressSet(bytes32,address)"):
 		mdl.v2LogParse(txLog)
-	case core.Topic("SetAddress(bytes32,address,uint256)"): // can be used for version 310 address provider too. set PriceOracle acl contractregister are not emitted thought
+	case core.Topic("SetAddress(bytes32,address,uint256)"):
 		contract := strings.Trim(string(txLog.Topics[1][:]), "\x00")
 		address := common.BytesToAddress(txLog.Topics[2][:])
 		mdl.v3LogParse(txLog, contract, address.Hex(), getRealVersion(txLog.Topics[3]))
@@ -166,10 +166,10 @@ func (mdl *AddressProvider) v310LogParse(txLog types.Log, contract string, addre
 			"POOL_COMPRESSOR":           dc_wrapper.POOL_COMPRESSOR,
 		}
 		cType := m[contract]
-		newValue := fmt.Sprintf("%s_%s", txLog.Address.Hex(), cType)
+		newValue := address
 		//
 		dcObj, fn := mdl.updateDetailsField_dc()
-		dcObj[fmt.Sprintf("%d", blockNum)] = newValue
+		dcObj[fmt.Sprintf("%d_%s", blockNum, cType)] = newValue
 		fn(dcObj)
 		mdl.Repo.GetDCWrapper().AddCompressorType(common.HexToAddress(address), cType, int64(txLog.BlockNumber))
 	}
@@ -188,10 +188,10 @@ func (mdl *AddressProvider) v3LogParse(txLog types.Log, contract string, address
 			log.Infof("Don't add %s version %d", address, realversion)
 			return
 		}
-		dcObj[fmt.Sprintf("%d", blockNum)] = fmt.Sprintf("%s_%d", address, realversion)
+		dcObj[fmt.Sprintf("%d_300", blockNum)] = address
 		fn(dcObj)
 		// v3
-		mdl.Repo.GetDCWrapper().AddDataCompressorv300(core.NewVersion(realversion), address, blockNum)
+		mdl.Repo.GetDCWrapper().AddDataCompressorv300(core.NewVersion(300), address, blockNum)
 	case "PRICE_ORACLE":
 		if realversion < 300 { // don't except v2,v2.10 or v1 priceOracle , why are already know from v1 addressProvider
 			return

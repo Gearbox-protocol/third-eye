@@ -181,31 +181,39 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 		log.Fatalf("Converting address provider() details for dc to map failed %v", multiDCs)
 	}
 
-	var blockNums []int64
-	for k := range dcMap {
-		blockNum, err := strconv.ParseInt(k, 10, 64)
-		if err != nil {
-			log.Fatal(err)
-		}
-		blockNums = append(blockNums, blockNum)
-	}
-	sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
-	for _, blockNum := range blockNums {
-		k := fmt.Sprintf("%d", blockNum)
-		dcAddr := dcMap[k].(string)
-		//
-		if strings.Contains(dcAddr, "_") {
-			addrs := strings.Split(dcAddr, "_")
-			if addrs[1] == "300" {
-				version, err := strconv.ParseInt(addrs[1], 10, 64)
-				log.CheckFatal(err)
-				dcw.addDataCompressorv300(core.NewVersion(int16(version)), addrs[0], blockNum)
-			} else {
-				dcw.AddCompressorType(common.HexToAddress(addrs[0]), CompressorType(addrs[1]), blockNum)
+	blockNums := []int64{}
+	{
+		blockMap := map[int64]struct{}{}
+		for k := range dcMap {
+			splits := strings.Split(k, "_")
+			blockNum, err := strconv.ParseInt(splits[0], 10, 64)
+			if err != nil {
+				log.Fatal(err)
 			}
-		} else {
-			dcw.addDataCompressorv1v2(blockNum, dcAddr)
+			blockMap[blockNum] = struct{}{}
 		}
+		for blockNum := range blockMap {
+			blockNums = append(blockNums, blockNum)
+		}
+		sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
+	}
+	for _, blockNum := range blockNums {
+		for _, suffix := range []CompressorType{CompressorType(""), CompressorType("300"), MARKET_COMPRESSOR, POOL_COMPRESSOR, CREDIT_ACCOUNT_COMPRESSOR} {
+			key := fmt.Sprintf("%d", blockNum)
+			if suffix != "" {
+				key = fmt.Sprintf("%d_%s", blockNum, suffix)
+			}
+			if dcAddr, ok := dcMap[key].(string); ok {
+				if suffix == "" {
+					dcw.addDataCompressorv1v2(blockNum, dcAddr)
+				} else if suffix == "300" {
+					dcw.addDataCompressorv300(core.NewVersion(300), dcAddr, blockNum)
+				} else {
+					dcw.AddCompressorType(common.HexToAddress(dcAddr), suffix, blockNum)
+				}
+			}
+		}
+		//
 	}
 }
 
