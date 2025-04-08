@@ -68,7 +68,7 @@ func (repo *inner) addTokenCurrentOracle(oracle *schemas.TokenOracle) {
 
 func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64) {
 	var v2CloseBlock int64 = 19752044
-	if blockNum > v2CloseBlock { // disable v1 and v2
+	if blockNum > v2CloseBlock && core.GetBaseChainId(repo.client) == 1 { // disable v1 and v2
 		addrs := repo.adapters.GetAdapterAddressByName(ds.AddressProvider)
 		adapter := repo.adapters.GetAdapter(addrs[0]).(*address_provider.AddressProvider)
 		for _, v := range []int16{2} { // 29 v1 accounts still open
