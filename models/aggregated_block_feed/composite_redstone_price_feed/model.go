@@ -2,7 +2,6 @@ package composite_redstone_price_feed
 
 import (
 	"math/big"
-	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -28,19 +27,18 @@ func (feed CompositeRedStonePriceFeed) GetRedstonePF() []*core.RedStonePF {
 		feed.DetailsDS.Info[feed.GetAddress()],
 	}
 }
-
-func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *CompositeRedStonePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *CompositeRedStonePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
 func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStonePriceFeed {
-	pf0, err := core.CallFuncWithExtraBytes(adapter.Client, "385aee1b", common.HexToAddress(adapter.Address), 0, nil) // priceFeed0
+	pf0, err := core.CallFuncGetSingleValue(adapter.Client, "385aee1b", common.HexToAddress(adapter.Address), 0, nil) // priceFeed0
 	log.CheckFatal(err)
-	pf1, err := core.CallFuncWithExtraBytes(adapter.Client, "ab0ca0e1", common.HexToAddress(adapter.Address), 0, nil) // priceFeed1
+	pf1, err := core.CallFuncGetSingleValue(adapter.Client, "ab0ca0e1", common.HexToAddress(adapter.Address), 0, nil) // priceFeed1
 	log.CheckFatal(err)
 	//
-	decimals, err := core.CallFuncWithExtraBytes(adapter.Client, "313ce567", common.BytesToAddress(pf0), 0, nil) // decimals
+	decimals, err := core.CallFuncGetSingleValue(adapter.Client, "313ce567", common.BytesToAddress(pf0), 0, nil) // decimals
 	log.CheckFatal(err)
 	obj := &CompositeRedStonePriceFeed{
 		BasePriceFeed: base_price_feed.NewBasePriceFeedFromAdapter(adapter),
@@ -93,20 +91,20 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", results[0].ReturnData)
 			log.CheckFatal(err)
 			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
-			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
+			log.Info("onchain price found for ", mdl.Address, "at", blockNum, price) //  ONCHAIN_REDSTONE_PRICE
 			return parsePriceForRedStone(price, isPriceInUSD)
-		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) < time.Hour {
-			// } else {
-			// 	if len(force) == 0 || !force[0] {
-			// 		return nil
-			// 	}
+			// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+		} else {
+			if len(force) == 0 || !force[0] {
+				return nil
+			}
 		}
 	}
-	validTokens := mdl.TokensValidAtBlock(blockNum)
+	validTokens := mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))
 	targetPrice := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 	if targetPrice.Cmp(new(big.Int)) == 0 {
-		log.Warnf("RedStone composite targetprice for %s at %d is %s", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, targetPrice)
+		log.Warnf("RedStone composite targetprice for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, targetPrice)
 		return nil
 	}
 	//

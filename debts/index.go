@@ -14,12 +14,12 @@ import (
 )
 
 type DebtEngine struct {
-	repo           ds.RepositoryI
-	db             *gorm.DB
-	client         core.ClientI
-	config         *config.Config
-	lastCSS        map[string]*schemas.CreditSessionSnapshot
-	tokenLastPrice map[schemas.PFVersion]map[string]*schemas.PriceFeed
+	repo    ds.RepositoryI
+	db      *gorm.DB
+	client  core.ClientI
+	config  *config.Config
+	lastCSS map[string]*schemas.CreditSessionSnapshot
+
 	//// credit_manager -> token -> liquidity threshold
 	poolLastInterestData   map[string]*schemas.PoolInterestData
 	debts                  []*schemas.Debt
@@ -28,15 +28,16 @@ type DebtEngine struct {
 	currentDebts           []*schemas.CurrentDebt
 	liquidableBlockTracker map[string]*schemas.LiquidableAccount
 	// cm to paramters
-	lastParameters    map[string]*schemas.Parameters
-	isTesting         bool
-	farmingCalc       *FarmingCalculator
-	lastTvlSnapshot   *schemas.TvlSnapshots
-	lastRebaseDetails *schemas.RebaseDetailsForDB
+	lastParameters       map[string]*schemas.Parameters
+	isTesting            bool
+	farmingCalc          *FarmingCalculator
+	marketTolastTvlBlock map[string]int64
+	lastRebaseDetails    *schemas.RebaseDetailsForDB
 	// used for v3 calc account fields
 	currentTs uint64
 	v3DebtDetails
-	tokenLTRamp map[string]map[string]*schemas_v3.TokenLTRamp
+	tokenLTRamp  map[string]map[string]*schemas_v3.TokenLTRamp
+	priceHandler *PriceHandler
 }
 
 func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI, testing bool) ds.DebtEngineI {
@@ -46,7 +47,6 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		client:                 client,
 		config:                 config,
 		lastCSS:                make(map[string]*schemas.CreditSessionSnapshot),
-		tokenLastPrice:         make(map[schemas.PFVersion]map[string]*schemas.PriceFeed),
 		poolLastInterestData:   make(map[string]*schemas.PoolInterestData),
 		lastDebts:              make(map[string]*schemas.Debt),
 		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),
@@ -55,7 +55,14 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
 		v3DebtDetails:          Newv3DebtDetails(),
 		tokenLTRamp:            map[string]map[string]*schemas_v3.TokenLTRamp{},
+		priceHandler:           NewPriceHandler(repo),
+		marketTolastTvlBlock:   make(map[string]int64),
 	}
+}
+
+func (eng *DebtEngine) InitTest() {
+	eng.priceHandler.poTotokenOracle = eng.repo.GetTokenOracles()
+	eng.priceHandler.init(eng.repo)
 }
 
 func NewDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo ds.RepositoryI) ds.DebtEngineI {
@@ -77,16 +84,17 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	minSynced := lastSync.Min()
 	// lastDebtSynced = 227143579
 	log.Info("Debt engine started, from", minSynced)
-	eng.loadLastTvlSnapshot(lastSync.Tvl)
+	eng.loadLastTvlSnapshot()
 	eng.loadLastCSS(minSynced)
 	eng.loadLastRebaseDetails(minSynced)
-	eng.loadTokenLastPrice(minSynced)
 	eng.loadAllowedTokenThreshold(minSynced)
 	eng.loadLastLTRamp(minSynced)
 	eng.loadPoolLastInterestData(minSynced)
 	eng.loadLastDebts(minSynced)
 	eng.loadParameters(minSynced)
 	eng.loadLiquidableAccounts(minSynced)
+	//
+	eng.priceHandler.load(minSynced, eng.db)
 	// v3
 	// eng.loadAccounQuotaInfo(lastDebtSynced, eng.db)
 	eng.loadPoolQuotaDetails(minSynced, eng.db)
@@ -100,13 +108,14 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	}
 	eng.processBlocksInBatch(minSynced, adaptersSyncedTill, lastSync)
 }
-func (eng *DebtEngine) loadLastTvlSnapshot(lastTvlBlock int64) {
-	lastTvlSnapshot := &schemas.TvlSnapshots{}
-	if err := eng.db.Raw(`SELECT * FROM tvl_snapshots ORDER BY block_num DESC LIMIT 1`).Find(lastTvlSnapshot).Error; err != nil {
+func (eng *DebtEngine) loadLastTvlSnapshot() {
+	tvlsnaps := []*schemas.TvlSnapshots{}
+	if err := eng.db.Raw(`SELECT * FROM tvl_snapshots ORDER BY block_num,market DESC LIMIT 1`).Find(&tvlsnaps).Error; err != nil {
 		log.Fatal(err)
 	}
-	lastTvlSnapshot.BlockNum = utils.Min(lastTvlBlock, lastTvlSnapshot.BlockNum)
-	eng.lastTvlSnapshot = lastTvlSnapshot
+	for _, entry := range tvlsnaps {
+		eng.marketTolastTvlBlock[entry.Market] = entry.BlockNum
+	}
 }
 
 // load blocks from > and to <=

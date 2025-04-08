@@ -3,13 +3,13 @@ package rebase_token
 import (
 	"encoding/hex"
 	"math/big"
-	"reflect"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -21,15 +21,7 @@ func (mdl *RebaseToken) previousDetails() stETHValues {
 		if !ok {
 			return 0
 		}
-		switch i.(type) {
-		case float64:
-			return int64(i.(float64))
-		case int64:
-			return int64(i.(int64))
-		default:
-			log.Fatal("", reflect.TypeOf(i))
-			return 0
-		}
+		return ds.ToInt(i)
 	}()
 	if blockNum == 0 {
 		return mdl.GetstETHDetails(mdl.DiscoveredAt)

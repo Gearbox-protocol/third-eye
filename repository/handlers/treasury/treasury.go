@@ -169,7 +169,10 @@ func (repo *TreasuryRepo) calFieldsOfTreasurySnapshot(blockNum int64, tss *schem
 		}
 		tokenAddrs = append(tokenAddrs, token)
 	}
-	prices := repo.GetPricesInUSD(blockNum, tokenAddrs)
+	//
+	priceOracle, version, _ := repo.adapters.GetActivePriceOracleByBlockNum(blockNum)
+	prices := repo.getPricesInUSD(blockNum, priceOracle, version, tokenAddrs)
+	//
 	tss.PricesInUSD = &prices
 	tss.ValueInUSD = tss.Balances.ValueInUSD(prices)
 	tss.OperationalValueInUSD = tss.OperationalBalances.ValueInUSD(prices)

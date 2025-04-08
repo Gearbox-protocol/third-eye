@@ -3,7 +3,6 @@ package redstone_price_feed
 import (
 	"encoding/hex"
 	"math/big"
-	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -21,8 +20,8 @@ type RedstonePriceFeed struct {
 	*base_price_feed.BasePriceFeed
 }
 
-func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, pfVersion schemas.PFVersion) *RedstonePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, pfVersion)
+func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *RedstonePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 
@@ -62,7 +61,7 @@ func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multic
 }
 
 func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
-	validTokens := mdl.TokensValidAtBlock(blockNum)
+	validTokens := mdl.Repo.TokensValidAtBlock(mdl.GetAddress(), blockNum)
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
 	{
 		if len(results) != 1 {
@@ -72,13 +71,13 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", results[0].ReturnData)
 			log.CheckFatal(err)
 			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
-			// log.Info("onchain price found for ", mdl.Address, "at", blockNum, price)
+			// log.Info("onchain price found for ", mdl.Address, "at", blockNum, price) // ONCHAIN_REDSTONE_PRICE
 			return parsePriceForRedStone(price, isPriceInUSD)
-		} else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) < time.Hour {
-			// } else {
-			// 	if (len(force) ==0 || !force[0] ) {
-			// 		return nil
-			// 	}
+			// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+		} else {
+			if len(force) == 0 || !force[0] {
+				return nil
+			}
 		}
 	}
 	{

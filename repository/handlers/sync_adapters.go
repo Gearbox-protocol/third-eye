@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"fmt"
+	"sort"
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -25,7 +27,8 @@ import (
 	lmrewardsv2 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v2"
 	lmrewardsv3 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v3"
 	"github.com/Gearbox-protocol/third-eye/models/pool_quota_keeper"
-	"github.com/Gearbox-protocol/third-eye/models/price_oracle"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle/po_v2"
+	"github.com/Gearbox-protocol/third-eye/models/price_oracle/po_v3"
 	"github.com/Gearbox-protocol/third-eye/models/rebase_token"
 	"github.com/Gearbox-protocol/third-eye/models/treasury"
 	"github.com/Gearbox-protocol/third-eye/models/wrappers/pool_wrapper"
@@ -138,7 +141,11 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	case ds.CreditManager:
 		return credit_manager.NewCMFromAdapter(adapter)
 	case ds.PriceOracle:
-		return price_oracle.NewPriceOracleFromAdapter(adapter)
+		if adapter.GetVersion().LessThan(core.NewVersion(300)) {
+			return po_v2.NewPriceOracleFromAdapter(adapter)
+		} else {
+			return po_v3.NewPriceOracleFromAdapter(adapter)
+		}
 	case ds.ChainlinkPriceFeed:
 		return chainlink_price_feed.NewChainlinkPriceFeedFromAdapter(adapter, false)
 	case ds.CompositeChainlinkPF:
@@ -169,6 +176,9 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 	return nil
 }
 
+// if adapter is already present for that address don't add .
+// if the price oracle for v2 is diabled when v3 price oracle is added,
+// if the price oracle for v2 is added, v1 po is disabled.
 func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
@@ -179,12 +189,13 @@ func (repo *SyncAdaptersRepo) AddSyncAdapter(newAdapterI ds.SyncAdapterI) {
 		return
 	}
 	if newAdapterI.GetName() == ds.PriceOracle {
-		oldPriceOracleAddrs := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
-		for _, addr := range oldPriceOracleAddrs {
-			oldPriceOracle := repo.GetAdapter(addr)
-			if !oldPriceOracle.IsDisabled() {
-				oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
-			}
+		switch newAdapterI.GetAddress() {
+		case "0x6385892aCB085eaa24b745a712C9e682d80FF681": // v2
+			oldPriceOracle := repo.GetAdapter("0x0e74a08443c5E39108520589176Ac12EF65AB080") // v1
+			oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
+		case "0x599f585D1042A14aAb194AC8031b2048dEFdFB85": // v3
+			oldPriceOracle := repo.GetAdapter("0x6385892aCB085eaa24b745a712C9e682d80FF681") // v2
+			oldPriceOracle.SetBlockToDisableOn(newAdapterI.GetDiscoveredAt())
 		}
 	}
 	repo.addSyncAdapter(newAdapterI)
@@ -203,35 +214,31 @@ func (repo *SyncAdaptersRepo) GetPoolWrapper() *pool_wrapper.PoolWrapper {
 
 // return the active first oracle under blockNum
 // if all disabled return the last one
-func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle string, version core.VersionType, err error) {
-	var latestBlock int64 = 0
+// blockNum ==0 is latest
+func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (latestOracle schemas.PriceOracleT, version core.VersionType, err error) {
 	oracles := repo.kit.GetAdapterAddressByName(ds.PriceOracle)
+	data := make([]ds.SyncAdapterI, 0, len(oracles))
 	for _, addr := range oracles {
 		oracleAdapter := repo.GetAdapter(addr)
-		// only get the oracles that are present at the blocknumg
-		if oracleAdapter.GetDiscoveredAt() <= blockNum {
-			// if the oracle is discoverdat later
-			if latestBlock < oracleAdapter.GetDiscoveredAt() ||
-				// if the oracles are discoveredat at same time but the version of oracle is more
-				(latestBlock == oracleAdapter.GetDiscoveredAt() && oracleAdapter.GetVersion().MoreThan(version)) {
-				latestBlock = oracleAdapter.GetDiscoveredAt()
-				latestOracle = addr
-				version = oracleAdapter.GetVersion()
-			}
+		if blockNum >= oracleAdapter.GetDiscoveredAt() || blockNum == 0 {
+			data = append(data, oracleAdapter)
 		}
 	}
-	if latestOracle == "" {
-		err = fmt.Errorf("not Found")
+	sort.Slice(data, func(a, b int) bool {
+		return data[a].GetDiscoveredAt() > data[b].GetDiscoveredAt()
+	})
+	//
+	err = fmt.Errorf("not found")
+	var ans ds.SyncAdapterI
+	//
+	for _, e := range data {
+		if ans != nil && ans.GetVersion() != e.GetVersion() {
+			break
+		}
+		ans = e
+		err = nil
 	}
+	latestOracle = schemas.PriceOracleT(ans.GetAddress())
+	version = ans.GetVersion()
 	return
-}
-
-func (repo *SyncAdaptersRepo) GetPriceOracleByDiscoveredAt(blockNum int64) (string, error) {
-	addrProviderAddr := repo.kit.GetAdapterAddressByName(ds.AddressProvider)
-	addrProvider := repo.GetAdapter(addrProviderAddr[0])
-	priceOracle := addrProvider.GetDetailsByKey(fmt.Sprintf("%d", blockNum))
-	if priceOracle == "" {
-		return "", fmt.Errorf("not Found")
-	}
-	return priceOracle, nil
 }

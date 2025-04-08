@@ -70,39 +70,37 @@ func NewRepo(client core.ClientI) *Repo {
 	r := Repo{dieselTokens: map[string]*schemas.UTokenAndPool{}, tStore: priceFetcher.NewTokensStore(client)}
 	r.dc = dc_wrapper.NewDataCompressorWrapper(client)
 	r.client = client
-	r.dc.AddDataCompressorByVersion(core.NewVersion(300), "0x104c4e209329524adb0febE8b6481346a6eB75C6", 19363134)
+	r.dc.AddDataCompressorv300(core.NewVersion(300), "0x104c4e209329524adb0febE8b6481346a6eB75C6", 19363134)
 	return &r
 }
 
-func getFarmsv3(client core.ClientI, repo *Repo) []*v3.Farmv3 {
+func getFarmsv3(client core.ClientI, repo *Repo, blockNum int64) []*v3.Farmv3 {
 	poolAndFarms := []*v3.Farmv3{}
-	pools, found := repo.GetDCWrapper().GetPoolListv3()
-	if found {
-		farmingPools := map[common.Address]common.Address{}
-		for _, pool := range pools {
-			if !utils.Contains([]string{"0x4d56c9cBa373AD39dF69Eb18F076b7348000AE09", "0xe7146F53dBcae9D6Fa3555FE502648deb0B2F823"}, pool.Addr.Hex()) {
-				continue
-			}
-			for _, zapper := range pool.Zappers {
-				// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
-				if _, ok := farmingPools[zapper.TokenOut]; ok && zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
-					if zapper.TokenOut.Hex() == "0x580e39ADb33E106fFc2712cBD57B9cE954dcfE75" { // GHO
-						zapper.TokenOut = common.HexToAddress("0xE2037090f896A858E3168B978668F22026AC52e7")
-					}
-					if zapper.TokenOut.Hex() == "0x7aB44F17EE21A3D6Bb2aeb1c6cA8B875041608C4" { // DAI
-						zapper.TokenOut = common.HexToAddress("0xC853E4DA38d9Bd1d01675355b8c8f3BBC1451973")
-					}
-					log.Info(zapper.TokenOut)
-					poolAndFarms = append(poolAndFarms, &v3.Farmv3{
-						Farm:        zapper.TokenOut.Hex(),
-						Pool:        pool.Addr.Hex(),
-						DieselToken: pool.DieselToken.Hex(),
-						// initial
-						Fpt:         (*core.BigInt)(new(big.Int)),
-						TotalSupply: (*core.BigInt)(new(big.Int)),
-						Reward:      (*core.BigInt)(new(big.Int)),
-					})
+	pools := repo.GetDCWrapper().GetZapperInfo(blockNum)
+	farmingPools := map[common.Address]common.Address{}
+	for _, pool := range pools {
+		if !utils.Contains([]string{"0x4d56c9cBa373AD39dF69Eb18F076b7348000AE09", "0xe7146F53dBcae9D6Fa3555FE502648deb0B2F823"}, pool.Addr.Hex()) {
+			continue
+		}
+		for _, zapper := range pool.Zappers {
+			// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
+			if _, ok := farmingPools[zapper.TokenOut]; ok && zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
+				if zapper.TokenOut.Hex() == "0x580e39ADb33E106fFc2712cBD57B9cE954dcfE75" { // GHO
+					zapper.TokenOut = common.HexToAddress("0xE2037090f896A858E3168B978668F22026AC52e7")
 				}
+				if zapper.TokenOut.Hex() == "0x7aB44F17EE21A3D6Bb2aeb1c6cA8B875041608C4" { // DAI
+					zapper.TokenOut = common.HexToAddress("0xC853E4DA38d9Bd1d01675355b8c8f3BBC1451973")
+				}
+				log.Info(zapper.TokenOut)
+				poolAndFarms = append(poolAndFarms, &v3.Farmv3{
+					Farm:        zapper.TokenOut.Hex(),
+					Pool:        pool.Addr.Hex(),
+					DieselToken: pool.DieselToken.Hex(),
+					// initial
+					Fpt:         (*core.BigInt)(new(big.Int)),
+					TotalSupply: (*core.BigInt)(new(big.Int)),
+					Reward:      (*core.BigInt)(new(big.Int)),
+				})
 			}
 		}
 	}
@@ -135,7 +133,7 @@ func main() {
 		adapter.Repo = r
 		lm = v3.NewLMRewardsv3FromAdapter(adapter)
 	}
-	lm.SetUnderlyingState(getFarmsv3(client, r))
+	lm.SetUnderlyingState(getFarmsv3(client, r, lm.LastSync))
 	lm.SetUnderlyingState([]*v3.UserLMDetails{})
 
 	// update the logs

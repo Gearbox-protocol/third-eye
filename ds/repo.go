@@ -2,6 +2,8 @@ package ds
 
 import (
 	"math/big"
+	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -62,11 +64,10 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	GetTokenOracles() map[schemas.PFVersion]map[string]*schemas.TokenOracle
+	GetTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
 	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, forChainlinkNewFeed ...bool)
 	//
-	GetPrice(token string) *big.Int
 	AddPriceFeed(pf *schemas.PriceFeed)
 	// token funcs
 	AddAllowedProtocol(logID uint, txHash, creditFilter string, p *schemas.Protocol)
@@ -79,7 +80,8 @@ type RepositoryI interface {
 	UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	TransferAccountAllowed(*schemas.TransferAccountAllowed)
-	GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap
+	GetPricesInUSD(blockNum int64, pool string, tokenAddrs []string) core.JsonFloatMap
+	GetPriceInUSD(blockNum int64, pool string, tokenAddrs string) *big.Int
 	//
 	GetToken(addr string) *schemas.Token
 	GetTokens() []string
@@ -143,9 +145,30 @@ type RepositoryI interface {
 	IsBlockRecent(block int64, dur time.Duration) bool
 	GetFeedToTicker(feed string, composite string) common.Address
 	AddFeedToTicker(feed string, ticker common.Address)
+	//  v310
+	AddRelation(details *schemas.Relation)
+	TokensValidAtBlock(string, int64) []*schemas.TokenOracle
+	TokenAddrsValidAtBlock(string, int64) map[string]bool
+	GetActivePriceOracleByBlockNum(blockNum int64) (schemas.PriceOracleT, core.VersionType, error)
 }
 
 func IsTestnet(client core.ClientI) bool {
 	chainid := core.GetChainId(client)
 	return log.GetNetworkName(chainid) != log.GetBaseNet(chainid)
+}
+
+func ToInt(i interface{}) int64 {
+	switch i := i.(type) {
+	case string:
+		x, err := strconv.ParseInt(i, 10, 64)
+		log.WrapErrWithLineN(err, 3)
+		return x
+	case float64:
+		return int64(i)
+	case int64:
+		return int64(i)
+	default:
+		log.Fatal("", reflect.TypeOf(i))
+		return 0
+	}
 }

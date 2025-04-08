@@ -8,6 +8,7 @@ import (
 func (repo *Repository) Flush(syncTill int64) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
+	// log.Fatal("")
 	// time.Sleep(time.Hour)
 	// preferred order (adapter | token) => pools => cm => credit session => blocks => allowedTokens
 
@@ -29,9 +30,10 @@ func (repo *Repository) Flush(syncTill int64) error {
 	repo.saveLMRewardDetailsv3(tx, syncTill)
 
 	repo.SessionRepo.Save(tx)
-	repo.BlocksRepo.Save(tx, syncTill)
+	repo.BlocksRepo.Save(tx)
 
 	repo.AllowedTokenRepo.Save(tx)
+	repo.TokenOracleRepo.Save(tx, syncTill)
 
 	// save current treasury snapshot
 	repo.TreasuryRepo.Save(tx)

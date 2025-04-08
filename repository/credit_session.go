@@ -11,7 +11,7 @@ import (
 func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string, logID uint) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	repo.SessionRepo.AddCreditSession(session, loadedFromDB)
+	repo.SessionRepo.AddCreditSession(session, loadedFromDB, txHash)
 	repo.accountManager.AddAccountDetails(&ds.SessionData{
 		Since:         session.Since,
 		Account:       session.Account,

@@ -45,7 +45,7 @@ func (repo *SessionRepo) LoadCreditSessions(db *gorm.DB, lastDebtSync int64) {
 		log.Fatal(err)
 	}
 	for _, session := range data {
-		repo.AddCreditSession(session, true)
+		repo.AddCreditSession(session, true, "")
 	}
 }
 
@@ -63,12 +63,12 @@ func (repo *SessionRepo) Save(tx *gorm.DB) {
 }
 
 // external funcs
-func (repo *SessionRepo) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool) {
+func (repo *SessionRepo) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string) {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
 	if repo.sessions[session.ID] == nil {
 		if !loadedFromDB {
-			log.Infof("Add session %s", session.ID)
+			log.Infof("Add session %s in %s", session.ID, txHash)
 		}
 		repo.sessions[session.ID] = session
 	} else {

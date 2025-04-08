@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -148,8 +149,14 @@ func (repo AdapterKitHandler) GetRetryFeedForDebts() (addrs []ds.QueryPriceFeedI
 // TODO: find eng.repo.GetAdapterAddressByName(ds.CreditManager)
 func (repo AdapterKitHandler) GetAdapterAddressByName(name string) []string { // is not used by most of the wrappers only
 	// REVERT_CM_WRAPPER
+	if name == ds.ContractRegister {
+		log.Warn("ContractRegister is not allowed for GetAdapterAddressByName")
+	}
 	if name == ds.CreditManager {
 		return repo.cmWrapper.GetUnderlyingAdapterAddrs()
+	}
+	if name == ds.Pool {
+		return repo.poolWrapper.GetUnderlyingAdapterAddrs()
 	}
 	// REVERT_ADMIN_WRAPPER
 	if utils.Contains([]string{

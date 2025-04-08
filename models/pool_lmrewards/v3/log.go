@@ -125,8 +125,9 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 
 // over right to set new farms
 func (mdl *LMRewardsv3) GetLastSync() int64 {
-	mdl.getFarmsAndPoolsv3()
-	return mdl.SyncAdapter.GetLastSync()
+	lastSync := mdl.SyncAdapter.GetLastSync()
+	mdl.getFarmsAndPoolsv3(lastSync)
+	return lastSync
 }
 
 // LMRewardsv2 has fake address so no need for adding .Address value to addrs

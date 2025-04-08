@@ -58,7 +58,7 @@ func (r *Repo) GetDCWrapper() *dc_wrapper.DataCompressorWrapper {
 func NewRepo(client core.ClientI) *Repo {
 	r := Repo{dieselTokens: map[string]*schemas.UTokenAndPool{}, tStore: priceFetcher.NewTokensStore(client)}
 	r.dc = dc_wrapper.NewDataCompressorWrapper(client)
-	r.dc.AddDataCompressorByVersion(core.NewVersion(300), "0xc0101abAFce0BD3de10aa1F3dd827672B150436E", 18798875)
+	r.dc.AddDataCompressorv300(core.NewVersion(300), "0xc0101abAFce0BD3de10aa1F3dd827672B150436E", 18798875)
 	return &r
 }
 func main() {

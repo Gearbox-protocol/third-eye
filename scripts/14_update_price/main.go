@@ -20,7 +20,7 @@ func main() {
 	log.CheckFatal(err)
 	for _, entry := range data {
 		log.Info(entry.Address)
-		underlyingfeeding, err := core.CallFuncWithExtraBytes(client, "741bef1a", common.HexToAddress(entry.Address), 0, nil)
+		underlyingfeeding, err := core.CallFuncGetSingleValue(client, "741bef1a", common.HexToAddress(entry.Address), 0, nil)
 		log.CheckFatal(err)
 		underlying := common.BytesToAddress(underlyingfeeding).Hex()
 		entry.Details["underlyings"] = []string{underlying}

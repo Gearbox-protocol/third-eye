@@ -3,6 +3,7 @@ package multicall_processor
 import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 )
 
 const (
@@ -25,9 +26,9 @@ type FacadeAccountAction struct {
 	logId uint
 }
 
-type (
-	v FacadeAccountAction
-)
+// type (
+// 	v FacadeAccountAction
+// )
 
 func (v FacadeAccountAction) IsOpen() bool {
 	return v.Type == GBFacadeOpenEvent
@@ -50,5 +51,5 @@ type MulticallProcessorI interface {
 	AddLiquidateEvent(event *schemas.AccountOperation)
 	PopNonMulticallEvents() []*schemas.AccountOperation
 	PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction)
-	End(logId uint)
+	End(logId uint, debts []pool_v3.ManageDebt, _ string)
 }

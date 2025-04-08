@@ -19,7 +19,7 @@ type RepoWrapper struct {
 func (repo RepoWrapper) GetToken(addr string) *schemas.Token {
 	return repo.tokens[addr]
 }
-func (repo RepoWrapper) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+func (repo RepoWrapper) GetPricesInUSD(blockNum int64, _ string, tokenAddrs []string) core.JsonFloatMap {
 	return repo.prices
 }
 func TestGetCollateralAmountOnOpen(t *testing.T) {

@@ -43,8 +43,8 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	data := []*schemas.Block{}
 	err := repo.db.
 		Preload("RebaseDetailsForDB").Preload("Params").Preload("QuotaDetails").
-		Preload("CSS").Preload("PoolStats").
-		Preload("LTRamp").Preload("AllowedTokens").Preload("PriceFeeds").
+		Preload("CSS").Preload("PoolStats").Preload("TokenOracles").
+		Preload("LTRamp").Preload("AllowedTokens").Preload("PriceFeeds").Preload("Relations"). // relations due to v310
 		// v3
 		// quotadetails, ltramp
 		Find(&data, "id > ? AND id <= ?", from, to).Error
@@ -56,10 +56,13 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	}
 }
 
-func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
+func (repo *BlocksRepo) Save(tx *gorm.DB) {
 	defer utils.Elapsed("blocks sql statements")()
 	blocksToSync := make([]*schemas.Block, 0, len(repo.GetBlocks()))
 	for _, block := range repo.GetBlocks() {
+		if len(block.Relations) != 0 {
+			log.Info(utils.ToJson(block.Relations))
+		}
 		blocksToSync = append(blocksToSync, block)
 	}
 	// clauses not needed here
@@ -67,21 +70,6 @@ func (repo *BlocksRepo) Save(tx *gorm.DB, blockNum int64) {
 		UpdateAll: true,
 	}).CreateInBatches(blocksToSync, 100).Error
 	log.CheckFatal(err)
-	repo.prevStore.saveCurrentPrices(repo.client, tx, blockNum, repo.SetAndGetBlock(blockNum).Timestamp)
-}
-
-// external funcs
-func (repo *BlocksRepo) GetPrice(token string) *big.Int {
-	store := repo.prevStore.prevPriceFeeds[schemas.V3PF_MAIN]
-	if store != nil && store[token] != nil {
-		return store[token].PriceBI.Convert()
-	}
-
-	store = repo.prevStore.prevPriceFeeds[schemas.V2PF]
-	if store != nil && store[token] != nil {
-		return store[token].PriceBI.Convert()
-	}
-	return nil
 }
 
 func (repo *BlocksRepo) GetBlocks() map[int64]*schemas.Block {
@@ -194,10 +182,6 @@ func (repo *BlocksRepo) Clear() {
 
 // setter
 func (repo *BlocksRepo) AddPriceFeed(pf *schemas.PriceFeed) {
-	if pf.MergedPFVersion == 0 {
-		log.Fatal(utils.ToJson(pf))
-	}
-
 	if repo.prevStore.isPFAdded(pf) {
 		repo.SetAndGetBlock(pf.BlockNumber).AddPriceFeed(pf)
 	}
@@ -230,4 +214,8 @@ func (repo *BlocksRepo) AddRebaseDetailsForDB(transfer *schemas.RebaseDetailsFor
 
 func (repo *BlocksRepo) TransferAccountAllowed(obj *schemas.TransferAccountAllowed) {
 	repo.SetAndGetBlock(obj.BlockNumber).AddTransferAccountAllowed(obj)
+}
+
+func (repo *BlocksRepo) AddRelation(details *schemas.Relation) {
+	repo.SetAndGetBlock(details.BlockNum).AddRelation(details)
 }

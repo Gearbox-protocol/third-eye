@@ -93,11 +93,11 @@ func (mdl *AQFWrapper) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGrou
 func (mdl *AQFWrapper) updateQueryPrices(pfs []*schemas.PriceFeed) {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
-	for _, pf := range pfs {
-		if pf.MergedPFVersion == 0 {
-			log.Fatalf("MergedPFVersion is 0 for %s", pf)
-		}
-	}
+	// for _, pf := range pfs {
+	// 	if pf.MergedPFVersion == 0 {
+	// 		log.Fatalf("MergedPFVersion is 0 for %s", pf)
+	// 	}
+	// }
 	mdl.queryFeedPrices = append(mdl.queryFeedPrices, pfs...)
 }
 
@@ -128,7 +128,8 @@ type adapterAndNoCall struct {
 func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []adapterAndNoCall) {
 	//
 	for _, adapter := range mdl.QueryFeeds {
-		if blockNum <= adapter.GetLastSync() || len(adapter.TokensValidAtBlock(blockNum)) == 0 {
+		// log.Info(adapter.GetAddress(), len(mdl.Repo.TokenAddrsValidAtBlock(adapter.GetAddress(), blockNum)))
+		if blockNum <= adapter.GetLastSync() || len(mdl.Repo.TokenAddrsValidAtBlock(adapter.GetAddress(), blockNum)) == 0 {
 			continue
 		}
 		moreCalls, isQueryable := adapter.GetCalls(blockNum)
@@ -152,16 +153,7 @@ func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeed
 	if priceData == nil {
 		return nil
 	}
-	priceFeeds := []*schemas.PriceFeed{}
-	for _, entry := range adapter.TokensValidAtBlock(blockNum) {
-		priceDataCopy := priceData.Clone()
-		//
-		priceDataCopy.BlockNumber = blockNum
-		priceDataCopy.Token = entry.Token
-		priceDataCopy.MergedPFVersion = entry.MergedPFVersion
-		priceDataCopy.Feed = adapter.GetAddress()
-		//
-		priceFeeds = append(priceFeeds, priceDataCopy)
-	}
-	return priceFeeds
+	priceData.Feed = adapter.GetAddress()
+	priceData.BlockNumber = blockNum
+	return []*schemas.PriceFeed{priceData}
 }

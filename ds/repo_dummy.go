@@ -55,7 +55,7 @@ func (DummyRepo) SetAndGetBlock(blockNum int64) *schemas.Block {
 func (DummyRepo) GetBlocks() map[int64]*schemas.Block {
 	return nil
 }
-func (DummyRepo) GetTokenOracles() map[schemas.PFVersion]map[string]*schemas.TokenOracle {
+func (DummyRepo) GetTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle {
 	return nil
 }
 func (DummyRepo) GetDisabledTokens() []*schemas.AllowedToken {
@@ -76,8 +76,11 @@ func (DummyRepo) GetExecuteParser() ExecuteParserI {
 // price feed/oracle funcs
 func (DummyRepo) DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle) {
 }
-func (DummyRepo) GetPrice(token string) *big.Int {
+func (DummyRepo) GetPriceInUSD(blockNum int64, _ string, tokenAddrs string) *big.Int {
 	return nil
+}
+func (DummyRepo) GetActivePriceOracleByBlockNum(blockNum int64) (schemas.PriceOracleT, core.VersionType, error) {
+	return "", core.VersionType{}, nil
 }
 func (r *DummyRepo) AddPriceFeed(pf *schemas.PriceFeed) {
 	r.PFs = append(r.PFs, pf)
@@ -111,7 +114,7 @@ func (DummyRepo) UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurat
 }
 func (DummyRepo) TransferAccountAllowed(*schemas.TransferAccountAllowed) {
 }
-func (DummyRepo) GetPricesInUSD(blockNum int64, tokenAddrs []string) core.JsonFloatMap {
+func (DummyRepo) GetPricesInUSD(blockNum int64, _ string, tokenAddrs []string) core.JsonFloatMap {
 	return nil
 }
 
@@ -251,6 +254,8 @@ func (DummyRepo) GetTokenFromSdk(string) string {
 func (DummyRepo) AddTokenLTRamp(*schemas_v3.TokenLTRamp)   {}
 func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails) {}
 
+func (DummyRepo) AddRelation(details *schemas.Relation) {}
+
 func (DummyRepo) GetAccountQuotaMgr() *AccountQuotaMgr              { return nil }
 func (DummyRepo) IsBlockRecent(block int64, dur time.Duration) bool { return false }
 func (DummyRepo) GetRedStonemgr() redstone.RedStoneMgrI {
@@ -270,14 +275,21 @@ func (DieselBalance) TableName() string {
 	return "diesel_balances"
 }
 
+func (DummyRepo) TokensValidAtBlock(string, int64) []*schemas.TokenOracle {
+	return nil
+}
+func (DummyRepo) TokenAddrsValidAtBlock(string, int64) map[string]bool {
+	return nil
+}
+
 type QueryPriceFeedI interface {
-	TokensValidAtBlock(blockNum int64) []schemas.TokenAndMergedPFVersion
+	// TokensValidAtBlock(blockNum int64) []schemas.TokenAndMergedPFVersion
 	GetPFType() string
 	SyncAdapterI
 	GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool)
 	ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed
-	DisableToken(token string, disabledAt int64, pfVersion schemas.PFVersion)
-	AddToken(token string, discoveredAt int64, pfVersion schemas.PFVersion)
-	GetTokens() map[string]map[schemas.PFVersion][]int64
+	// DisableToken(token string, disabledAt int64, pfVersion schemas.PFVersion)
+	// AddToken(token string, discoveredAt int64, pfVersion schemas.PFVersion)
+	// GetTokens() map[string]map[schemas.PFVersion][]int64
 	GetRedstonePF() []*core.RedStonePF
 }

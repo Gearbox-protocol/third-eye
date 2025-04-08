@@ -1,6 +1,8 @@
 package pool_v3
 
 import (
+	"fmt"
+
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -24,6 +26,7 @@ type Poolv3 struct {
 	updatesForPoolv2  []UpdatePoolLedger
 	removeLiqUpdate   *UpdatePoolLedger
 	zappers           *Zappers
+	CMDebtHandler
 }
 
 func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
@@ -32,14 +35,19 @@ func (pool *Poolv3) GetRepayEvent() *schemas.PoolLedger {
 	return ans
 }
 
-func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64) *Poolv3 {
+func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt int64, market string, priceOracle schemas.PriceOracleT) *Poolv3 {
 	syncAdapter := ds.NewSyncAdapter(addr, ds.Pool, discoveredAt, client, repo)
+	if syncAdapter.Details == nil {
+		syncAdapter.Details = core.Json{}
+	}
+	actualVersion := core.FetchActualVersion(addr, discoveredAt, client)
+	syncAdapter.Details["actualV"] = fmt.Sprintf("%d", actualVersion)
 	// syncAdapter.V = syncAdapter.FetchVersion(discoveredAt)
 	pool := NewPoolFromAdapter(
 		syncAdapter,
 	)
 	// underlyingToken
-	underlyingTokenData, err := core.CallFuncWithExtraBytes(client, "2495a599", common.HexToAddress(addr), 0, nil)
+	underlyingTokenData, err := core.CallFuncGetSingleValue(client, "2495a599", common.HexToAddress(addr), 0, nil)
 	log.CheckFatal(err)
 	underlyingToken := common.BytesToAddress(underlyingTokenData[:])
 	repo.GetToken(underlyingToken.Hex())
@@ -52,7 +60,9 @@ func NewPool(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		Address:         pool.Address,
 		DieselToken:     dieselToken,
 		UnderlyingToken: underlyingToken.Hex(),
-		Version:         core.NewVersion(300),
+		Version:         core.NewVersion(actualVersion),
+		Market:          market,
+		PriceOracle:     priceOracle,
 		Name: func() string {
 			con, err := poolv3.NewPoolv3(common.HexToAddress(addr), client)
 			log.CheckFatal(err)
@@ -79,7 +89,8 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 			log.CheckFatal(err)
 			return contract
 		}(),
-		zappers: &Zappers{},
+		zappers:       &Zappers{},
+		CMDebtHandler: NewCMDebtHandler(!(adapter.Details["actualV"] == nil || adapter.GetDetailsByKey("actualV") != "310")), // v310 is inverse of this
 	}
 	obj.setPoolQuotaKeeper()
 	data := &schemas.PoolState{}
@@ -87,7 +98,7 @@ func NewPoolFromAdapter(adapter *ds.SyncAdapter) *Poolv3 {
 	log.CheckFatal(err)
 	// and poolWrapper also need all the address so we need to set underlyingstate when the obj is reported from NewPoolfromAdapter, as a result the state is set in the newpoolfromadapter
 	// setzapper requires address of diesel token of poolv2, so SetUnderlyingState should be called on all pools before calling this function
-	obj.setZapper()
+	obj.setZapper(adapter.LastSync)
 	//
 	return obj
 }

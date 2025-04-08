@@ -3,26 +3,21 @@ package v3
 import (
 	"math/big"
 
-	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/pool_lmrewards"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-func (mdl *LMRewardsv3) getFarmsAndPoolsv3() {
-	// if len(mdl.farms) != 0 { // already set
-	// 	return
-	// }
-	pools, found := mdl.Repo.GetDCWrapper().GetPoolListv3()
-	if found {
-		mdl.SetFarm(pools)
-	}
+func (mdl *LMRewardsv3) getFarmsAndPoolsv3(blockNum int64) {
+	pools := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum)
+	mdl.SetFarm(pools)
 }
 
 func (mdl *LMRewardsv3) setMinPoolSyncedTill(pool common.Address, syncedTill int64, farm string) {
@@ -34,7 +29,7 @@ func (mdl *LMRewardsv3) setMinPoolSyncedTill(pool common.Address, syncedTill int
 	}
 }
 
-func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
+func (mdl *LMRewardsv3) SetFarm(pools []dc_wrapper.PoolZapperInfo) {
 	// farmingPools := core.GetFarmingPoolsToSymbolByChainId(core.GetChainId(mdl.Client))
 	for _, pool := range pools {
 		newfarmsForPool := []common.Address{}
@@ -48,7 +43,7 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 			}
 			// can be diselToken zapperOut -- https://etherscan.io/address/0xcaa199f91294e6ee95f9ea90fe716cbd2f9f2900#code
 			if zapper.TokenIn == pool.Underlying && zapper.TokenOut != pool.DieselToken {
-				_, err := core.CallFuncWithExtraBytes(mdl.Client, "bfe10928", zapper.TokenOut, 0, nil) // distributor on the farm
+				_, err := core.CallFuncGetSingleValue(mdl.Client, "bfe10928", zapper.TokenOut, 0, nil) // distributor on the farm
 				if err != nil {
 					continue
 				}
@@ -88,20 +83,11 @@ func (mdl *LMRewardsv3) SetFarm(pools []dataCompressorv3.PoolData) {
 }
 
 func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
-	dcAddr, found := mdl.Repo.GetDCWrapper().GetLatestv3DC()
-	if !found {
-		if core.GetBaseChainId(mdl.Client) == 146 && blockNum < 9790594 {
-			return
-		}
-		log.Fatalf("DC not found for for %s at latest, blockNum %d ", pool, blockNum)
-	}
-	con, err := dataCompressorv3.NewDataCompressorv3(dcAddr, mdl.Client)
-	log.CheckFatal(err)
-	data, err := con.GetPoolData(nil, common.HexToAddress(pool))
-	if err != nil {
-		log.Fatal(err, "latest", pool)
-	}
-	mdl.SetFarm([]dataCompressorv3.PoolData{data})
+	data := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(pool))
+	mdl.SetFarm(data)
+	// if len(data) == 0 {
+	// 	log.Warnf("Pool Zapperinfo not found in DCWrapper for block:%d, pool:%s ", blockNum, pool)
+	// }
 }
 
 func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {

@@ -49,7 +49,7 @@ func NewCMv3FromAdapter(adapter *ds.SyncAdapter) *CMv3 {
 	//
 	// get expiration date for liquidation call and setting expired state
 	obj.expirationDate = func() uint64 {
-		data, err := core.CallFuncWithExtraBytes(obj.Client, "8f620487",
+		data, err := core.CallFuncGetSingleValue(obj.Client, "8f620487",
 			common.HexToAddress(obj.GetDetailsByKey("facade")), obj.LastSync, nil)
 		log.CheckFatal(err)
 		return uint64(new(big.Int).SetBytes(data).Int64())

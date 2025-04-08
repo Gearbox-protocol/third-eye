@@ -33,11 +33,11 @@ func (mdl *Cmv1v2) CommonInitState(version core.VersionType) {
 
 	underlyingToken := func() common.Address {
 		if version.IsGBv1() {
-			data, err := core.CallFuncWithExtraBytes(mdl.Client, "2495a599", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
+			data, err := core.CallFuncGetSingleValue(mdl.Client, "2495a599", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
 			log.CheckFatal(err) // [underlyingToken] on credit_manager v1
 			return common.BytesToAddress(data)
 		} else {
-			data, err := core.CallFuncWithExtraBytes(mdl.Client, "6f307dc3", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil) // [underlying] on credit manager v2
+			data, err := core.CallFuncGetSingleValue(mdl.Client, "6f307dc3", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil) // [underlying] on credit manager v2
 			log.CheckFatal(err)
 			return common.BytesToAddress(data)
 		}
@@ -45,7 +45,7 @@ func (mdl *Cmv1v2) CommonInitState(version core.VersionType) {
 	mdl.Repo.GetToken(underlyingToken.Hex())
 	//
 
-	data, err := core.CallFuncWithExtraBytes(mdl.Client, "570a7af2", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
+	data, err := core.CallFuncGetSingleValue(mdl.Client, "570a7af2", common.HexToAddress(mdl.Address), mdl.DiscoveredAt, nil)
 	// [PoolService] on creditManager
 	log.CheckFatal(err)
 	poolAddr := common.BytesToAddress(data)
