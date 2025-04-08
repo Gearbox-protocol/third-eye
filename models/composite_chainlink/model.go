@@ -8,6 +8,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	cpf "github.com/Gearbox-protocol/third-eye/models/chainlink_price_feed"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,16 +29,6 @@ type CompositeChainlinkPF struct {
 // address is set as identifier(random), as same oracle can be added for different tokens.
 func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, priceOracle schemas.PriceOracleT) *CompositeChainlinkPF {
 	oracleAddr := common.HexToAddress(oracle)
-	tokenETHPF := getAddrFromRPC(client, "targetETH", oracleAddr, discoveredAt)
-	// get decimals
-	decimalsToBasePF := getDecimals(client, tokenETHPF, discoveredAt)
-	mainAgg := cpf.NewMainAgg(client, tokenETHPF)
-
-	ethUSDPF := getAddrFromRPC(client, "ETHUSD", oracleAddr, discoveredAt)
-	baseTokenMainAgg := cpf.NewMainAgg(client, ethUSDPF)
-	//
-	mainPhaseAgg := mainAgg.GetPriceFeedAddr(discoveredAt)
-	basePhaseAgg := baseTokenMainAgg.GetPriceFeedAddr(discoveredAt)
 	//
 	adapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
@@ -49,16 +40,9 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 				Client:       client,
 			},
 			Details: map[string]interface{}{
-				"oracle":   oracle,
-				"token":    token,
-				"decimals": decimalsToBasePF,
-				"secAddrs": map[string]interface{}{
-					"target":      tokenETHPF.Hex(),
-					"base":        ethUSDPF.Hex(),
-					"targetPhase": mainPhaseAgg.Hex(),
-					"basePhase":   basePhaseAgg.Hex(),
-				}},
-
+				"oracle": oracle,
+				"token":  token,
+			},
 			// since last_sync is set to discoveredAt not discoveredAt-1, setPrice will get tokenBase and baseUSD price at discoveredAt
 			// so the db entry that is added at addPriceToDB will have the correct price while creating new compositeChainlinkPF
 			LastSync: discoveredAt,
@@ -69,6 +53,32 @@ func NewCompositeChainlinkPF(token, oracle string, discoveredAt int64, client co
 	compositeMdl := NewCompositeChainlinkPFFromAdapter(adapter)
 	compositeMdl.addPriceToDB(discoveredAt)
 	return compositeMdl
+}
+func (mdl *CompositeChainlinkPF) addSecAddrs(blockNum int64) {
+	if mdl.Details["decimals"] != nil {
+		return
+	}
+	oracleAddr := common.HexToAddress(mdl.Address)
+	tokenETHPF := getAddrFromRPC(mdl.Client, "targetETH", oracleAddr, blockNum)
+	// get decimals
+	decimalsToBasePF := getDecimals(mdl.Client, tokenETHPF, blockNum)
+	mdl.Details["decimals"] = decimalsToBasePF
+	if mdl.Details["secAddrs"] != nil {
+		return
+	}
+	mainAgg := cpf.NewMainAgg(mdl.Client, tokenETHPF)
+
+	ethUSDPF := getAddrFromRPC(mdl.Client, "ETHUSD", oracleAddr, blockNum)
+	baseTokenMainAgg := cpf.NewMainAgg(mdl.Client, ethUSDPF)
+	//
+	mainPhaseAgg := mainAgg.GetPriceFeedAddr(blockNum)
+	basePhaseAgg := baseTokenMainAgg.GetPriceFeedAddr(blockNum)
+	mdl.Details["secAddrs"] = map[string]interface{}{
+		"target":      tokenETHPF.Hex(),
+		"base":        ethUSDPF.Hex(),
+		"targetPhase": mainPhaseAgg.Hex(),
+		"basePhase":   basePhaseAgg.Hex(),
+	}
 }
 
 func toDecimals(decimals interface{}) int8 {
@@ -85,9 +95,10 @@ func toDecimals(decimals interface{}) int8 {
 
 func NewCompositeChainlinkPFFromAdapter(adapter *ds.SyncAdapter) *CompositeChainlinkPF {
 	compositeMdl := &CompositeChainlinkPF{
-		SyncAdapter:      adapter,
-		decimalsOfBasePF: toDecimals(adapter.GetDetails()["decimals"]),
+		SyncAdapter: adapter,
 	}
+	compositeMdl.addSecAddrs(utils.Max(adapter.LastSync, adapter.DiscoveredAt))
+	compositeMdl.decimalsOfBasePF = toDecimals(adapter.GetDetails()["decimals"])
 	compositeMdl.BaseTokenMainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("base"))
 	compositeMdl.MainAgg = cpf.NewMainAgg(adapter.Client, compositeMdl.getAddrFromDetails("target"))
 	compositeMdl.DataProcessType = ds.ViaMultipleLogs

@@ -8,6 +8,8 @@ import (
 
 func main() {
 	cfg := config.NewConfig()
+	// log.Info(cfg.EthProvider)
+	// log.Fatal(cfg.DatabaseUrl)
 	db := repository.NewDBClient(cfg)
 	b := &struct {
 		BlockNum int64 `gorm:"column:block_num"`
@@ -17,7 +19,7 @@ func main() {
 	b.BlockNum = b.BlockNum - 1
 	for {
 		start := b.BlockNum + 1
-		end := b.BlockNum + 500_000
+		end := b.BlockNum + 100_00_000
 		// log.Info(start, end)
 		tx := db.Begin()
 		//
