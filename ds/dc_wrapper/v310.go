@@ -11,8 +11,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (dcw *DataCompressorWrapper) addFieldsToAccountv310(blockNum int64, callData creditAccountCompressor.CreditAccountData) (dc.CreditAccountCallData, error) {
-	poolQuotaBytes, err := core.CallFuncGetSingleValue(dcw.client, "be8da14b", callData.CreditManager, blockNum, nil) // poolQuotaKeeper
+func AddFieldsToAccountv310(client core.ClientI, blockNum int64, callData creditAccountCompressor.CreditAccountData) (dc.CreditAccountCallData, error) {
+	poolQuotaBytes, err := core.CallFuncGetSingleValue(client, "be8da14b", callData.CreditManager, blockNum, nil) // poolQuotaKeeper
 	log.CheckFatal(err)
 	poolKeeperAddr := common.BytesToAddress(poolQuotaBytes)
 	//
@@ -40,7 +40,7 @@ func (dcw *DataCompressorWrapper) addFieldsToAccountv310(blockNum int64, callDat
 		CallData: data,
 	})
 	//
-	results := core.MakeMultiCall(dcw.client, blockNum, false, tokenQuotaIndexcalls)
+	results := core.MakeMultiCall(client, blockNum, false, tokenQuotaIndexcalls)
 	// indexes
 	tokenQuotaIndex := map[string]*big.Int{}
 	for ind, token := range tokens {
@@ -59,7 +59,7 @@ func (dcw *DataCompressorWrapper) addFieldsToAccountv310(blockNum int64, callDat
 		cumulativeQuotaInterest = values[2].(*big.Int)
 	}
 	// return
-	return dc.GetAccountDataFromDCCall(dcw.client, callData.CreditFacade, blockNum, dc.CreditAccountv310{
+	return dc.GetAccountDataFromDCCall(client, callData.CreditFacade, blockNum, dc.CreditAccountv310{
 		CreditAccountData:         callData,
 		CumulativeIndexLastUpdate: cumulativeIndexLastUpdate,
 		CumulativeQuotaInterest:   cumulativeQuotaInterest,

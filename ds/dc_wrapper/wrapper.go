@@ -303,8 +303,9 @@ func (dcw *DataCompressorWrapper) Retry(blockNum int64, account common.Address, 
 			log.Warn("Not success v3", blockNum, account)
 			// return dc.CreditAccountCallData{}, err
 		}
-		return dcw.addFieldsToAccountv310(blockNum, accountData)
+		return AddFieldsToAccountv310(dcw.client, blockNum, accountData)
 	}
+	return dc.CreditAccountCallData{}, fmt.Errorf("data compressor number %s not found for credit account data", key)
 }
 
 // blockNum can't be zero
@@ -361,7 +362,7 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType,
 				return dc.CreditAccountCallData{}, err
 			}
 			accountData := *abi.ConvertType(out[0], new(creditAccountCompressor.CreditAccountData)).(*creditAccountCompressor.CreditAccountData)
-			return dcw.addFieldsToAccountv310(blockNum, accountData)
+			return AddFieldsToAccountv310(dcw.client, blockNum, accountData)
 		case DCV3:
 			out, err := core.GetAbi("DataCompressorv3").Unpack("getCreditAccountData", bytes)
 			if err != nil {
