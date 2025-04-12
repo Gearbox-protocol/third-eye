@@ -1,6 +1,8 @@
 package cm_common
 
 import (
+	"math/big"
+
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
@@ -38,6 +40,7 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 func (mdl *CommonCMAdapter) retry(oldaccount dc.CreditAccountCallData, blockNum int64) (dc.CreditAccountCallData, error) {
 	ts := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
 	bal := moreThan1Balance(oldaccount.Balances)
+	bal[mdl.GetUnderlyingToken()] = core.DBTokenBalance{BI: (*core.BigInt)(big.NewInt(1))}
 	redPFs := mdl.priceFeedNeeded(bal)
 	v3Pods := mdl.Repo.GetRedStonemgr().GetPodSign(int64(ts), redPFs)
 	v3PodsCalls := redstone.GetpodToCalls(300, common.HexToAddress(mdl.GetCreditFacadeAddr()), v3Pods, redPFs)

@@ -268,7 +268,6 @@ func (dcw *DataCompressorWrapper) GetLatestv3DC() (common.Address, bool) {
 func (dcw *DataCompressorWrapper) Retry(blockNum int64, account common.Address, v3Pods []dataCompressorv3.PriceOnDemand, v3PodCalls []multicall.Multicall2Call) (dc.CreditAccountCallData, error) {
 	key, dcAddr := dcw.GetKeyAndAddress(core.NewVersion(300), blockNum, CREDIT_ACCOUNT_COMPRESSOR)
 	opts := &bind.CallOpts{BlockNumber: big.NewInt(blockNum)}
-	var newaccountData interface{}
 	switch key {
 	case NODC:
 		return dc.CreditAccountCallData{}, NO_DC_FOUND_ERR
@@ -280,6 +279,7 @@ func (dcw *DataCompressorWrapper) Retry(blockNum int64, account common.Address, 
 			log.Warn("after retry, getCreditAccoutn data is still not successful", blockNum, account)
 			return dc.CreditAccountCallData{}, err
 		}
+		return dc.GetAccountDataFromDCCall(dcw.client, core.NULL_ADDR, blockNum, data)
 	case DCV310:
 		callData, err := core.GetAbi("CreditAccountCompressor").Pack("getCreditAccountData", account)
 		log.CheckFatal(err)
@@ -298,14 +298,13 @@ func (dcw *DataCompressorWrapper) Retry(blockNum int64, account common.Address, 
 			return dc.CreditAccountCallData{}, err
 		}
 		accountData := *abi.ConvertType(out[0], new(creditAccountCompressor.CreditAccountData)).(*creditAccountCompressor.CreditAccountData)
-		newaccountData = accountData
-		log.Info(utils.ToJson(newaccountData))
+		log.Info(utils.ToJson(accountData))
 		if !accountData.Success {
-			log.Warn("after retry, getCreditAccoutn data is still not successful", blockNum, account)
-			return dc.CreditAccountCallData{}, err
+			log.Warn("Not success v3", blockNum, account)
+			// return dc.CreditAccountCallData{}, err
 		}
+		return dcw.addFieldsToAccountv310(blockNum, accountData)
 	}
-	return dc.GetAccountDataFromDCCall(dcw.client, core.NULL_ADDR, blockNum, newaccountData)
 }
 
 // blockNum can't be zero

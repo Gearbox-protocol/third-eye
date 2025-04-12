@@ -68,9 +68,6 @@ func (repo *BlocksRepo) Save(tx *gorm.DB) {
 			x[pf.Feed] = true
 		}
 		blocksToSync = append(blocksToSync, block)
-		if len(block.PriceFeeds) != 0 {
-			log.Info("Price feeds", utils.ToJson(block.PriceFeeds))
-		}
 	}
 	// clauses not needed here
 	err := tx.Clauses(clause.OnConflict{

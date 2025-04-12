@@ -105,7 +105,10 @@ func (mdl *CommonCMAdapter) liqv3SessionCallAndResultFn(liquidatedAt int64, sess
 		if err == nil && !dcAccountData.IsSuccessful && mdl.GetVersion() == core.NewVersion(300) {
 			dcAccountData, err = mdl.retry(dcAccountData, liquidatedAt-1)
 		}
-		log.Info(utils.ToJson(dcAccountData))
+		if err == nil && !dcAccountData.IsSuccessful && dcAccountData.HealthFactor.Convert().Cmp(new(big.Int)) == 0 {
+			dcAccountData.HealthFactor = (*core.BigInt)(big.NewInt(65535))
+
+		}
 		if err != nil {
 			log.Fatalf("For blockNum %d Account:%s %v. txHash: %s", liquidatedAt, session.Account, err, liqv3Details.TxHash)
 		}
