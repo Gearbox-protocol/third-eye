@@ -17,9 +17,10 @@ func main() {
 	err := db.Raw("select min (block_num) block_num from price_feeds").Find(b).Error
 	log.CheckFatal(err)
 	b.BlockNum = b.BlockNum - 1
+	var rang int64 = 1_000_000
 	for {
 		start := b.BlockNum + 1
-		end := b.BlockNum + 100_00_000
+		end := b.BlockNum + rang
 		// log.Info(start, end)
 		tx := db.Begin()
 		//
@@ -49,7 +50,7 @@ func main() {
 		tx.Commit()
 		//
 		log.Info("saved till", end)
-		b.BlockNum += 500_000
+		b.BlockNum += rang
 	}
 
 	err = db.Exec(`alter table price_feeds add PRIMARY KEY (block_num, feed)`).Error

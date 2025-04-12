@@ -1,17 +1,14 @@
 package cm_common
 
 import (
-	"math/big"
-
-	dcv3 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
+	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans []core.RedStonePF) {
@@ -39,26 +36,16 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 	return
 }
 func (mdl *CommonCMAdapter) retry(oldaccount dc.CreditAccountCallData, blockNum int64) (dc.CreditAccountCallData, error) {
-	_, addr := mdl.Repo.GetDCWrapper().GetKeyAndAddress(core.NewVersion(300), blockNum, dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR)
-	dcw, err := dcv3.NewDataCompressorv3(addr, mdl.Client)
-	log.CheckFatal(err)
 	ts := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
 	bal := moreThan1Balance(oldaccount.Balances)
-	pod := mdl.Repo.GetRedStonemgr().GetPodSign(int64(ts), mdl.priceFeedNeeded(bal))
-	newaccountData, err := dcw.GetCreditAccountData(&bind.CallOpts{
-		BlockNumber: big.NewInt(blockNum),
-	},
-		oldaccount.Addr,
-		pod,
-	)
-	if err != nil {
-		return dc.CreditAccountCallData{}, err
-	}
-	if !newaccountData.IsSuccessful {
-		log.Warn("after retry, getCreditAccoutn data is still not successful", blockNum, oldaccount.Addr)
-	}
-	return dc.GetAccountDataFromDCCall(mdl.Client, core.NULL_ADDR, blockNum, newaccountData)
+	redPFs := mdl.priceFeedNeeded(bal)
+	v3Pods := mdl.Repo.GetRedStonemgr().GetPodSign(int64(ts), redPFs)
+	v3PodsCalls := redstone.GetpodToCalls(300, common.HexToAddress(mdl.GetCreditFacadeAddr()), v3Pods, redPFs)
+	log.Info("retrying to get credit account data", oldaccount.Addr, blockNum, "pods", len(v3Pods), "calls", len(v3PodsCalls))
+	//
+	return mdl.Repo.GetDCWrapper().Retry(blockNum, oldaccount.Addr, v3Pods, v3PodsCalls)
 }
+
 func moreThan1Balance(oldBal []core.TokenBalanceCallData) core.DBBalanceFormat {
 	dbFormat := core.DBBalanceFormat{}
 	for _, balance := range oldBal {

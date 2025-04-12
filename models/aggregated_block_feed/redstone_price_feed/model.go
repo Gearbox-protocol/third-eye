@@ -35,8 +35,9 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *RedstonePriceFeed
 	obj := &RedstonePriceFeed{
 		BasePriceFeed: base_price_feed.NewBasePriceFeedFromAdapter(adapter),
 	}
-	if obj.DetailsDS.Info[adapter.GetAddress()] == nil {
-		feedToken, signThreshold, dataId := priceFetcher.RedstoneDetails(common.HexToAddress(adapter.GetAddress()), adapter.Client)
+	if obj.DetailsDS.Info[adapter.GetAddress()] == nil || obj.DetailsDS.Info[adapter.GetAddress()].Feed == core.NULL_ADDR {
+		feed := common.HexToAddress(adapter.GetAddress())
+		feedToken, signThreshold, dataId := priceFetcher.RedstoneDetails(feed, adapter.Client)
 		//
 		tokenDetails := &core.RedStonePF{
 			Type:             15,
@@ -44,6 +45,7 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *RedstonePriceFeed
 			DataId:           dataId,
 			SignersThreshold: signThreshold,
 			UnderlyingToken:  feedToken,
+			Feed:             feed,
 		}
 		obj.DetailsDS.Info[adapter.GetAddress()] = tokenDetails
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/creditAccountCompressor"
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/mainnet"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	dcv3 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressorv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/poolCompressor"
@@ -262,6 +263,49 @@ func (dcw *DataCompressorWrapper) GetLatestv3DC() (common.Address, bool) {
 	//
 	dcs := dcw.versionToAddress[version]
 	return dcs[len(dcs)-1].address, true
+}
+
+func (dcw *DataCompressorWrapper) Retry(blockNum int64, account common.Address, v3Pods []dataCompressorv3.PriceOnDemand, v3PodCalls []multicall.Multicall2Call) (dc.CreditAccountCallData, error) {
+	key, dcAddr := dcw.GetKeyAndAddress(core.NewVersion(300), blockNum, CREDIT_ACCOUNT_COMPRESSOR)
+	opts := &bind.CallOpts{BlockNumber: big.NewInt(blockNum)}
+	var newaccountData interface{}
+	switch key {
+	case NODC:
+		return dc.CreditAccountCallData{}, NO_DC_FOUND_ERR
+	case DCV3:
+		con, err := dataCompressorv3.NewDataCompressorv3(dcAddr, dcw.client)
+		log.CheckFatal(err)
+		data, err := con.GetCreditAccountData(opts, account, v3Pods)
+		if err != nil || !data.IsSuccessful {
+			log.Warn("after retry, getCreditAccoutn data is still not successful", blockNum, account)
+			return dc.CreditAccountCallData{}, err
+		}
+	case DCV310:
+		callData, err := core.GetAbi("CreditAccountCompressor").Pack("getCreditAccountData", account)
+		log.CheckFatal(err)
+		v3PodCalls = append(v3PodCalls, multicall.Multicall2Call{
+			Target:   dcAddr,
+			CallData: callData,
+		})
+		ans := core.MakeMultiCall(dcw.client, blockNum, false, v3PodCalls)
+		data := ans[len(ans)-1]
+		if !data.Success {
+			log.Warn("after retry, getCreditAccoutn data is still not successful", blockNum, account)
+			return dc.CreditAccountCallData{}, err
+		}
+		out, err := core.GetAbi("CreditAccountCompressor").Unpack("getCreditAccountData", data.ReturnData)
+		if err != nil {
+			return dc.CreditAccountCallData{}, err
+		}
+		accountData := *abi.ConvertType(out[0], new(creditAccountCompressor.CreditAccountData)).(*creditAccountCompressor.CreditAccountData)
+		newaccountData = accountData
+		log.Info(utils.ToJson(newaccountData))
+		if !accountData.Success {
+			log.Warn("after retry, getCreditAccoutn data is still not successful", blockNum, account)
+			return dc.CreditAccountCallData{}, err
+		}
+	}
+	return dc.GetAccountDataFromDCCall(dcw.client, core.NULL_ADDR, blockNum, newaccountData)
 }
 
 // blockNum can't be zero

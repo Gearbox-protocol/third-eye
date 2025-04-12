@@ -86,6 +86,9 @@ func (w SyncWrapper) SetDisabled(disabled bool) {
 }
 
 func (w *SyncWrapper) AddSyncAdapter(adapter ds.SyncAdapterI) {
+	if w.Adapters.Get(adapter.GetAddress()) != nil { // can't add again like via adminWrapper for contractRegister.
+		return
+	}
 	if w.ViaDataProcess == -1 {
 		log.Fatal("SyncWrapper: ViaDataProcess not set")
 	}

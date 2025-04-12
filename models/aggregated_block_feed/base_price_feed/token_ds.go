@@ -13,7 +13,7 @@ type DetailsDS struct {
 	PFType      string                      `json:"pfType"`
 	Underlyings []string                    `json:"underlyings"`
 	Info        map[string]*core.RedStonePF `json:"info"`
-	FetchedInfo bool                        `json:"fetchedInfo,omitempty"`
+	FetchedInfo bool                        `json:"FetchedInfo,omitempty"`
 }
 
 func (obj *DetailsDS) Load(in core.Json, version core.VersionType) {

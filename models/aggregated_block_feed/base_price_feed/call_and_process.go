@@ -104,6 +104,7 @@ func (mdl *BasePriceFeed) GetUnderlyingCalls(blockNum int64) (calls []multicall.
 					DataId:           dataId,
 					SignersThreshold: signThreshold,
 					UnderlyingToken:  feedToken,
+					Feed:             common.HexToAddress(mdl.Address),
 				}
 				mdl.DetailsDS.Info[entry] = tokenDetails
 			}

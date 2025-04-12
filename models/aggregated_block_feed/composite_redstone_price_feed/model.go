@@ -46,7 +46,7 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStone
 		priceFeed1:    common.BytesToAddress(pf1),
 		Decimals:      int8(new(big.Int).SetBytes(decimals).Int64()),
 	}
-	if obj.DetailsDS.Info[adapter.GetAddress()] == nil {
+	if obj.DetailsDS.Info[adapter.GetAddress()] == nil || obj.DetailsDS.Info[adapter.GetAddress()].Feed == core.NULL_ADDR {
 		_, signThreshold, dataId := priceFetcher.RedstoneDetails(obj.priceFeed0, adapter.Client)
 		//
 		if dataId == "beraETH_FUNDAMENTAL" {
@@ -62,6 +62,7 @@ func NewRedstonePriceFeedFromAdapter(adapter *ds.SyncAdapter) *CompositeRedStone
 			DataId:           dataId,
 			SignersThreshold: signThreshold,
 			UnderlyingToken:  obj.Repo.GetFeedToTicker(obj.priceFeed0.Hex(), obj.Address),
+			Feed:             obj.priceFeed0,
 		}
 		obj.DetailsDS.Info[adapter.GetAddress()] = tokenDetails
 	}
