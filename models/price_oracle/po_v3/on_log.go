@@ -256,15 +256,20 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 				sig = "e5693f41"
 			} else if n == 3 {
 				sig = "427cb6fe"
+			} else {
+				log.Warn("n", n, "is not supported")
 			}
 			pfBytes, err := core.CallFuncGetSingleValue(mdl.Client, sig, common.HexToAddress(oracle), 0, nil)
 			log.CheckFatal(err)
 			pf := common.BytesToAddress(pfBytes)
 			pfTypeBytes, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
-			log.CheckFatal(err)
+			if err != nil {
+				log.Warn("priceFeedType is not implemented on ", pf, "err", err)
+			}
 			if new(big.Int).SetBytes(pfTypeBytes).Int64() == core.V3_REDSTONE_ORACLE {
 				return pf.Hex()
 			}
+			log.Warn("priceFeedType is not redstone oracle ", pf, "type", new(big.Int).SetBytes(pfTypeBytes).Int64())
 			return ""
 		}
 		nCoins := int(new(big.Int).SetBytes(nCoinBytes).Int64())

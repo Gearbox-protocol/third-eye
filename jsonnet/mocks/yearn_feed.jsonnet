@@ -34,9 +34,9 @@
     },
   ],
   tokens: [
-    '#Token_1',
-    '#Token_2',
-    '#Token_3',
-    '#Token_4',
+    { addr: '#Token_1', symbol: 'USDC', decimals: 6 },
+    { addr: '#Token_2', symbol: 'YFI', decimals: 18 },
+    { addr: '#Token_3', symbol: 'WETH', decimals: 18 },
+    { addr: '#Token_4', symbol: 'DAI', decimals: 8 },
   ],
 }
