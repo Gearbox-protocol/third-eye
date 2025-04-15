@@ -11,6 +11,8 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
+	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers/treasury"
 	"github.com/ethereum/go-ethereum/common"
@@ -77,6 +79,17 @@ func (r Repository) GetDB() *gorm.DB {
 	return r.db
 }
 
+func (mdl *Repository) addMarketConfig(market common.Address) {
+	conRegisterBytes, err := core.CallFuncGetSingleValue(mdl.client, "7a0c7b21", market, 0, nil) // contractRegister is also set on legacy marketConfigurator//
+	// https://etherscan.io/address/0x354fe9f450F60b8547f88BE042E4A45b46128a06#code has contractRegister, contractRegisterLegacy
+	log.CheckFatal(err)
+	crAddr := common.BytesToAddress(conRegisterBytes).Hex()
+	log.Infof("Add market %s, with cr: %s", market, crAddr)
+	// mdl.
+	cr := contract_register.NewContractRegister(crAddr, 0, mdl.client, mdl)
+	cr.Details["MARKET"] = market.Hex()
+	mdl.AddSyncAdapter(cr)
+}
 func (repo *Repository) Init() {
 	// lastdebtsync is required to load credit session which are active or closed after lastdebtsync block number
 	lastDebtSync := repo.LoadLastDebtSync()
@@ -87,6 +100,9 @@ func (repo *Repository) Init() {
 	repo.loadDieselToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
+	for _, mcaddr := range dc_wrapper.GetMarketConfigurators() {
+		repo.addMarketConfig(mcaddr)
+	}
 	// load poolLMrewards
 	repo.loadLMRewardDetailsv2()
 	repo.loadLMRewardDetailsv3()

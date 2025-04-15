@@ -178,6 +178,9 @@ func NewSyncAdapter(addr, name string, discoveredAt int64, client core.ClientI, 
 	}
 	// for addressProvider discoveredAt is -1 but NewContract set it to firstLogAt so this will work
 	obj.LastSync = obj.FirstLogAt - 1
+	if obj.DiscoveredAt == 0 {
+		obj.DiscoveredAt = obj.FirstLogAt
+	}
 	// version in pricefeed is not related to gearbox protocol
 	if name != ChainlinkPriceFeed && name != QueryPriceFeed {
 		obj.V = core.FetchVersion(addr, discoveredAt, client)

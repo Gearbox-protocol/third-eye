@@ -138,20 +138,8 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		mdl.v310LogParse(txLog, contractName, address.Hex(), getRealVersion(txLog.Topics[2]))
 		// case core.Topic("CreateMarketConfigurator(address,string)"): // only from MARKET_CONFIGURATORS env
 		// 	market := common.BytesToAddress(txLog.Topics[1][:])
-		// 	mdl.addMarketConfig(int64(txLog.BlockNumber), market)
+		// 	mdl.addMarketConfig(market)
 	}
-}
-
-func (mdl *AddressProvider) addMarketConfig(blockNum int64, market common.Address) {
-	conRegisterBytes, err := core.CallFuncGetSingleValue(mdl.Client, "7a0c7b21", market, 0, nil) // contractRegister is also set on legacy marketConfigurator//
-	// https://etherscan.io/address/0x354fe9f450F60b8547f88BE042E4A45b46128a06#code has contractRegister, contractRegisterLegacy
-	log.CheckFatal(err)
-	crAddr := common.BytesToAddress(conRegisterBytes).Hex()
-	log.Infof("Add market %s, with cr: %s", market, crAddr)
-	// mdl.
-	cr := contract_register.NewContractRegister(crAddr, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
-	cr.Details["MARKET"] = market.Hex()
-	mdl.Repo.AddSyncAdapter(cr)
 }
 
 func (mdl *AddressProvider) v310LogParse(txLog types.Log, contract string, address string, realversion int16) {
