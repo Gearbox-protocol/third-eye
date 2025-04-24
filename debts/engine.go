@@ -335,20 +335,20 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 	// if profile is not null
 	// yearn price feed might be stale as a result difference btw dc and calculated values
 	// solution: fetch price again for all stale yearn feeds
-	if profile != nil { //|| debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 1 {
+	if profile != nil || debt.CalHealthFactor.Convert().Cmp(big.NewInt(10000)) < 1 {
 		retryFeeds := eng.repo.GetRetryFeedForDebts()
+		// eng.checkretryFeeds(blockNum, sessionSnapshot.Balances, session, profile != nil)
 		for tokenAddr, details := range *sessionSnapshot.Balances {
-			if details.IsEnabled && details.HasBalanceMoreThanOne() {
+			if details.IsEnabled && details.HasBalanceMoreThanOne() && tokenAddr != eng.repo.GetWETHAddr() {
 				//
-				if tokenAddr != eng.repo.GetWETHAddr() { // REDUNDANT
-					lastPriceEvent := eng.priceHandler.GetLastPriceFeed(session.CreditManager, tokenAddr, session.Version) // don't use reserve
-					if lastPriceEvent.BlockNumber != blockNum {
-						feedAddr := lastPriceEvent.Feed
-						for _, retryFeed := range retryFeeds {
-							if retryFeed.GetAddress() == feedAddr {
-								// log.Info("hf ", debt.CalHealthFactor.Convert(), "of", sessionId, "at", blockNum)
-								eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr, profile != nil)
-							}
+				lastPriceEvent := eng.priceHandler.GetLastPriceFeed(session.CreditManager, tokenAddr, session.Version) // don't use reserve
+				if lastPriceEvent.BlockNumber != blockNum {
+					feedAddr := lastPriceEvent.Feed
+					for _, retryFeed := range retryFeeds {
+						if retryFeed.GetAddress() == feedAddr {
+							log.Info(retryFeed.GetAddress(), blockNum)
+							// log.Info("hf ", debt.CalHealthFactor.Convert(), "of", sessionId, "at", blockNum)
+							eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr, profile != nil, eng.db)
 						}
 					}
 				}

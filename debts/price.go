@@ -142,7 +142,7 @@ func (eng *PriceHandler) GetLastPrice(cm string, token string, version core.Vers
 	return a.PriceBI.Convert()
 }
 
-func (eng *PriceHandler) requestPriceFeed(blockNum int64, client core.ClientI, retryFeed ds.QueryPriceFeedI, token string, misHFOrTValue bool) {
+func (eng *PriceHandler) requestPriceFeed(blockNum int64, client core.ClientI, retryFeed ds.QueryPriceFeedI, token string, misHFOrTValue bool, db *gorm.DB) {
 	defer func() {
 		// if err := recover(); err != nil {
 		// 	log.Warn("err", err, "in getting query price feed in debt", token, blockNum)
@@ -163,13 +163,15 @@ func (eng *PriceHandler) requestPriceFeed(blockNum int64, client core.ClientI, r
 	results := core.MakeMultiCall(client, blockNum, false, calls)
 	price := retryFeed.ProcessResult(blockNum, results, true)
 	if price != nil {
-		eng.AddTokenLastPrice(&schemas.PriceFeed{
+		newPF := &schemas.PriceFeed{
 			BlockNumber: blockNum,
 			Feed:        retryFeed.GetAddress(),
 			RoundId:     price.RoundId,
 			PriceBI:     price.PriceBI,
 			Price:       price.Price,
-		})
+		}
+		log.CheckFatal(db.Create(newPF).Error)
+		eng.AddTokenLastPrice(newPF)
 	}
 }
 
