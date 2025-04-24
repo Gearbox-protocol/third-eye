@@ -413,6 +413,10 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		eng.lastParameters[session.CreditManager].FeeInterest,
 		true,
 	)
+	if calHF.Cmp(big.NewInt(65535)) > 0 {
+		log.Warn("HF for session", sessionId, "is more than 65535", calHF, "at", blockNum)
+		calHF = big.NewInt(65535)
+	}
 
 	// the value of credit account is in terms of underlying asset
 	// set debt fields
