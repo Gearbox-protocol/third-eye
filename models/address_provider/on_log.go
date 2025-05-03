@@ -149,9 +149,11 @@ func (mdl *AddressProvider) addMarketConfig(blockNum int64, market common.Addres
 	crAddr := common.BytesToAddress(conRegisterBytes).Hex()
 	log.Infof("Add market %s, with cr: %s", market, crAddr)
 	// mdl.
-	cr := contract_register.NewContractRegister(crAddr, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
-	cr.Details["MARKET"] = market.Hex()
-	mdl.Repo.AddSyncAdapter(cr)
+	if mdl.Repo.GetAdapter(crAddr) == nil {
+		cr := contract_register.NewContractRegister(crAddr, blockNum, mdl.SyncAdapter.Client, mdl.Repo)
+		cr.Details["MARKET"] = market.Hex()
+		mdl.Repo.AddSyncAdapter(cr)
+	}
 }
 
 func (mdl *AddressProvider) v310LogParse(txLog types.Log, contract string, address string, realversion int16) {
