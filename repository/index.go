@@ -86,9 +86,11 @@ func (mdl *Repository) addMarketConfig(market common.Address) {
 	crAddr := common.BytesToAddress(conRegisterBytes).Hex()
 	log.Infof("Add market %s, with cr: %s", market, crAddr)
 	// mdl.
-	cr := contract_register.NewContractRegister(crAddr, 0, mdl.client, mdl)
-	cr.Details["MARKET"] = market.Hex()
-	mdl.AddSyncAdapter(cr)
+	if mdl.SyncAdaptersRepo.GetAdapter(crAddr) == nil {
+		cr := contract_register.NewContractRegister(crAddr, 0, mdl.client, mdl)
+		cr.Details["MARKET"] = market.Hex()
+		mdl.AddSyncAdapter(cr)
+	}
 }
 func (repo *Repository) Init() {
 	// lastdebtsync is required to load credit session which are active or closed after lastdebtsync block number
