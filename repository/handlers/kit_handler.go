@@ -81,7 +81,6 @@ func (handler *AdapterKitHandler) addSyncAdapter(adapterI ds.SyncAdapterI) {
 	case ds.PoolQuotaKeeper:
 		handler.poolQuotaWrapper.AddSyncAdapter(adapterI)
 	default:
-		log.Info(adapterI.GetName())
 		handler.kit.Add(adapterI)
 	}
 }
