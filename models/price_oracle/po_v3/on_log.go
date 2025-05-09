@@ -40,7 +40,7 @@ func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
 	for _, txLog := range txLogs {
 		switch txLog.Topics[0] {
 		case core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"), // v3
-			core.Topic("SetPriceFeed(address,address,uint32,bool"), //v310
+			core.Topic("SetPriceFeed(address,address,uint32,bool)"), //v310
 			core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
 			token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 			oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
@@ -68,7 +68,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case
 		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),   // v3
-		core.Topic("SetPriceFeed(address,address,uint32,bool"),         //v310
+		core.Topic("SetPriceFeed(address,address,uint32,bool)"),        //v310
 		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"): // v3, v310
 		//
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
