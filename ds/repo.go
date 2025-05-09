@@ -136,7 +136,6 @@ type RepositoryI interface {
 	AddTokenObj(token *schemas.Token)
 	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
 	//
-	GetTokenFromSdk(symbol string) string
 
 	// v3 events
 	AddTokenLTRamp(*schemas_v3.TokenLTRamp)

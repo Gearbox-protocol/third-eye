@@ -32,7 +32,7 @@ func main() {
 	dc := helper.GetDC(client, db)
 	//
 	store := priceFetcher.NewTokensStore(client)
-	tokens := core.GetSymToAddrByChainId(core.GetChainId(client)).Tokens
+	chainId := core.GetChainId(client)
 	for _, entry := range a {
 		account := strings.Split(entry.SessionId, "_")[0]
 		call, result, err := dc.GetCreditAccountData(core.NewVersion(300), entry.BlockNum, core.NULL_ADDR, core.NULL_ADDR, common.HexToAddress(account))
@@ -44,7 +44,7 @@ func main() {
 				log.Fatal(err, entry.SessionId, entry.BlockNum, results[0].ReturnData)
 			}
 
-			balances := cm_common.AddStETHBalance(data.Addr.Hex(), entry.BlockNum, data.Balances, client, store, tokens["stETH"].Hex())
+			balances := cm_common.AddStETHBalance(data.Addr.Hex(), entry.BlockNum, data.Balances, client, store, core.GetToken(chainId, "stETH").Hex())
 			log.Info(entry.SessionId, utils.ToJson(balances))
 			err = db.Exec(`update credit_session_snapshots set balances=? where session_id=? and block_num=?`, balances, entry.SessionId, entry.BlockNum).Error
 			log.CheckFatal(err)

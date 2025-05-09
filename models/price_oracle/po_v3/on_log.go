@@ -107,13 +107,13 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			log.Fatalf("Oracle %s, err: %s, blockNum %d", oracle, err, blockNum)
 		}
 		if priceFeedType == ds.RedStonePF {
-			pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
-			addrToSym := core.GetTokenToSymbolByChainId(core.GetChainId(mdl.Client))
-			sym := addrToSym[common.HexToAddress(token)]
-			_, ok := pfs[sym]
-			if !ok {
-				log.Warnf("RedStonePF not found in config for %s(%s). update sdk-go.", sym, token)
-			}
+			// pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
+			// addrToSym := core.GetTokenToSymbolByChainId(core.GetChainId(mdl.Client))
+			// sym := addrToSym[common.HexToAddress(token)]
+			// _, ok := pfs[sym]
+			// if !ok {
+			// 	log.Warnf("RedStonePF not found in config for %s(%s). update sdk-go.", sym, token)
+			// }
 		}
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account

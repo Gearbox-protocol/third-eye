@@ -42,7 +42,7 @@ func (m *TokenSymMap) updateIfTest(repo repoI) {
 }
 
 func TokenSymMapFromchainId(chainId int64) TokenSymMap {
-	symToAddr := core.GetSymToAddrByChainId(chainId)
+	symToAddr := core.GetSymToAddr(chainId)
 	addrToSym := map[common.Address]string{}
 	for sym, addr := range symToAddr.Tokens {
 		addrToSym[addr] = sym
