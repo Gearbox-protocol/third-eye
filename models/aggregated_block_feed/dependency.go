@@ -57,6 +57,7 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int
 	updates := map[int64]map[string]bool{}
 	var updatedChainlinkSym []string
 	chainlinkToQueryTokens := q.GetChainlinkTokenToUpdateToken()
+	// log.Fatal(chainlinkToQueryTokens)
 	for chainlinkSym, blockNums := range q.ChainlinkSymToUpdatedBlocks {
 		updatedChainlinkSym = append(updatedChainlinkSym, chainlinkSym)
 		//

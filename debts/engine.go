@@ -225,6 +225,9 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 		log.CheckFatal(err)
 		//
 		fn := func(amount *core.BigInt) float64 {
+			if amount.String() == "0" {
+				return 0
+			}
 			return utils.GetFloat64Decimal(
 				eng.GetAmountInUSDByOracle(
 					latestOracle,

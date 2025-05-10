@@ -4,11 +4,13 @@ import (
 	"math"
 	"math/big"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/priceFeed"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -70,6 +72,17 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		var err error
 		if log.IsTestNet() {
 			lastLogBeforeDiscoverNum = obj.DiscoveredAt - 3000
+			con, err := priceFeed.NewPriceFeed(common.HexToAddress(obj.Address), adapter.Client)
+			log.CheckFatal(err)
+			price, err := con.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(lastLogBeforeDiscoverNum)})
+			log.CheckFatal(err)
+			obj.Repo.AddPriceFeed(&schemas.PriceFeed{
+				BlockNumber: lastLogBeforeDiscoverNum,
+				Feed:        obj.Address,
+				RoundId:     price.RoundId.Int64(),
+				PriceBI:     (*core.BigInt)(price.Answer),
+				Price:       utils.GetFloat64Decimal(price.Answer, obj.GetVersion().Decimals()),
+			})
 		} else {
 			lastLogBeforeDiscoverNum, err = obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
 				core.Topic("AnswerUpdated(int256,uint256,uint256)"),
