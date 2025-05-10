@@ -70,6 +70,9 @@ func (repo *PrevPriceStore) getCurrentPrice(tokenOracleToFeed map[schemas.PriceO
 	for priceOracle, tokenToFeed := range tokenOracleToFeed {
 		for _, entry := range tokenToFeed {
 			pf := repo.prevPriceFeeds[entry.Feed]
+			if pf == nil {
+				continue
+			}
 			ans = append(ans, &schemas.TokenCurrentPrice{
 				PriceBI:     pf.PriceBI,
 				Price:       pf.Price,

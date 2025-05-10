@@ -135,6 +135,7 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 		// if contractName == "MARKET_CONFIGURATOR_FACTORY" {
 		// mdl.Details["MARKET_FACTORY"] = address // only allow authorized market configurator
 		// }
+		// log.Info(contractName)
 		mdl.v310LogParse(txLog, contractName, address.Hex(), getRealVersion(txLog.Topics[2]))
 		// case core.Topic("CreateMarketConfigurator(address,string)"): // only from MARKET_CONFIGURATORS env
 		// 	market := common.BytesToAddress(txLog.Topics[1][:])
@@ -145,15 +146,11 @@ func (mdl *AddressProvider) OnLog(txLog types.Log) {
 func (mdl *AddressProvider) v310LogParse(txLog types.Log, contract string, address string, realversion int16) {
 	blockNum := int64(txLog.BlockNumber)
 	switch contract {
-	case "POOL_COMPRESSOR", "CREDIT_ACCOUNT_COMPRESSOR", "MARKET_COMPRESSOR": // "POOL_COMPRESSOR" ignore
+	case "POOL_COMPRESSOR", "CREDIT_ACCOUNT_COMPRESSOR", "MARKET_COMPRESSOR",
+		"GLOBAL::ACCOUNT_COMPRESSOR", "GLOBAL::MARKET_COMPRESSOR": // "POOL_COMPRESSOR" ignore
 		log.Infof("AddressSet: %s(%d), %s at blockNum %d", contract, realversion, address, blockNum)
-		m := map[string]dc_wrapper.CompressorType{
-			// "POOL_COMPRESSOR": dc_wrapper.POOL_COMPRESSOR,
-			"MARKET_COMPRESSOR":         dc_wrapper.MARKET_COMPRESSOR,
-			"CREDIT_ACCOUNT_COMPRESSOR": dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR,
-			"POOL_COMPRESSOR":           dc_wrapper.POOL_COMPRESSOR,
-		}
-		cType := m[contract]
+
+		cType := dc_wrapper.ContractNameToCompressortype[contract]
 		newValue := address
 		//
 		dcObj, fn := mdl.updateDetailsField_dc()

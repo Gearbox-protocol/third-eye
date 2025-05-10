@@ -127,7 +127,7 @@ func (eng *PriceHandler) GetLastPriceFeedByOracle(priceOracle schemas.PriceOracl
 	if len(dontFail) > 0 && dontFail[0] {
 		return nil
 	}
-	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d", token, version))
+	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d priceoracle %s", token, version, priceOracle))
 	return nil
 }
 func (eng *PriceHandler) GetLastPrice(cm string, token string, version core.VersionType, dontFail ...bool) *big.Int {

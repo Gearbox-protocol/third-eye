@@ -1,6 +1,7 @@
 package aggregated_block_feed
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
@@ -19,43 +20,33 @@ type repoI interface {
 
 // ignoring dependencies for v1
 type QueryPFDependencies struct {
-	// chainlink symbol to dependent query pf
-	ChainlinkSymToQueryPFSyms map[string][]string
 	// chainlink symbol updated at these blocks, we need to fetch price for dependent query pf at these block numbers
 	ChainlinkSymToUpdatedBlocks map[string][]int64
-	// yearn/curve symbol to chainlink dependency symbol
-	depGraph map[string][]string
 	// blocks to remove
 	aggregatedFetchedBlocks []int64
 	// yearn feed prices to be ordered
 	depBasedExtraPrices []*schemas.PriceFeed
+	TestI               map[string][]string
 	//
 	aqf *AQFWrapper
 	//
-	repo repoI
-	TokenSymMap
+	repo   repoI
 	mu     *sync.Mutex
 	client core.ClientI
 }
 
 func NewQueryPFDepenencies(repo ds.RepositoryI, client core.ClientI) *QueryPFDependencies {
-	chainId := core.GetChainId(client)
-	depGraph := getDepGraph(chainId)
 	return &QueryPFDependencies{
-		depGraph:                    depGraph,
-		ChainlinkSymToQueryPFSyms:   getInvertDependencyGraph(depGraph),
 		ChainlinkSymToUpdatedBlocks: map[string][]int64{},
 		//
-		repo:        repo,
-		mu:          &sync.Mutex{},
-		TokenSymMap: newTokenSymMap(chainId),
-		client:      client,
+		repo:   repo,
+		mu:     &sync.Mutex{},
+		client: client,
 	}
 }
 
 func (q *QueryPFDependencies) chainlinkPriceUpdatedAt(token string, blockNums []int64) {
-	q.updateIfTest(q.repo)
-	chainlinkSym := q.getTokenSym(token)
+	chainlinkSym := q.repo.GetToken(token).Symbol
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	q.ChainlinkSymToUpdatedBlocks[chainlinkSym] = blockNums
@@ -65,14 +56,12 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int
 	//  blockNum to QueryPFToken
 	updates := map[int64]map[string]bool{}
 	var updatedChainlinkSym []string
+	chainlinkToQueryTokens := q.GetChainlinkTokenToUpdateToken()
+	// log.Fatal(chainlinkToQueryTokens)
 	for chainlinkSym, blockNums := range q.ChainlinkSymToUpdatedBlocks {
 		updatedChainlinkSym = append(updatedChainlinkSym, chainlinkSym)
 		//
-		for _, dependentSym := range q.ChainlinkSymToQueryPFSyms[chainlinkSym] {
-			depAddr := q.getTokenAddr(dependentSym)
-			if depAddr == "" {
-				continue
-			}
+		for _, dependentAddr := range chainlinkToQueryTokens[chainlinkSym] {
 			for _, blockNum := range blockNums {
 				// if a new chainlink price oracle is added it will create initial pf entry for lower block number
 				// and queryPFDependency will try to fetch dependent query token's pf for this lower block number.
@@ -83,7 +72,7 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int
 				if updates[blockNum] == nil {
 					updates[blockNum] = map[string]bool{}
 				}
-				updates[blockNum][depAddr] = true
+				updates[blockNum][dependentAddr] = true
 			}
 		}
 	}
@@ -94,140 +83,42 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int
 	return updates
 }
 
-// token to its dependencies
-func getDepGraph(chainId int64) map[string][]string {
-	depGraph := map[string][]string{
-		// frax and curve
-		"yvCURVE_FRAX":   {"FRAX", "USDC", "USDT", "DAI"},
-		"FRAX3CRV":       {"FRAX", "USDC", "USDT", "DAI"},
-		"stkcvxFRAX3CRV": {"FRAX", "USDC", "USDT", "DAI"},
-		"cvxFRAX3CRV":    {"FRAX", "USDC", "USDT", "DAI"},
-		// frax and usdc
-		"crvFRAX":       {"USDC", "FRAX"},
-		"cvxcrvFRAX":    {"USDC", "FRAX"},
-		"stkcvxcrvFRAX": {"USDC", "FRAX"},
+var base = []string{"WETH", "WBTC", "DAI", "USDC", "USDT", "USDC", "OHM"}
+var combo = map[string][]string{
+	"3crv": {"DAI", "USDC", "USDT"},
+}
 
-		// yearn
-		"yvWBTC": {"WBTC"},
-		"yvWETH": {"WETH"},
-		"yvDAI":  {"DAI"},
-		"yvUSDC": {"USDC"},
-		"wstETH": {"stETH"},
-
-		// diesel tokens
-		// "dUSDC":   {"USDC"},
-		// "dDAI":    {"DAI"},
-		// "dWETH":   {"WETH"},
-		// "dwstETH": {"stETH"},
-		// "dWBTC":   {"WBTC"},
-		// 3 crv
-		"3CRV":       {"USDC", "USDT", "DAI"},
-		"stkcvx3Crv": {"USDC", "USDT", "DAI"},
-		"cvx3Crv":    {"USDC", "USDT", "DAI"},
-		// lusd and 3crv
-		"LUSD3CRV":       {"LUSD", "DAI", "USDC", "USDT"},
-		"stkcvxLUSD3CRV": {"LUSD", "DAI", "USDC", "USDT"},
-		"cvxLUSD3CRV":    {"LUSD", "DAI", "USDC", "USDT"},
-		// susd and 3crv
-		"cvxcrvPlain3andSUSD":    {"SUSD", "DAI", "USDC", "USDT"},
-		"stkcvxcrvPlain3andSUSD": {"SUSD", "DAI", "USDC", "USDT"},
-		"crvPlain3andSUSD":       {"SUSD", "DAI", "USDC", "USDT"},
-
-		// gusd and 3crv
-		"stkcvxgusd3CRV": {"GUSD", "DAI", "USDC", "USDT"},
-		"cvxgusd3CRV":    {"GUSD", "DAI", "USDC", "USDT"},
-		"GUSD3CRV":       {"GUSD", "DAI", "USDC", "USDT"},
-		// steth/eth
-		"stkcvxsteCRV":  {"stETH", "WETH"}, // phantom convex on mainnet
-		"steCRV":        {"stETH", "WETH"}, // curve steth
-		"yvCurve_stETH": {"stETH", "WETH"}, // yearn
-		"cvxsteCRV":     {"stETH", "WETH"}, // convex token for steth
-		//
-		// new v3 pools
-		"OHMFRAXBP":       {"OHM", "FRAX", "USDC"},
-		"cvxOHMFRAXBP":    {"OHM", "FRAX", "USDC"},
-		"stkcvxOHMFRAXBP": {"OHM", "FRAX", "USDC"},
-		//
-		"MIM_3LP3CRV":       {"USDC", "USDT", "DAI", "MIM"},
-		"cvxMIM_3LP3CRV":    {"USDC", "USDT", "DAI", "MIM"},
-		"stkcvxMIM_3LP3CRV": {"USDC", "USDT", "DAI", "MIM"},
-		//
-		"crvCRVETH":       {"CRV", "WETH"},
-		"cvxcrvCRVETH":    {"CRV", "WETH"},
-		"stkcvxcrvCRVETH": {"CRV", "WETH"},
-		//
-		"crvCVXETH":       {"CVX", "WETH"},
-		"cvxcrvCVXETH":    {"CVX", "WETH"},
-		"stkcvxcrvCVXETH": {"CVX", "WETH"},
-		//
-		"crvUSDTWBTCWETH":       {"USDT", "WBTC", "WETH"},
-		"cvxcrvUSDTWBTCWETH":    {"USDT", "WBTC", "WETH"},
-		"stkcvxcrvUSDTWBTCWETH": {"USDT", "WBTC", "WETH"},
-		//
-		"LDOETH":       {"LDO", "WETH"},
-		"cvxLDOETH":    {"LDO", "WETH"},
-		"stkcvxLDOETH": {"LDO", "WETH"},
-
-		//
-		"crvUSDUSDC":         {"crvUSD", "USDC"},
-		"crvUSDUSDT":         {"crvUSD", "USDT"},
-		"crvUSDFRAX":         {"crvUSD", "WETH", "FRAX"},
-		"crvUSDETHCRV":       {"crvUSD", "WETH", "CRV"},
-		"cvxcrvUSDETHCRV":    {"crvUSD", "WETH", "CRV"},
-		"stkcvxcrvUSDETHCRV": {"crvUSD", "WETH", "CRV"},
-
-		// due to v3 compatibility
-		"rETH_f":                  {"WETH"},
-		"cLINK":                   {"LINK"},
-		"sDAI":                    {"DAI"},
-		"YieldETH":                {},
-		"USDC_DAI_USDT":           {},
-		"B_rETH_STABLE":           {},
-		"auraB_rETH_STABLE":       {},
-		"auraB_rETH_STABLE_vault": {},
-		// redstones
-		"weETH": {"WETH"},
-		// "ezETH":  {"WETH"},
-		"rswETH": {"WETH"},
-		"pufETH": {"WETH"},
-		"rsETH":  {"WETH"},
-		"pzETH":  {"stETH"},
-		//
-		"steakLRT": {"stETH"},
-		"eBTC":     {"WBTC"},
+// {"USDT": {"3crv:address"}, "USDC": {"3crv:address"}, "DAI": {"3crv:address"}, "FRAX": {"crvFRAX"}}
+func (q *QueryPFDependencies) GetChainlinkTokenToUpdateToken() map[string][]string {
+	if core.GetChainId(q.client) == 1337 {
+		return q.TestI
 	}
-	if log.GetBaseNet(chainId) != "MAINNET" {
-		for sym, deps := range depGraph {
-			x := make([]string, 0, len(deps))
-			for _, d := range deps {
-				if d != "stETH" {
-					x = append(x, d)
+	tokens := []*schemas.Token{}
+	for _, token := range q.repo.GetTokens() {
+		tokens = append(tokens, q.repo.GetToken(token))
+	}
+	ans := map[string][]string{}
+	for _, token := range tokens {
+		for _, sym := range base {
+			if strings.Contains(token.Symbol, sym) && token.Symbol != sym {
+				ans[token.Symbol] = append(ans[token.Symbol], token.Address)
+			}
+			if strings.Contains(strings.ToLower(token.Symbol), "3crv") {
+				for _, underlyingsym := range combo["3crv"] {
+					ans[underlyingsym] = append(ans[underlyingsym], token.Address)
 				}
 			}
-			depGraph[sym] = x
-		}
-		delete(depGraph, "cLINK") // for non mainnet remove stETH.
-	}
-	return depGraph
-}
-
-// token to token dependent on it
-func getInvertDependencyGraph(depGraph map[string][]string) map[string][]string {
-	invertedGraph := map[string][]string{}
-	for token, deps := range depGraph {
-		for _, chainlinkSym := range deps {
-			invertedGraph[chainlinkSym] = append(invertedGraph[chainlinkSym], token)
 		}
 	}
-	return invertedGraph
+	return ans
 }
 
-func (q *QueryPFDependencies) checkInDepGraph(token, oracle string, blockNum int64) {
-	depQueryPFSym := q.getTokenSym(token)
-	if q.depGraph[depQueryPFSym] == nil {
-		log.Infof("Warn: Dep for query based price feed(%s) not found for token(%s) at %d", oracle, depQueryPFSym, blockNum)
-	}
-}
+// func (q *QueryPFDependencies) checkInDepGraph(token, oracle string, blockNum int64) {
+// 	depQueryPFSym := q.getTokenSym(token)
+// 	if q.depGraph[depQueryPFSym] == nil {
+// 		log.Infof("Warn: Dep for query based price feed(%s) not found for token(%s) at %d", oracle, depQueryPFSym, blockNum)
+// 	}
+// }
 
 func (q *QueryPFDependencies) updateQueryPrices(pfs []*schemas.PriceFeed) {
 	q.mu.Lock()

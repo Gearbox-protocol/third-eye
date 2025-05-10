@@ -28,9 +28,9 @@ type DebtEngine struct {
 	currentDebts           []*schemas.CurrentDebt
 	liquidableBlockTracker map[string]*schemas.LiquidableAccount
 	// cm to paramters
-	lastParameters       map[string]*schemas.Parameters
-	isTesting            bool
-	farmingCalc          *FarmingCalculator
+	lastParameters map[string]*schemas.Parameters
+	isTesting      bool
+	// farmingCalc          *FarmingCalculator
 	marketTolastTvlBlock map[string]int64
 	lastRebaseDetails    *schemas.RebaseDetailsForDB
 	// used for v3 calc account fields
@@ -52,11 +52,11 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),
 		lastParameters:         make(map[string]*schemas.Parameters),
 		isTesting:              testing,
-		farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
-		v3DebtDetails:          Newv3DebtDetails(),
-		tokenLTRamp:            map[string]map[string]*schemas_v3.TokenLTRamp{},
-		priceHandler:           NewPriceHandler(repo),
-		marketTolastTvlBlock:   make(map[string]int64),
+		// farmingCalc:            NewFarmingCalculator(core.GetChainId(client), testing),
+		v3DebtDetails:        Newv3DebtDetails(),
+		tokenLTRamp:          map[string]map[string]*schemas_v3.TokenLTRamp{},
+		priceHandler:         NewPriceHandler(repo),
+		marketTolastTvlBlock: make(map[string]int64),
 	}
 }
 

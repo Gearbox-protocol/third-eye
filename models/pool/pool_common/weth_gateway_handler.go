@@ -75,24 +75,24 @@ func GetPoolGateways(client core.ClientI) map[common.Address]GatewayDetails {
 	if log.GetNetworkName(chainId) == "TEST" {
 		return map[common.Address]GatewayDetails{}
 	}
-	symToAddrStore := core.GetSymToAddrByChainId(chainId)
+	// symToAddrStore := core.GetSymToAddrByChainId(chainId)
 	if log.GetBaseNet(chainId) != "MAINNET" {
 		return map[common.Address]GatewayDetails{
-			symToAddrStore.Exchanges["GEARBOX_WETH_POOL"]: {
-				Gateway: symToAddrStore.Exchanges["WETH_GATEWAY"],
-				Sym:     "WETH",
-			},
+			// core.GetToken(chainId, "GEARBOX_WETH_POOL"): {
+			// 	Gateway: core.GetToken(chainId, "WETH_GATEWAY"),
+			// 	Sym:     "WETH",
+			// },
 		}
 	}
 	return map[common.Address]GatewayDetails{
-		symToAddrStore.Exchanges["GEARBOX_WETH_POOL"]: {
-			Gateway: symToAddrStore.Exchanges["WETH_GATEWAY"],
+		core.GetToken(chainId, "GEARBOX_WETH_POOL"): {
+			Gateway: core.GetToken(chainId, "WETH_GATEWAY"),
 			Sym:     "WETH",
 		},
-		symToAddrStore.Exchanges["GEARBOX_WSTETH_POOL"]: {
-			Gateway:    symToAddrStore.Exchanges["WSTETH_GATEWAY"],
-			Token:      symToAddrStore.Tokens["stETH"],
-			UserCantBe: symToAddrStore.Tokens["wstETH"],
+		core.GetToken(chainId, "GEARBOX_WSTETH_POOL"): {
+			Gateway:    core.GetToken(chainId, "WSTETH_GATEWAY"),
+			Token:      core.GetToken(chainId, "stETH"),
+			UserCantBe: core.GetToken(chainId, "wstETH"),
 			Sym:        "WSTETH",
 		},
 	}

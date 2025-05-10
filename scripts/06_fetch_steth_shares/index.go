@@ -29,7 +29,7 @@ func main() {
 	err = db.Raw(query).Find(&css).Error
 	log.CheckFatal(err)
 
-	stETH := core.GetSymToAddrByChainId(core.GetChainId(client)).Tokens["stETH"]
+	stETH := core.GetToken(core.GetChainId(client), "stETH")
 	tx := db.Begin()
 	log.Info(len(css))
 	for ind, snapshot := range css {

@@ -5,18 +5,31 @@ import (
 	"testing"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/test"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
 	"github.com/Gearbox-protocol/third-eye/tests/framework"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 type tr struct {
 	ds.DummyRepo
 	addressMap map[string]string
 	// t          handlers.TokenOracleRepo
+}
+
+func (r tr) GetToken(token string) *schemas.Token {
+	for name, addr := range r.addressMap {
+		if addr == token {
+			return &schemas.Token{
+				Address: addr,
+				Symbol:  nameToSym[name],
+				// Decimals: 18,
+			}
+		}
+	}
+	return nil
 }
 
 // TokensValidAtBlock not implemented
@@ -42,6 +55,13 @@ func (mdl tr) TokenAddrsValidAtBlock(addr string, blockNum int64) map[string]boo
 		return nil
 	}
 	return nil
+}
+
+var nameToSym = map[string]string{
+	"Token_1": "OHM",
+	"Token_2": "OHMFRAXBP",
+	"Token_3": "cvxOHMFRAXBP",
+	"Token_4": "stkcvxOHMFRAXBP",
 }
 
 func TestAQFWrapper(t *testing.T) {
@@ -79,17 +99,13 @@ func updateAQF(t *testing.T, aqf *aggregated_block_feed.AQFWrapper, addressMap m
 	}
 	log.Info(addressMap)
 
-	tokenSymMap := aggregated_block_feed.TokenSymMapFromchainId(1)
-	for tokenVar, sym := range map[string]string{
-		"Token_1": "OHM",
-		"Token_2": "OHMFRAXBP",
-		"Token_3": "cvxOHMFRAXBP",
-		"Token_4": "stkcvxOHMFRAXBP",
-	} {
-		addr := common.HexToAddress(addressMap[tokenVar])
-		tokenSymMap.UpdateForTest(sym, addr)
+	tokenSymMap := map[string][]string{}
+	for tokenVar, sym := range nameToSym {
+		if sym != "OHM" {
+			tokenSymMap["OHM"] = append(tokenSymMap["OHM"], addressMap[tokenVar])
+		}
 	}
-	aqf.GetDepFetcher().TokenSymMap = tokenSymMap
+	aqf.GetDepFetcher().TestI = tokenSymMap
 	aqf.ChainlinkPriceUpdatedAt(addressMap["Token_1"], []int64{4, 11, 26, 51, 53, 58})
 	//
 	// aqf.DisableYearnFeed(addressMap["Token_4"], addressMap["YearnFeed_3"], 56, schemas.V2PF)

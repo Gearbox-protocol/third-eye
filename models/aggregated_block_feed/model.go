@@ -124,7 +124,7 @@ func (mdl *AQFWrapper) OnLog(txLog types.Log) {
 // and  we can't have version 2 and 3 feed active at the same time.
 func (mdl AQFWrapper) getFeedAdapters(blockNum int64, neededTokens map[string]bool) (result []ds.QueryPriceFeedI) {
 	for _, adapter := range mdl.QueryFeeds {
-		if !adapter.GetVersion().MoreThan(core.NewVersion(1)) {
+		if !(adapter.GetVersion().MoreThan(core.NewVersion(1)) && adapter.GetName() == ds.QueryPriceFeed) {
 			continue
 		}
 		tokensForAdapter := mdl.Repo.TokenAddrsValidAtBlock(adapter.GetAddress(), blockNum)
