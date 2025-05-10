@@ -68,7 +68,7 @@ func NewChainlinkPriceFeedFromAdapter(adapter *ds.SyncAdapter, includeLastLogBef
 		var lastLogBeforeDiscoverNum int64
 		// TODO anvil fork testing
 		var err error
-		if core.GetChainId(adapter.Client) == 7878 {
+		if log.IsTestNet() {
 			lastLogBeforeDiscoverNum = obj.DiscoveredAt - 3000
 		} else {
 			lastLogBeforeDiscoverNum, err = obj.FindLastLogBound(1, obj.DiscoveredAt-1, []common.Hash{
