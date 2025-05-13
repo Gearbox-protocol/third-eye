@@ -413,7 +413,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		eng.lastParameters[session.CreditManager].FeeInterest,
 		true,
 	)
-	if calHF.Cmp(big.NewInt(65535)) > 0 {
+	if calHF.Cmp(big.NewInt(65535)) > 0 && sessionId != "0xc34fef41FA5De8298f6F4a90F3E37708FC4d9447_13938051_134" {
 		log.Warn("HF for session", sessionId, "is more than 65535", calHF, "at", blockNum)
 		calHF = big.NewInt(65535)
 	}
