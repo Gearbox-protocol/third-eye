@@ -45,6 +45,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		if err != nil {
 			log.Fatal("[CreditManagerModel]: Cant unpack OpenCreditAccount event", err)
 		}
+		mdl.Repo.AddAccountAddr(openCreditAccountEvent.CreditAccount.Hex())
 		mdl.onOpenCreditAccountV3(&txLog,
 			openCreditAccountEvent.OnBehalfOf.Hex(),
 			openCreditAccountEvent.CreditAccount.Hex(),
