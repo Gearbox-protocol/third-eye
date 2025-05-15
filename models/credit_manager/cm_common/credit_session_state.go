@@ -314,11 +314,11 @@ func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.Credi
 }
 
 func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Balances []core.TokenBalanceCallData) *core.DBBalanceFormat {
+	var stETH string
 	if log.GetBaseNet(core.GetBaseChainId(mdl.Client)) == log.MAINNET {
-		return AddStETHBalance(account, blockNum, dcv2Balances, mdl.Client, mdl, core.GetToken(1, "stETH").Hex())
+		stETH = core.GetToken(1, "stETH").Hex()
 	}
-	log.Fatal("AddStETHBalance is not supported other networks than mainnet")
-	return nil
+	return AddStETHBalance(account, blockNum, dcv2Balances, mdl.Client, mdl, stETH)
 }
 
 func (mdl *CommonCMAdapter) GetDecimals(token string) int8 {

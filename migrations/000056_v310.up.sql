@@ -56,3 +56,5 @@ alter table price_feeds add PRIMARY KEY (block_num, feed);
 -- do after the legacy market configurator address is found.
 -- update legacy address in marketconfigurator.
 -- update tvl_snapshots market=? where market='0x0000000000000000000000000000000000000000';
+
+insert into debt_sync values ('t', 0 ,0 );

@@ -176,7 +176,13 @@ func isCType(c CompressorType) bool {
 	}
 	return false
 }
-
+func compressors() []CompressorType {
+	compressors := []CompressorType{}
+	for _, v := range ContractNameToCompressortype {
+		compressors = append(compressors, v)
+	}
+	return compressors
+}
 func (dcw *DataCompressorWrapper) AddCompressorType(addr common.Address, cType CompressorType, discoveredAt int64) {
 	if !isCType(cType) {
 		log.Fatal("ctype is wrong, ", cType)
@@ -218,7 +224,8 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 		sort.Slice(blockNums, func(i, j int) bool { return blockNums[i] < blockNums[j] })
 	}
 	for _, blockNum := range blockNums {
-		for _, suffix := range []CompressorType{CompressorType(""), CompressorType("300"), MARKET_COMPRESSOR, POOL_COMPRESSOR, CREDIT_ACCOUNT_COMPRESSOR} {
+		// TODO: NETWORK
+		for _, suffix := range append(compressors(), "", "300") {
 			key := fmt.Sprintf("%d", blockNum)
 			if suffix != "" {
 				key = fmt.Sprintf("%d_%s", blockNum, suffix)
@@ -240,6 +247,7 @@ func (dcw *DataCompressorWrapper) LoadMultipleDC(multiDCs interface{}) {
 type CompressorType string
 
 const (
+	// TODO : NETWORK
 	MARKET_COMPRESSOR         CompressorType = "MARKET"
 	POOL_COMPRESSOR           CompressorType = "POOL"
 	CREDIT_ACCOUNT_COMPRESSOR CompressorType = "ACCOUNT"
@@ -416,7 +424,14 @@ func (dcw *DataCompressorWrapper) GetCreditAccountData(version core.VersionType,
 			if err != nil {
 				return dc.CreditAccountCallData{}, err
 			}
-			accountData := *abi.ConvertType(out[0], new(creditAccountCompressor.CreditAccountData)).(*creditAccountCompressor.CreditAccountData)
+			var accountData creditAccountCompressor.CreditAccountData
+			switch compressorType {
+			case CREDIT_ACCOUNT_COMPRESSOR:
+				accountData = *abi.ConvertType(out[0], new(creditAccountCompressor.CreditAccountData)).(*creditAccountCompressor.CreditAccountData)
+			case GLOBAL_ACCOUNT_COMPRESSOR:
+				x := abi.ConvertType(out[0], new(globalAccountCompressor.CreditAccountData)).(*globalAccountCompressor.CreditAccountData)
+				accountData = dc.Convert(x)
+			}
 			return AddFieldsToAccountv310(dcw.client, blockNum, accountData)
 		case DCV3:
 			out, err := core.GetAbi("DataCompressorv3").Unpack("getCreditAccountData", bytes)
@@ -643,6 +658,7 @@ func (dcw *DataCompressorWrapper) GetPoolData(version core.VersionType, blockNum
 	resultFn func([]byte) (dc.PoolCallData, error),
 	errReturn error) {
 	//
+	// TODO : NETWORK
 	key, dcAddr, compressorType := dcw.GetKeyAndAddress(version, blockNum, []CompressorType{POOL_COMPRESSOR, GLOBAL_MARKET_COMPRESSOR})
 	switch key {
 	case NODC:
