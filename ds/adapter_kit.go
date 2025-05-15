@@ -63,7 +63,7 @@ func (kit *AdapterKit) Add(adapter SyncAdapterI) {
 
 func (kit *AdapterKit) Get(lvl int) SyncAdapterI {
 	adapterAddr := kit.levels[lvl].Get()
-	return kit.addressMap[adapterAddr]
+	return kit.GetAdapter(adapterAddr)
 }
 
 func (kit *AdapterKit) Next(lvl int) bool {

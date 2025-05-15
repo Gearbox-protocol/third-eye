@@ -6,6 +6,7 @@ import (
 	dcv2 "github.com/Gearbox-protocol/sdk-go/artifacts/dataCompressor/dataCompressorv2"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
+	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 )
@@ -51,5 +52,11 @@ func (profile *DebtProfile) String() string {
 }
 
 func CallTraceAllowed(client core.ClientI) bool {
-	return utils.Contains([]int64{1, 42161, 10, 7878, 1337}, core.GetChainId(client))
+	network := log.TestNetOrMainnet()
+	if network == "" { // testnet
+		network = log.GetNetworkName(core.GetChainId(client))
+	}
+	chainid := log.GetNetworkToChainId(network)
+	testnet := log.GetTestNet(chainid)
+	return utils.Contains([]int64{7878, 1337}, core.GetChainId(client)) || (testnet != network)
 }

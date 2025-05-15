@@ -225,6 +225,9 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 		log.CheckFatal(err)
 		//
 		fn := func(amount *core.BigInt) float64 {
+			if amount.String() == "0" {
+				return 0
+			}
 			return utils.GetFloat64Decimal(
 				eng.GetAmountInUSDByOracle(
 					latestOracle,
@@ -375,11 +378,18 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 }
 
 // todo fix, also check the feed type at this block number
-func (eng *DebtEngine) hasRedStoneToken(balances *core.DBBalanceFormat) bool {
-	pfs := core.GetRedStonePFByChainId(core.GetChainId(eng.client))
-	addToSym := core.GetTokenToSymbolByChainId(core.GetChainId(eng.client))
+func (eng *DebtEngine) hasRedStoneToken(cm string, version core.VersionType, balances *core.DBBalanceFormat) bool {
 	for tokenAddr, details := range *balances {
-		if _, ok := pfs[addToSym[common.HexToAddress(tokenAddr)]]; details.IsEnabled && details.HasBalanceMoreThanOne() && ok {
+		if !(details.IsEnabled && details.HasBalanceMoreThanOne()) {
+			continue
+		}
+		priceFeed := eng.priceHandler.GetLastPriceFeed(cm, tokenAddr, version, true)
+		if priceFeed == nil { // don't know if reverse
+			continue
+		}
+		feed := eng.repo.GetAdapter(priceFeed.Feed)
+		pfType := feed.GetDetails()["pfType"]
+		if pfType == "RedStonePF" || pfType == "CompositeRedStonePF" {
 			return true
 		}
 	}
@@ -403,10 +413,10 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		},
 		sessionDetailsForCalc{
 			addr:                  session.Account,
+			client:                eng.client,
 			CreditSessionSnapshot: sessionSnapshot,
 			CM:                    session.CreditManager,
 			rebaseDetails:         eng.lastRebaseDetails,
-			stETH:                 eng.repo.GetTokenFromSdk("stETH"),
 			version:               session.Version,
 			forQuotas:             eng.v3DebtDetails,
 		},
@@ -479,10 +489,10 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 				profile.CreditSessionSnapshot = sessionSnapshot
 				profile.UnderlyingDecimals = cumIndexAndUToken.Decimals
 				log.Warn(utils.ToJson(profile))
-			} else if eng.hasRedStoneToken(sessionSnapshot.Balances) {
-				if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.003)) { // .3% allowed
-					notMatched = true
-				}
+				// } else if eng.hasRedStoneToken(sessionSnapshot.Balances) {
+				// 	if IsChangeMoreThanFraction(debt.CalTotalValueBI, sessionSnapshot.TotalValueBI, big.NewFloat(0.003)) { // .3% allowed
+				// 		notMatched = true
+				// 	}
 			} else {
 				notMatched = true
 			}
@@ -497,7 +507,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 		}
 	}
 	eng.calAmountToPoolAndProfit(debt, session, cumIndexAndUToken, debtDetails)
-	eng.farmingCalc.addFarmingVal(debt, session, eng.lastCSS[session.ID], storeForCalc{inner: eng})
+	// eng.farmingCalc.addFarmingVal(debt, session, eng.lastCSS[session.ID], storeForCalc{inner: eng})
 	if notMatched {
 		profile.CumIndexAndUToken = cumIndexAndUToken
 		profile.Debt = debt

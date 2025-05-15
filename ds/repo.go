@@ -78,6 +78,7 @@ type RepositoryI interface {
 	AddAllowedTokenV2(logID uint, txHash, creditFilter string, atoken *schemas.AllowedToken)
 	UpdateLimits(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	UpdateEmergencyLiqDiscount(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
+	// saves in db and updates dao operations
 	UpdateFees(logID uint, txHash, creditConfigurator string, params *schemas.Parameters)
 	TransferAccountAllowed(*schemas.TransferAccountAllowed)
 	GetPricesInUSD(blockNum int64, pool string, tokenAddrs []string) core.JsonFloatMap
@@ -136,7 +137,6 @@ type RepositoryI interface {
 	AddTokenObj(token *schemas.Token)
 	PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI
 	//
-	GetTokenFromSdk(symbol string) string
 
 	// v3 events
 	AddTokenLTRamp(*schemas_v3.TokenLTRamp)

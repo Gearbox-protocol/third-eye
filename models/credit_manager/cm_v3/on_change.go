@@ -39,7 +39,12 @@ func (mdl *CMv3) OnLog(txLog types.Log) {
 		case core.Topic("SetExpirationDate(uint40)"):
 			mdl.expirationDate = uint64(new(big.Int).SetBytes(txLog.Data[:]).Int64())
 		case core.Topic("UpdateFees(uint16,uint16,uint16,uint16,uint16)"):
-			mdl.SetParams(&schemas.Parameters{
+			// feeInterest,
+			// uint16 feeLiquidation,
+			// uint16 liquidationPremium,
+			// uint16 feeLiquidationExpired,
+			// uint16 liquidationPremiumExpired
+			params := &schemas.Parameters{
 				BlockNum:                   int64(txLog.BlockNumber),
 				CreditManager:              mdl.Address,
 				FeeInterest:                bytesToUInt16(txLog.Data[:32]),
@@ -47,7 +52,9 @@ func (mdl *CMv3) OnLog(txLog types.Log) {
 				LiquidationDiscount:        10000 - bytesToUInt16(txLog.Data[64:96]), // 10000- liqPremium
 				FeeLiquidationExpired:      bytesToUInt16(txLog.Data[96:128]),
 				LiquidationDiscountExpired: 10000 - bytesToUInt16(txLog.Data[128:160]), // 10000- liqPremiumExpired
-			})
+			}
+			mdl.SetParams(params)
+			mdl.Repo.UpdateFees(txLog.Index, txLog.TxHash.Hex(), mdl.GetAddress(), params)
 		}
 		return
 	}

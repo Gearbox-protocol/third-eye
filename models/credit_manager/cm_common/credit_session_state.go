@@ -148,8 +148,12 @@ func (mdl *CommonCMAdapter) closeSessionCallAndResultFn(closedAt int64, sessionI
 	}
 	return call, func(result multicall.Multicall2Result) {
 		if !result.Success {
-			key, dc := mdl.Repo.GetDCWrapper().GetKeyAndAddress(session.Version, closedAt-1, dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR)
-			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v, dc: %s(%s)", mdl.GetAddress(), session.Borrower, closedAt-1, result.ReturnData, key, dc)
+			key, dc, compressType := mdl.Repo.GetDCWrapper().GetKeyAndAddress(session.Version, closedAt-1,
+				[]dc_wrapper.CompressorType{
+					dc_wrapper.CREDIT_ACCOUNT_COMPRESSOR,
+					dc_wrapper.GLOBAL_ACCOUNT_COMPRESSOR,
+				})
+			log.Fatalf("Failing GetAccount for CM:%s Borrower:%s at %d: %v, dc: %s(%s)", mdl.GetAddress(), session.Borrower, closedAt-1, result.ReturnData, key, dc, compressType)
 		}
 		dcAccountData, err := resultFn(result.ReturnData)
 		if err == nil && !dcAccountData.IsSuccessful && mdl.GetVersion() == core.NewVersion(300) {
@@ -310,7 +314,11 @@ func (mdl *CommonCMAdapter) updateSession(blockNum int64, session *schemas.Credi
 }
 
 func (mdl *CommonCMAdapter) addFloatValue(account string, blockNum int64, dcv2Balances []core.TokenBalanceCallData) *core.DBBalanceFormat {
-	return AddStETHBalance(account, blockNum, dcv2Balances, mdl.Client, mdl, mdl.Repo.GetTokenFromSdk("stETH"))
+	var stETH string
+	if log.GetBaseNet(core.GetBaseChainId(mdl.Client)) == log.MAINNET {
+		stETH = core.GetToken(1, "stETH").Hex()
+	}
+	return AddStETHBalance(account, blockNum, dcv2Balances, mdl.Client, mdl, stETH)
 }
 
 func (mdl *CommonCMAdapter) GetDecimals(token string) int8 {

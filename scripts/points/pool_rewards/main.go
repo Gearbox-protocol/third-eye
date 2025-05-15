@@ -12,7 +12,6 @@ import (
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/repository"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // DATABASE_URL
@@ -20,7 +19,7 @@ import (
 // ETHERSCAN_KEY
 
 type RewardAndTs struct {
-	Value                  []float64
+	Value []float64
 	// StartTs int64
 }
 
@@ -35,7 +34,7 @@ func main() {
 	// node := pkg.Node{Client: client}
 	db := repository.NewDBClient(cfg)
 	var lastAllowedTs int64 = 1719792000
-	lastblockAllowed:= pkg.GetBlockNum( uint64( lastAllowedTs), core.GetChainId(client))
+	lastblockAllowed := pkg.GetBlockNum(uint64(lastAllowedTs), core.GetChainId(client))
 	if lastblockAllowed == 0 {
 		log.Fatal("lastblockAllowed is zero")
 	}
@@ -45,28 +44,28 @@ func main() {
 		TimeStamp int64   `gorm:"column:timestamp"`
 		Token     string  `gorm:"column:underlying_token"`
 		Event     string  `gorm:"column:event" json:"event"`
-		BlockNum int64 `gorm:"column:block_num"`
+		BlockNum  int64   `gorm:"column:block_num"`
 	}{}
 	log.Info(lastblockAllowed)
 	err := db.Raw(`select p.underlying_token, a.*, b.timestamp from (select * from pool_ledger where event in  ('AddLiquidity', 'RemoveLiquidity') and pool in (select address from pools where _version=300) and block_num<?) a join blocks b on b.id=a.block_num join pools p on p.address=a.pool order by a.block_num`, lastblockAllowed).Find(&data).Error
 	log.CheckFatal(err)
 
 	ans := map[string]map[string]float64{}
-	syms := core.GetTokenToSymbolByChainId(core.GetChainId(client))
+	// syms := core.GetTokenToSymbolByChainId(core.GetChainId(client))
 	final := map[UserDeposit]*RewardAndTs{}
 	//
-	ts:=utils.TimeToDateEndTime(time.Unix( data[0].TimeStamp,0)) 
-	dataInd :=0
+	ts := utils.TimeToDateEndTime(time.Unix(data[0].TimeStamp, 0))
+	dataInd := 0
 	for ts.Unix() <= lastAllowedTs {
 		for {
 			if dataInd >= len(data) {
 				break
 			}
-			curAction :=data[dataInd]
+			curAction := data[dataInd]
 			if curAction.TimeStamp > ts.Unix() {
 				break
 			}
-			v := curAction.Amount  
+			v := curAction.Amount
 			if curAction.Event == "RemoveLiquidity" {
 				// log.Info("here")
 				v = -v
@@ -77,32 +76,31 @@ func main() {
 			ans[curAction.Token][curAction.User] += v
 			dataInd++
 		}
-		dayEndBlock := pkg.GetBlockNum(uint64( ts.Unix()), core.GetChainId(client))
+		dayEndBlock := pkg.GetBlockNum(uint64(ts.Unix()), core.GetChainId(client))
 		if dayEndBlock == 0 {
 			log.Fatal("")
 		}
 		log.Info(ts.Format(time.DateOnly), dayEndBlock)
-		for token, entry:= range ans {
+		for token, entry := range ans {
 			var t float64 = 0
-			for user, e:= range entry {
-				t+=e
+			for user, e := range entry {
+				t += e
 				if final[UserDeposit{User: user, Token: token}] == nil {
 					final[UserDeposit{User: user, Token: token}] = &RewardAndTs{}
 				}
-				val := e*getPrice(client, token, dayEndBlock, ts.Unix())
+				val := e * getPrice(client, token, dayEndBlock, ts.Unix())
 				if val > 10 {
 					a := final[UserDeposit{User: user, Token: token}].Value
-					a=   append(a, val)
+					a = append(a, val)
 					final[UserDeposit{User: user, Token: token}].Value = a
 				}
 			}
-			price :=getPrice(client, token, dayEndBlock, ts.Unix())
-			log.Info(syms[common.HexToAddress(token)], t, price*t)
+			price := getPrice(client, token, dayEndBlock, ts.Unix())
+			log.Info(t, price*t)
 		}
 		log.Info("####")
 		ts = ts.Add(time.Hour * 24)
 	}
-
 
 	//
 	fmt.Println("User,Token,avgValue,noofDays")
@@ -120,6 +118,7 @@ func sum(a []float64) float64 {
 	}
 	return s
 }
+
 var orachel *priceFetcher.OneInchOracle
 var blockToPrice map[int64]map[string]*core.BigInt
 

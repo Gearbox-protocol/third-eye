@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,7 +24,19 @@ func NewCMv3(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		ds.NewSyncAdapter(addr, ds.CreditManager, discoveredAt, client, repo),
 	)
 	mdl.InitState()
+	params := &schemas.Parameters{
+		CreditManager:              addr,
+		BlockNum:                   discoveredAt,
+		FeeInterest:                5000,          // DEFAULT_FEE_INTEREST
+		FeeLiquidation:             150,           // DEFAULT_FEE_LIQUIDATION
+		LiquidationDiscount:        100_00 - 4_00, // DEFAULT_LIQUIDATION_PREMIUM
+		FeeLiquidationExpired:      1_00,          // DEFAULT_FEE_LIQUIDATION_EXPIRED
+		LiquidationDiscountExpired: 100_00 - 2_00, // DEFAULT_LIQUIDATION_PREMIUM_EXPIRED
+		EmergencyLiqDiscount:       0,
+	}
+	mdl.SetParams(params)
 	mdl.addCreditConfiguratorAdapter(mdl.GetDetailsByKey("configurator"))
+	mdl.Repo.UpdateFees(0, "", mdl.GetDetailsByKey("configurator"), params)
 	return mdl
 }
 

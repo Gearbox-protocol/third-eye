@@ -40,7 +40,7 @@ func (mdl *PriceOracle) OnLogs(txLogs []types.Log) {
 	for _, txLog := range txLogs {
 		switch txLog.Topics[0] {
 		case core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"), // v3
-			core.Topic("SetPriceFeed(address,address,uint32,bool"), //v310
+			core.Topic("SetPriceFeed(address,address,uint32,bool)"), //v310
 			core.Topic("SetReservePriceFeed(address,address,uint32,bool)"):
 			token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
 			oracle := common.BytesToAddress(txLog.Topics[2].Bytes()).Hex() // priceFeed
@@ -68,7 +68,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 	switch txLog.Topics[0] {
 	case
 		core.Topic("SetPriceFeed(address,address,uint32,bool,bool)"),   // v3
-		core.Topic("SetPriceFeed(address,address,uint32,bool"),         //v310
+		core.Topic("SetPriceFeed(address,address,uint32,bool)"),        //v310
 		core.Topic("SetReservePriceFeed(address,address,uint32,bool)"): // v3, v310
 		//
 		token := common.BytesToAddress(txLog.Topics[1].Bytes()).Hex()  // token
@@ -107,13 +107,13 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 			log.Fatalf("Oracle %s, err: %s, blockNum %d", oracle, err, blockNum)
 		}
 		if priceFeedType == ds.RedStonePF {
-			pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
-			addrToSym := core.GetTokenToSymbolByChainId(core.GetChainId(mdl.Client))
-			sym := addrToSym[common.HexToAddress(token)]
-			_, ok := pfs[sym]
-			if !ok {
-				log.Warnf("RedStonePF not found in config for %s(%s). update sdk-go.", sym, token)
-			}
+			// pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
+			// addrToSym := core.GetTokenToSymbolByChainId(core.GetChainId(mdl.Client))
+			// sym := addrToSym[common.HexToAddress(token)]
+			// _, ok := pfs[sym]
+			// if !ok {
+			// 	log.Warnf("RedStonePF not found in config for %s(%s). update sdk-go.", sym, token)
+			// }
 		}
 		switch priceFeedType {
 		// almost zero price feed is for blocker token on credit account

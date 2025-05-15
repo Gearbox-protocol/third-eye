@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/account_manager"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 func (repo *Repository) AddCreditSession(session *schemas.CreditSession, loadedFromDB bool, txHash string, logID uint) {
@@ -66,6 +67,14 @@ func (repo *Repository) GetAccountManager() *ds.DirectTransferManager {
 // this func is currently used by account factory
 func (repo *Repository) AddAccountAddr(account string) {
 	addrs := repo.GetAdapterAddressByName(ds.AccountManager)
+	if len(addrs) == 0 {
+		addressProvider := repo.GetAdapterAddressByName(ds.AddressProvider)
+		adapter := repo.GetAdapter(addressProvider[0])
+		amAdapter := account_manager.NewAccountManager(common.Address{}.Hex(), adapter.GetDiscoveredAt(), repo.client, repo)
+		repo.AddSyncAdapter(amAdapter)
+		//
+		addrs = repo.GetAdapterAddressByName(ds.AccountManager)
+	}
 	if len(addrs) == 1 {
 		acntManager := repo.GetAdapter(addrs[0])
 		acntManager.(*account_manager.AccountManager).AddAccount(account)

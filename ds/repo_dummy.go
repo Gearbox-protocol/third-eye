@@ -248,9 +248,6 @@ func (DummyRepo) PrepareSyncAdapter(adapter *SyncAdapter) SyncAdapterI {
 	return nil
 }
 
-func (DummyRepo) GetTokenFromSdk(string) string {
-	return ""
-}
 func (DummyRepo) AddTokenLTRamp(*schemas_v3.TokenLTRamp)   {}
 func (DummyRepo) AddQuotaDetails(*schemas_v3.QuotaDetails) {}
 

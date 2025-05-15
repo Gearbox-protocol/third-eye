@@ -66,11 +66,11 @@ func (e *Engine) init() {
 
 func (e *Engine) addstETHToken() {
 	// rebase token stETH
-	chainId := core.GetChainId(e.Client)
+	chainId := core.GetBaseChainId(e.Client)
 	if chainId != 1 {
 		return
 	}
-	addr := core.GetSymToAddrByChainId(chainId).Tokens["stETH"]
+	addr := core.GetToken(1, "stETH")
 	if core.NULL_ADDR != addr { // on arbitrum
 		stETHToken := rebase_token.NewRebaseToken(addr.Hex(), e.Client, e.repo)
 		e.repo.AddSyncAdapter(stETHToken)

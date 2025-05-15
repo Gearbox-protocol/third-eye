@@ -14,7 +14,7 @@ type sessionDetailsForCalc struct {
 	*schemas.CreditSessionSnapshot
 	CM            string
 	rebaseDetails *schemas.RebaseDetailsForDB
-	stETH         string
+	client        core.ClientI
 	// for v3
 	forQuotas v3DebtDetails
 	version   core.VersionType
@@ -29,7 +29,11 @@ func (s sessionDetailsForCalc) GetCM() string {
 }
 func (s sessionDetailsForCalc) GetBalances() core.DBBalanceFormat {
 	// credit session snapshot is not saved to db , so we can use it.
-	schemas.AdjustRebaseToken(*s.Balances, s.stETH, s.rebaseDetails)
+	stETH := core.NULL_ADDR
+	if core.GetBaseChainId(s.client) == 1 {
+		stETH = core.GetToken(1, "stETH")
+	}
+	schemas.AdjustRebaseToken(*s.Balances, stETH.Hex(), s.rebaseDetails)
 	return *s.Balances
 }
 
