@@ -153,6 +153,12 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 			// #C3
 			sessionSnapshot := eng.lastCSS[session.ID]
+			if sessionSnapshot == nil {
+				if session.ID != "0x430789365519A006B110727C1c95032475e26Dbf_21786407_69" {
+					log.Warnf("Session(%s) not found in last css", session.ID, blockNum)
+				}
+				continue
+			}
 			caValue := utils.GetFloat64Decimal(
 				eng.GetAmountInUSD(
 					session.CreditManager,
@@ -189,6 +195,9 @@ func (eng *DebtEngine) CalculateDebt() {
 		for sessionId := range sessionsUpdated {
 			session := sessions[sessionId]
 			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
+				continue
+			}
+			if eng.lastCSS[sessionId] == nil {
 				continue
 			}
 			cmAddr := session.CreditManager
