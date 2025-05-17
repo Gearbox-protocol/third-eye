@@ -105,7 +105,11 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))
 	targetPrice := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 	if targetPrice.Cmp(new(big.Int)) == 0 {
-		log.Warnf("RedStone composite targetprice for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, targetPrice)
+		var sym string
+		if len(validTokens) > 0 {
+			sym = mdl.Repo.GetToken(validTokens[0].Token).Symbol
+		}
+		log.Warnf("RedStone composite targetprice for %s at %d is %f", sym, blockNum, targetPrice)
 		return nil
 	}
 	//

@@ -35,6 +35,9 @@ type inner struct {
 }
 
 func (repo *inner) TokensValidAtBlock(feed string, blockNum int64) (valid []*schemas.TokenOracle) {
+	if blockNum == 21893773 {
+		log.Info("blockNum ", blockNum, utils.ToJson(repo.feedToTokens[feed]), feed)
+	}
 	for _, entry := range repo.feedToTokens[feed] {
 		if entry.BlockNumber <= blockNum && (entry.DisabledAt == 0 || entry.DisabledAt > blockNum) {
 			valid = append(valid, entry)

@@ -84,8 +84,13 @@ func (q *QueryPFDependencies) getChainlinkBasedQueryUpdates(clearExtraBefore int
 }
 
 var base = []string{"WETH", "WBTC", "DAI", "USDC", "USDT", "USDC", "OHM"}
-var combo = map[string][]string{
-	"3crv": {"DAI", "USDC", "USDT"},
+var combo = map[string]struct {
+	data        []string
+	onlymainnet bool
+}{
+	"3crv":   {data: []string{"DAI", "USDC", "USDT"}},
+	"wstETH": {data: []string{"stETH"}, onlymainnet: true},
+	"rstETH": {data: []string{"stETH"}, onlymainnet: true},
 }
 
 // {"USDT": {"3crv:address"}, "USDC": {"3crv:address"}, "DAI": {"3crv:address"}, "FRAX": {"crvFRAX"}}
@@ -103,9 +108,13 @@ func (q *QueryPFDependencies) GetChainlinkTokenToUpdateToken() map[string][]stri
 			if strings.Contains(token.Symbol, sym) && token.Symbol != sym {
 				ans[token.Symbol] = append(ans[token.Symbol], token.Address)
 			}
-			if strings.Contains(strings.ToLower(token.Symbol), "3crv") {
-				for _, underlyingsym := range combo["3crv"] {
-					ans[underlyingsym] = append(ans[underlyingsym], token.Address)
+		}
+		for collection, underlyingSyms := range combo {
+			if strings.Contains(strings.ToLower(token.Symbol), strings.ToLower(collection)) { // 3crv
+				if (core.GetBaseChainId(q.client) == 1 && underlyingSyms.onlymainnet) || !underlyingSyms.onlymainnet {
+					for _, underlyingsym := range underlyingSyms.data {
+						ans[underlyingsym] = append(ans[underlyingsym], token.Address)
+					}
 				}
 			}
 		}
