@@ -95,7 +95,7 @@ func NewAddressProviderFromAdapter(adapter *ds.SyncAdapter, apAddrs string) *Add
 				otherMap[otherAddrProvider.Hex()] = (&schemas.Contract{
 					Address: otherAddrProvider.Hex(),
 					Client:  adapter.Client,
-				}).DiscoverFirstLog()
+				}).DiscoverFirstLog(adapter.FirstLogAt) // for main address provider
 			}
 		}
 	}
