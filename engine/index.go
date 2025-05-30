@@ -177,10 +177,6 @@ func (e *Engine) Sync(syncTill int64) {
 			// if utils.Contains([]string{core.AccountFactory, core.YearnPriceFeed, core.ChainlinkPriceFeed}, adapter.GetName()) {
 			// 	continue
 			// }
-			if adapter.GetName() == ds.CFWrapper {
-				_ = 1
-				log.Info("d")
-			}
 			if !adapter.IsDisabled() {
 				wg.Add(1)
 				if adapter.GetDataProcessType() == ds.ViaQuery {

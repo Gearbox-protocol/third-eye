@@ -172,6 +172,37 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 	return ds.UnknownPF, nil, fmt.Errorf("PriceFeed type not found")
 }
 
+// erc4626 with chainlink as price feed
+func (mdl *PriceOracle) getErc4626(oracle string) (pfType string, underlyingFeeds []string) {
+	data, err := core.CallFuncGetSingleValue(mdl.Client, "cb2ef6f7", common.HexToAddress(oracle), 0, nil)
+	if err != nil { // contractType
+		return
+	}
+	contractName := strings.Trim(string(data), "\x00")
+	if contractName != "PRICE_FEED::ERC4626" {
+		return
+	}
+	data, err = core.CallFuncGetSingleValue(mdl.Client, "741bef1a", common.HexToAddress(oracle), 0, nil) // priceFeed
+	if err != nil {
+		return
+	}
+	underlyingoracle := common.BytesToAddress(data)
+
+	_, err = core.CallFuncGetSingleValue(mdl.Client, "58303b10", underlyingoracle, 0, nil) // phaseId
+	// log.Info("here", err, oracle, underlyingoracle.Hex())
+	if err == nil {
+		return ds.SingleAssetPF, nil // phaseId is not 0, so it is chainlink oracle
+	}
+	description, err := core.CallFuncGetSingleValue(mdl.Client, "7284e416", underlyingoracle, 0, nil) // description
+	if err == nil {
+		if strings.Contains(strings.ToLower(string(description)), "redstone") || underlyingoracle.Hex() == "0x8dd2D85C7c28F43F965AE4d9545189C7D022ED0e" {
+			return ds.SingleAssetPF, []string{underlyingoracle.Hex()} // redstone oracle
+		}
+		log.Info(description, "is not redstone oracle", underlyingoracle.Hex())
+	}
+	return
+}
+
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
 func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, error) {
@@ -188,6 +219,9 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 				if strings.Contains(description, "redstone") {
 					return ds.CurvePF, nil, nil
 				} else {
+					if erc4246, underlyingPFs := mdl.getErc4626(oracle); erc4246 != "" {
+						return erc4246, underlyingPFs, nil
+					}
 					log.Fatal(oracle, token, "priceFeedType failed: ", description, err)
 				}
 			}
