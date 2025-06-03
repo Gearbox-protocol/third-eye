@@ -61,7 +61,7 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 }
 
 func (eng *DebtEngine) InitTest() {
-	eng.priceHandler.poTotokenOracle = eng.repo.GetTokenOracles()
+	eng.priceHandler.poTotokenOracle = eng.repo.GetMainTokenOracles()
 	eng.priceHandler.init(eng.repo)
 }
 

@@ -20,6 +20,7 @@ import (
 type tokenAndPriceOracle struct {
 	_token       string
 	_priceOracle schemas.PriceOracleT
+	_reverse     bool
 }
 
 func (z tokenAndPriceOracle) MarshalText() (text []byte, err error) {
@@ -28,7 +29,7 @@ func (z tokenAndPriceOracle) MarshalText() (text []byte, err error) {
 
 type inner struct {
 	// priceOracle  to token to oracle
-	tokensCurrentOracle map[schemas.PriceOracleT]map[string]*schemas.TokenOracle // done
+	tokensCurrentOracle map[bool]map[schemas.PriceOracleT]map[string]*schemas.TokenOracle // done
 	// feed to token to true
 	feedToTokens   map[string]map[tokenAndPriceOracle]*schemas.TokenOracle
 	disabledTokens []*schemas.TokenOracle
@@ -55,18 +56,19 @@ func (repo *inner) TokenAddrsValidAtBlock(feed string, blockNum int64) (addr map
 	return addr
 }
 
-func (repo *inner) addTokenCurrentOracle(oracle *schemas.TokenOracle) {
-	if repo.tokensCurrentOracle[oracle.PriceOracle] == nil {
-		repo.tokensCurrentOracle[oracle.PriceOracle] = map[string]*schemas.TokenOracle{}
+func (repo *inner) addTokenCurrentOracle(oracle schemas.TokenOracle) {
+	if repo.tokensCurrentOracle[oracle.Reserve][oracle.PriceOracle] == nil {
+		repo.tokensCurrentOracle[oracle.Reserve][oracle.PriceOracle] = map[string]*schemas.TokenOracle{}
 	}
-	repo.tokensCurrentOracle[oracle.PriceOracle][oracle.Token] = oracle
+	repo.tokensCurrentOracle[oracle.Reserve][oracle.PriceOracle][oracle.Token] = &oracle
 	if repo.feedToTokens[oracle.Feed] == nil {
 		repo.feedToTokens[oracle.Feed] = map[tokenAndPriceOracle]*schemas.TokenOracle{}
 	}
 	repo.feedToTokens[oracle.Feed][tokenAndPriceOracle{
 		_token:       oracle.Token,
 		_priceOracle: oracle.PriceOracle,
-	}] = oracle
+		_reverse:     oracle.Reserve,
+	}] = &oracle
 }
 
 func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64) {
@@ -76,9 +78,11 @@ func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64) {
 		adapter := repo.adapters.GetAdapter(addrs[0]).(*address_provider.AddressProvider)
 		for _, v := range []int16{2} { // 29 v1 accounts still open
 			po := adapter.GetPriceOracleLegacy(core.NewVersion(v))
-			for _, d := range repo.tokensCurrentOracle[po] {
-				d.DisabledAt = v2CloseBlock
-				repo.disabledTokens = append(repo.disabledTokens, d)
+			for _, x := range repo.tokensCurrentOracle {
+				for _, d := range x[po] {
+					d.DisabledAt = v2CloseBlock
+					repo.disabledTokens = append(repo.disabledTokens, d)
+				}
 			}
 		}
 	}
@@ -86,12 +90,12 @@ func (repo *TokenOracleRepo) Save(tx *gorm.DB, blockNum int64) {
 	log.CheckFatal(err)
 	repo.disabledTokens = nil
 	//
-	repo.blocks.prevStore.SaveCurrentPrices(repo.client, tx, blockNum, repo.blocks.SetAndGetBlock(blockNum).Timestamp, repo.tokensCurrentOracle)
+	repo.blocks.prevStore.SaveCurrentPrices(repo.client, tx, blockNum, repo.blocks.SetAndGetBlock(blockNum).Timestamp, repo.GetMainTokenOracles())
 }
 
 func newinner() inner {
 	return inner{
-		tokensCurrentOracle: map[schemas.PriceOracleT]map[string]*schemas.TokenOracle{},
+		tokensCurrentOracle: map[bool]map[schemas.PriceOracleT]map[string]*schemas.TokenOracle{true: {}, false: {}},
 		feedToTokens:        map[string]map[tokenAndPriceOracle]*schemas.TokenOracle{},
 	}
 }
@@ -128,7 +132,7 @@ func (repo *TokenOracleRepo) LoadCurrentTokenOracle(db *gorm.DB) {
 		log.Fatal(err)
 	}
 	for _, tokenOracle := range data {
-		repo.addTokenCurrentOracle(tokenOracle)
+		repo.addTokenCurrentOracle(*tokenOracle)
 	}
 	repo.loadZeroPFs(db)
 }
@@ -148,9 +152,9 @@ func (repo *TokenOracleRepo) loadZeroPFs(db *gorm.DB) {
 func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.TokenOracle) bool {
 	feedType := newTokenOracle.FeedType
 	//
-	if repo.tokensCurrentOracle[newTokenOracle.PriceOracle] != nil &&
-		repo.tokensCurrentOracle[newTokenOracle.PriceOracle][newTokenOracle.Token] != nil {
-		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.PriceOracle][newTokenOracle.Token]
+	if repo.tokensCurrentOracle[newTokenOracle.Reserve][newTokenOracle.PriceOracle] != nil &&
+		repo.tokensCurrentOracle[newTokenOracle.Reserve][newTokenOracle.PriceOracle][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Reserve][newTokenOracle.PriceOracle][newTokenOracle.Token]
 
 		if oldTokenOracle.Feed == newTokenOracle.Feed {
 			log.Debugf("Same %s(%s) added for token(%s)", feedType, newTokenOracle.Feed, newTokenOracle.Token)
@@ -160,10 +164,13 @@ func (repo *TokenOracleRepo) alreadyActiveFeedForToken(newTokenOracle *schemas.T
 	return false
 }
 
-func (repo *inner) removeTokenLastOracle(newTokenOracle *schemas.TokenOracle) {
-	if repo.tokensCurrentOracle[newTokenOracle.PriceOracle] != nil &&
-		repo.tokensCurrentOracle[newTokenOracle.PriceOracle][newTokenOracle.Token] != nil {
-		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.PriceOracle][newTokenOracle.Token]
+func (repo *inner) removeTokenLastOracle(newTokenOracle schemas.TokenOracle) {
+	if repo.tokensCurrentOracle[newTokenOracle.Reserve][newTokenOracle.PriceOracle] != nil &&
+		repo.tokensCurrentOracle[newTokenOracle.Reserve][newTokenOracle.PriceOracle][newTokenOracle.Token] != nil {
+		oldTokenOracle := repo.tokensCurrentOracle[newTokenOracle.Reserve][newTokenOracle.PriceOracle][newTokenOracle.Token]
+		if oldTokenOracle.Feed == newTokenOracle.Feed {
+			return
+		}
 		// oldFeed := oldTokenOracle.Feed
 		// delete(repo.feedToTokens[oldFeed], tokenAndPriceOracle{
 		// 	_token:       newTokenOracle.Token,
@@ -176,16 +183,16 @@ func (repo *inner) removeTokenLastOracle(newTokenOracle *schemas.TokenOracle) {
 
 func (repo *TokenOracleRepo) DirectlyAddTokenOracleTest(newTokenOracle *schemas.TokenOracle) {
 	repo.addTokenCurrentOracle(
-		newTokenOracle,
+		*newTokenOracle,
 	)
 }
 func (repo *TokenOracleRepo) disablePrevAdapterAndAddNewTokenOracle(newTokenOracle *schemas.TokenOracle) {
 	repo.removeTokenLastOracle(
-		newTokenOracle,
+		*newTokenOracle,
 	)
 	// set current state of oracle for token.
 	repo.addTokenCurrentOracle(
-		newTokenOracle,
+		*newTokenOracle,
 	)
 	// token oracle
 	repo.blocks.SetAndGetBlock(newTokenOracle.BlockNumber).AddTokenOracle(
@@ -298,8 +305,8 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 	}
 }
 
-func (repo *TokenOracleRepo) GetTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle {
-	return repo.tokensCurrentOracle
+func (repo *TokenOracleRepo) GetMainTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle {
+	return repo.tokensCurrentOracle[false]
 }
 
 // if returned value is nil, it means that token oracle hasn't been added yet.

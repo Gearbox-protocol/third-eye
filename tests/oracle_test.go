@@ -13,5 +13,5 @@ func TestPriceOracle(t *testing.T) {
 	blocks := r.Repo.GetBlocks()
 	delete(blocks, 2)
 	r.Check(blocks, "oracle/blocks.json")
-	r.Check(r.Repo.GetTokenOracles(), "oracle/token_oracle.json")
+	r.Check(r.Repo.GetMainTokenOracles(), "oracle/token_oracle.json")
 }

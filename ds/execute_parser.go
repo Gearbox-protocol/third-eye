@@ -94,8 +94,8 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 		// log.Info(callInd, eventInd)
 		switch sig {
 		case "59781034", // add collateral
-			"6d75b9ee", // add collateral extended 2.2
-			"438f8fcc": // AddCollateralWithPermit
+			"6d75b9ee", // add collateral extended 2.2 // v310 too
+			"438f8fcc": // AddCollateralWithPermit // v310 too
 			if events[eventInd].Action != "AddCollateral(address,address,uint256)" {
 				return false
 			}
@@ -140,7 +140,9 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 			callInd++
 		case "6c68e109": // onDemandPriceUpdate
 			callInd++
-		case "f42aeb00": // compareBalances
+		case "28b83c48": // onDemandPriceUpdates
+			callInd++
+		case "f42aeb00": // compareBalances // v310
 			callInd++
 		case "1f1088a0": // withdrawcollateral
 			if eventInd < eventLen {

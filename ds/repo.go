@@ -64,7 +64,7 @@ type RepositoryI interface {
 	// for getting executeparser
 	GetExecuteParser() ExecuteParserI
 	// price feed/oracle funcs
-	GetTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle
+	GetMainTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle
 	DirectlyAddTokenOracle(tokenOracle *schemas.TokenOracle)
 	AddNewPriceOracleEvent(tokenOracle *schemas.TokenOracle, forChainlinkNewFeed ...bool)
 	//

@@ -55,7 +55,7 @@ func (DummyRepo) SetAndGetBlock(blockNum int64) *schemas.Block {
 func (DummyRepo) GetBlocks() map[int64]*schemas.Block {
 	return nil
 }
-func (DummyRepo) GetTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle {
+func (DummyRepo) GetMainTokenOracles() map[schemas.PriceOracleT]map[string]*schemas.TokenOracle {
 	return nil
 }
 func (DummyRepo) GetDisabledTokens() []*schemas.AllowedToken {

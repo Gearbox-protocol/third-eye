@@ -16,7 +16,7 @@ import (
 func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans []core.RedStonePF) {
 	pool := mdl.State.PoolAddress
 	priceOracle := mdl.Repo.GetAdapter(pool).(*pool_v3.Poolv3).State.PriceOracle
-	feeds := mdl.Repo.GetTokenOracles()[priceOracle]
+	feeds := mdl.Repo.GetMainTokenOracles()[priceOracle]
 	for token := range balances {
 		var con ds.QueryPriceFeedI
 		{
