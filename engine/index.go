@@ -84,7 +84,7 @@ func (e *Engine) getLastSyncedTill() int64 {
 	kit.Details()
 	if kit.LenOfLevel(0) == 0 {
 		// address Provider
-		addrProviders := core.GetAddressProvider(core.GetChainId(e.Client), core.VersionType{})
+		addrProviders := core.GetAddressProvider(core.GetChainId(e.Client), core.NewVersion(1))
 		obj := address_provider.NewAddressProvider(e.Client, e.repo, addrProviders)
 		e.repo.AddSyncAdapter(obj)
 		// pool LM rewards

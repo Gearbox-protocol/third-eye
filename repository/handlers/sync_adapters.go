@@ -122,7 +122,7 @@ func (repo *SyncAdaptersRepo) PrepareSyncAdapter(adapter *ds.SyncAdapter) ds.Syn
 		return acl.NewACLFromAdapter(adapter)
 	case ds.AddressProvider:
 		chainId := core.GetChainId(repo.client)
-		addrProviders := core.GetAddressProvider(chainId, core.VersionType{})
+		addrProviders := core.GetAddressProvider(chainId, core.NewVersion(1))
 		ap := address_provider.NewAddressProviderFromAdapter(adapter, addrProviders)
 		if ap.Details["dc"] != nil {
 			repo.extras.GetDCWrapper().LoadMultipleDC(ap.Details["dc"])

@@ -10,7 +10,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/Gearbox-protocol/third-eye/repository"
@@ -25,11 +24,11 @@ type BorrowAndValue struct {
 	schemas.CreditSession
 }
 
-func GetPureSessions( client core.ClientI) map[string]bool {
-	chainId :=core.GetChainId(client)
-	net:= string(log.GetBaseNet(chainId))
-	
-	f, err := os.OpenFile(fmt.Sprintf("scripts/points/trading_rewards/%s_pure.csv", strings.ToLower(net) ), os.O_RDONLY, 0)
+func GetPureSessions(client core.ClientI) map[string]bool {
+	chainId := core.GetChainId(client)
+	net := string(log.GetBaseNet(chainId))
+
+	f, err := os.OpenFile(fmt.Sprintf("scripts/points/trading_rewards/%s_pure.csv", strings.ToLower(net)), os.O_RDONLY, 0)
 	log.CheckFatal(err)
 	scan := bufio.NewScanner(f)
 	ans := map[string]bool{}
@@ -48,7 +47,7 @@ func main() {
 
 	//
 	var lastAllowedTs int64 = 1719792000
-	lastblockAllowed := pkg.GetBlockNum(uint64(lastAllowedTs), core.GetChainId(client))
+	lastblockAllowed := core.GetBlockNum(uint64(lastAllowedTs), core.GetChainId(client))
 	if lastblockAllowed == 0 {
 		log.Fatal("lastblockAllowed is zero")
 	}

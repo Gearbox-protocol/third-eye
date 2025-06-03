@@ -6,7 +6,6 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
@@ -34,7 +33,7 @@ func main() {
 	// node := pkg.Node{Client: client}
 	db := repository.NewDBClient(cfg)
 	var lastAllowedTs int64 = 1719792000
-	lastblockAllowed := pkg.GetBlockNum(uint64(lastAllowedTs), core.GetChainId(client))
+	lastblockAllowed := core.GetBlockNum(uint64(lastAllowedTs), core.GetChainId(client))
 	if lastblockAllowed == 0 {
 		log.Fatal("lastblockAllowed is zero")
 	}
@@ -76,7 +75,7 @@ func main() {
 			ans[curAction.Token][curAction.User] += v
 			dataInd++
 		}
-		dayEndBlock := pkg.GetBlockNum(uint64(ts.Unix()), core.GetChainId(client))
+		dayEndBlock := core.GetBlockNum(uint64(ts.Unix()), core.GetChainId(client))
 		if dayEndBlock == 0 {
 			log.Fatal("")
 		}

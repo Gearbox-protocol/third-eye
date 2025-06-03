@@ -24,14 +24,15 @@ func NewCMv3(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		ds.NewSyncAdapter(addr, ds.CreditManager, discoveredAt, client, repo),
 	)
 	mdl.InitState()
+	fees := core.GetFees(mdl.Client, common.HexToAddress(addr), discoveredAt)
 	params := &schemas.Parameters{
 		CreditManager:              addr,
 		BlockNum:                   discoveredAt,
-		FeeInterest:                5000,          // DEFAULT_FEE_INTEREST
-		FeeLiquidation:             150,           // DEFAULT_FEE_LIQUIDATION
-		LiquidationDiscount:        100_00 - 4_00, // DEFAULT_LIQUIDATION_PREMIUM
-		FeeLiquidationExpired:      1_00,          // DEFAULT_FEE_LIQUIDATION_EXPIRED
-		LiquidationDiscountExpired: 100_00 - 2_00, // DEFAULT_LIQUIDATION_PREMIUM_EXPIRED
+		FeeInterest:                fees.FeeInterest,                        // DEFAULT_FEE_INTEREST
+		FeeLiquidation:             fees.FeeLiquidation,                     // DEFAULT_FEE_LIQUIDATION
+		LiquidationDiscount:        100_00 - fees.LiquidationPremium,        // DEFAULT_LIQUIDATION_PREMIUM
+		FeeLiquidationExpired:      fees.FeeLiquidationExpired,              // DEFAULT_FEE_LIQUIDATION_EXPIRED
+		LiquidationDiscountExpired: 100_00 - fees.LiquidationPremiumExpired, // DEFAULT_LIQUIDATION_PREMIUM_EXPIRED
 		EmergencyLiqDiscount:       0,
 	}
 	mdl.SetParams(params)
