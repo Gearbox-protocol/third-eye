@@ -137,8 +137,8 @@ func (DummyRepo) UpdateCreditSession(sessionId string, values map[string]interfa
 func (DummyRepo) GetSessions() map[string]*schemas.CreditSession {
 	return nil
 }
-func (DummyRepo) GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int {
-	return nil
+func (DummyRepo) GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) (*big.Int, float64) {
+	return nil, 0
 }
 func (DummyRepo) AddDieselToken(dieselToken, underlyingToken, pool string, version core.VersionType) {
 }
@@ -177,8 +177,8 @@ func (DummyRepo) IsDieselToken(token string) bool {
 func (DummyRepo) GetWETHAddr() string {
 	return ""
 }
-func (DummyRepo) GetUSDCAddr() string {
-	return ""
+func (DummyRepo) GetUSD() common.Address {
+	return common.Address{}
 }
 func (DummyRepo) GetGearTokenAddr() string {
 	return ""

@@ -155,7 +155,7 @@ func (eng *DebtEngine) CalculateDebt() {
 			sessionSnapshot := eng.lastCSS[session.ID]
 			if sessionSnapshot == nil {
 				if session.ID != "0x430789365519A006B110727C1c95032475e26Dbf_21786407_69" {
-					log.Warnf("Session(%s) not found in last css", session.ID, blockNum)
+					log.Warnf("Session(%s) not found in last css %d", session.ID, blockNum)
 				}
 				continue
 			}
@@ -535,9 +535,10 @@ func (eng *DebtEngine) GetAmountInUSDByOracle(priceOracle schemas.PriceOracleT, 
 		return utils.GetInt64(new(big.Int).Mul(tokenPrice.PriceBI.Convert(), amount), tokenDecimals)
 	}
 	// for v1
-	usdcAddr := eng.repo.GetUSDCAddr()
-	usdcPrice := eng.priceHandler.GetLastPriceFeedByOracle(priceOracle, usdcAddr, version)
-	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
+	usdcAddr := eng.repo.GetUSD()
+	usdcPrice := eng.priceHandler.GetLastPriceFeedByOracle(priceOracle, usdcAddr.Hex(), version)
+	// usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
+	var usdcDecimals int8 = 6
 
 	value := new(big.Int).Mul(amount, tokenPrice.PriceBI.Convert())
 	value = utils.GetInt64(value, tokenDecimals-usdcDecimals)
@@ -551,9 +552,10 @@ func (eng *DebtEngine) GetAmountInUSD(cm string, tokenAddr string, amount *big.I
 		return utils.GetInt64(new(big.Int).Mul(tokenPrice, amount), tokenDecimals)
 	}
 	// for v1
-	usdcAddr := eng.repo.GetUSDCAddr()
-	usdcPrice := eng.priceHandler.GetLastPrice(cm, usdcAddr, version)
-	usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
+	usdcAddr := eng.repo.GetUSD()
+	usdcPrice := eng.priceHandler.GetLastPrice(cm, usdcAddr.Hex(), version)
+	// usdcDecimals := eng.repo.GetToken(usdcAddr).Decimals
+	var usdcDecimals int8 = 6
 
 	value := new(big.Int).Mul(amount, tokenPrice)
 	value = utils.GetInt64(value, tokenDecimals-usdcDecimals)

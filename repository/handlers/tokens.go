@@ -15,7 +15,6 @@ import (
 type TokensRepo struct {
 	// export vars
 	wethAddr      string
-	usdcAddr      string
 	gearTokenAddr string // address of the gear token
 	// blocks/token
 	tokens map[string]*schemas.Token
@@ -25,6 +24,10 @@ type TokensRepo struct {
 	mu     *sync.Mutex
 	client core.ClientI
 	// symToAddrToken map[string]common.Address
+}
+
+func (t TokensRepo) GetClient() core.ClientI {
+	return t.client
 }
 
 func NewTokensRepo(client core.ClientI) *TokensRepo {
@@ -82,11 +85,6 @@ func (repo *TokensRepo) addTokenObj(t *schemas.Token) {
 		t.Symbol = "yvWETH"
 	}
 	// set usdc addr in repo
-	if t.Symbol == "USDC" ||
-		(core.GetBaseChainId(repo.client) == 146 && t.Symbol == "USDC.e") ||
-		(core.GetBaseChainId(repo.client) == 56 && t.Symbol == "USDT") {
-		repo.usdcAddr = t.Address
-	}
 	if t.Symbol == "WETH" {
 		repo.wethAddr = t.Address
 	}
@@ -173,9 +171,6 @@ func (repo *TokensRepo) AddTokenObj(obj *schemas.Token) {
 
 func (repo *TokensRepo) GetWETHAddr() string {
 	return repo.wethAddr
-}
-func (repo *TokensRepo) GetUSDCAddr() string {
-	return repo.usdcAddr
 }
 func (repo *TokensRepo) GetGearTokenAddr() string {
 	return repo.gearTokenAddr

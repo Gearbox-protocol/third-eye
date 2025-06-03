@@ -91,7 +91,7 @@ type RepositoryI interface {
 	GetCreditSession(sessionId string) *schemas.CreditSession
 	UpdateCreditSession(sessionId string, values map[string]interface{}) *schemas.CreditSession
 	GetSessions() map[string]*schemas.CreditSession
-	GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) *big.Int
+	GetValueInCurrency(blockNum int64, version core.VersionType, token, currency string, amount *big.Int) (*big.Int, float64)
 	AddDieselToken(dieselToken, underlyingToken, pool string, version core.VersionType)
 	GetDieselTokens() map[string]*schemas.UTokenAndPool
 	// credit session snapshots funcs
@@ -106,7 +106,7 @@ type RepositoryI interface {
 	GetPoolUniqueUserLen(pool string) int
 	IsDieselToken(token string) bool
 	GetWETHAddr() string
-	GetUSDCAddr() string
+	GetUSD() common.Address
 	GetGearTokenAddr() string
 	// credit manager
 	AddAccountTokenTransfer(tt *schemas.TokenTransfer)

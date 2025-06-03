@@ -55,7 +55,7 @@ func dieselAnswers(entries []multicall.Multicall2Result) (dieselRates []*big.Int
 
 func v1PriceCalls(oracle schemas.PriceOracleT, tokenAddrs []string, repo *handlers.TokensRepo) (calls []multicall.Multicall2Call) {
 	oracleABI := core.GetAbi("PriceOracle")
-	usdcToken := common.HexToAddress(repo.GetUSDCAddr())
+	usdcToken := core.GetToken(core.GetBaseChainId(repo.GetClient()), "USDC")
 	for _, tokenAddr := range tokenAddrs {
 		amount := utils.GetExpInt(repo.GetToken(tokenAddr).Decimals)
 		data, err := oracleABI.Pack("convert", amount, common.HexToAddress(tokenAddr), usdcToken)

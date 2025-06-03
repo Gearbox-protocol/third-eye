@@ -63,10 +63,10 @@ func (mdl CommonCMAdapter) AddCollateralToSession(blockNum int64, sessionId, tok
 			amount,
 		))
 		//
-		valueInUSD := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, "USDC", amount)
-		session.CollateralInUSD = session.CollateralInUSD + utils.GetFloat64Decimal(valueInUSD, 6)
-		valueInUnderlyingAsset := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, mdl.GetUnderlyingToken(), amount)
-		session.CollateralInUnderlying += utils.GetFloat64Decimal(valueInUnderlyingAsset, mdl.GetUnderlyingDecimal())
+		_, valueInUSD := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, "USD", amount)
+		session.CollateralInUSD = session.CollateralInUSD + valueInUSD
+		_, valueInUnderlyingAsset := mdl.Repo.GetValueInCurrency(blockNum, session.Version, token, mdl.GetUnderlyingToken(), amount)
+		session.CollateralInUnderlying += valueInUnderlyingAsset
 	}
 }
 
