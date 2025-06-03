@@ -3,6 +3,7 @@ package multicall_processor
 import (
 	"math/big"
 	"sort"
+	"strings"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -97,8 +98,8 @@ func AddManageDebtsToMain(lastMainAction *schemas.AccountOperation, debts []pool
 	for _, event := range debts {
 		account := event.Account
 		if event.Type == pool_v3.INCREASE_DEBT {
-			if account != lastMainAction.Borrower {
-				log.Fatal("The borrower of the increase debt is not same as the borrower on multicall", account, lastMainAction.Borrower)
+			if account != strings.Split(lastMainAction.SessionId, "_")[0] {
+				log.Fatal("The borrower of the increase debt is not same as the borrower on multicall", account, strings.Split(lastMainAction.SessionId, "_")[0], lastMainAction.TxHash)
 			}
 		} else if event.Type == pool_v3.DECREASE_DEBT {
 			account = lastMainAction.Borrower

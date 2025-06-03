@@ -6,12 +6,8 @@ github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/DataDog/zstd v1.4.5 h1:EndNeuB0l9syBZhut0wns3gV1hL8zX8LIu6ZiVHWLIQ=
 github.com/DataDog/zstd v1.4.5/go.mod h1:1jcaCB/ufaK+sKp1NBhlGmpz41jOoPQ35bpF36t7BBo=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20250521141720-d499088ed079 h1:NZhf8iZiz23q46nxaUlWuFNVzDRp0kBpgpu1tY7geHs=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20250521141720-d499088ed079/go.mod h1:MZsiiSAwDdnHY6GEILYtHEqhb9wmbUUE34UBQgNlUyM=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20250521141850-3d92027e6c19 h1:aUzk33lEgOeSWihU1GKKzZ/KyKlLOJkkBGgrnoycRdk=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20250521141850-3d92027e6c19/go.mod h1:MZsiiSAwDdnHY6GEILYtHEqhb9wmbUUE34UBQgNlUyM=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20250531070656-5dadef49ead1 h1:cZpGTCW5mOxzKMrlrBDvQz7pSvPzh6xgDhUEQ8SECr4=
-github.com/Gearbox-protocol/sdk-go v0.0.0-20250531070656-5dadef49ead1/go.mod h1:MZsiiSAwDdnHY6GEILYtHEqhb9wmbUUE34UBQgNlUyM=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20250603043334-2406c3582614 h1:IaIGqmaO4T/lpDHiriMzrfj16EGVBz/L9ic2V2gvwdE=
+github.com/Gearbox-protocol/sdk-go v0.0.0-20250603043334-2406c3582614/go.mod h1:MZsiiSAwDdnHY6GEILYtHEqhb9wmbUUE34UBQgNlUyM=
 github.com/Microsoft/go-winio v0.6.1 h1:9/kr64B9VUZrLm5YYwbGtUJnMgqWVOdUAXu6Migciow=
 github.com/Microsoft/go-winio v0.6.1/go.mod h1:LRdKpFKfdobln8UmuiYcKPot9D2v6svN5+sAH+4kjUM=
 github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227 h1:+/3TrD+q+BP36jGj2Bycdmrc/joKLNbc5ImePQzKRLM=
