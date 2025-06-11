@@ -41,6 +41,11 @@ func DirecTokenTransferString(repo ds.RepositoryI, tx *schemas.TokenTransfer) st
 	return msg
 }
 
+var gearbox_addr_so_collateral_is_not_from_user = []string{"0x7b065Fcb0760dF0CEA8CFd144e08554F3CeA73D1",
+	"0x6f378f36899cEB7C6fB7D293aAE1ca86B0Edbf6D",
+	"0xFC85C07C3e0D497d97F287a70C6b2fA5CD5fdBE0",
+	"0x23e85dB353bFDa25329c4e12b98Aa991F541eA2d"}
+
 // if blockNum is lasteventblock then set session is Updated
 // if blockNum is not equal to lasteventblock then fetch details for that session
 func (mdl *CommonCMAdapter) processDirectTransfersOnBlock(blockNum int64, sessionIDToTxs map[string][]*schemas.TokenTransfer) {
@@ -59,7 +64,7 @@ func (mdl *CommonCMAdapter) processDirectTransfersOnBlock(blockNum int64, sessio
 			//
 			mdl.SetSessionIsUpdated(sessionID)
 			//
-			if tx.To == session.Account {
+			if tx.To == session.Account && !utils.Contains(gearbox_addr_so_collateral_is_not_from_user, tx.From) {
 				// add transfer as collateral for rewardClaimed too
 				// reward token is enabled to account, and will be counted as user fund
 				// https://github.com/Gearbox-protocol/integrations-v2/blob/main/contracts/adapters/convex/ConvexV1_BaseRewardPool.sol#L292-L298
