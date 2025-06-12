@@ -55,6 +55,18 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 		repo.blocks.Set(block.BlockNumber, block)
 	}
 }
+func (repo *BlocksRepo) LoadBlockAndTs(from, to int64) {
+	log.Infof("Loaded %d to %d blocks for debt", from, to)
+	data := []*schemas.Block{}
+	err := repo.db.
+		Find(&data, "id > ? AND id <= ?", from, to).Error
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, block := range data {
+		repo.blocks.Set(block.BlockNumber, block)
+	}
+}
 
 func (repo *BlocksRepo) Save(tx *gorm.DB) {
 	defer utils.Elapsed("blocks sql statements")()

@@ -133,6 +133,7 @@ func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 	//
 	for syncTarget := syncedTill + e.batchSizeForHistory; syncTarget <= latestBlockNum; syncTarget += e.batchSizeForHistory {
 		roundStartTime := time.Now()
+		e.repo.LoadBlockAndTs(syncTarget-e.batchSizeForHistory, syncTarget)
 		e.SyncAndFlush(syncTarget)
 		syncedTill = syncTarget
 		//
