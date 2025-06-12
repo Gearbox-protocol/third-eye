@@ -27,7 +27,7 @@ delete from credit_sessions where since> 18246321;
 update  credit_sessions set closed_at=0,liquidator='', remaining_funds='0', close_transfers='{}',status=0 where closed_at> 18246321;
 
 -- the borrower is not accounted for ; i.e. transfer of acocunt is not handled and should be used carefully
-update credit_sessions cs set borrowed_amount=css.borrowed_amount_bi, balances=css.balances from  (select distinct on(session_id) * from credit_session_snapshots order by session_id, block_num desc) css where css.session_id=cs.id  and cs.status=0;
+update credit_sessions cs set borrowed_amount=css.borrowed_amount_bi, balances=css.balances, collateral=css.collateral from  (select distinct on(session_id) * from credit_session_snapshots order by session_id, block_num desc) css where css.session_id=cs.id  and cs.status=0;
 
 -- for creditmanager
 
@@ -55,6 +55,7 @@ update credit_managers cm set
 
 delete from price_feeds where block_num >  18246321;
 delete from token_oracle where block_num > 18246321;
+update token_oracle set disabled_at=0 where disabled_at >= 18246321;
 update sync_adapters set last_sync=18246321 where type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
 delete from sync_adapters where discovered_at> 18246321 and type in ('PriceOracle', 'ChainlinkPriceFeed', 'CompositeChainlinkPF', 'QueryPriceFeed');
 update sync_adapters set last_sync=18246321 where type in ('AddressProvider',  'ACL', 'AccountFactory');
