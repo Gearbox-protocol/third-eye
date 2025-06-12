@@ -149,7 +149,7 @@ func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeed
 
 	// } else if utils.Contains([]string{"0xCbeCfA4017965939805Da5a2150E3DB1BeDD0364", "0x814E6564e8cda436c1ab25041C10bfdb21dEC519"},
 
-	priceData := adapter.ProcessResult(blockNum, entries)
+	priceData := adapter.ProcessResult(blockNum, entries, "")
 	if priceData == nil {
 		return nil
 	}

@@ -36,7 +36,7 @@ var counter = log.SendMsgIfCountMoreThan(24*time.Hour, 10)
 // same as query price feed
 // func (*YearnPriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 
-func (mdl *SingleAssetFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
+func (mdl *SingleAssetFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, _ string, force ...bool) *schemas.PriceFeed {
 	result := results[len(results)-1]
 	if !result.Success {
 		counter(mdl.GetAddress(), fmt.Sprintf("Can't get latestRounData for YearnModule in AQFWrapper for %s(%s) at %d",

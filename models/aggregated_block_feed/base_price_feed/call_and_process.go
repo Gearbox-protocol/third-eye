@@ -63,7 +63,7 @@ func ParseQueryRoundData(returnData []byte, isPriceInUSD bool, feed string, bloc
 	}
 }
 
-func (mdl *BasePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
+func (mdl *BasePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, _ string, force ...bool) *schemas.PriceFeed {
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
 	if !results[0].Success {
 		if mdl.GetVersion().MoreThanEq(core.NewVersion(300)) {

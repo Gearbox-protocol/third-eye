@@ -3,6 +3,7 @@ package redstone_price_feed
 import (
 	"encoding/hex"
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -12,6 +13,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/composite_redstone_price_feed"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
@@ -62,7 +64,7 @@ func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multic
 	}, true
 }
 
-func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
+func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, token string, force ...bool) *schemas.PriceFeed {
 	validTokens := mdl.Repo.TokensValidAtBlock(mdl.GetAddress(), blockNum)
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
 	{
@@ -82,12 +84,15 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			}
 		}
 	}
+	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 {
+		return composite_redstone_price_feed.GetSpotPriceFeed(blockNum, token, mdl.Address, mdl.Repo, mdl.Client)
+	}
 	{
 		//
 		priceBI := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 		if priceBI.Cmp(new(big.Int)) == 0 {
 			log.Warnf("RedStone price for %s at %d is %f", mdl.Repo.GetToken(validTokens[0].Token).Symbol, blockNum, priceBI)
-			return nil
+			return composite_redstone_price_feed.GetSpotPriceFeed(blockNum, token, mdl.Address, mdl.Repo, mdl.Client)
 		}
 
 		priceData := parsePriceForRedStone(priceBI, isPriceInUSD)

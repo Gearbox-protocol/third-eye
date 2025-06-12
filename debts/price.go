@@ -7,7 +7,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
-	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/address_provider"
@@ -161,24 +160,8 @@ func (eng *PriceHandler) requestPriceFeed(blockNum int64, client core.ClientI, r
 		category = "due to hf <1"
 	}
 	results := core.MakeMultiCall(client, blockNum, false, calls)
-	price := retryFeed.ProcessResult(blockNum, results, true)
-	if price == nil {
-		chainId := core.GetBaseChainId(client)
-		if chainId == 1 {
-			pricespot, err := priceFetcher.GetPriceSpot(eng.repo.GetToken(token), core.GetToken(chainId, "USDC"), client, blockNum)
-			log.CheckFatal(err)
-			price = &schemas.PriceFeed{
-				BlockNumber: blockNum,
-				Feed:        retryFeed.GetAddress(),
-				RoundId:     0,
-				PriceBI:     (*core.BigInt)(pricespot),
-				Price:       utils.GetFloat64Decimal(pricespot, 8),
-			}
-		}
-		log.Info("getting spot price for ", token, "at", blockNum, category)
-	} else {
-		log.Info("getting on chain (redstone/curve) price for ", token, "at", blockNum, category)
-	}
+	price := retryFeed.ProcessResult(blockNum, results, token, true)
+	log.Info("getting on chain (redstone/curve) price for ", token, "at", blockNum, category)
 	if price != nil {
 		newPF := &schemas.PriceFeed{
 			BlockNumber: blockNum,

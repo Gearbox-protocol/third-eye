@@ -358,7 +358,7 @@ func (eng *DebtEngine) SessionDebtHandler(blockNum int64, session *schemas.Credi
 					feedAddr := lastPriceEvent.Feed
 					for _, retryFeed := range retryFeeds {
 						if retryFeed.GetAddress() == feedAddr {
-							log.Info(retryFeed.GetAddress(), blockNum)
+							log.Infof("retryfeed(%s) for blockNum %d", retryFeed.GetAddress(), blockNum)
 							// log.Info("hf ", debt.CalHealthFactor.Convert(), "of", sessionId, "at", blockNum)
 							eng.priceHandler.requestPriceFeed(blockNum, eng.client, retryFeed, tokenAddr, profile != nil, eng.db)
 						}

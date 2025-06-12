@@ -2,6 +2,7 @@ package composite_redstone_price_feed
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -81,8 +82,22 @@ func (mdl *CompositeRedStonePriceFeed) GetCalls(blockNum int64) (calls []multica
 		CallData: data,
 	}}, true
 }
-
-func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
+func GetSpotPriceFeed(blockNum int64, token string, feedAddr string, repo ds.RepositoryI, client core.ClientI) *schemas.PriceFeed {
+	chainId := core.GetBaseChainId(client)
+	if chainId == 1 {
+		pricespot, err := priceFetcher.GetPriceSpot(repo.GetToken(token), core.GetToken(chainId, "USDC"), client, blockNum)
+		log.CheckFatal(err)
+		return &schemas.PriceFeed{
+			BlockNumber: blockNum,
+			Feed:        feedAddr,
+			RoundId:     0,
+			PriceBI:     (*core.BigInt)(pricespot),
+			Price:       utils.GetFloat64Decimal(pricespot, 8),
+		}
+	}
+	return nil
+}
+func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, token string, force ...bool) *schemas.PriceFeed {
 	if !results[1].Success {
 		return nil
 	}
@@ -102,6 +117,9 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 		}
 	}
 	validTokens := mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)
+	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 {
+		return GetSpotPriceFeed(blockNum, token, mdl.Address, mdl.Repo, mdl.Client)
+	}
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))
 	targetPrice := mdl.Repo.GetRedStonemgr().GetPrice(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *mdl.DetailsDS.Info[mdl.GetAddress()])
 	if targetPrice.Cmp(new(big.Int)) == 0 {
@@ -110,7 +128,7 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 			sym = mdl.Repo.GetToken(validTokens[0].Token).Symbol
 		}
 		log.Warnf("RedStone composite targetprice for %s at %d is %f", sym, blockNum, targetPrice)
-		return nil
+		return GetSpotPriceFeed(blockNum, token, mdl.Address, mdl.Repo, mdl.Client)
 	}
 	//
 	basePrice := func() *big.Int {

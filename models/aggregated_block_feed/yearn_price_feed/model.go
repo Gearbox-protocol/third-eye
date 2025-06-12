@@ -34,7 +34,7 @@ func NewYearnPriceFeedFromAdapter(adapter *ds.SyncAdapter) *YearnPriceFeed {
 // same as query price feed
 // func (*YearnPriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 
-func (mdl *YearnPriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
+func (mdl *YearnPriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, _ string, force ...bool) *schemas.PriceFeed {
 	if !results[0].Success {
 		if utils.Contains([]string{
 			"0x628539959F3B3bb0cFe2102dCaa659cf1E8D19EB",

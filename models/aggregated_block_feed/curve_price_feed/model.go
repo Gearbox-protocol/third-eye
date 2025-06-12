@@ -37,7 +37,7 @@ func (feed CurvePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall
 
 var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
 
-func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, force ...bool) *schemas.PriceFeed {
+func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, _ string, force ...bool) *schemas.PriceFeed {
 	result := results[len(results)-1]
 	if !result.Success {
 		if adapter.GetVersion().LessThan(core.NewVersion(300)) { // failed and
