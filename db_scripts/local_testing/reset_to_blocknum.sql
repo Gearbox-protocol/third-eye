@@ -4,7 +4,7 @@ delete from allowed_tokens where block_num>18246321;
 delete from credit_manager_stats where block_num>18246321;
 delete from credit_session_snapshots where block_num>18246321;
 delete from dao_operations where block_num> 18246321;
-delete from blocks where id > 18246321;
+-- delete from blocks where id > 18246321;
 
 
 delete from debts where block_num> 18246321;

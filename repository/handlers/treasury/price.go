@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg/priceFetcher"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
@@ -134,6 +135,12 @@ func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle schemas.PriceOr
 		}
 		results := core.MakeMultiCall(repo.client, blockNum, false, call)
 		price := adapter.ProcessResult(blockNum, results, true)
+		chainId := core.GetBaseChainId(repo.client)
+		if chainId == 1 && price == nil {
+			price, err := priceFetcher.GetPriceSpot(repo.tokens.GetToken(token), core.GetToken(chainId, "USDC"), repo.client, blockNum)
+			log.CheckFatal(err)
+			return price
+		}
 		return price.PriceBI.Convert()
 	}
 	return nil
