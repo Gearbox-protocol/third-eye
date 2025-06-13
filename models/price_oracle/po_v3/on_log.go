@@ -206,32 +206,52 @@ func (mdl *PriceOracle) getErc4626(oracle string) (pfType string, underlyingFeed
 	return
 }
 
-// https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
-// https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
-func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, error) {
+func (mdl *PriceOracle) getPfType(oracle string, token string) (int64, error) {
+	// check if v300 oracle with pricefeedtype
 	data, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
+	var pfType int64
 	if err != nil {
-		{ // redstone feed without price on demand doesn't have priceFeedType method.
-			//https://etherscan.io/address/0xbC5FBcf58CeAEa19D523aBc76515b9AEFb5cfd58#readProxyContract
+		// check if v310 oracle with contractType
+		data, err := core.CallFuncGetSingleValue(mdl.Client, "cb2ef6f7", common.HexToAddress(oracle), 0, nil) // contractType
+		if err == nil {
+			pfName := strings.Trim(string(data), "\x00") // contractType
+			pfType = core.GetContractTypeToPFType(pfName)
+		} else {
+			// check if chainlink oracle with phaseId
+			pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracle), mdl.Client)
+			log.CheckFatal(err)
+			_, err = pfContract.PhaseId(nil) // only on chainlink
+			if err == nil {
+				return core.V3_CHAINLINK_ORACLE, nil // chainlink oracle
+			}
+			// check if outside redstone oracle with description
 			con, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
 			log.CheckFatal(err)
 			if description, err := con.Description(nil); err != nil {
-				log.Fatal(oracle, token, "priceFeedType failed: ", err)
+				return 0, log.WrapErrWithLine(fmt.Errorf("%s %s priceFeedType failed: %s", oracle, token, err))
 			} else {
 				description = strings.ToLower(string(description))
 				if strings.Contains(description, "redstone") { // the oracles that don't have priceFeedType method,
 					// // are outside redstne oracle and in control of redstone team to update regularly so can be treated as curve pf
-					return ds.CurvePF, nil, nil
-				} else {
-					if erc4246, underlyingPFs := mdl.getErc4626(oracle); erc4246 != "" {
-						return erc4246, underlyingPFs, nil
-					}
-					log.Fatal(oracle, token, "priceFeedType failed: ", description, err)
+					return core.V3_EXTERNAL, nil
 				}
+				log.Fatal(oracle, token, "priceFeedType failed: ", description, err)
 			}
 		}
+	} else {
+		pfType = new(big.Int).SetBytes(data).Int64()
 	}
-	pfType := new(big.Int).SetBytes(data).Int64()
+	return pfType, nil
+}
+
+// https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
+// https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
+func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, error) {
+	pfType, err := mdl.getPfType(oracle, token)
+	log.CheckFatal(err)
+	if pfType == core.V3_EXTERNAL {
+		return ds.CurvePF, nil, nil
+	}
 	switch pfType {
 	case core.V3_COMPOSITE_ORACLE:
 		{ // composite feed is using redstone feed
@@ -300,14 +320,13 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			pfBytes, err := core.CallFuncGetSingleValue(mdl.Client, sig, common.HexToAddress(oracle), 0, nil)
 			log.CheckFatal(err)
 			pf := common.BytesToAddress(pfBytes)
-			pfTypeBytes, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", pf, 0, nil) // priceFeedType
-			if err != nil {
-				log.Warn("priceFeedType is not implemented on ", pf, "err", err)
-			}
-			if new(big.Int).SetBytes(pfTypeBytes).Int64() == core.V3_REDSTONE_ORACLE {
+			pfType, err := mdl.getPfType(pf.Hex(), token) // check if pfType is redstone or curve
+			log.CheckFatal(err)
+			//
+			if pfType == core.V3_REDSTONE_ORACLE {
 				return pf.Hex()
 			}
-			log.Warn("priceFeedType is not redstone oracle ", pf, "type", new(big.Int).SetBytes(pfTypeBytes).Int64())
+			log.Warn("priceFeedType is not redstone oracle ", pf, "type", pfType)
 			return ""
 		}
 		nCoins := int(new(big.Int).SetBytes(nCoinBytes).Int64())
