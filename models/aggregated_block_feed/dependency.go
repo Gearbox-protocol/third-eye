@@ -179,7 +179,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 		for i := 0; i < entry.nocalls; i++ {
 			results = append(results, iterator.Next())
 		}
-		prices := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results, getForceForAdapter(q.repo, entry.adapter))
+		prices := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results, false)
 		q.updateQueryPrices(prices)
 	}
 	// sync control

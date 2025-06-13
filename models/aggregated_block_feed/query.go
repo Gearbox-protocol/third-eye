@@ -34,9 +34,7 @@ func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
 	for ; blockNum <= toSinceTill; blockNum += mdl.Interval {
 		mdl.queryPFdeps.aggregatedFetchedBlocks =
 			append(mdl.queryPFdeps.aggregatedFetchedBlocks, blockNum)
-		ch <- 1
-		wg.Add(1)
-		go mdl.queryAsync(blockNum, ch, wg)
+		mdl.queryAsync(blockNum, ch, wg)
 		if rounds%100 == 0 {
 			timeLeft := (time.Since(loopStartTime).Seconds() * float64(toSinceTill-blockNum)) /
 				float64(blockNum-mdl.GetLastSync())
@@ -85,10 +83,15 @@ func (mdl *AQFWrapper) addQueryPrices(deleteExtraBefore int64) {
 }
 
 func (mdl *AQFWrapper) queryAsync(blockNum int64, ch chan int, wg *sync.WaitGroup) {
-	pfs := mdl.QueryData(blockNum)
-	mdl.updateQueryPrices(pfs)
-	<-ch
-	wg.Done()
+	ch <- 1
+	wg.Add(1)
+	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
+	go func() {
+		pfs := mdl.QueryData(calls, queryAbleAdapters, blockNum)
+		mdl.updateQueryPrices(pfs)
+		<-ch
+		wg.Done()
+	}()
 }
 
 func (mdl *AQFWrapper) updateQueryPrices(pfs []*schemas.PriceFeed) {
@@ -102,8 +105,8 @@ func (mdl *AQFWrapper) updateQueryPrices(pfs []*schemas.PriceFeed) {
 	mdl.queryFeedPrices = append(mdl.queryFeedPrices, pfs...)
 }
 
-func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
-	calls, queryAbleAdapters := mdl.getRoundDataCalls(blockNum)
+func (mdl *AQFWrapper) QueryData(calls []multicall.Multicall2Call, queryAbleAdapters []adapterAndNoCall, blockNum int64) []*schemas.PriceFeed {
+
 	result := core.MakeMultiCall(mdl.Client, blockNum, false, calls)
 	iterator := core.NewMulticallResultIterator(result)
 	//
@@ -114,7 +117,7 @@ func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
 		for i := 0; i < entry.nocalls; i++ {
 			results = append(results, iterator.Next())
 		}
-		pf := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results, getForceForAdapter(mdl.Repo, entry.adapter))
+		pf := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results, entry.force)
 		queryFeedPrices = append(queryFeedPrices, pf...)
 	}
 	//
@@ -124,6 +127,7 @@ func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
 type adapterAndNoCall struct {
 	adapter ds.QueryPriceFeedI
 	nocalls int
+	force   bool
 }
 
 func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Multicall2Call, queryAbleAdapters []adapterAndNoCall) {
@@ -139,6 +143,7 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 			queryAbleAdapters = append(queryAbleAdapters, adapterAndNoCall{
 				adapter: adapter,
 				nocalls: len(moreCalls),
+				force:   getForceForAdapter(mdl.Repo, adapter, blockNum),
 			})
 			continue
 		}
@@ -154,27 +159,29 @@ func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeed
 	if priceData == nil {
 		return nil
 	}
-	feed := adapter.GetAddress()
-	priceData.Feed = feed
+	priceData.Feed = adapter.GetAddress()
 	priceData.BlockNumber = blockNum
-	_lastBlock.Set(feed, utils.Max(_lastBlock.Get(feed), blockNum))
+
 	return []*schemas.PriceFeed{priceData}
 }
 
 var _lastBlock = core.NewMutexDS[string, int64]()
 
-func getForceForAdapter(repo ds.RepositoryI, adapter ds.QueryPriceFeedI) bool { // so that difference is 1 hr.
+func getForceForAdapter(repo ds.RepositoryI, adapter ds.QueryPriceFeedI, newblock int64) bool { // so that difference is 1 hr.
 	var lastBlock int64
-	if price := repo.GetPrevPriceFeed(adapter.GetAddress()); price != nil {
+	feed := adapter.GetAddress()
+	if price := repo.GetPrevPriceFeed(feed); price != nil {
 		lastBlock = price.BlockNumber
 	}
-	lastBlock = utils.Max(lastBlock, _lastBlock.Get(adapter.GetAddress())) // max of prevPriceStore and local store
+	lastBlock = utils.Max(lastBlock, _lastBlock.Get(feed)) // max of prevPriceStore and local store
 	if lastBlock == 0 {
 		return true
 	}
-	force := time.Since(time.Unix(int64(repo.SetAndGetBlock(lastBlock).Timestamp), 0)) > time.Hour
+
+	force := time.Duration(repo.SetAndGetBlock(newblock).Timestamp-repo.SetAndGetBlock(lastBlock).Timestamp)*time.Second > time.Hour
 	if force {
-		log.Info(adapter.GetAddress(), " last price at ", lastBlock)
+		log.Info(feed, " last price at ", lastBlock)
+		_lastBlock.Set(feed, utils.Max(_lastBlock.Get(feed), newblock))
 	}
 	return force
 }

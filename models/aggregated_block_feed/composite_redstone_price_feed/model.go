@@ -120,7 +120,8 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 		}
 	}
 	validTokens := mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)
-	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 && token != "" {
+	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 && token != "" &&
+		utils.GetEnvOrDefault("SPOT_OVERRIDE_ALLOWED", "0") == "1" {
 		return GetSpotPriceFeed(blockNum, token, mdl.Address, mdl.Repo, mdl.Client)
 	}
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))
