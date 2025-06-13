@@ -174,8 +174,8 @@ func (mdl *PriceOracle) checkPriceFeedContract(discoveredAt int64, oracle, token
 
 // erc4626 with chainlink as price feed
 func (mdl *PriceOracle) getErc4626(oracle string) (pfType string, underlyingFeeds []string) {
-	data, err := core.CallFuncGetSingleValue(mdl.Client, "cb2ef6f7", common.HexToAddress(oracle), 0, nil)
-	if err != nil { // contractType
+	data, err := core.CallFuncGetSingleValue(mdl.Client, "cb2ef6f7", common.HexToAddress(oracle), 0, nil) // contractType
+	if err != nil {                                                                                       // contractType
 		return
 	}
 	contractName := strings.Trim(string(data), "\x00")
@@ -193,9 +193,12 @@ func (mdl *PriceOracle) getErc4626(oracle string) (pfType string, underlyingFeed
 	if err == nil {
 		return ds.SingleAssetPF, nil // phaseId is not 0, so it is chainlink oracle
 	}
-	description, err := core.CallFuncGetSingleValue(mdl.Client, "7284e416", underlyingoracle, 0, nil) // description
+	description, err := core.CallFuncGetAllData(mdl.Client, "7284e416", underlyingoracle, 0, nil) // description
 	if err == nil {
-		if strings.Contains(strings.ToLower(string(description)), "redstone") || underlyingoracle.Hex() == "0x8dd2D85C7c28F43F965AE4d9545189C7D022ED0e" {
+		description := string(description)
+		if strings.Contains(strings.ToLower(description), "redstone") ||
+			underlyingoracle.Hex() == "0x8dd2D85C7c28F43F965AE4d9545189C7D022ED0e" { // is also redstone it is redundant but still keep
+			// https://bscscan.com/address/0x8dd2D85C7c28F43F965AE4d9545189C7D022ED0e#readProxyContract
 			return ds.SingleAssetPF, []string{underlyingoracle.Hex()} // redstone oracle
 		}
 		log.Info(description, "is not redstone oracle", underlyingoracle.Hex())
@@ -216,7 +219,8 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 				log.Fatal(oracle, token, "priceFeedType failed: ", err)
 			} else {
 				description = strings.ToLower(string(description))
-				if strings.Contains(description, "redstone") {
+				if strings.Contains(description, "redstone") { // the oracles that don't have priceFeedType method,
+					// // are outside redstne oracle and in control of redstone team to update regularly so can be treated as curve pf
 					return ds.CurvePF, nil, nil
 				} else {
 					if erc4246, underlyingPFs := mdl.getErc4626(oracle); erc4246 != "" {
