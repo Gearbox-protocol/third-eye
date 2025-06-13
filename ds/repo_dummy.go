@@ -279,6 +279,10 @@ func (DummyRepo) TokenAddrsValidAtBlock(string, int64) map[string]bool {
 	return nil
 }
 
+func (DummyRepo) GetPrevPriceFeed(feed string) *schemas.PriceFeed {
+	return nil
+}
+
 type QueryPriceFeedI interface {
 	// TokensValidAtBlock(blockNum int64) []schemas.TokenAndMergedPFVersion
 	GetPFType() string

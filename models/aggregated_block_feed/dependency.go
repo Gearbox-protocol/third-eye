@@ -11,12 +11,12 @@ import (
 	"github.com/Gearbox-protocol/third-eye/ds"
 )
 
-type repoI interface {
-	GetAdapter(addr string) ds.SyncAdapterI
-	// if returned value is nil, it means that token oracle hasn't been added yet.
-	GetTokens() []string
-	GetToken(string) *schemas.Token
-}
+// type repoI interface {
+// 	GetAdapter(addr string) ds.SyncAdapterI
+// 	// if returned value is nil, it means that token oracle hasn't been added yet.
+// 	GetTokens() []string
+// 	GetToken(string) *schemas.Token
+// }
 
 // ignoring dependencies for v1
 type QueryPFDependencies struct {
@@ -30,7 +30,7 @@ type QueryPFDependencies struct {
 	//
 	aqf *AQFWrapper
 	//
-	repo   repoI
+	repo   ds.RepositoryI
 	mu     *sync.Mutex
 	client core.ClientI
 }
@@ -179,7 +179,7 @@ func (q *QueryPFDependencies) fetchRoundData(blockNum int64, tokens map[string]b
 		for i := 0; i < entry.nocalls; i++ {
 			results = append(results, iterator.Next())
 		}
-		prices := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results)
+		prices := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results, getForceForAdapter(q.repo, entry.adapter))
 		q.updateQueryPrices(prices)
 	}
 	// sync control

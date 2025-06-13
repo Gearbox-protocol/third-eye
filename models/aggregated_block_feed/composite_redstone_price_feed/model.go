@@ -83,6 +83,9 @@ func (mdl *CompositeRedStonePriceFeed) GetCalls(blockNum int64) (calls []multica
 	}}, true
 }
 func GetSpotPriceFeed(blockNum int64, token string, feedAddr string, repo ds.RepositoryI, client core.ClientI) *schemas.PriceFeed {
+	if token == "" {
+		return nil
+	}
 	chainId := core.GetBaseChainId(client)
 	if chainId == 1 {
 		pricespot, err := priceFetcher.GetPriceSpot(repo.GetToken(token), core.GetToken(chainId, "USDC"), client, blockNum)
@@ -117,7 +120,7 @@ func (mdl *CompositeRedStonePriceFeed) ProcessResult(blockNum int64, results []m
 		}
 	}
 	validTokens := mdl.Repo.TokensValidAtBlock(mdl.Address, blockNum)
-	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 {
+	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 && token != "" {
 		return GetSpotPriceFeed(blockNum, token, mdl.Address, mdl.Repo, mdl.Client)
 	}
 	// log.Info(mdl.Repo.SetAndGetBlock(blockNum).Timestamp, validTokens, utils.ToJson(mdl.DetailsDS))

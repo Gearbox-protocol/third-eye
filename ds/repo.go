@@ -150,6 +150,8 @@ type RepositoryI interface {
 	TokensValidAtBlock(string, int64) []*schemas.TokenOracle
 	TokenAddrsValidAtBlock(string, int64) map[string]bool
 	GetActivePriceOracleByBlockNum(blockNum int64) (schemas.PriceOracleT, core.VersionType, error)
+	//
+	GetPrevPriceFeed(feed string) *schemas.PriceFeed
 }
 
 func IsTestnet(client core.ClientI) bool {

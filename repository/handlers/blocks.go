@@ -38,6 +38,9 @@ func NewBlocksRepo(db *gorm.DB, client core.ClientI, cfg *config.Config, tokensR
 	return blocksRepo
 }
 
+func (repo *BlocksRepo) GetPrevPriceFeed(feed string) *schemas.PriceFeed {
+	return repo.prevStore.GetPrevPriceFeed(feed)
+}
 func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	log.Infof("Loaded %d to %d blocks for debt", from, to)
 	data := []*schemas.Block{}

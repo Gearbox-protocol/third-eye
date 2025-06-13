@@ -84,7 +84,7 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			}
 		}
 	}
-	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 {
+	if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), 0)) > time.Hour*24*30 && token != "" {
 		return composite_redstone_price_feed.GetSpotPriceFeed(blockNum, token, mdl.Address, mdl.Repo, mdl.Client)
 	}
 	{

@@ -65,6 +65,9 @@ func (repo *PrevPriceStore) isPFAdded(pf *schemas.PriceFeed) bool {
 	repo.prevPriceFeeds[pf.Feed] = pf
 	return true
 }
+func (repo *PrevPriceStore) GetPrevPriceFeed(feed string) *schemas.PriceFeed {
+	return repo.prevPriceFeeds[feed]
+}
 
 func (repo *PrevPriceStore) getCurrentPrice(tokenOracleToFeed map[schemas.PriceOracleT]map[string]*schemas.TokenOracle) (ans []*schemas.TokenCurrentPrice) {
 	for priceOracle, tokenToFeed := range tokenOracleToFeed {

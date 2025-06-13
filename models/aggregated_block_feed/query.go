@@ -113,7 +113,7 @@ func (mdl *AQFWrapper) QueryData(blockNum int64) []*schemas.PriceFeed {
 		for i := 0; i < entry.nocalls; i++ {
 			results = append(results, iterator.Next())
 		}
-		pf := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results)
+		pf := processRoundDataWithAdapterTokens(blockNum, entry.adapter, results, getForceForAdapter(mdl.Repo, entry.adapter))
 		queryFeedPrices = append(queryFeedPrices, pf...)
 	}
 	//
@@ -145,15 +145,27 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 	return
 }
 
-func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeedI, entries []multicall.Multicall2Result) []*schemas.PriceFeed {
+func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeedI, entries []multicall.Multicall2Result, force bool) []*schemas.PriceFeed {
 
 	// } else if utils.Contains([]string{"0xCbeCfA4017965939805Da5a2150E3DB1BeDD0364", "0x814E6564e8cda436c1ab25041C10bfdb21dEC519"},
 
-	priceData := adapter.ProcessResult(blockNum, entries, "")
+	priceData := adapter.ProcessResult(blockNum, entries, "", force)
 	if priceData == nil {
 		return nil
 	}
 	priceData.Feed = adapter.GetAddress()
 	priceData.BlockNumber = blockNum
 	return []*schemas.PriceFeed{priceData}
+}
+
+func getForceForAdapter(repo ds.RepositoryI, adapter ds.QueryPriceFeedI) bool {
+	var force bool
+	if price := repo.GetPrevPriceFeed(adapter.GetAddress()); price != nil {
+
+		force = time.Since(time.Unix(int64(repo.SetAndGetBlock(price.BlockNumber).Timestamp), 0)) > time.Hour
+		if force {
+			log.Info(adapter.GetAddress(), "last price at ", price.BlockNumber)
+		}
+	}
+	return force
 }
