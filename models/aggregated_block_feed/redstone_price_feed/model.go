@@ -108,7 +108,7 @@ func parsePriceForRedStone(price *big.Int, isPriceInUSD bool) *schemas.PriceFeed
 		decimals = 8 // for usd
 	}
 	return &schemas.PriceFeed{
-		RoundId: 0,
+		RoundId: 1, // redstone
 		PriceBI: (*core.BigInt)(price),
 		Price:   utils.GetFloat64Decimal(price, decimals),
 	}
