@@ -9,6 +9,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	// "fmt"
 )
@@ -153,19 +154,27 @@ func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeed
 	if priceData == nil {
 		return nil
 	}
-	priceData.Feed = adapter.GetAddress()
+	feed := adapter.GetAddress()
+	priceData.Feed = feed
 	priceData.BlockNumber = blockNum
+	_lastBlock.Set(feed, utils.Max(_lastBlock.Get(feed), blockNum))
 	return []*schemas.PriceFeed{priceData}
 }
 
-func getForceForAdapter(repo ds.RepositoryI, adapter ds.QueryPriceFeedI) bool {
-	var force bool
-	if price := repo.GetPrevPriceFeed(adapter.GetAddress()); price != nil {
+var _lastBlock = core.NewMutexDS[string, int64]()
 
-		force = time.Since(time.Unix(int64(repo.SetAndGetBlock(price.BlockNumber).Timestamp), 0)) > time.Hour
-		if force {
-			log.Info(adapter.GetAddress(), "last price at ", price.BlockNumber)
-		}
+func getForceForAdapter(repo ds.RepositoryI, adapter ds.QueryPriceFeedI) bool { // so that difference is 1 hr.
+	var lastBlock int64
+	if price := repo.GetPrevPriceFeed(adapter.GetAddress()); price != nil {
+		lastBlock = price.BlockNumber
+	}
+	lastBlock = utils.Max(lastBlock, _lastBlock.Get(adapter.GetAddress())) // max of prevPriceStore and local store
+	if lastBlock == 0 {
+		return true
+	}
+	force := time.Since(time.Unix(int64(repo.SetAndGetBlock(lastBlock).Timestamp), 0)) > time.Hour
+	if force {
+		log.Info(adapter.GetAddress(), " last price at ", lastBlock)
 	}
 	return force
 }

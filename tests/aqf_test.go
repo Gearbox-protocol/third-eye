@@ -32,6 +32,13 @@ func (r tr) GetToken(token string) *schemas.Token {
 	return nil
 }
 
+func (r tr) SetAndGetBlock(blockNum int64) *schemas.Block {
+	return &schemas.Block{
+		BlockNumber: blockNum,
+		Timestamp:   0, // 2024 30 aug
+	}
+}
+
 // TokensValidAtBlock not implemented
 func (mdl tr) TokenAddrsValidAtBlock(addr string, blockNum int64) map[string]bool {
 	switch addr {
