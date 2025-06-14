@@ -130,6 +130,29 @@ func (eng *PriceHandler) GetLastPriceFeedByOracle(priceOracle schemas.PriceOracl
 	log.Fatal(fmt.Sprintf("Price not found for %s pfversion: %d priceoracle %s", token, version, priceOracle))
 	return nil
 }
+func (eng *PriceHandler) GetTokenLastPF(lastpriceOracle schemas.PriceOracleT, token string, version core.VersionType, dontFail ...bool) *schemas.PriceFeed {
+	feed := eng.poTotokenOracle[lastpriceOracle][token]
+	if feed != nil { // has feed
+		return eng.feedLastPrice[feed.Feed]
+		// feed.Feed
+	}
+	for priceOracle, feedStore := range eng.poTotokenOracle {
+		adapter := eng.repo.GetAdapter(string(priceOracle))
+		if adapter.GetVersion() == version {
+			feed := feedStore[token]
+			if feed != nil { // has feed
+				return eng.feedLastPrice[feed.Feed]
+				// feed.Feed
+			}
+		}
+	}
+	//
+	if len(dontFail) > 0 && dontFail[0] {
+		return nil
+	}
+	log.Fatalf("Price not found for %s pfversion: %d. latestPriceOracle(%s)", token, version, lastpriceOracle)
+	return nil
+}
 func (eng *PriceHandler) GetLastPrice(cm string, token string, version core.VersionType, dontFail ...bool) *big.Int {
 	if version.Eq(1) && eng.repo.GetWETHAddr() == token { // for mainnet on ethereum
 		return core.WETHPrice

@@ -238,7 +238,7 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 				return 0
 			}
 			return utils.GetFloat64Decimal(
-				eng.GetAmountInUSDByOracle(
+				eng.GetPriceForTvl(
 					latestOracle,
 					underlyingToken,
 					amount.Convert(), version), 8)
@@ -528,8 +528,8 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 }
 
 // helper methods
-func (eng *DebtEngine) GetAmountInUSDByOracle(priceOracle schemas.PriceOracleT, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
-	tokenPrice := eng.priceHandler.GetLastPriceFeedByOracle(priceOracle, tokenAddr, version)
+func (eng *DebtEngine) GetPriceForTvl(priceOracle schemas.PriceOracleT, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
+	tokenPrice := eng.priceHandler.GetTokenLastPF(priceOracle, tokenAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals
 	if version.MoreThan(core.NewVersion(1)) { // than decimals 8
 		return utils.GetInt64(new(big.Int).Mul(tokenPrice.PriceBI.Convert(), amount), tokenDecimals)
