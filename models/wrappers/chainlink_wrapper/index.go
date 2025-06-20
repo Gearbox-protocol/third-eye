@@ -3,6 +3,8 @@ package chainlink_wrapper
 import (
 	"encoding/hex"
 	"sort"
+	"strings"
+	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
@@ -66,7 +68,23 @@ func (w *ChainlinkWrapper) AfterSyncHook(syncedTill int64) {
 			CallData: aggregatorBytes,
 		})
 	}
-	results := core.MakeMultiCall(w.Client, syncedTill, false, calls)
+	results := func() []multicall.Multicall2Result {
+		for i := 3; i >= 0; i-- {
+			results, err := core.MakeMultiCallError(w.Client, syncedTill, false, calls)
+			if (err != nil && !strings.Contains(err.Error(), "attempting to unmarshall an empty string while arguments are")) ||
+				i == 0 { // all errors except multicall abi or when i ==0
+				log.Fatal(err)
+			} else if err != nil && strings.Contains(err.Error(), "attempting to unmarshall an empty string while arguments are") {
+				log.Info("sleeping in afterSynchook of chainlinkwrapper to get new feed address")
+				time.Sleep(30 * time.Second) // wait for multicall to be ready
+				continue
+
+			}
+			return results
+		}
+		log.Fatal("")
+		return nil
+	}()
 	for ind, cf := range adapters {
 		newAddr, ok := core.MulticallAnsAddress(results[ind])
 		if !ok {
