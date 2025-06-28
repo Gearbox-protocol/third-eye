@@ -2,7 +2,6 @@ package treasury
 
 import (
 	"math/big"
-	"reflect"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOraclev3"
@@ -13,33 +12,17 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed"
-	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
-	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 )
 
 // used for treasury calculation and for remainingFunds on close v2
 func (repo *TreasuryRepo) GetPricesInUSD(blockNum int64, pool string, tokenAddrs []string) core.JsonFloatMap {
-	priceOracle, version := func() (schemas.PriceOracleT, core.VersionType) {
-		pool := repo.adapters.GetAdapter(pool)
-		var version core.VersionType
-		var priceOracle schemas.PriceOracleT
-		switch t := pool.(type) {
-		case *pool_v2.Poolv2:
-			priceOracle = t.State.PriceOracle
-			version = core.NewVersion(2)
-		case *pool_v3.Poolv3:
-			priceOracle = t.State.PriceOracle
-			version = core.NewVersion(300)
-		default:
-			log.Info(reflect.TypeOf(pool))
-			log.Fatal("can't get priceoracle")
-		}
-		return priceOracle, version
-	}()
+	priceOracle, version := repo.adapters.GetPoolToPriceOraclev3(blockNum, pool)
 	return repo.getPricesInUSD(blockNum, priceOracle, version, tokenAddrs)
 }
+
+// used for treasury calculation and for remainingFunds on close v2
 func (repo *TreasuryRepo) getPricesInUSD(blockNum int64, priceOracle schemas.PriceOracleT, version core.VersionType, tokenAddrs []string) core.JsonFloatMap {
 	priceByToken := core.JsonFloatMap{}
 	var tokenForCalls []string

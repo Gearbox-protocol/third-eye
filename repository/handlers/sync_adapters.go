@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"sync"
 
@@ -24,6 +25,8 @@ import (
 	"github.com/Gearbox-protocol/third-eye/models/credit_manager"
 	"github.com/Gearbox-protocol/third-eye/models/gear_token"
 	"github.com/Gearbox-protocol/third-eye/models/pool"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v2"
+	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
 	lmrewardsv2 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v2"
 	lmrewardsv3 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v3"
 	"github.com/Gearbox-protocol/third-eye/models/pool_quota_keeper"
@@ -241,4 +244,26 @@ func (repo *SyncAdaptersRepo) GetActivePriceOracleByBlockNum(blockNum int64) (la
 	latestOracle = schemas.PriceOracleT(ans.GetAddress())
 	version = ans.GetVersion()
 	return
+}
+
+func (repo *SyncAdaptersRepo) GetPoolToPriceOraclev3(blockNum int64, poolAddr string) (schemas.PriceOracleT, core.VersionType) {
+	var pfversion core.VersionType
+	var priceOracle schemas.PriceOracleT
+	pool := repo.GetAdapter(poolAddr)
+	switch t := pool.(type) {
+	case *pool_v2.Poolv2:
+		priceOracle = t.State.PriceOracle
+		poObj := repo.GetAdapter(string(priceOracle))
+		if blockNum < poObj.GetAdapterState().FirstLogAt {
+			return "0x0e74a08443c5E39108520589176Ac12EF65AB080", core.NewVersion(1)
+		}
+		pfversion = core.NewVersion(2)
+	case *pool_v3.Poolv3:
+		priceOracle = t.State.PriceOracle
+		pfversion = core.NewVersion(300)
+	default:
+		log.Info(reflect.TypeOf(pool))
+		log.Fatal("can't get priceoracle")
+	}
+	return priceOracle, pfversion
 }
