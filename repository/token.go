@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOracle"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/priceOraclev2"
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -35,8 +36,24 @@ func (repo *Repository) GetUSD() common.Address {
 }
 
 // This function is used for getting the collateral value in usd and underlying
-func (repo *Repository) GetValueInCurrency(blockNum int64, pool, token, currency string, amount *big.Int) (*big.Int, float64) {
-	oracle, version := repo.GetPoolToPriceOraclev3(blockNum, pool)
+func (repo *Repository) GetValueInCurrency(blockNum int64, pool string, version core.VersionType, token, currency string, amount *big.Int) float64 {
+	var neg bool
+	if amount.Cmp(big.NewInt(0)) < 0 {
+		amount = new(big.Int).Neg(amount)
+		neg = true
+	}
+	oracle, pfVersion := repo.GetPoolToPriceOraclev3(blockNum, pool)
+	if core.GetChainId(repo.client) == 1337 {
+		pfVersion = version
+	}
+	usdAmount := repo.getValueInCurrency(blockNum, oracle, pfVersion, token, currency, amount)
+	if neg {
+		usdAmount = -usdAmount
+	}
+	return usdAmount
+}
+func (repo *Repository) getValueInCurrency(blockNum int64, oracle schemas.PriceOracleT, version core.VersionType, token, currency string, amount *big.Int) float64 {
+
 	// oracle, _, err := repo.GetActivePriceOracleByBlockNum(blockNum)
 	// if err != nil {
 	// 	log.Fatalf("err %s version: %d", err, version)
@@ -50,12 +67,8 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, pool, token, currency
 	}
 	currencyDecimals := repo.GetToken(currencyAddr.Hex()).Decimals
 	if currencyAddr.Hex() == token {
-		return amount, utils.GetFloat64Decimal(amount, currencyDecimals)
-	}
-	sig := big.NewInt(1)
-	if amount.Cmp(big.NewInt(0)) < 0 {
-		amount = new(big.Int).Neg(amount)
-		sig = big.NewInt(-1)
+		// return amount, utils.GetFloat64Decimal(amount, currencyDecimals)
+		return utils.GetFloat64Decimal(amount, currencyDecimals)
 	}
 
 	if version.IsGBv1() {
@@ -66,9 +79,8 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, pool, token, currency
 		if err != nil {
 			log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
 		}
-		amount := new(big.Int).Mul(usdcAmount, sig)
-		return amount, utils.GetFloat64Decimal(amount, currencyDecimals) // for v1 on mainnet
-	} else { // v2 and above
+		return utils.GetFloat64Decimal(usdcAmount, currencyDecimals) // for v1 on mainnet
+	} else if currency != "USD" { // v2 and above
 		poContract, err := priceOraclev2.NewPriceOraclev2(oracle.Hex(), repo.client)
 		log.CheckFatal(err)
 		usdcAmount, err := poContract.Convert(opts, amount, common.HexToAddress(token), currencyAddr)
@@ -94,12 +106,25 @@ func (repo *Repository) GetValueInCurrency(blockNum int64, pool, token, currency
 					denom := utils.GetInt64(currencyPrice, -repo.GetToken(token).Decimals)
 					// log.Fatal(new(big.Int).Quo(num, denom), token, currencyAddr, tokenPrice, currencyPrice, amount)
 					_amount := new(big.Int).Quo(num, denom)
-					return _amount, utils.GetFloat64Decimal(_amount, currencyDecimals)
+					return utils.GetFloat64Decimal(_amount, currencyDecimals)
 				}
 			}
 			log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
 		}
-		_amount := new(big.Int).Mul(usdcAmount, sig)
-		return _amount, utils.GetFloat64Decimal(_amount, currencyDecimals)
+		// _amount := new(big.Int).Mul(usdcAmount)
+		return utils.GetFloat64Decimal(usdcAmount, currencyDecimals)
+	} else {
+		poContract, err := priceOraclev2.NewPriceOraclev2(oracle.Hex(), repo.client)
+		log.CheckFatal(err)
+		price, err := poContract.GetPrice(opts, common.HexToAddress(token))
+		if err != nil {
+			price = repo.GetRedStonePrice(blockNum, oracle, token)
+			if price != nil {
+				log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
+			}
+		}
+		amountInCurrency := utils.GetInt64(new(big.Int).Mul(amount, price), repo.GetToken(token).Decimals)
+		// return amountInCurrency, utils.GetFloat64Decimal(amountInCurrency, 8)
+		return utils.GetFloat64Decimal(amountInCurrency, 8)
 	}
 }

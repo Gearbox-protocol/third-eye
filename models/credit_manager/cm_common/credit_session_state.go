@@ -201,13 +201,14 @@ func (mdl *CommonCMAdapter) setCSSCollateralFields(blockNum int64, session *sche
 	}
 	collateral := new(big.Int)
 	for token, amount := range *session.Collateral {
-		valueInUnderlyingAsset, _ := mdl.Repo.GetValueInCurrency(blockNum, mdl.State.PoolAddress, token, mdl.GetUnderlyingToken(), amount.Convert())
-		collateral = new(big.Int).Add(collateral, valueInUnderlyingAsset)
+		valueInUnderlyingAsset := mdl.Repo.GetValueInCurrency(blockNum, mdl.State.PoolAddress, session.Version, token, mdl.GetUnderlyingToken(), amount.Convert())
+		bigInt := utils.FloatDecimalsTo64(valueInUnderlyingAsset, mdl.Repo.GetToken(mdl.GetUnderlyingToken()).Decimals)
+		collateral = new(big.Int).Add(collateral, bigInt)
 	}
 	css.InstCollteralUnderlying = utils.GetFloat64Decimal(collateral, mdl.GetUnderlyingDecimal())
 	//
-	_, valueInUSD := mdl.Repo.GetValueInCurrency(blockNum, mdl.State.PoolAddress, mdl.GetUnderlyingToken(), "USD", collateral)
-	css.InstCollteralUSD = valueInUSD
+	floatUSDValue := mdl.Repo.GetValueInCurrency(blockNum, mdl.State.PoolAddress, session.Version, mdl.GetUnderlyingToken(), "USD", collateral)
+	css.InstCollteralUSD = floatUSDValue
 }
 
 // for liquidatev3 it is called at blockNum -1 due to `liqv3Sessions` and then at blockNum due to `updatedSessions`

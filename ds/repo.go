@@ -91,7 +91,7 @@ type RepositoryI interface {
 	GetCreditSession(sessionId string) *schemas.CreditSession
 	UpdateCreditSession(sessionId string, values map[string]interface{}) *schemas.CreditSession
 	GetSessions() map[string]*schemas.CreditSession
-	GetValueInCurrency(blockNum int64, pool, token, currency string, amount *big.Int) (*big.Int, float64)
+	GetValueInCurrency(blockNum int64, pool string, version core.VersionType, token, currency string, amount *big.Int) float64
 	AddDieselToken(dieselToken, underlyingToken, pool string, version core.VersionType)
 	GetDieselTokens() map[string]*schemas.UTokenAndPool
 	// credit session snapshots funcs
