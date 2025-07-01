@@ -27,16 +27,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func GetMarketConfigurators() (ans []common.Address) {
-	addrs := strings.Split(utils.GetEnvOrDefault("MARKET_CONFIGURATORS", ""), ",")
-	for _, addr := range addrs {
-		if addr != "" {
-			ans = append(ans, common.HexToAddress(addr))
-		}
-	}
-	return
-}
-
 type addressAndBlock struct {
 	address common.Address
 	block   int64

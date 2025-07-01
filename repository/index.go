@@ -11,7 +11,6 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds"
-	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/Gearbox-protocol/third-eye/models/contract_register"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers"
 	"github.com/Gearbox-protocol/third-eye/repository/handlers/treasury"
@@ -102,7 +101,7 @@ func (repo *Repository) Init() {
 	repo.loadDieselToken()
 	// syncadapter state for cm and pool is set after loading of pool/credit manager table data from db
 	repo.SyncAdaptersRepo.LoadSyncAdapters(repo.db)
-	for _, mcaddr := range dc_wrapper.GetMarketConfigurators() {
+	for _, mcaddr := range core.GetMarketConfigurators(core.GetBaseChainId(repo.client)) {
 		repo.addMarketConfig(mcaddr)
 	}
 	// load poolLMrewards
