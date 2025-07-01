@@ -92,13 +92,13 @@ func (repo *Repository) getValueInCurrency(blockNum int64, oracle schemas.PriceO
 					if tokenPrice == nil {
 						tokenPrice, err = poContract.GetPrice(opts, common.HexToAddress(token))
 						if err != nil {
-							log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
+							log.Fatalf("%v %s %d %s %s at block %d. %s", err, oracle, amount, token, currencyAddr, blockNum, currency)
 						}
 					}
 					if currencyPrice == nil {
 						currencyPrice, err = poContract.GetPrice(opts, currencyAddr)
 						if err != nil {
-							log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
+							log.Fatalf("%v %s %d %s %s at block %d. %s", err, oracle, amount, token, currencyAddr, blockNum, currency)
 						}
 					}
 					// amount *token Price *currenyDecimals/ currencyPrice * tokenDecimals
