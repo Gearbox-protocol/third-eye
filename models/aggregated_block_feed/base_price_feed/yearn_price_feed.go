@@ -28,7 +28,7 @@ func (feed BasePriceFeed) GetRedstonePF() (ans []*core.RedStonePF) {
 
 // single querypricefeed can be valid for multiple tokens so we have to maintain tokens within the details
 // details->token is token map to start and end block
-func NewBasePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *BasePriceFeed {
+func NewBasePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, underlyings []string) *BasePriceFeed {
 	syncAdapter := &ds.SyncAdapter{
 		SyncAdapterSchema: &schemas.SyncAdapterSchema{
 			Contract: &schemas.Contract{
@@ -41,12 +41,14 @@ func NewBasePriceFeed(token, oracle string, pfType string, discoveredAt int64, c
 			Details: map[string]interface{}{
 				"pfType": pfType,
 			},
-			LastSync: discoveredAt,
+			LastSync: discoveredAt - 25, // for getting first price at this block // discoveredAt
 			V:        version,
 		},
 		Repo: repo,
 	}
-
+	if len(underlyings) > 0 {
+		syncAdapter.Details["underlyings"] = underlyings
+	}
 	mdl := NewBasePriceFeedFromAdapter(
 		syncAdapter,
 	)

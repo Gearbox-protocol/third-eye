@@ -136,6 +136,7 @@ func (eng *PriceHandler) GetTokenLastPF(lastpriceOracle schemas.PriceOracleT, to
 		return eng.feedLastPrice[feed.Feed]
 		// feed.Feed
 	}
+	// for v2,v1
 	for priceOracle, feedStore := range eng.poTotokenOracle {
 		adapter := eng.repo.GetAdapter(string(priceOracle))
 		if adapter.GetVersion() == version {

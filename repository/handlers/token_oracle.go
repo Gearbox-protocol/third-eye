@@ -218,7 +218,7 @@ func (repo *TokenOracleRepo) AddNewPriceOracleEvent(newTokenOracle *schemas.Toke
 	}
 	switch newTokenOracle.FeedType {
 	case ds.ZeroPF, ds.AlmostZeroPF,
-		ds.CurvePF, ds.SingleAssetPF, ds.YearnPF, ds.RedStonePF, ds.CompositeRedStonePF:
+		ds.CurvePF, ds.SingleAssetPF, ds.YearnPF, ds.RedStonePF, ds.CompositeRedStonePF, ds.PythPF:
 		if repo.alreadyActiveFeedForToken(newTokenOracle) {
 			return
 		}

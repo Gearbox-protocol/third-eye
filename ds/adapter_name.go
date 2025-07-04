@@ -49,6 +49,7 @@ const (
 	SingleAssetPF        = "SingleAssetPF"
 	CurvePF              = "CurvePF"
 	RedStonePF           = "RedStonePF"
+	PythPF               = "PythPF"
 	ZeroPF               = "ZeroPF"
 	CompositeChainlinkPF = "CompositeChainlinkPF"
 	CompositeRedStonePF  = "CompositeRedStonePF"

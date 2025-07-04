@@ -119,7 +119,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 		// almost zero price feed is for blocker token on credit account
 		case ds.ChainlinkPriceFeed, ds.CompositeChainlinkPF,
 			ds.ZeroPF, ds.AlmostZeroPF,
-			ds.RedStonePF, ds.CompositeRedStonePF, ds.YearnPF, ds.SingleAssetPF, ds.CurvePF:
+			ds.RedStonePF, ds.CompositeRedStonePF, ds.YearnPF, ds.SingleAssetPF, ds.CurvePF, ds.PythPF:
 			// four types of oracles
 			// - Zero or almost zero price feed: constant price value
 			// - Chainlink price feed: market based price value
@@ -294,6 +294,10 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 				return ds.CurvePF, nil, nil
 			}
 		}
+	case core.V3_PYTH_ORACLE:
+		underlyingBytes, err := core.CallFuncGetSingleValue(mdl.Client, "1999bb9e", common.HexToAddress(oracle), 0, nil) // priceFeedType
+		log.CheckFatal(err)
+		return ds.PythPF, []string{common.BytesToHash(underlyingBytes).Hex()}, nil
 	case core.V3_YEARN_ORACLE:
 		return ds.YearnPF, nil, nil
 	case core.V3_CHAINLINK_ORACLE:

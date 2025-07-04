@@ -28,8 +28,8 @@ func (feed CompositeRedStonePriceFeed) GetRedstonePF() []*core.RedStonePF {
 		feed.DetailsDS.Info[feed.GetAddress()],
 	}
 }
-func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *CompositeRedStonePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
+func newRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, underlyings []string) *CompositeRedStonePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version, underlyings)
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 

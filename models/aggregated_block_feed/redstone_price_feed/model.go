@@ -22,8 +22,8 @@ type RedstonePriceFeed struct {
 	*base_price_feed.BasePriceFeed
 }
 
-func NewRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *RedstonePriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
+func newRedstonePriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, underlyings []string) *RedstonePriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version, underlyings)
 	return NewRedstonePriceFeedFromAdapter(adapter.SyncAdapter)
 }
 

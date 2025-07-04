@@ -11,7 +11,7 @@ import (
 
 type DetailsDS struct {
 	PFType      string                      `json:"pfType"`
-	Underlyings []string                    `json:"underlyings"`
+	Underlyings []string                    `json:"underlyings"` // for pyth it is id, and for singleasset curve it is underlyingFeeds
 	Info        map[string]*core.RedStonePF `json:"info"`
 	FetchedInfo bool                        `json:"FetchedInfo,omitempty"`
 }

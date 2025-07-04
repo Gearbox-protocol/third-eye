@@ -16,8 +16,8 @@ type YearnPriceFeed struct {
 	yearnPFInternal
 }
 
-func NewYearnPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType) *YearnPriceFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
+func newYearnPriceFeed(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, underlyings []string) *YearnPriceFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version, underlyings)
 	return NewYearnPriceFeedFromAdapter(adapter.SyncAdapter)
 }
 

@@ -31,7 +31,7 @@ func NewPrevPriceStore(client core.ClientI, tokensRepo *TokensRepo, db *gorm.DB)
 		mu:             &sync.Mutex{},
 		db:             db,
 	}
-	if !utils.Contains([]log.NETWORK{"TEST", "SONIC"}, log.GetBaseNet(chainId)) {
+	if !utils.Contains([]log.NETWORK{log.TEST, log.SONIC, log.ETHERLINK}, log.GetBaseNet(chainId)) {
 		store.spotOracle = ds.SetOneInchUpdater(client, tokensRepo)
 	}
 	return store

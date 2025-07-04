@@ -16,8 +16,8 @@ type SingleAssetFeed struct {
 	*base_price_feed.BasePriceFeed
 }
 
-func NewSingleAsset(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, underlyingFeeds []string) *SingleAssetFeed {
-	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version)
+func newSingleAsset(token, oracle string, pfType string, discoveredAt int64, client core.ClientI, repo ds.RepositoryI, version core.VersionType, underlyingFeeds []string) *SingleAssetFeed {
+	adapter := base_price_feed.NewBasePriceFeed(token, oracle, pfType, discoveredAt, client, repo, version, underlyingFeeds)
 	return NewSingleAssetFromAdapter(adapter.SyncAdapter)
 }
 
