@@ -41,16 +41,20 @@ func (feed PythPriceFeed) GetCalls(blockNum int64) (calls []multicall.Multicall2
 func (adapter *PythPriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, _ string, force ...bool) *schemas.PriceFeed {
 	result := results[len(results)-1]
 	if !result.Success {
-		ts := adapter.Repo.SetAndGetBlock(blockNum).Timestamp
-		obj, err := pkg.GetPrice(adapter.DetailsDS.Underlyings[0], int64(ts))
-		if err != nil {
-			log.Fatal("Pyth price feed", adapter.GetAddress(), " failed at block: ", blockNum, err)
-		}
-		return &schemas.PriceFeed{
-			RoundId:     0,
-			PriceBI:     obj.Price,
-			Price:       obj.F,
-			BlockNumber: blockNum,
+		if len(force) > 0 && force[0] {
+			ts := adapter.Repo.SetAndGetBlock(blockNum).Timestamp
+			obj, err := pkg.GetPythPrice(adapter.DetailsDS.Underlyings[0], int64(ts))
+			if err != nil {
+				log.Fatal("Pyth price feed", adapter.GetAddress(), " failed at block: ", blockNum, err)
+			}
+			return &schemas.PriceFeed{
+				RoundId:     0,
+				PriceBI:     obj.Price,
+				Price:       obj.F,
+				BlockNumber: blockNum,
+			}
+		} else {
+			return nil
 		}
 	}
 	isPriceInUSD := adapter.GetVersion().IsPriceInUSD()

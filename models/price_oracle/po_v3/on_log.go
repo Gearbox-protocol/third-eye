@@ -206,48 +206,10 @@ func (mdl *PriceOracle) getErc4626(oracle string) (pfType string, underlyingFeed
 	return
 }
 
-func (mdl *PriceOracle) getPfType(oracle string, token string) (int64, error) {
-	// check if v300 oracle with pricefeedtype
-	data, err := core.CallFuncGetSingleValue(mdl.Client, "3fd0875f", common.HexToAddress(oracle), 0, nil) // priceFeedType
-	var pfType int64
-	if err != nil {
-		// check if v310 oracle with contractType
-		data, err := core.CallFuncGetSingleValue(mdl.Client, "cb2ef6f7", common.HexToAddress(oracle), 0, nil) // contractType
-		if err == nil {
-			pfName := strings.Trim(string(data), "\x00") // contractType
-			pfType = core.GetContractTypeToPFType(pfName)
-		} else {
-			// check if chainlink oracle with phaseId
-			pfContract, err := priceFeed.NewPriceFeed(common.HexToAddress(oracle), mdl.Client)
-			log.CheckFatal(err)
-			_, err = pfContract.PhaseId(nil) // only on chainlink
-			if err == nil {
-				return core.V3_CHAINLINK_ORACLE, nil // chainlink oracle
-			}
-			// check if outside redstone oracle with description
-			con, err := yearnPriceFeed.NewYearnPriceFeed(common.HexToAddress(oracle), mdl.Client)
-			log.CheckFatal(err)
-			if description, err := con.Description(nil); err != nil {
-				return 0, log.WrapErrWithLine(fmt.Errorf("%s %s priceFeedType failed: %s", oracle, token, err))
-			} else {
-				description = strings.ToLower(string(description))
-				if strings.Contains(description, "redstone") { // the oracles that don't have priceFeedType method,
-					// // are outside redstne oracle and in control of redstone team to update regularly so can be treated as curve pf
-					return core.V3_EXTERNAL, nil
-				}
-				log.Fatal(oracle, token, "priceFeedType failed: ", description, err)
-			}
-		}
-	} else {
-		pfType = new(big.Int).SetBytes(data).Int64()
-	}
-	return pfType, nil
-}
-
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
 func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token string) (string, []string, error) {
-	pfType, err := mdl.getPfType(oracle, token)
+	pfType, err := core.GetGearboxPfType(mdl.Client, oracle, token)
 	log.CheckFatal(err)
 	if pfType == core.V3_EXTERNAL {
 		return ds.CurvePF, nil, nil
@@ -295,7 +257,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			}
 		}
 	case core.V3_PYTH_ORACLE:
-		underlyingBytes, err := core.CallFuncGetSingleValue(mdl.Client, "1999bb9e", common.HexToAddress(oracle), 0, nil) // priceFeedType
+		underlyingBytes, err := core.CallFuncGetSingleValue(mdl.Client, "1999bb9e", common.HexToAddress(oracle), 0, nil) // dataId
 		log.CheckFatal(err)
 		return ds.PythPF, []string{common.BytesToHash(underlyingBytes).Hex()}, nil
 	case core.V3_YEARN_ORACLE:
@@ -324,7 +286,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			pfBytes, err := core.CallFuncGetSingleValue(mdl.Client, sig, common.HexToAddress(oracle), 0, nil)
 			log.CheckFatal(err)
 			pf := common.BytesToAddress(pfBytes)
-			pfType, err := mdl.getPfType(pf.Hex(), token) // check if pfType is redstone or curve
+			pfType, err := core.GetGearboxPfType(mdl.Client, pf.Hex(), token) // check if pfType is redstone or curve
 			log.CheckFatal(err)
 			//
 			if pfType == core.V3_REDSTONE_ORACLE {
