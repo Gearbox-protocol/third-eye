@@ -126,7 +126,7 @@ func NewTokenOracleRepo(adapters *SyncAdaptersRepo, blocks *BlocksRepo, repo ds.
 func (repo *TokenOracleRepo) LoadCurrentTokenOracle(db *gorm.DB) {
 	defer utils.Elapsed("loadCurrentTokenOracle")()
 	data := []*schemas.TokenOracle{}
-	query := `SELECT distinct on (token, version, reserve) * FROM token_oracle order by token, version, reserve, block_num desc;`
+	query := `SELECT distinct on (token, price_oracle, reserve) * FROM token_oracle order by token, price_oracle, reserve, block_num desc;`
 	err := db.Raw(query).Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
