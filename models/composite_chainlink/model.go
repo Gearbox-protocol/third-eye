@@ -174,7 +174,7 @@ func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string)
 	compositeOracleVersion := 0
 	baseNet := log.GetBaseNet(chainId)
 	switch baseNet {
-	case "MAINNET":
+	case log.MAINNET:
 		if discoveredAt <= 15997386 {
 			compositeOracleVersion = 2
 		} else if discoveredAt <= 18544086 {
@@ -182,7 +182,7 @@ func getSig(targetMethod string, discoveredAt int64, chainId int64) (sig string)
 		} else {
 			compositeOracleVersion = 3
 		}
-	case "ARBITRUM", "OPTIMISM":
+	default: // ARBITRUM, OPTIMISM,
 		compositeOracleVersion = 3
 	}
 	//
