@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"strings"
 
+	"github.com/Gearbox-protocol/sdk-go/artifacts/WhitelistedEthWrapper"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/activeMiscv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/activeSwapYTv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/aavev2LendingPool"
@@ -107,6 +108,7 @@ var abiJSONs = []string{
 	// creditfacade for credit manager onlogs
 	// v2
 	// lido, convex, curve, yearnv2, universal
+	WhitelistedEthWrapper.WhitelistedEthWrapperABI,
 	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI, wstETHv1Adapter.WstETHv1AdapterABI,
 	convexAdapter.ConvexAdapterABI, llamaethena.LlamaethenaABI,
 	yearnv2Adapter.Yearnv2AdapterABI,
