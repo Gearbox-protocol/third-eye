@@ -142,6 +142,11 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			new(big.Int).Neg(decreaseBorrowEvent.Amount), "DecreaseDebt")
 	case core.Topic("SetCreditConfigurator(address)"): // on credit manager
 		newConfigurator := utils.ChecksumAddr(txLog.Topics[1].Hex())
+		configuratorAtBlock, err := core.CallFuncGetSingleValue(mdl.Client, "0x2f7a1881", common.HexToAddress(mdl.Address), int64(txLog.BlockNumber), nil)
+		log.CheckFatal(err)
+		if common.BytesToAddress(configuratorAtBlock).Hex() != newConfigurator { // https://etherscan.io/tx/0x6d46dc6dcc2045b4f282134f106d8ad6f59e904b1aa3a6ad78d6ded72e02f7d9You due to two cm at the same block number.
+			return
+		}
 		oldConfigurator := mdl.GetDetailsByKey("configurator")
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: int64(txLog.BlockNumber),

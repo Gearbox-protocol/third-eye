@@ -215,6 +215,16 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		return ds.CurvePF, nil, nil
 	}
 	switch pfType {
+	case core.V3_BOUNDED_ORACLE:
+		underlying, err := core.CallFuncGetSingleValue(mdl.Client, "741bef1a", common.HexToAddress(oracle), 0, nil) // priceFeed
+		if err != nil {
+			return ds.UnknownPF, nil, fmt.Errorf("bounded oracle %s %s priceFeed failed: %s", oracle, token, err)
+		}
+		pfType, err := core.GetGearboxPfType(mdl.Client, common.BytesToAddress(underlying).Hex(), token)
+		if pfType != core.V3_CHAINLINK_ORACLE {
+			log.Warnf("bounded oracle %s %s is not chainlink oracle, pfType: %d", oracle, token, pfType)
+		}
+		return ds.SingleAssetPF, nil, nil
 	case core.V3_COMPOSITE_ORACLE:
 		{ // composite feed is using redstone feed
 			// https://etherscan.io/address/0x8751F736E94F6CD167e8C5B97E245680FbD9CC36#readProxyContract
