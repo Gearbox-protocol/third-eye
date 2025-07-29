@@ -59,7 +59,7 @@ func (repo *BlocksRepo) LoadBlocks(from, to int64) {
 	}
 }
 func (repo *BlocksRepo) LoadBlockAndTs(from, to int64) {
-	log.Infof("Loaded %d to %d blocks for debt", from, to)
+	log.Infof("Loaded %d to %d blocks", from, to)
 	data := []*schemas.Block{}
 	err := repo.db.
 		Find(&data, "id > ? AND id <= ?", from, to).Error
