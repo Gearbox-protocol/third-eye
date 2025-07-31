@@ -51,6 +51,7 @@ const (
 	RedStonePF           = "RedStonePF"
 	PythPF               = "PythPF"
 	ZeroPF               = "ZeroPF"
+	ConstantPF           = "ConstantPF"
 	CompositeChainlinkPF = "CompositeChainlinkPF"
 	CompositeRedStonePF  = "CompositeRedStonePF"
 	AlmostZeroPF         = "AlmostZeroPF"
