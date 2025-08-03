@@ -38,6 +38,22 @@ func NewCMv3(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	mdl.SetParams(params)
 	mdl.addCreditConfiguratorAdapter(mdl.GetDetailsByKey("configurator"))
 	mdl.Repo.UpdateFees(0, "", mdl.GetDetailsByKey("configurator"), params)
+	configurator := mdl.GetDetailsByKey("configurator")
+	ltData, err := core.CallFuncGetSingleValue(mdl.Client, "0x78327438", common.HexToAddress(configurator), discoveredAt, nil)
+	if err == nil {
+		lt := new(big.Int).SetBytes(ltData)
+		mdl.Repo.AddAllowedTokenV2(0, "", configurator, &schemas.AllowedToken{
+			BlockNumber:        discoveredAt,
+			CreditManager:      mdl.Address,
+			LogID:              0,
+			Token:              mdl.GetUnderlyingToken(),
+			LiquidityThreshold: (*core.BigInt)(lt),
+			Configurator:       configurator,
+		})
+		log.Infof("Liquidation threshold for cm %s is set to %s", mdl.GetAddress(), lt)
+	} else {
+		log.Warnf("Liquidation threshold data is not set for cm %s, using default value %v.", mdl.GetAddress(), err)
+	}
 	return mdl
 }
 
