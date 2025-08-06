@@ -121,8 +121,8 @@ func (repo *Repository) getValueInCurrency(blockNum int64, oracle schemas.PriceO
 		price, err := poContract.GetPrice(opts, common.HexToAddress(token))
 		if err != nil {
 			price = repo.GetRedStonePrice(blockNum, oracle, token)
-			if price != nil {
-				log.Fatalf("%v %s %d %s %s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
+			if price == nil {
+				log.Fatalf("err:%v oracle:%s amount:%d token:%s currencyAddr:%s at block %d", err, oracle, amount, token, currencyAddr, blockNum)
 			}
 		}
 		amountInCurrency := utils.GetInt64(new(big.Int).Mul(amount, price), repo.GetToken(token).Decimals)
