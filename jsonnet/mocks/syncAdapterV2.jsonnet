@@ -123,7 +123,7 @@
       address: '#Pool_1',
       dieselToken: '#DieselToken_1',
       underlyingToken: '#Token_1',
-      priceOracle: '#PriceOracle_0',
+      priceOracle: '#PriceOracle_1',
     },
   ],
   cmState: [

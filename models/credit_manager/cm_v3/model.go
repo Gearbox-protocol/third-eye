@@ -39,7 +39,8 @@ func NewCMv3(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	mdl.addCreditConfiguratorAdapter(mdl.GetDetailsByKey("configurator"))
 	mdl.Repo.UpdateFees(0, "", mdl.GetDetailsByKey("configurator"), params)
 	configurator := mdl.GetDetailsByKey("configurator")
-	ltData, err := core.CallFuncGetSingleValue(mdl.Client, "0x78327438", common.HexToAddress(configurator), discoveredAt, nil)
+	tokenHash := common.HexToHash(mdl.GetUnderlyingToken())
+	ltData, err := core.CallFuncGetSingleValue(mdl.Client, "0x78327438", common.HexToAddress(configurator), discoveredAt, tokenHash[:])
 	if err == nil {
 		lt := new(big.Int).SetBytes(ltData)
 		mdl.Repo.AddAllowedTokenV2(0, "", configurator, &schemas.AllowedToken{
