@@ -170,6 +170,14 @@ func (ep InternalFetcher) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *Te
 		var err error
 		trace, err = ep.tenderlyFetcher.getTxTrace(txHash)
 		log.CheckFatal(err)
+	} else if traceUrl := utils.GetEnvOrDefault("TRACE_URL", ""); traceUrl != "" {
+		var err error
+		trace, err = ep.parityFetcher.getTxTraceQuickNode(txHash, traceUrl)
+		// log.Fatal(utils.ToJson(trace))
+		if err != nil {
+			log.Info("fallback on tenderly due to", err, " for ", txHash)
+			trace, err = ep.tenderlyFetcher.getTxTrace(txHash)
+		}
 	} else {
 		var err error
 		trace, err = ep.parityFetcher.getTxTrace(txHash)

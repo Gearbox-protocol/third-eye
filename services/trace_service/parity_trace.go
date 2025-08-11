@@ -2,6 +2,7 @@ package trace_service
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,8 +10,10 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Gearbox-protocol/sdk-go/ethclient"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/utils"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 // https://docs.alchemy.com/reference/trace-api
@@ -32,6 +35,13 @@ type traceResp struct {
 		Message string `json:"message"`
 	} `json:"error"`
 	Result []RPCTrace
+}
+type traceRespQN struct {
+	Error struct {
+		Code    int64  `json:"code"`
+		Message string `json:"message"`
+	} `json:"error"`
+	Result QNRPCTrace
 }
 
 // https://docs.alchemy.com/reference/trace-transaction
@@ -65,10 +75,41 @@ func (app ParityFetcher) getDataOnRPC(rpc, txHash string) ([]RPCTrace, error) {
 	}
 	return traceObj.Result, nil
 }
+func (app ParityFetcher) getDataOnQuicknode(rpc, txHash string) (*QNRPCTrace, error) {
+	format := `{"method":"debug_traceTransaction","params":["%s", {"tracer": "callTracer"}], "id":1,"jsonrpc":"2.0"}`
+	params := fmt.Sprintf(format, txHash)
+	//
+	buf := &bytes.Buffer{}
+	buf.WriteString(params)
+	req, _ := http.NewRequest(http.MethodPost, rpc, buf)
+	req.Header.Add("Content-Type", "application/json")
+	//
+	resp, err := app.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("while making request %s", err)
+	}
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("while reading body from response %s", err)
+	}
+	traceObj := traceRespQN{}
+	err = json.Unmarshal(data, &traceObj)
+	if err != nil {
+		return nil, fmt.Errorf("while unmarshaling %s", err)
+	}
+	if traceObj.Error.Code != 0 {
+		return nil, fmt.Errorf(traceObj.Error.Message)
+	}
+	return &traceObj.Result, nil
+}
 
-func (app ParityFetcher) getData(txhash string) ([]RPCTrace, error) {
+func (app ParityFetcher) getData(txhash string, providedrpc ...string) ([]RPCTrace, error) {
 	var errs utils.Errors
-	for _, rpc := range app.rpcs {
+	rpc := app.rpcs
+	if len(providedrpc) != 0 {
+		rpc = providedrpc
+	}
+	for _, rpc := range rpc {
 		data, err := app.getDataOnRPC(rpc, txhash)
 		if err == nil {
 			return data, nil
@@ -78,12 +119,27 @@ func (app ParityFetcher) getData(txhash string) ([]RPCTrace, error) {
 	return nil, errs
 }
 
-func (app ParityFetcher) getTxTrace(txHash string) (*TenderlyTrace, error) {
-	rpcTrace, err := app.getData(txHash)
+func (app ParityFetcher) getTxTrace(txHash string, rpc ...string) (*TenderlyTrace, error) {
+	rpcTrace, err := app.getData(txHash, rpc...)
 	if err != nil {
 		return nil, err
 	}
 	return convertToTenderlyTrace(rpcTrace, txHash), nil
+}
+func (app ParityFetcher) getTxTraceQuickNode(txHash string, rpc string) (*TenderlyTrace, error) {
+	rpcTrace, err := app.getDataOnQuicknode(rpc, txHash)
+	if err != nil {
+		return nil, err
+	}
+	client, err := ethclient.Dial(rpc)
+	log.CheckFatal(err)
+	tx, err := client.TransactionReceipt(context.TODO(), common.HexToHash(txHash))
+	log.CheckFatal(err)
+	return &TenderlyTrace{
+		CallTrace:   rpcTrace.Convert(),
+		BlockNumber: tx.BlockNumber.Int64(),
+		TxHash:      txHash,
+	}, nil
 }
 
 type RPCTrace struct {
@@ -145,4 +201,35 @@ func toTenderlyCall(old RPCTrace, txHash string) (*Call, []int) {
 		Value:    valueStr,
 		Calls:    calls,
 	}, old.TraceAddress
+}
+
+type QNRPCTrace struct {
+	From string `json:"from"`
+	To   string `json:"to"`
+	// CallType string       `json:"callType"`
+	Value  string       `json:"value"`
+	Type   string       `json:"type"`
+	Input  string       `json:"input"`
+	Output string       `json:"output"`
+	Calls  []QNRPCTrace `json:"calls"`
+	// Action struct {
+	// } `json:"action"`
+	// BlockNumber  int64 `json:"blockNumber"`
+	// Subtraces    int   `json:"subtraces"`
+	// TraceAddress []int `json:"traceAddress"`
+}
+
+func (x QNRPCTrace) Convert() *Call {
+	calls := make([]*Call, len(x.Calls))
+	for i, c := range x.Calls {
+		calls[i] = c.Convert()
+	}
+	return &Call{
+		From:     x.From,
+		To:       x.To,
+		CallerOp: strings.ToUpper(x.Type),
+		Input:    x.Input,
+		Value:    x.Value,
+		Calls:    calls,
+	}
 }
