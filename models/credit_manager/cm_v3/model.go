@@ -2,6 +2,7 @@ package cm_v3
 
 import (
 	"math/big"
+	"math/rand/v2"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -37,10 +38,10 @@ func NewCMv3(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 	}
 	mdl.SetParams(params)
 	mdl.addCreditConfiguratorAdapter(mdl.GetDetailsByKey("configurator"))
-	mdl.Repo.UpdateFees(0, "", mdl.GetDetailsByKey("configurator"), params)
+	mdl.Repo.UpdateFees(10000+(uint(rand.Int())%10000), "", mdl.GetDetailsByKey("configurator"), params)
 	configurator := mdl.GetDetailsByKey("configurator")
 	tokenHash := common.HexToHash(mdl.GetUnderlyingToken())
-	ltData, err := core.CallFuncGetSingleValue(mdl.Client, "0x78327438", common.HexToAddress(configurator), discoveredAt, tokenHash[:])
+	ltData, err := core.CallFuncGetSingleValue(mdl.Client, "0x78327438", common.HexToAddress(mdl.Address), discoveredAt, tokenHash[:])
 	if err == nil {
 		lt := new(big.Int).SetBytes(ltData)
 		mdl.Repo.AddAllowedTokenV2(0, "", configurator, &schemas.AllowedToken{
@@ -53,7 +54,7 @@ func NewCMv3(addr string, client core.ClientI, repo ds.RepositoryI, discoveredAt
 		})
 		log.Infof("Liquidation threshold for cm %s is set to %s", mdl.GetAddress(), lt)
 	} else {
-		log.Warnf("Liquidation threshold data is not set for cm %s, using default value %v.", mdl.GetAddress(), err)
+		log.Fatalf("Liquidation threshold data is not set for cm %s, using default value %v.", mdl.GetAddress(), err)
 	}
 	return mdl
 }

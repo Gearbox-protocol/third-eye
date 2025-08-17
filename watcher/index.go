@@ -80,7 +80,7 @@ func newMetEngine(reg *prometheus.Registry, eng ds.EngineI, _cfg *config.Config)
 
 func corsHandler(h http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Add("Connection", "keep-alive")
+		// w.Header().Add("Connection", "keep-alive")
 		w.Header().Add("Access-Control-Allow-Origin", "*")
 		w.Header().Add("Access-Control-Allow-Methods", "OPTIONS, GET")
 		w.Header().Add("Access-Control-Allow-Headers", "content-type")
