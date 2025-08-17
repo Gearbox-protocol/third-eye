@@ -62,7 +62,7 @@ func newMetEngine(reg *prometheus.Registry, eng ds.EngineI, _cfg *config.Config)
 			Help: "Start time, in unixtime (seconds)",
 		}, func() float64 { return startUnix }),
 	)
-	mux.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+	mux.Handle("/metrics", corsHandler(promhttp.HandlerFor(reg, promhttp.HandlerOpts{})))
 
 	mux.HandleFunc("/health", func(hw http.ResponseWriter, hr *http.Request) {
 		block, _ := eng.LastSyncedBlock()
@@ -76,4 +76,15 @@ func newMetEngine(reg *prometheus.Registry, eng ds.EngineI, _cfg *config.Config)
 	})
 
 	utils.ServerFromMux(mux, _cfg.Port)
+}
+
+func corsHandler(h http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Connection", "keep-alive")
+		w.Header().Add("Access-Control-Allow-Origin", "*")
+		w.Header().Add("Access-Control-Allow-Methods", "OPTIONS, GET")
+		w.Header().Add("Access-Control-Allow-Headers", "content-type")
+		w.Header().Add("Access-Control-Max-Age", "86400")
+		h.ServeHTTP(w, r)
+	}
 }
