@@ -21,6 +21,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveuint256"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/daiUSDs"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/fluidDexT1"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/iSwapRouter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
@@ -129,6 +130,8 @@ var abiJSONs = []string{
 	activeSwapYTv3.ActiveSwapYTv3ABI,
 	activeMiscv3.ActiveMiscv3ABI,
 	balancerv3.Balancerv3ABI,
+	//
+	fluidDexT1.FluidDexT1ABI,
 }
 
 var abiParsers []abi.ABI
