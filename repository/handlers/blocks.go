@@ -99,7 +99,6 @@ func (repo *BlocksRepo) _fetchBlockTime(blockNum int64) (uint64, error) {
 	// 	return
 	// }
 	if err != nil {
-
 		if strings.Contains(err.Error(), "invalid transaction v, r, s values") && ds.IsTestnet(repo.client) {
 			b, err := repo.client.BlockByNumber(context.Background(), big.NewInt(blockNum-1))
 			log.CheckFatal(err)
@@ -119,7 +118,7 @@ func (repo *BlocksRepo) fetchBlockTime(blockNum int64) uint64 {
 		msg = "tried again"
 	}
 	if err != nil {
-		log.Fatalf("%s: %d", err, blockNum, msg)
+		log.Fatalf("%s: %d %s", err, blockNum, msg)
 	}
 	return bTime
 }

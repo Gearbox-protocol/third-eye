@@ -99,6 +99,9 @@ func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, discover
 	if qpf.GetAddress() == "0x7C879DBde7569F00c378Ca124046B9E1b31327F5" {
 		log.Fatal("discoveredAt", discoveredAt)
 	}
+	if qpf.GetAddress() == "0x7465Ed73d5B881389E2d714EDAbAcEa3a3FeC360" && core.GetBaseChainId(client) == 42793 { // pyth oracle
+		return nil
+	}
 	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.GetAddress()), client)
 	log.CheckFatal(err)
 	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
