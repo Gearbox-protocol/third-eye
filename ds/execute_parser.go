@@ -127,7 +127,9 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 			callInd++
 		case "81314b59": // revert if less than  // can't find in v3
 			callInd++
-		case "82ff942c", "2f2ca49b": // can't find in v3
+		case "82ff942c",
+			"2f2ca49b": // v300 // second is storeExpectedBalances((address,int256)[])
+			// "6161dc85": // exactDiffInput((bytes,uint256,uint256,uint256))
 			callInd++
 		case "0768bbfe": // setFullCheckParams
 			callInd++

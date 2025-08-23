@@ -104,13 +104,13 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Borrow(address,address,uint256)"):
 		mdl.AddDebt(ManageDebt{
-			BlockNum: int64(txLog.BlockNumber),
-			TxHash:   txLog.TxHash.Hex(),
-			Amount:   new(big.Int).SetBytes(txLog.Data),
-			Account:  common.BytesToAddress(txLog.Topics[2][:]).Hex(),
-			Type:     INCREASE_DEBT,
-			LogId: txLog.Index,
-			CreditManager:  common.BytesToAddress(txLog.Topics[1][:]).Hex(),
+			BlockNum:      int64(txLog.BlockNumber),
+			TxHash:        txLog.TxHash.Hex(),
+			Amount:        new(big.Int).SetBytes(txLog.Data),
+			Account:       common.BytesToAddress(txLog.Topics[2][:]).Hex(),
+			Type:          INCREASE_DEBT,
+			LogId:         txLog.Index,
+			CreditManager: common.BytesToAddress(txLog.Topics[1][:]).Hex(),
 		})
 		mdl.updateBorrowRate(blockNum)
 	case core.Topic("Repay(address,uint256,uint256,uint256)"):
@@ -129,9 +129,9 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			TxHash:   txLog.TxHash.Hex(),
 			Amount:   new(big.Int).SetBytes(txLog.Data[:32]),
 			// Account:  common.BytesToAddress(txLog.Topics[2][:]).Hex(),
-			Type:     DECREASE_DEBT,
-			LogId: txLog.Index,
-			CreditManager:  common.BytesToAddress(txLog.Topics[1][:]).Hex(),
+			Type:          DECREASE_DEBT,
+			LogId:         txLog.Index,
+			CreditManager: common.BytesToAddress(txLog.Topics[1][:]).Hex(),
 		})
 		amount := new(big.Int).Sub(new(big.Int).Add(repayEvent.BorrowedAmount, repayEvent.Profit), repayEvent.Loss)
 		mdl.repayEvents = append(mdl.repayEvents, &schemas.PoolLedger{

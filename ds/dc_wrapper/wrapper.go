@@ -335,7 +335,6 @@ func (dcw *DataCompressorWrapper) Retry(blockNum int64, account common.Address, 
 			x := abi.ConvertType(out[0], new(globalAccountCompressor.CreditAccountData)).(*globalAccountCompressor.CreditAccountData)
 			accountData = dc.Convert(x)
 		}
-		log.Info(utils.ToJson(accountData))
 		if !accountData.Success {
 			log.Warn("Not success v3", blockNum, account)
 			// return dc.CreditAccountCallData{}, err

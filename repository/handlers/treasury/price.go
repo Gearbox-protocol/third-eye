@@ -95,7 +95,7 @@ func (repo *TreasuryRepo) getPricesInBatch(oracle schemas.PriceOracleT, version 
 		prices = v2PriceAnswers(result[:len(tokenAddrs)])
 	}
 	for ind, token := range tokenAddrs {
-		if prices[ind] == nil {
+		if prices[ind] == nil || prices[ind].Cmp(big.NewInt(0)) == 0 {
 			if price := repo.GetRedStonePrice(blockNum, oracle, token); price != nil {
 				prices[ind] = price
 			}
