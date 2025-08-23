@@ -5,6 +5,7 @@ import (
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/pkg"
 	"github.com/Gearbox-protocol/sdk-go/pkg/dc"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans []core.RedStonePF) {
+func (mdl *CommonCMAdapter) priceFeedNeededRedStone(balances core.DBBalanceFormat) (ans []core.RedStonePF) {
 	pool := mdl.State.PoolAddress
 	priceOracle := mdl.Repo.GetAdapter(pool).(*pool_v3.Poolv3).State.PriceOracle
 	feeds := mdl.Repo.GetMainTokenOracles()[priceOracle]
@@ -37,13 +38,40 @@ func (mdl *CommonCMAdapter) priceFeedNeeded(balances core.DBBalanceFormat) (ans 
 	}
 	return
 }
+
+func (mdl *CommonCMAdapter) priceFeedPyth(balances core.DBBalanceFormat, blockNum int64) (ans []redstone.PytDataWithFeed) {
+	pool := mdl.State.PoolAddress
+	priceOracle := mdl.Repo.GetAdapter(pool).(*pool_v3.Poolv3).State.PriceOracle
+	feeds := mdl.Repo.GetMainTokenOracles()[priceOracle]
+	ts := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
+	for token, bal := range balances {
+		{
+			d := feeds[token]
+			adapter := mdl.Repo.GetAdapter(d.Feed)
+			if adapter.GetName() == ds.QueryPriceFeed && d.FeedType == ds.PythPF && bal.BI.Convert().Cmp(big.NewInt(10)) > 0 {
+				datas, ok := adapter.GetDetails()["underlyings"].([]interface{})
+				if !ok {
+					log.Fatal("Pyth price feed underlyings not found for token:", token, "adapter:", adapter.GetAddress())
+				}
+				data, err := pkg.GetPythPrice(datas[0].(string), int64(ts))
+				log.CheckFatal(err)
+				ans = append(ans, redstone.PytDataWithFeed{
+					PythData: data,
+					Feed:     common.HexToAddress(adapter.GetAddress()),
+				})
+			}
+		}
+	}
+	return
+}
 func (mdl *CommonCMAdapter) retry(oldaccount dc.CreditAccountCallData, blockNum int64) (dc.CreditAccountCallData, error) {
 	ts := mdl.Repo.SetAndGetBlock(blockNum).Timestamp
 	bal := moreThan1Balance(oldaccount.Balances)
 	bal[mdl.GetUnderlyingToken()] = core.DBTokenBalance{BI: (*core.BigInt)(big.NewInt(1))}
-	redPFs := mdl.priceFeedNeeded(bal)
+	redPFs := mdl.priceFeedNeededRedStone(bal)
+	pythPFs := mdl.priceFeedPyth(bal, blockNum)
 	v3Pods := mdl.Repo.GetRedStonemgr().GetPodSign(int64(ts), redPFs)
-	v3PodsCalls := redstone.GetpodToCalls(300, common.HexToAddress(mdl.GetCreditFacadeAddr()), v3Pods, redPFs)
+	v3PodsCalls := redstone.GetpodToCalls(mdl.Client, core.FetchActualVersion(mdl.Address, 0, mdl.Client), common.HexToAddress(mdl.GetCreditFacadeAddr()), v3Pods, redPFs, pythPFs)
 	log.Info("retrying to get credit account data", oldaccount.Addr, blockNum, "pods", len(v3Pods), "calls", len(v3PodsCalls))
 	//
 	return mdl.Repo.GetDCWrapper().Retry(blockNum, oldaccount.Addr, v3Pods, v3PodsCalls)
