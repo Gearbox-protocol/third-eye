@@ -16,6 +16,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/erc4626Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/savingMaker"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/balancerv3"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/claimer"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
@@ -112,6 +113,7 @@ var abiJSONs = []string{
 	WhitelistedEthWrapper.WhitelistedEthWrapperABI,
 	lidov1Adapter.Lidov1AdapterABI, lidov1Gateway.Lidov1GatewayABI, wstETHv1Adapter.WstETHv1AdapterABI,
 	convexAdapter.ConvexAdapterABI, llamaethena.LlamaethenaABI,
+	claimer.ClaimerABI,
 	yearnv2Adapter.Yearnv2AdapterABI,
 	curveuint256.Curveuint256ABI, curveAdapter.CurveAdapterABI,
 	universalAdapter.UniversalAdapterABI,
