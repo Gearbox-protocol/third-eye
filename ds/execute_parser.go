@@ -61,12 +61,12 @@ func (f FacadeCallNameWithMulticall) LenOfMulticalls() int {
 
 // handles revertIflessthan case where event is not emitted.
 // also handles cases where number of execute order events emitted is less than execute calls
-func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(version core.VersionType, events []*schemas.AccountOperation) bool {
-	defer func() {
-		if err := recover(); err != nil {
-			log.Fatal(err, f, utils.ToJson(events))
-		}
-	}()
+func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(client core.ClientI, version core.VersionType, events []*schemas.AccountOperation) bool {
+	// defer func() {
+	// 	if err := recover(); err != nil {
+	// 		log.Fatal(err, f, utils.ToJson(events))
+	// 	}
+	// }()
 
 	if f.TestLen != 0 {
 		return f.TestLen == len(events)
@@ -74,13 +74,13 @@ func (f *FacadeCallNameWithMulticall) SameMulticallLenAsEvents(version core.Vers
 	if version.Eq(2) {
 		return f.v2(events)
 	} else if version.Eq(300) {
-		return f.v3(events)
+		return f.v3(client, events)
 	}
 
 	return false
 }
 
-func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) bool {
+func (f *FacadeCallNameWithMulticall) v3(client core.ClientI, events []*schemas.AccountOperation) bool {
 	if len(f.facade) != 42 {
 		log.Fatal("facade address is missing from executeParser DS")
 	}
@@ -88,10 +88,12 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 	callInd := 0
 	callLen := len(f.multiCalls)
 	eventLen := len(events)
+	// defer func() {
+	// 	log.Info(callInd, callLen, eventInd, eventLen)
+	// }()
 	for callInd < callLen || eventInd < eventLen {
 		multiCall := f.multiCalls[callInd]
 		sig := hex.EncodeToString(multiCall.CallData[:4])
-		// log.Info(callInd, eventInd)
 		switch sig {
 		case "59781034", // add collateral
 			"6d75b9ee", // add collateral extended 2.2 // v310 too
@@ -149,12 +151,29 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 		case "1f1088a0": // withdrawcollateral
 			if eventInd < eventLen {
 				if events[eventInd].Action != "WithdrawCollateral(address,address,uint256,address)" {
+					if events[eventInd].Action == "ExecuteOrder" &&
+						// 0xd071f69785347d727dbfe40ac781c4b9b9d8dd848b038089e4e09b2f1ff219cd
+						callInd-1 >= 0 && hex.EncodeToString(f.multiCalls[callInd-1].CallData[:4]) == "28b83c48" {
+						eventInd++
+						continue
+					}
 					return false
 				}
 				eventToken := (*events[eventInd].Args)["token"]
-				if eventToken != nil &&
-					common.HexToAddress(eventToken.(string)) == common.BytesToAddress(multiCall.CallData[4:4+32]) {
-					eventInd++
+				//
+				log.Info(utils.ToJson(eventToken))
+				log.Info(common.BytesToAddress(multiCall.CallData[4 : 4+32]))
+				//
+				if eventToken != nil {
+					tokenfromcall := common.BytesToAddress(multiCall.CallData[4 : 4+32])
+					isPahntom := false
+					if client != nil {
+						data, err := core.CallFuncGetAllData(client, "0xa7b6cd8e", tokenfromcall, 0, nil)
+						isPahntom = err == nil && len(data) >= 64
+					}
+					if isPahntom || common.HexToAddress(eventToken.(string)) == tokenfromcall {
+						eventInd++
+					}
 				}
 			}
 			callInd++
@@ -168,6 +187,7 @@ func (f *FacadeCallNameWithMulticall) v3(events []*schemas.AccountOperation) boo
 			executeCall := 0
 			for callInd < callLen && f.multiCalls[callInd].Target.Hex() != f.facade { // until multicall call that is not for facade is seen
 				executeCall++
+				log.Info(callInd)
 				callInd++
 			}
 			if executeEvent > executeCall { // if execute events more than calls

@@ -39,7 +39,7 @@ func TestCmpLenSimpleV2(t *testing.T) {
 		[]string{"0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@59781034"},
 		[]string{"AddCollateral(address,address,uint256)"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
+	if !mainAction.SameMulticallLenAsEvents(nil, core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }
@@ -50,7 +50,7 @@ func TestCmpLenWith2EventsV2(t *testing.T) {
 		[]string{"0xb82C5D0A6750aD1E5c2f74CFD7e2E4788f2b0aBB@59781034", "0x020bafa614d63087C4B3C8244F1e2c8A3859Ce4E@d0e30db0"},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
+	if !mainAction.SameMulticallLenAsEvents(nil, core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }
@@ -64,7 +64,7 @@ func TestCmpLenWith2PlusRevertEventsV2(t *testing.T) {
 		},
 		[]string{"AddCollateral(address,address,uint256)", "ExecuteOrder", "ExecuteOrder"},
 	)
-	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
+	if !mainAction.SameMulticallLenAsEvents(nil, core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }
@@ -77,7 +77,7 @@ func TestCmpLenTrivalRevertV2(t *testing.T) {
 		[]string{"0x020bafa614d63087C4B3C8244F1e2c8A3859Ce4E@81314b59"},
 		nil,
 	)
-	if !mainAction.SameMulticallLenAsEvents(core.NewVersion(2), events) {
+	if !mainAction.SameMulticallLenAsEvents(nil, core.NewVersion(2), events) {
 		log.Fatal()
 	}
 }

@@ -86,7 +86,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 		}
 		//
 		eventMulticalls := mainEvent.MultiCall
-		if !mainCall.SameMulticallLenAsEvents(version, eventMulticalls) {
+		if !mainCall.SameMulticallLenAsEvents(mdl.Client, version, eventMulticalls) {
 			log.Fatalf("%s expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
 				utils.ToJson(eventMulticalls), mainCall.String(), mainEvent.TxHash)

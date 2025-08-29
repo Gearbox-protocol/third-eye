@@ -46,7 +46,7 @@ func Test_Check1(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_failed_token_disabled.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(core.NewVersion(2), data.Events) {
+	if !calls.SameMulticallLenAsEvents(nil, core.NewVersion(2), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
@@ -59,7 +59,7 @@ func Test_Check2(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_event_len_0.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(core.NewVersion(2), data.Events) {
+	if !calls.SameMulticallLenAsEvents(nil, core.NewVersion(2), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
@@ -73,7 +73,7 @@ func Test_Checkv3(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_v3.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
+	if !calls.SameMulticallLenAsEvents(nil, core.NewVersion(300), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
@@ -86,7 +86,7 @@ func Test_CheckWithdrawCollateralv3(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_withdraw_collateral.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
+	if !calls.SameMulticallLenAsEvents(nil, core.NewVersion(300), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
@@ -100,7 +100,7 @@ func Test_CheckWithdrawCollateralFailure(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_withdraw_collateral_failure.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
+	if !calls.SameMulticallLenAsEvents(nil, core.NewVersion(300), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
@@ -114,7 +114,7 @@ func Test_CheckNew(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_new.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
+	if !calls.SameMulticallLenAsEvents(nil, core.NewVersion(300), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
@@ -126,7 +126,7 @@ func Test_CheckKK(t *testing.T) {
 	utils.ReadJsonAndSetInterface("execute_parser/check_update_quota.json", &data)
 
 	calls := data.GetCalls(t)
-	if !calls.SameMulticallLenAsEvents(core.NewVersion(300), data.Events) {
+	if !calls.SameMulticallLenAsEvents(nil, core.NewVersion(300), data.Events) {
 		t.Fatalf("expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 			calls.LenOfMulticalls(), len(data.Events),
 			utils.ToJson(data.Events), calls.String(), data.TxHash)
