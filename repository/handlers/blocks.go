@@ -110,6 +110,9 @@ func (repo *BlocksRepo) _fetchBlockTime(blockNum int64) (uint64, error) {
 }
 
 func (repo *BlocksRepo) fetchBlockTime(blockNum int64) uint64 {
+	if blockNum == 23273170 && core.GetChainId(repo.client) == 1 {
+		return 1756781603
+	}
 	bTime, err := repo._fetchBlockTime(blockNum)
 	msg := ""
 	if err != nil && strings.Contains(err.Error(), "not found") {
