@@ -31,6 +31,8 @@ func (repo *Repository) GetUSD() common.Address {
 		t = core.GetToken(chainid, "USDC.e")
 	} else if chainid == 56 {
 		t = core.GetToken(chainid, "USDT")
+	} else if chainid == 9745 {
+		t = core.GetToken(chainid, "USDT0")
 	} else {
 		t = core.GetToken(chainid, "USDC")
 	}
