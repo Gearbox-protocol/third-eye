@@ -112,6 +112,7 @@ func (mdl *BasePriceFeed) GetUnderlyingCalls(blockNum int64) (calls []multicall.
 		}
 		if tokenDetails != nil {
 			pod := mdl.Repo.GetRedStonemgr().GetPodSignWithRedstoneToken(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp), *tokenDetails)
+			log.Info(pod.CallData)
 			update, err := updateABI.Pack("updatePrice", pod.CallData)
 			log.CheckFatal(err)
 			calls = append(calls, multicall.Multicall2Call{

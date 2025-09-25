@@ -96,23 +96,58 @@ func mergePFVersionAt(blockNum int64, details map[schemas.PFVersion][]int64) sch
 	return pfVersion
 }
 func createPriceFeedOnInit(qpf ds.QueryPriceFeedI, client core.ClientI, discoveredAt int64, version core.VersionType) []*schemas.PriceFeed {
+	defer func() {
+		if err := recover(); err != nil {
+			if core.GetBaseChainId(client) == 42793 {
+				log.Warn("Create init price feed init failed for etherlink ", qpf.GetAddress(), " at block: ", discoveredAt, err)
+			} else {
+				log.Fatal(err)
+			}
+		}
+	}()
 	if qpf.GetAddress() == "0x7C879DBde7569F00c378Ca124046B9E1b31327F5" {
 		log.Fatal("discoveredAt", discoveredAt)
 	}
-	if qpf.GetAddress() == "0x7465Ed73d5B881389E2d714EDAbAcEa3a3FeC360" && core.GetBaseChainId(client) == 42793 { // pyth oracle
-		return nil
-	}
 	mainPFContract, err := priceFeed.NewPriceFeed(common.HexToAddress(qpf.GetAddress()), client)
 	log.CheckFatal(err)
-	data, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
+	type _xx struct {
+		RoundId         *big.Int
+		Answer          *big.Int
+		StartedAt       *big.Int
+		UpdatedAt       *big.Int
+		AnsweredInRound *big.Int
+	}
+	// xx := _xx{}
+	// calls, isQueryable := qpf.GetCalls(discoveredAt)
+	// if qpf.GetAddress() == "0x354D10C2FecC251a85593500FA1942b19C03b4CC" {
+	// 	calls = calls[1:]
+	// }
+	// if isQueryable {
+	// 	log.Info(len(calls))
+	// 	for _, x := range calls {
+	// 		log.Info(x.Target)
+	// 	}
+	// 	results := core.MakeMultiCall(client, discoveredAt, false, calls)
+	// 	log.Info(utils.ToJson(results))
+	// 	data := qpf.ProcessResult(discoveredAt, results, "", true)
+	// 	if data == nil {
+	// 		log.Fatal("Price feed init failed using queryadapter redstone resolve too for ", qpf.GetAddress(), " at block: ", discoveredAt)
+	// 	}
+	// 	xx.RoundId = big.NewInt(data.RoundId)
+	// 	xx.Answer = (*big.Int)(data.PriceBI)
+	// } else {
+	// 	xx.RoundId = data.RoundId
+	// 	xx.Answer = data.Answer
+	// }
+	xx, err := mainPFContract.LatestRoundData(&bind.CallOpts{BlockNumber: big.NewInt(discoveredAt)})
 	log.CheckFatal(err)
 	//
 	return []*schemas.PriceFeed{{
 		BlockNumber: discoveredAt,
 		Feed:        qpf.GetAddress(),
-		RoundId:     data.RoundId.Int64(),
-		PriceBI:     (*core.BigInt)(data.Answer),
-		Price:       utils.GetFloat64Decimal(data.Answer, version.Decimals()),
+		RoundId:     xx.RoundId.Int64(),
+		PriceBI:     (*core.BigInt)(xx.Answer),
+		Price:       utils.GetFloat64Decimal(xx.Answer, version.Decimals()),
 	}}
 }
 

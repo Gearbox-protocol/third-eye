@@ -274,10 +274,10 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 		return ds.YearnPF, nil, nil
 	case core.V3_CHAINLINK_ORACLE:
 		log.Fatal("Chainlink oracle should be handled in v3") // as already handled by phaseId check
-	case core.V3_CURVE_USD_ORACLE, core.V3_CURVE_CRYPTO_ORACLE:
-		return ds.CurvePF, nil, nil
+	// case :
+	// 	return ds.CurvePF, nil, nil
 	// usd and crypto
-	case core.V3_CURVE_2LP_ORACLE, core.V3_CURVE_3LP_ORACLE, core.V3_CURVE_4LP_ORACLE: // 2lp,3lp, 4lp
+	case core.V3_CURVE_USD_ORACLE, core.V3_CURVE_CRYPTO_ORACLE, core.V3_CURVE_2LP_ORACLE, core.V3_CURVE_3LP_ORACLE, core.V3_CURVE_4LP_ORACLE: // 2lp,3lp, 4lp
 		nCoinBytes, err := core.CallFuncGetSingleValue(mdl.Client, "c21ee162", common.HexToAddress(oracle), 0, nil)
 		log.CheckFatal(err)
 		fn := func(n int) string {
