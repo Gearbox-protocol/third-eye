@@ -187,7 +187,7 @@ func (f *FacadeCallNameWithMulticall) v3(client core.ClientI, events []*schemas.
 			executeCall := 0
 			for callInd < callLen && f.multiCalls[callInd].Target.Hex() != f.facade { // until multicall call that is not for facade is seen
 				executeCall++
-				log.Info(callInd)
+				// log.Info(callInd)
 				callInd++
 			}
 			if executeEvent > executeCall { // if execute events more than calls
