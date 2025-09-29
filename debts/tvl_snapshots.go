@@ -17,6 +17,7 @@ func (ds *MarketToTvl) add(pool string, caValue float64, availLiq float64, expec
 		(*ds)[pool] = &caValueAndAvailLiquidity{
 			caTotalValue:            caValue,
 			totalAvailableLiquidity: availLiq,
+			expectedLiq:             expectedLiq,
 		}
 	}
 }

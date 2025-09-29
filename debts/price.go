@@ -73,7 +73,7 @@ func (eng *PriceHandler) loadTokenLastPrice(lastDebtSync int64, db *gorm.DB) {
 
 func (eng *PriceHandler) loadTokenOracle(lastDebtSync int64, db *gorm.DB) {
 	data := []*schemas.TokenOracle{}
-	err := db.Raw(`select * from token_oracle where block_num < ? and reserve='f' order by block_num`, lastDebtSync).Find(&data).Error
+	err := db.Raw(`select * from token_oracle where block_num <= ? and reserve='f' order by block_num`, lastDebtSync).Find(&data).Error
 	log.CheckFatal(err)
 	for _, entry := range data {
 		eng.AddTokenOracle(entry)

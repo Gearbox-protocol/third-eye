@@ -205,6 +205,12 @@ func (mdl *PriceOracle) getErc4626(oracle string) (pfType string, underlyingFeed
 	}
 	return
 }
+func isChainLink(pf0 common.Address, client core.ClientI) bool {
+	con, err := priceFeed.NewPriceFeed(pf0, client)
+	log.CheckFatal(err)
+	_, err1 := con.PhaseId(nil)
+	return err1 == nil
+}
 
 // https://github.com/Gearbox-protocol/integrations-v2/tree/faa9cfd4921c62165782dcdc196ff5a0c0e6075d/contracts/oracles
 // https://github.com/Gearbox-protocol/oracles-v3/tree/2ac6d1ba1108df949222084791699d821096bc8c/contracts/oracles
@@ -244,10 +250,7 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 				if err != nil && strings.Contains(err.Error(), "execution reverted") {
 					// this means that it can be from outside of gearbox protocol, like redstone own oracle.
 					pf0Type := func() int {
-						con, err := priceFeed.NewPriceFeed(pf0, mdl.Client)
-						log.CheckFatal(err)
-						_, err1 := con.PhaseId(nil)
-						if err1 == nil {
+						if isChainLink(pf0, mdl.Client) {
 							return core.V3_CHAINLINK_ORACLE
 						}
 						return core.V3_CURVE_2LP_ORACLE
@@ -261,6 +264,14 @@ func (mdl *PriceOracle) V3PriceFeedType(opts *bind.CallOpts, oracle, token strin
 			case core.V3_REDSTONE_ORACLE:
 				return ds.CompositeRedStonePF, nil, nil
 			case core.V3_CHAINLINK_ORACLE:
+				pf1 := func() common.Address {
+					pf, err := core.CallFuncGetSingleValue(mdl.Client, "ab0ca0e1", common.HexToAddress(oracle), 0, nil) // priceFeed0
+					log.CheckFatal(err)
+					return common.BytesToAddress(pf)
+				}()
+				if !isChainLink(pf1, mdl.Client) {
+					return ds.CurvePF, nil, nil
+				}
 				return ds.CompositeChainlinkPF, nil, nil
 			default:
 				return ds.CurvePF, nil, nil
