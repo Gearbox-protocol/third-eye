@@ -83,7 +83,9 @@ func (mdl *BasePriceFeed) ProcessResult(blockNum int64, results []multicall.Mult
 	return ParseQueryRoundData(results[0].ReturnData, isPriceInUSD, mdl.GetAddress(), blockNum)
 	//
 }
-
+func (mdl *BasePriceFeed) GetRedStoneUnderlyings() []string {
+	return mdl.DetailsDS.Underlyings
+}
 func (mdl *BasePriceFeed) GetUnderlyingCalls(blockNum int64) (calls []multicall.Multicall2Call, isQueryable bool) {
 	updateABI := core.GetAbi("UpdatePriceFeed")
 	for _, entry := range mdl.DetailsDS.Underlyings {

@@ -11,6 +11,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas/schemas_v3"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg/redstone"
+	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ds/dc_wrapper"
 	"github.com/ethereum/go-ethereum/common"
 	"gorm.io/gorm"
@@ -59,6 +60,7 @@ type RepositoryI interface {
 	GetBlocks() map[int64]*schemas.Block
 	GetDisabledTokens() []*schemas.AllowedToken
 	LoadBlocks(from, to int64)
+	GetCfg() *config.Config
 	// credit account operations
 	AddAccountOperation(accountOperation *schemas.AccountOperation)
 	// for getting executeparser

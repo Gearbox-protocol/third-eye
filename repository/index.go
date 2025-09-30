@@ -73,6 +73,9 @@ func NewRepository(db *gorm.DB, client core.ClientI, config *config.Config, ep *
 	r := GetRepository(db, client, config, ep)
 	return r
 }
+func (r Repository) GetCfg() *config.Config {
+	return r.config
+}
 
 func (r Repository) GetDB() *gorm.DB {
 	return r.db

@@ -112,6 +112,7 @@ func (repo TreasuryRepo) GetRedStonemgr() redstone.RedStoneMgrI {
 func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle schemas.PriceOracleT, token string) *big.Int {
 	if adapter := repo.IsRedStoneAdapter(blockNum, oracle, token); adapter != nil {
 		call, isQueryable := adapter.GetCalls(blockNum)
+		log.Info(adapter.GetPFType(), isQueryable)
 		if !isQueryable {
 			return nil
 		}
@@ -131,9 +132,13 @@ func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle schemas.PriceO
 	}
 	adapter := repo.adapters.GetAdapter(priceFeed.Hex())
 	if adapter != nil && // for chainlink or composite chainlink oracle
-		adapter.GetName() == ds.QueryPriceFeed &&
-		utils.Contains([]string{ds.RedStonePF, ds.CompositeRedStonePF, ds.PythPF}, adapter.GetDetailsByKey("pfType")) {
-		return aggregated_block_feed.FromAdapter(adapter)
+		adapter.GetName() == ds.QueryPriceFeed {
+		if utils.Contains([]string{ds.RedStonePF, ds.CompositeRedStonePF, ds.PythPF}, adapter.GetDetailsByKey("pfType")) {
+			return aggregated_block_feed.FromAdapter(adapter)
+		}
+		if utils.Contains([]string{ds.CurvePF}, adapter.GetDetailsByKey("pfType")) && len(aggregated_block_feed.FromAdapter(adapter).GetRedStoneUnderlyings()) > 0 {
+			return aggregated_block_feed.FromAdapter(adapter)
+		}
 	}
 	//
 	return nil

@@ -161,8 +161,8 @@ func (f *FacadeCallNameWithMulticall) v3(client core.ClientI, events []*schemas.
 				}
 				eventToken := (*events[eventInd].Args)["token"]
 				//
-				log.Info(utils.ToJson(eventToken))
-				log.Info(common.BytesToAddress(multiCall.CallData[4 : 4+32]))
+				// log.Info(utils.ToJson(eventToken))
+				// log.Info(common.BytesToAddress(multiCall.CallData[4 : 4+32]))
 				//
 				if eventToken != nil {
 					tokenfromcall := common.BytesToAddress(multiCall.CallData[4 : 4+32])

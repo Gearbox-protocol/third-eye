@@ -2,14 +2,18 @@ package curve_price_feed
 
 import (
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
+	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/redstone_price_feed"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -40,6 +44,25 @@ var curvePFLatestRoundDataTimer = map[string]log.TimerFn{}
 func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, _ string, force ...bool) *schemas.PriceFeed {
 	result := results[len(results)-1]
 	if !result.Success {
+		if core.GetBaseChainId(adapter.Client) == 42793 {
+			calls, _ := adapter.GetUnderlyingCalls(blockNum)
+			mcabi := core.GetAbi("MultiCall")
+			calldata, err := mcabi.Pack("tryAggregate", false, calls)
+			log.CheckFatal(err)
+
+			rpc := strings.Split(adapter.Repo.GetCfg().EthProvider, ",")
+			multicallresult := redstone_price_feed.GetRedStoneResult(calldata, blockNum, rpc[0])
+			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", multicallresult)
+			log.CheckFatal(err)
+			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
+			log.Info(price)
+			return &schemas.PriceFeed{
+				RoundId:     0,
+				PriceBI:     (*core.BigInt)(price),
+				Price:       utils.GetFloat64Decimal(price, 8),
+				BlockNumber: blockNum,
+			}
+		}
 		if adapter.GetVersion().LessThan(core.NewVersion(300)) { // failed and
 			// if virtualprice of pool for this oracle is not within lowerBound and upperBound , ignore the price
 			oracleAddr := common.HexToAddress(adapter.GetAddress())
