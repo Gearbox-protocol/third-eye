@@ -112,7 +112,7 @@ func (repo TreasuryRepo) GetRedStonemgr() redstone.RedStoneMgrI {
 func (repo TreasuryRepo) GetRedStonePrice(blockNum int64, oracle schemas.PriceOracleT, token string) *big.Int {
 	if adapter := repo.IsRedStoneAdapter(blockNum, oracle, token); adapter != nil {
 		call, isQueryable := adapter.GetCalls(blockNum)
-		log.Info(adapter.GetPFType(), isQueryable)
+		// log.Info(adapter.GetPFType(), isQueryable)
 		if !isQueryable {
 			return nil
 		}
@@ -136,7 +136,10 @@ func (repo TreasuryRepo) IsRedStoneAdapter(blockNum int64, oracle schemas.PriceO
 		if utils.Contains([]string{ds.RedStonePF, ds.CompositeRedStonePF, ds.PythPF}, adapter.GetDetailsByKey("pfType")) {
 			return aggregated_block_feed.FromAdapter(adapter)
 		}
-		if utils.Contains([]string{ds.CurvePF}, adapter.GetDetailsByKey("pfType")) && len(aggregated_block_feed.FromAdapter(adapter).GetRedStoneUnderlyings()) > 0 {
+		tsbytes, _ := core.CallFuncGetSingleValue(repo.client, "0x19d8ac61", common.HexToAddress(priceFeed.Hex()), blockNum, nil) // lastTimestamp
+		ts := big.NewInt(0).SetBytes(tsbytes)
+		if utils.Contains([]string{ds.CurvePF}, adapter.GetDetailsByKey("pfType")) &&
+			len(aggregated_block_feed.FromAdapter(adapter).GetRedStoneUnderlyings()) > 0 || ts.Cmp(new(big.Int)) > 0 { // for get price in get value in currency
 			return aggregated_block_feed.FromAdapter(adapter)
 		}
 	}

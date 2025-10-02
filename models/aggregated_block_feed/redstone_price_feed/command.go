@@ -30,6 +30,7 @@ func GetRedStoneResult(data []byte, block int64, rpc string) []byte {
 	// Execute the command and capture its standard output.
 	output, err := cmd.Output()
 	if err != nil {
+		log.Info(strings.Join(cmdstr, " "))
 		log.Fatalf("Error executing command: %v", err)
 	}
 
@@ -49,7 +50,6 @@ func GetRedStoneResult(data []byte, block int64, rpc string) []byte {
 	// Extract hex string from the last line (remove "0x" prefix if present)
 	spls := strings.Split(strings.TrimSpace(lastLine), "0x")
 	// Convert hex string to bytes
-	log.Info(spls[1])
 	bytes, err := hex.DecodeString(spls[1])
 	if err != nil {
 		log.Errorf("Error decoding hex string: %v", err)

@@ -55,7 +55,6 @@ func (adapter *CurvePriceFeed) ProcessResult(blockNum int64, results []multicall
 			value, err := core.GetAbi("YearnPriceFeed").Unpack("latestRoundData", multicallresult)
 			log.CheckFatal(err)
 			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
-			log.Info(price)
 			return &schemas.PriceFeed{
 				RoundId:     0,
 				PriceBI:     (*core.BigInt)(price),

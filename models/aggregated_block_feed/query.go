@@ -39,7 +39,7 @@ func (mdl *AQFWrapper) fetchAllPrices(toSinceTill int64) int64 {
 			timeLeft := (time.Since(loopStartTime).Seconds() * float64(toSinceTill-blockNum)) /
 				float64(blockNum-mdl.GetLastSync())
 			timeLeft /= 60
-			log.Infof("Synced %d in %d rounds(%fs): TimeLeft %f mins", blockNum, rounds, time.Since(roundStartTime).Seconds(), timeLeft)
+			log.Infof("Synced %d(inv: %d) in %d rounds(%fs): TimeLeft %f mins", blockNum, mdl.Interval, rounds, time.Since(roundStartTime).Seconds(), timeLeft)
 			roundStartTime = time.Now()
 		}
 		rounds++
