@@ -209,6 +209,22 @@ func (eng *DebtEngine) CalculateDebt() {
 				log.Fatalf("CM(%s):pool is missing stats at %d, so cumulative index of pool is unknown", cmAddr, blockNum)
 			}
 		}
+		for _, session := range sessions {
+			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
+				continue
+			}
+			pool := eng.priceHandler.GetPoolFromCM(session.CreditManager)
+			adapter := eng.repo.GetAdapter(pool)
+			state := adapter.GetUnderlyingState()
+			if state == nil {
+				log.Fatal("State for pool not found for address: ", pool)
+			}
+			//
+			market := state.(*schemas.PoolState).Market
+			if debt := eng.lastDebts[session.ID]; debt != nil {
+				marketToTvl.add(market, 0, 0, 0, debt.TotalValueInUSD)
+			}
+		}
 		//
 		eng.createTvlSnapshots(blockNum, marketToTvl)
 		if len(sessionsUpdated) > 0 {
@@ -260,6 +276,7 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 			AvailableLiquidity: details.totalAvailableLiquidity,
 			CATotalValue:       details.caTotalValue,
 			ExpectedLiq:        details.expectedLiq,
+			CATotalValueCalc:   details.caTotalValueCalculated,
 			Market:             market,
 		}
 		addedMarket = append(addedMarket, market)

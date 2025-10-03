@@ -1,0 +1,1 @@
+alter table tvl_snapshots add ca_total_value_calc double precision default 0;
