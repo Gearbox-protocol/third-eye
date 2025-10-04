@@ -23,7 +23,7 @@ func GetLogs() func() ss {
 	cfg := config.NewConfig()
 	client := ethclient.NewEthClient(cfg)
 	node := pkg.Node{Client: client}
-	addr := "0x3E965117A51186e41c2BB58b729A1e518A715e5F"
+	addr := "0x3E965117A51186e41c2BB58b729A1e518A715e5F" // nikitakle address on mainnet
 	log.Info(core.GetChainId(client))
 	txlogs, err := node.GetLogsForTransfer(0, node.GetLatestBlockNumber(), []common.Address{common.HexToAddress("0xda0002859B2d05F66a753d8241fCDE8623f26F4f")}, []common.Hash{common.HexToHash(addr)})
 	log.CheckFatal(err)
@@ -127,16 +127,18 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 func (mdl *LMRewardsv3) GetLastSync() int64 {
 	lastSync := mdl.SyncAdapter.GetLastSync()
 	mdl.getFarmsAndPoolsv3(lastSync)
-	return lastSync
+	return mdl.SyncAdapter.LastSync
 }
 
 // LMRewardsv2 has fake address so no need for adding .Address value to addrs
 func (mdl *LMRewardsv3) GetAllAddrsForLogs() (addrs []common.Address) {
 	//
 	addrs = append(addrs, common.HexToAddress(mdl.GetAddress())) // if no pools then no addresses were returned previous as a result the lastsync wasn't getting updated for lmrewardsv3
-	for addr, farm := range mdl.farms {
-		addrs = append(addrs, common.HexToAddress(addr))
-		addrs = append(addrs, common.HexToAddress(farm.Pool))
+	for farmAddr := range mdl.farms {
+		addrs = append(addrs, common.HexToAddress(farmAddr))
+	}
+	for pool := range mdl.poolsToSyncedTill {
+		addrs = append(addrs, pool)
 	}
 	return addrs
 }

@@ -207,6 +207,7 @@ func (e *Engine) Sync(syncTill int64) {
 func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGroup) {
 	defer wg.Done()
 	syncFrom := mdl.GetLastSync() + 1
+	// log.Info(syncFrom, mdl)
 	syncTill = utils.Min(mdl.GetBlockToDisableOn(), syncTill)
 	if syncFrom > syncTill {
 		return

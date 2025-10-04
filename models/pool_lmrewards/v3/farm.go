@@ -26,22 +26,20 @@ type Farmv3 struct {
 	//
 	TotalSupply    *core.BigInt `gorm:"column:total_supply"`
 	FarmSyncedTill int64        `gorm:"column:synced_till"`
-	PoolSyncedTill int64        `gorm:"column:pool_synced_till"`
 }
 
-func (farm Farmv3) GetMinSyncedTill() int64 {
-	if farm.FarmSyncedTill < farm.PoolSyncedTill {
-		return farm.FarmSyncedTill
-	}
-	return farm.PoolSyncedTill
+type DieselSync struct {
+	PoolSyncedTill int64  `gorm:"column:pool_synced_till"`
+	Pool           string `gorm:"column:pool;primaryKey"`
+}
+
+func (DieselSync) TableName() string {
+	return "diesel_sync"
 }
 
 func (farm *Farmv3) SetSyncedTill(synedTill int64) {
 	if farm.FarmSyncedTill < synedTill {
 		farm.FarmSyncedTill = synedTill
-	}
-	if farm.PoolSyncedTill < synedTill {
-		farm.PoolSyncedTill = synedTill
 	}
 }
 

@@ -15,17 +15,13 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// lastsync can  only be set in the init method.
 func (mdl *LMRewardsv3) getFarmsAndPoolsv3(blockNum int64) {
 	pools := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum)
 	mdl.SetFarm(pools)
-}
-
-func (mdl *LMRewardsv3) setMinPoolSyncedTill(pool common.Address, syncedTill int64, farm string) {
-	if mdl.poolsToSyncedTill[pool] == 0 {
-		mdl.poolsToSyncedTill[pool] = syncedTill
-	}
-	if mdl.poolsToSyncedTill[pool] != syncedTill {
-		log.Fatal("in farm_v3 the pool_synced_till is different from different farms of that pool", syncedTill, mdl.poolsToSyncedTill[pool], farm)
+	for _, pool := range mdl.Repo.GetAdapterAddressByName(ds.Pool) {
+		mdl.setPoolSyncedTill(common.HexToAddress(pool))
+		mdl.LastSync = utils.Min(mdl.LastSync, mdl.poolsToSyncedTill[common.HexToAddress(pool)])
 	}
 }
 
@@ -56,14 +52,13 @@ func (mdl *LMRewardsv3) SetFarm(pools []dc_wrapper.PoolZapperInfo) {
 					TotalSupply:    (*core.BigInt)(new(big.Int)),
 					Reward:         (*core.BigInt)(new(big.Int)),
 					FarmSyncedTill: mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
-					PoolSyncedTill: mdl.Repo.GetAdapter(pool.Addr.Hex()).GetDiscoveredAt(),
 				}
 				if mdl.farms[farm.Farm] == nil {
 					farm.setRewardToken(mdl.Client)
 					mdl.farms[farm.Farm] = farm
 					// poolAndFarms = append(poolAndFarms, farm)
 					newfarmsForPool = append(newfarmsForPool, common.HexToAddress(farm.Farm))
-					mdl.LastSync = utils.Min(mdl.LastSync, farm.GetMinSyncedTill())
+					mdl.LastSync = utils.Min(mdl.LastSync, farm.FarmSyncedTill)
 				} else {
 					farm = mdl.farms[farm.Farm]
 					oldfarmsForPool = append(oldfarmsForPool, common.HexToAddress(farm.Farm))
@@ -82,12 +77,17 @@ func (mdl *LMRewardsv3) SetFarm(pools []dc_wrapper.PoolZapperInfo) {
 	// mdl.SetUnderlyingState(poolAndFarms)
 }
 
+// from contractRegister, Is that opposed to saying "Tell will be sad to discover that"?
 func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
 	data := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(pool))
 	mdl.SetFarm(data)
-	// if len(data) == 0 {
-	// 	log.Warnf("Pool Zapperinfo not found in DCWrapper for block:%d, pool:%s ", blockNum, pool)
-	// }
+	mdl.setPoolSyncedTill(common.HexToAddress(pool))
+}
+func (mdl *LMRewardsv3) setPoolSyncedTill(pool common.Address) {
+	discoveredAt := mdl.Repo.GetAdapter(pool.Hex()).GetDiscoveredAt()
+	if mdl.poolsToSyncedTill[pool] < discoveredAt {
+		mdl.poolsToSyncedTill[pool] = discoveredAt
+	}
 }
 
 func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
@@ -100,8 +100,11 @@ func (mdl *LMRewardsv3) SetUnderlyingState(obj interface{}) {
 			if mdl.farms[farm.Farm] == nil {
 				farm.setRewardToken(mdl.Client)
 				mdl.farms[farm.Farm] = farm
-				mdl.setMinPoolSyncedTill(common.HexToAddress(farm.Pool), farm.PoolSyncedTill, farm.Farm)
 			}
+		}
+	case []*DieselSync:
+		for _, sync := range ans {
+			mdl.poolsToSyncedTill[common.HexToAddress(sync.Pool)] = sync.PoolSyncedTill
 		}
 	case []*UserLMDetails:
 		users := map[common.Address]map[string]*UserLMDetails{}
@@ -184,5 +187,15 @@ func (mdl *LMRewardsv3) Save(tx *gorm.DB, currentTs uint64) {
 		dataToSave = append(dataToSave, entry)
 	}
 	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(dataToSave, 500).Error
+	log.CheckFatal(err)
+
+	dieselSYncBLock := []DieselSync{}
+	for pool, syncedTill := range mdl.poolsToSyncedTill {
+		dieselSYncBLock = append(dieselSYncBLock, DieselSync{
+			Pool:           pool.Hex(),
+			PoolSyncedTill: syncedTill,
+		})
+	}
+	err = tx.Clauses(clause.OnConflict{UpdateAll: true}).CreateInBatches(dieselSYncBLock, 500).Error
 	log.CheckFatal(err)
 }

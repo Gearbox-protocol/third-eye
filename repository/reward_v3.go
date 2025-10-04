@@ -5,6 +5,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	lmrewardsv3 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v3"
+	v3 "github.com/Gearbox-protocol/third-eye/models/pool_lmrewards/v3"
 	"gorm.io/gorm"
 )
 
@@ -22,6 +23,12 @@ func (repo *Repository) loadLMRewardDetailsv3() {
 	err := repo.db.Raw(`SELECT * FROM farm_v3`).Find(&farms).Error
 	log.CheckFatal(err)
 	adapter.SetUnderlyingState(farms)
+
+	//
+	dieselsync := []*v3.DieselSync{}
+	err = repo.db.Raw(`SELECT * FROM diesel_sync`).Find(&farms).Error
+	log.CheckFatal(err)
+	adapter.SetUnderlyingState(dieselsync)
 	//
 	details := []*lmrewardsv3.UserLMDetails{}
 	err = repo.db.Raw(`SELECT * FROM user_lmdetails_v3`).Find(&details).Error

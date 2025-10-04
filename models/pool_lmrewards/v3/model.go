@@ -113,5 +113,11 @@ func (mdl *LMRewardsv3) AfterSyncHook(syncedTill int64) {
 	for _, farm := range mdl.farms {
 		farm.SetSyncedTill(syncedTill)
 	}
+	for pool, till := range mdl.poolsToSyncedTill {
+		if till < syncedTill {
+			till = syncedTill
+		}
+		mdl.poolsToSyncedTill[pool] = till
+	}
 	mdl.SyncAdapter.AfterSyncHook(syncedTill)
 }
