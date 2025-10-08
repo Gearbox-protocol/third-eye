@@ -2,6 +2,7 @@ package configurator_v3
 
 import (
 	"math/big"
+	"reflect"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
@@ -85,14 +86,19 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 		log.CheckFatal(err)
 		values, err := cmabi.Unpack("fees", data)
 		log.CheckFatal(err)
-		type feesDS struct {
-			FeeInterest                uint16
-			FeeLiquidation             uint16
-			LiquidationDiscount        uint16
-			FeeLiquidationExpired      uint16
-			LiquidationDiscountExpired uint16
+
+		var feesEvent *feesDS
+		log.Info(reflect.TypeOf(values[0]))
+		_feesEvent := getF(values)
+		if _feesEvent == nil {
+			feesEvent = &feesDS{
+				FeeInterest:                uint16(values[0].(uint16)),
+				FeeLiquidation:             uint16(values[1].(uint16)),
+				LiquidationDiscount:        uint16(values[2].(uint16)),
+				FeeLiquidationExpired:      uint16(values[3].(uint16)),
+				LiquidationDiscountExpired: uint16(values[4].(uint16)),
+			}
 		}
-		feesEvent := abi.ConvertType(values, new(feesDS)).(*feesDS)
 		params := &schemas.Parameters{
 			BlockNum:                   blockNum,
 			CreditManager:              creditManager,
@@ -271,3 +277,21 @@ func (mdl *Configuratorv3) OnLog(txLog types.Log) {
 }
 
 // select block_num, token , credit_manager , count(*) from (select * from (select block_num , credit_manager, token  from allowed_tokens ) a union all (select block_num, credit_manager, token from token_ltramp)) b group by b.block_num, b.token, b.credit_manager having count(*)>1;
+
+type feesDS struct {
+	FeeInterest                uint16
+	FeeLiquidation             uint16
+	LiquidationDiscount        uint16
+	FeeLiquidationExpired      uint16
+	LiquidationDiscountExpired uint16
+}
+
+func getF(values []interface{}) *feesDS {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Info(err)
+			// return nil
+		}
+	}()
+	return abi.ConvertType(values, new(feesDS)).(*feesDS)
+}
