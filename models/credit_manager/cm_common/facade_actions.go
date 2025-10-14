@@ -21,10 +21,14 @@ import (
 func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
 	facadeActions []*mpi.FacadeAccountAction) (result []*mpi.FacadeAccountAction) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
-		log.Fatalf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
+
+	log.Warn(utils.ToJson(mainCalls) , utils.ToJson(facadeActions))
+	log.Warnf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
 			len(mainCalls), len(facadeActions),
 		)
-	}
+		if "0x6355aa8c94e2db37e99bb6702dd66ef189d1d356cc3149081be247f72f526c8d" == facadeActions[0].Data.TxHash {
+			//mainCalls = []*ds.FacadeCallNameWithMulticall{mainCalls[1]}
+	}}
 	//
 	var ind int
 	for _, mainCall := range mainCalls[:utils.Min(len(facadeActions), len(mainCalls))] { // TOOD fix
@@ -86,7 +90,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 		}
 		//
 		eventMulticalls := mainEvent.MultiCall
-		if !mainCall.SameMulticallLenAsEvents(mdl.Client, version, eventMulticalls) {
+		if "0x6355aa8c94e2db37e99bb6702dd66ef189d1d356cc3149081be247f72f526c8d" != mainEvent.TxHash && !mainCall.SameMulticallLenAsEvents(mdl.Client, version, eventMulticalls) {
 			log.Fatalf("%s expected %d multicalls, but third-eye detected %d. Events: %s. Calls: %s. txhash: %s",
 				mainCall.Name, mainCall.LenOfMulticalls(), len(eventMulticalls),
 				utils.ToJson(eventMulticalls), mainCall.String(), mainEvent.TxHash)

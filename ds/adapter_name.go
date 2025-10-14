@@ -71,6 +71,8 @@ func FacadeAccountMethodSigToCallName(funcSig string) string {
 	// common v2/v3
 	case "liquidateCreditAccount":
 		return FacadeLiquidateCall
+	case "partiallyLiquidateCreditAccount" :
+		return FacadeLiquidateCall
 	case "closeCreditAccount":
 		return FacadeCloseAccountCall
 	case "multicall":

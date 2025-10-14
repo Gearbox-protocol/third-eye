@@ -133,6 +133,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		multicall_processor.AddManageDebtsToMain(accountOp, debts, mdl.GetUnderlyingToken())
 		mdl.Repo.AddAccountOperation(accountOp)
 		//
+		mdl.poolRepayv3(txLog.TxHash.Hex(), sessionId, borrower)
 	case core.Topic("DecreaseDebt(address,uint256)"):
 		decreaseBorrowEvent, err := mdl.facadeContractv3.ParseDecreaseDebt(txLog)
 		if err != nil {

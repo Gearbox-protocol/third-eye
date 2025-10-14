@@ -3,7 +3,7 @@ package services
 import (
 	"encoding/hex"
 	"reflect"
-
+"strings"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/log"
@@ -48,6 +48,7 @@ func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade co
 				"e3f46b26", // liquidateCreditAccount (v3) // v310, v3
 				"36b2ced3", // closeCreditAccount(creditAccount,to,skipTokenMask,convertToETH,calls)  // v310, v3
 				// "5d91a0e0", // liquidateCreditAccount
+//				"85589e10", //Partial
 				"92beab1d": // openCreditAccount(onBehalfOf,calls,referralCode) // v310, v3
 				// log.Info("v3 main event", call.Input[2:10])
 				event, err := getCreditFacadeMainEvent(call.To, call.Input, creditFacadev3Parser)
@@ -56,6 +57,8 @@ func (ep *ExecuteParser) getMainEvents(call *trace_service.Call, creditFacade co
 				}
 				// log.Info(utils.ToJson(event.GetMulticalls()))
 				mainEvents = append(mainEvents, event)
+			default:
+				log.Warn(call.Input[2:10], "1234")
 			}
 		} else {
 			for _, c := range call.Calls {
@@ -75,8 +78,22 @@ var creditFacadev2Parser, creditFacadev3Parser *abi.ABI
 func init() {
 	creditFacadev2Parser = core.GetAbi("CreditFacade")
 	creditFacadev3Parser = core.GetAbi("CreditFacadev3")
+
+
+
 }
+func getABI(data string) *abi.ABI {
+	abi, err := abi.JSON(strings.NewReader(data))
+	log.CheckFatal(err)
+	return &abi
+}
+
+var pp = "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"creditAccount\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"repaidAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minSeizedAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"address\",\"name\":\"priceFeed\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"internalType\":\"struct PriceUpdate[]\",\"name\":\"priceUpdates\",\"type\":\"tuple[]\"}],\"name\":\"partiallyLiquidateCreditAccount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"seizedAmount\",\"type\":\"uint256\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 func getCreditFacadeMainEvent(contract string, input string, parser *abi.ABI) (*ds.FacadeCallNameWithMulticall, error) {
+	a :=input[2:10] == "85589e10"
+	if a { 
+parser = getABI(pp)
+	}
 	hexData, err := hex.DecodeString(input[2:])
 	if err != nil {
 		return nil, err
@@ -95,7 +112,7 @@ func getCreditFacadeMainEvent(contract string, input string, parser *abi.ABI) (*
 		Target   common.Address `json:"target"`
 		CallData []uint8        `json:"callData"`
 	})
-	if !ok {
+	if !ok && !a {
 		log.Fatal("calls type is different the creditFacade multicall: ", reflect.TypeOf(data["calls"]))
 	}
 	multicalls := []multicall.Multicall2Call{}

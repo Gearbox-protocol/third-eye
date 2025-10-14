@@ -20,6 +20,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveV1Adapter"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/creditFacadev3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/curveuint256"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/daiUSDs"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/fluidDexT1"
@@ -132,6 +133,7 @@ var abiJSONs = []string{
 	activeSwapYTv3.ActiveSwapYTv3ABI,
 	activeMiscv3.ActiveMiscv3ABI,
 	balancerv3.Balancerv3ABI,
+creditFacadev3.CreditFacadev3ABI,
 	//
 	fluidDexT1.FluidDexT1ABI,
 }
