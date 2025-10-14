@@ -148,10 +148,7 @@ func (e *Engine) syncLoop(syncedTill, latestBlockNum int64) int64 {
 func (e *Engine) SyncAndFlush(syncTill int64) {
 	e.Sync(syncTill)
 	e.repo.Flush(syncTill)
-	e.debtEng.CalculateDebtAndClear(syncTill, schemas.LastSync{
-		Debt: 0,
-		Tvl:  0,
-	})
+	e.debtEng.CalculateDebtAndClear(syncTill)
 	if syncTill > e.syncedBlock.Load().(int64) {
 		e.syncedBlock.Store(syncTill)
 	}
@@ -219,6 +216,9 @@ func (e *Engine) SyncModel(mdl ds.SyncAdapterI, syncTill int64, wg *sync.WaitGro
 		return
 	}
 
+	if mdl.GetName() == ds.LMRewardsv3 {
+		log.Info("LMRewardsv3 syncing from", syncFrom, "to", syncTill)
+	}
 	txLogs, err := e.GetLogs(syncFrom, syncTill, addrsToFetchLogs, mdl.Topics())
 	log.CheckFatal(err)
 	log.Infof("Sync %s(%s)[addrs: %d] from %d to %d: no: %d", mdl.GetName(), mdl.GetAddress(), len(addrsToFetchLogs), syncFrom, syncTill, len(txLogs))

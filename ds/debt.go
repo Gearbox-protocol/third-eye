@@ -14,7 +14,7 @@ import (
 type DebtEngineI interface {
 	Clear()
 	ProcessBackLogs()
-	CalculateDebtAndClear(to int64, lastSync schemas.LastSync)
+	CalculateDebtAndClear(to int64)
 	CalCurrentDebts(to int64)
 	CalculateDebt()
 	GetDebts() core.Json

@@ -26,7 +26,7 @@ func (repo *Repository) loadLMRewardDetailsv3() {
 
 	//
 	dieselsync := []*v3.DieselSync{}
-	err = repo.db.Raw(`SELECT * FROM diesel_sync`).Find(&farms).Error
+	err = repo.db.Raw(`SELECT * FROM diesel_sync`).Find(&dieselsync).Error
 	log.CheckFatal(err)
 	adapter.SetUnderlyingState(dieselsync)
 	//

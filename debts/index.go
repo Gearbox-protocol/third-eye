@@ -125,15 +125,17 @@ func (eng *DebtEngine) processBlocksInBatch(from, to int64, lastSync schemas.Las
 	}
 	eng.repo.LoadBlocks(from, to)
 	if len(eng.repo.GetBlocks()) > 0 {
-		eng.CalculateDebtAndClear(to, lastSync)
+		eng.calculateDebtAndClear(to, lastSync)
 	}
 }
 
 // called for the engine/index.go and the debt engine
-func (eng *DebtEngine) CalculateDebtAndClear(to int64, lastSync schemas.LastSync) {
+func (eng *DebtEngine) CalculateDebtAndClear(to int64) {
+	eng.calculateDebtAndClear(to, eng.repo.LoadLastDebtSync())
+}
+func (eng *DebtEngine) calculateDebtAndClear(to int64, lastSync schemas.LastSync) {
 	if !eng.config.DisableDebtEngine {
 		eng.CalculateDebt()
-		//
 		tx := eng.db.Begin()
 		eng.flushDebt(to, tx, lastSync)
 		eng.flushTvl(to, tx, lastSync)
