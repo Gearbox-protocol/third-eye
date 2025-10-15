@@ -54,6 +54,9 @@ func (mdl *CommonCMAdapter) processDirectTransfersOnBlock(blockNum int64, sessio
 		txsList := schemas.TokenTransferList(txs)
 		sort.Sort(txsList)
 		for _, tx := range txsList {
+			if tx.Token == "0x9D65fF81a3c488d585bBfb0Bfe3c7707c7917f54" {
+				continue
+			}
 			if session.Account == tx.From {
 				// USDT in transferFrom emits event even if the amount is zero
 				if tx.Amount.Convert().Cmp(big.NewInt(0)) == 0 {

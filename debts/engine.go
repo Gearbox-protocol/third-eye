@@ -246,8 +246,8 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 		//
 		underlyingToken := state.(*schemas.PoolState).UnderlyingToken
 		//
-		latestOracle, version, err := eng.repo.GetActivePriceOracleByBlockNum(blockNum)
-		log.CheckFatal(err)
+		// latestOracle, version, err := eng.repo.GetActivePriceOracleByBlockNum(blockNum)
+		// log.CheckFatal(err)
 		//
 		fn := func(amount *core.BigInt) float64 {
 			if amount.String() == "0" {
@@ -255,10 +255,10 @@ func (eng *DebtEngine) createTvlSnapshots(blockNum int64, marketToTvl MarketToTv
 			}
 			return utils.GetFloat64Decimal(
 				eng.GetPriceForTvl(
-					latestOracle,
+					schemas.PriceOracleT(""),
 					state.(*schemas.PoolState).PriceOracle,
 					underlyingToken,
-					amount.Convert(), version), 8)
+					amount.Convert(), state.(*schemas.PoolState).Version), 8)
 		}
 		availLiq := fn(entry.AvailableLiquidityBI)
 		expectedLiqInUSD := fn(entry.ExpectedLiqBI)
@@ -546,7 +546,7 @@ func (eng *DebtEngine) CalculateSessionDebt(blockNum int64, session *schemas.Cre
 }
 
 // helper methods
-func (eng *DebtEngine) GetPriceForTvl(_po schemas.PriceOracleT, poolPriceOracleT schemas.PriceOracleT, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
+func (eng *DebtEngine) GetPriceForTvl(_ schemas.PriceOracleT, poolPriceOracleT schemas.PriceOracleT, tokenAddr string, amount *big.Int, version core.VersionType) *big.Int {
 	priceOracle := poolPriceOracleT
 	tokenPrice := eng.priceHandler.GetTokenLastPF(priceOracle, tokenAddr, version)
 	tokenDecimals := eng.repo.GetToken(tokenAddr).Decimals

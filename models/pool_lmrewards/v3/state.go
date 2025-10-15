@@ -20,7 +20,8 @@ func (mdl *LMRewardsv3) getFarmsAndPoolsv3(blockNum int64) {
 	pools := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum)
 	mdl.SetFarm(pools)
 	for _, pool := range mdl.Repo.GetAdapterAddressByName(ds.Pool) {
-		mdl.setPoolSyncedTill(common.HexToAddress(pool))
+		discoveredAt := mdl.Repo.GetAdapter(pool).GetDiscoveredAt()
+		mdl.setPoolSyncedTill(common.HexToAddress(pool), discoveredAt)
 		mdl.LastSync = utils.Min(mdl.LastSync, mdl.poolsToSyncedTill[common.HexToAddress(pool)])
 	}
 }
@@ -78,13 +79,13 @@ func (mdl *LMRewardsv3) SetFarm(pools []dc_wrapper.PoolZapperInfo) {
 }
 
 // from contractRegister, Is that opposed to saying "Tell will be sad to discover that"?
-func (mdl *LMRewardsv3) AddPoolv3(blockNum int64, pool string) {
-	data := mdl.Repo.GetDCWrapper().GetZapperInfo(blockNum, common.HexToAddress(pool))
+// so use that blocknumber
+func (mdl *LMRewardsv3) AddPoolv3(discoveredAt int64, pool string) {
+	data := mdl.Repo.GetDCWrapper().GetZapperInfo(discoveredAt, common.HexToAddress(pool))
 	mdl.SetFarm(data)
-	mdl.setPoolSyncedTill(common.HexToAddress(pool))
+	mdl.setPoolSyncedTill(common.HexToAddress(pool), discoveredAt)
 }
-func (mdl *LMRewardsv3) setPoolSyncedTill(pool common.Address) {
-	discoveredAt := mdl.Repo.GetAdapter(pool.Hex()).GetDiscoveredAt()
+func (mdl *LMRewardsv3) setPoolSyncedTill(pool common.Address, discoveredAt int64) {
 	if mdl.poolsToSyncedTill[pool] < discoveredAt {
 		mdl.poolsToSyncedTill[pool] = discoveredAt
 	}
