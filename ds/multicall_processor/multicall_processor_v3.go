@@ -14,7 +14,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type MultiCallProcessorv3 struct {
+type MultiCallProcessorv3Unit struct {
 	// borrower            string
 	running            bool // is the multicall running
 	nonMultiCallEvents []*schemas.AccountOperation
@@ -23,7 +23,7 @@ type MultiCallProcessorv3 struct {
 }
 
 // edge case it adds non multicall addCollateral for open credit account
-func (p *MultiCallProcessorv3) AddMulticallEvent(operation *schemas.AccountOperation) {
+func (p *MultiCallProcessorv3Unit) AddMulticallEvent(operation *schemas.AccountOperation) {
 	lastMainAction := p.lastMainAction()
 	//
 	if !p.running { // non multicall
@@ -33,7 +33,7 @@ func (p *MultiCallProcessorv3) AddMulticallEvent(operation *schemas.AccountOpera
 	}
 }
 
-func (p *MultiCallProcessorv3) AddOpenEvent(openEvent *schemas.AccountOperation) {
+func (p *MultiCallProcessorv3Unit) AddOpenEvent(openEvent *schemas.AccountOperation) {
 	if p.noOfOpens > 0 {
 		log.Fatal("2 opencreditaccount event are in same txhash", utils.ToJson(p.facadeActions), utils.ToJson(openEvent))
 	}
@@ -44,14 +44,14 @@ func (p *MultiCallProcessorv3) AddOpenEvent(openEvent *schemas.AccountOperation)
 	p.noOfOpens++
 }
 
-func (p *MultiCallProcessorv3) lastMainAction() *FacadeAccountAction {
+func (p *MultiCallProcessorv3Unit) lastMainAction() *FacadeAccountAction {
 	if len(p.facadeActions) > 0 {
 		return p.facadeActions[len(p.facadeActions)-1]
 	}
 	return nil
 }
 
-func (p *MultiCallProcessorv3) Start(txHash string, startEvent *schemas.AccountOperation) {
+func (p *MultiCallProcessorv3Unit) Start(txHash string, startEvent *schemas.AccountOperation) {
 	lastMainAction := p.lastMainAction()
 	if p.running {
 		log.Fatalf("Previously started multicall(%s) is not ended for txHash(%s)",
@@ -66,14 +66,14 @@ func (p *MultiCallProcessorv3) Start(txHash string, startEvent *schemas.AccountO
 	p.running = true
 }
 
-func (p *MultiCallProcessorv3) AddCloseEvent(event *schemas.AccountOperation) {
+func (p *MultiCallProcessorv3Unit) AddCloseEvent(event *schemas.AccountOperation) {
 	p.facadeActions = append(p.facadeActions, &FacadeAccountAction{
 		Data:  event,
 		ended: true,
 		Type:  GBFacadeCloseEvent,
 	})
 }
-func (p *MultiCallProcessorv3) AddLiquidateEvent(event *schemas.AccountOperation) {
+func (p *MultiCallProcessorv3Unit) AddLiquidateEvent(event *schemas.AccountOperation) {
 	p.facadeActions = append(p.facadeActions, &FacadeAccountAction{
 		Data:  event,
 		Type:  GBFacadev3LiqUpdateEvent,
@@ -81,7 +81,7 @@ func (p *MultiCallProcessorv3) AddLiquidateEvent(event *schemas.AccountOperation
 	})
 }
 
-func (p *MultiCallProcessorv3) End(logId uint, debts []pool_v3.ManageDebt, underlying string) {
+func (p *MultiCallProcessorv3Unit) End(logId uint, debts []pool_v3.ManageDebt, underlying string) {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
 	}
@@ -133,7 +133,7 @@ func AddManageDebtsToMain(lastMainAction *schemas.AccountOperation, debts []pool
 // - open call without multicalls
 // open call have the multicalls in them
 // liquidated, closed and directly multicalls are separated entries
-func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
+func (p *MultiCallProcessorv3Unit) popMainActions(txHash string, quotas []*ds.UpdateQuotaEvent, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
 	defer func() { p.facadeActions = nil }()
 
 	p.noOfOpens = 0
@@ -142,7 +142,6 @@ func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuot
 	}
 
 	{
-		quotas := mgr.GetUpdateQuotaEventForAccount(common.HexToHash(txHash))
 		// update quota with session based on accountquotamgr
 		for i := len(facadeActions) - 1; i >= 0; i-- {
 			facade := facadeActions[i]
@@ -164,7 +163,7 @@ func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuot
 	return
 }
 
-func (p *MultiCallProcessorv3) PopNonMulticallEvents() []*schemas.AccountOperation {
+func (p *MultiCallProcessorv3Unit) PopNonMulticallEvents() []*schemas.AccountOperation {
 	calls := p.nonMultiCallEvents
 	p.nonMultiCallEvents = nil
 	return calls
@@ -190,4 +189,106 @@ func addQuotasToFacade(action *FacadeAccountAction, quotaEvents []*ds.UpdateQuot
 	sort.Slice(action.Data.MultiCall, func(i, j int) bool {
 		return action.Data.MultiCall[i].LogId < action.Data.MultiCall[j].LogId
 	})
+}
+
+type MultiCallProcessorv3 struct {
+	units               map[string]*MultiCallProcessorv3Unit
+	facadeAddrToSession map[string]string
+}
+
+func NewMultiCallProcessorv3() *MultiCallProcessorv3 {
+	return &MultiCallProcessorv3{
+		units:               make(map[string]*MultiCallProcessorv3Unit),
+		facadeAddrToSession: map[string]string{},
+	}
+}
+
+func (p *MultiCallProcessorv3) check(operation *schemas.AccountOperation) {
+	if operation.SessionId == "" {
+		log.Fatal("Multicall event without sessionid", utils.ToJson(operation))
+	}
+}
+func (p *MultiCallProcessorv3) AddMulticallEvent(operation *schemas.AccountOperation) {
+	p.check(operation)
+	unit, exists := p.units[operation.SessionId]
+	if !exists {
+		unit = &MultiCallProcessorv3Unit{}
+		p.units[operation.SessionId] = unit
+	}
+	unit.AddMulticallEvent(operation)
+}
+func (p *MultiCallProcessorv3) Start(txHash string, startEvent *schemas.AccountOperation, facadeAddr string) {
+	p.check(startEvent)
+	unit, exists := p.units[startEvent.SessionId]
+	if !exists {
+		unit = &MultiCallProcessorv3Unit{}
+		p.units[startEvent.SessionId] = unit
+	}
+	if _, ok := p.facadeAddrToSession[facadeAddr]; ok {
+		log.Fatal("Two multicalls started for same facade in same txhash without ending previous one", facadeAddr, p.facadeAddrToSession[facadeAddr], startEvent.SessionId, txHash)
+	} else {
+		p.facadeAddrToSession[facadeAddr] = startEvent.SessionId
+	}
+	unit.Start(txHash, startEvent)
+}
+func (p *MultiCallProcessorv3) AddOpenEvent(openEvent *schemas.AccountOperation) {
+	p.check(openEvent)
+	unit, exists := p.units[openEvent.SessionId]
+	if !exists {
+		unit = &MultiCallProcessorv3Unit{}
+		p.units[openEvent.SessionId] = unit
+	}
+	unit.AddOpenEvent(openEvent)
+}
+func (p *MultiCallProcessorv3) AddCloseEvent(event *schemas.AccountOperation) {
+	p.check(event)
+	unit, exists := p.units[event.SessionId]
+	if !exists {
+		unit = &MultiCallProcessorv3Unit{}
+		p.units[event.SessionId] = unit
+	}
+	unit.AddCloseEvent(event)
+}
+func (p *MultiCallProcessorv3) AddLiquidateEvent(event *schemas.AccountOperation) {
+	p.check(event)
+	unit, exists := p.units[event.SessionId]
+	if !exists {
+		unit = &MultiCallProcessorv3Unit{}
+		p.units[event.SessionId] = unit
+	}
+	unit.AddLiquidateEvent(event)
+}
+func (p *MultiCallProcessorv3) PopNonMulticallEvents() []*schemas.AccountOperation {
+	var calls []*schemas.AccountOperation
+	for _, unit := range p.units {
+		calls = append(calls, unit.PopNonMulticallEvents()...)
+	}
+	return calls
+}
+func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
+	quotas := mgr.GetUpdateQuotaEventForAccount(common.HexToHash(txHash))
+	for sessionId, unit := range p.units {
+		facade, openWithoutMC := unit.popMainActions(txHash, quotas[common.HexToAddress(strings.Split(sessionId, "_")[0])], mgr)
+		facadeActions = append(facadeActions, facade...)
+		openEventWithoutMulticall = append(openEventWithoutMulticall, openWithoutMC...)
+	}
+	p.units = make(map[string]*MultiCallProcessorv3Unit)
+	if len(p.facadeAddrToSession) != 0 {
+		log.Fatal("facadeAddrToSession not empty after popping main actions", utils.ToJson(p.facadeAddrToSession))
+	}
+	return
+
+}
+func (p *MultiCallProcessorv3) End(logId uint, debts []pool_v3.ManageDebt, underlyingtoken string, facadeAddr string) {
+	sessionId, ok := p.facadeAddrToSession[facadeAddr]
+	if !ok {
+		log.Fatal("Multicall end called though no multicall was started for facadeAddr", facadeAddr)
+	}
+	delete(p.facadeAddrToSession, facadeAddr)
+	//
+	unit, exists := p.units[sessionId]
+	if !exists {
+		log.Fatal("Multicall end called though no multicall was started for sessionid", sessionId)
+	}
+	unit.End(logId, debts, underlyingtoken)
 }

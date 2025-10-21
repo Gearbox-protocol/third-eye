@@ -41,13 +41,17 @@ func NewAccountQuotaMgr(client core.ClientI) *AccountQuotaMgr {
 	}
 }
 
-func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(txHash common.Hash) []*UpdateQuotaEvent {
+func (mdl *AccountQuotaMgr) GetUpdateQuotaEventForAccount(txHash common.Hash) map[common.Address][]*UpdateQuotaEvent {
 	mdl.mu.Lock()
 	defer mdl.mu.Unlock()
 	//
 	ans := mdl.events[txHash.Hex()]
 	delete(mdl.events, txHash.Hex())
-	return ans
+	accountToQuotas := map[common.Address][]*UpdateQuotaEvent{}
+	for _, entry := range ans {
+		accountToQuotas[entry.CreditAccount] = append(accountToQuotas[entry.CreditAccount], entry)
+	}
+	return accountToQuotas
 }
 
 func (mdl *AccountQuotaMgr) getUpdateQuotaEvent(txLog types.Log) *UpdateQuotaEvent {

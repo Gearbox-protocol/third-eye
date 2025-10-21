@@ -91,11 +91,11 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			LogId:       txLog.Index,
 			Args:        &core.Json{},
 			Action:      "StartMultiCall(address,address)",
-		})
+		}, mdl.Address)
 	case core.Topic("FinishMultiCall()"):
 		poolv3 := mdl.Repo.GetAdapter(mdl.State.PoolAddress).(*pool_v3.Poolv3)
 		debts := poolv3.GetDebt(txLog.TxHash, mdl.Address, txLog.Index)
-		mdl.MulticallMgr.End(txLog.Index, debts, mdl.GetUnderlyingToken())
+		mdl.MulticallMgr.End(txLog.Index, debts, mdl.GetUnderlyingToken(), mdl.Address)
 	case core.Topic("IncreaseDebt(address,uint256)"): // works for v300 for V3 10: The increased or decreased debt event is not emitted. We can check that using the debt that is emitted from the pool. In the finish_multicall we are emitting that call. So this function is just above you.
 		increaseBorrowEvent, err := mdl.facadeContractv3.ParseIncreaseDebt(txLog)
 		if err != nil {

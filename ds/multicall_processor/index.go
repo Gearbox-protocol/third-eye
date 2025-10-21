@@ -45,11 +45,11 @@ func (v *FacadeAccountAction) SetMulticalls(ops []*schemas.AccountOperation) {
 
 type MulticallProcessorI interface {
 	AddMulticallEvent(operation *schemas.AccountOperation)
-	Start(txHash string, startEvent *schemas.AccountOperation)
+	Start(txHash string, startEvent *schemas.AccountOperation, _ string)
 	AddOpenEvent(openEvent *schemas.AccountOperation)
 	AddCloseEvent(event *schemas.AccountOperation)
 	AddLiquidateEvent(event *schemas.AccountOperation)
 	PopNonMulticallEvents() []*schemas.AccountOperation
 	PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction)
-	End(logId uint, debts []pool_v3.ManageDebt, _ string)
+	End(logId uint, debts []pool_v3.ManageDebt, _, _ string)
 }

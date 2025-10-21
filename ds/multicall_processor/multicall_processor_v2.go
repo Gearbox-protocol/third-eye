@@ -58,7 +58,7 @@ func (p *MultiCallProcessorv2) lastMainAction() *FacadeAccountAction {
 	return nil
 }
 
-func (p *MultiCallProcessorv2) Start(txHash string, startEvent *schemas.AccountOperation) {
+func (p *MultiCallProcessorv2) Start(txHash string, startEvent *schemas.AccountOperation, _ string) {
 	lastMainAction := p.lastMainAction()
 	if p.running {
 		log.Fatalf("Previously started multicall(%s) is not ended for txHash(%s)",
@@ -86,7 +86,7 @@ func (p *MultiCallProcessorv2) AddLiquidateEvent(event *schemas.AccountOperation
 	})
 }
 
-func (p *MultiCallProcessorv2) End(logId uint, _ []pool_v3.ManageDebt, _ string) {
+func (p *MultiCallProcessorv2) End(logId uint, _ []pool_v3.ManageDebt, _ string, _ string) {
 	if !p.running {
 		log.Fatal("Multicall end called though multicall not running")
 	}

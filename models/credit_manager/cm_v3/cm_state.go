@@ -25,7 +25,7 @@ type Cmv3State struct {
 
 func NewCmv3State(adapter *ds.SyncAdapter) Cmv3State {
 	return Cmv3State{
-		CommonCMAdapter:  cm_common.NewCommonCMAdapter(adapter, &mp.MultiCallProcessorv3{}),
+		CommonCMAdapter:  cm_common.NewCommonCMAdapter(adapter, mp.NewMultiCallProcessorv3()),
 		allowedProtocols: map[string]bool{},
 		whosAccount:      map[string]AccountOwner{},
 	}

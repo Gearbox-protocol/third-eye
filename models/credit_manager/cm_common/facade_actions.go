@@ -22,13 +22,14 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls [
 	facadeActions []*mpi.FacadeAccountAction) (result []*mpi.FacadeAccountAction) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
 
-	log.Warn(utils.ToJson(mainCalls) , utils.ToJson(facadeActions))
-	log.Warnf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
+		log.Warn(utils.ToJson(mainCalls), utils.ToJson(facadeActions))
+		log.Warnf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
 			len(mainCalls), len(facadeActions),
 		)
 		if "0x6355aa8c94e2db37e99bb6702dd66ef189d1d356cc3149081be247f72f526c8d" == facadeActions[0].Data.TxHash {
 			//mainCalls = []*ds.FacadeCallNameWithMulticall{mainCalls[1]}
-	}}
+		}
+	}
 	//
 	var ind int
 	for _, mainCall := range mainCalls[:utils.Min(len(facadeActions), len(mainCalls))] { // TOOD fix
@@ -75,7 +76,6 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 	facadeActions []*mpi.FacadeAccountAction,
 	mainCalls []*ds.FacadeCallNameWithMulticall,
 	nonMultiCallExecuteEvents []ds.ExecuteParams) {
-
 	executeParams := []ds.ExecuteParams{} // non multicall and multicall execute orders for a tx to be compared with call trace
 	for ind, _mainAction := range facadeActions {
 		mainEvent := _mainAction.Data

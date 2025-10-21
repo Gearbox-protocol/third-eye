@@ -5,7 +5,7 @@ go 1.23
 // toolchain go1.23.2
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20251015055252-92dd2d7b6903
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20251021075349-8001f420e823
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.6.0
