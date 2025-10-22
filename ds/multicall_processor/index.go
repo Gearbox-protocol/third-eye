@@ -4,6 +4,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 const (
@@ -50,6 +51,7 @@ type MulticallProcessorI interface {
 	AddCloseEvent(event *schemas.AccountOperation)
 	AddLiquidateEvent(event *schemas.AccountOperation)
 	PopNonMulticallEvents() []*schemas.AccountOperation
-	PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction)
+	PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction, _ common.Address)
 	End(logId uint, debts []pool_v3.ManageDebt, _, _ string)
+	SetPartialLiq(account common.Address)
 }

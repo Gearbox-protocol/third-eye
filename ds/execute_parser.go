@@ -42,6 +42,9 @@ func NewFacadeCallNameWithMulticall(facade, name string, multicalls []multicall.
 		facade:     common.HexToAddress(facade).Hex(),
 	}
 }
+func (obj *FacadeCallNameWithMulticall) AddMulticall(calls []multicall.Multicall2Call) {
+	obj.multiCalls = append(obj.multiCalls, calls...)
+}
 
 func (obj FacadeCallNameWithMulticall) String() string {
 	str := ""

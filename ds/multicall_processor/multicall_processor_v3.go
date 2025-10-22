@@ -194,6 +194,7 @@ func addQuotasToFacade(action *FacadeAccountAction, quotaEvents []*ds.UpdateQuot
 type MultiCallProcessorv3 struct {
 	units               map[string]*MultiCallProcessorv3Unit
 	facadeAddrToSession map[string]string
+	PartialLiqAccount   common.Address
 }
 
 func NewMultiCallProcessorv3() *MultiCallProcessorv3 {
@@ -265,7 +266,7 @@ func (p *MultiCallProcessorv3) PopNonMulticallEvents() []*schemas.AccountOperati
 	}
 	return calls
 }
-func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
+func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction, partialLiqAccount common.Address) {
 	quotas := mgr.GetUpdateQuotaEventForAccount(common.HexToHash(txHash))
 	for sessionId, unit := range p.units {
 		facade, openWithoutMC := unit.popMainActions(txHash, quotas[common.HexToAddress(strings.Split(sessionId, "_")[0])], mgr)
@@ -276,6 +277,8 @@ func (p *MultiCallProcessorv3) PopMainActions(txHash string, mgr *ds.AccountQuot
 	if len(p.facadeAddrToSession) != 0 {
 		log.Fatal("facadeAddrToSession not empty after popping main actions", utils.ToJson(p.facadeAddrToSession))
 	}
+	partialLiqAccount = p.PartialLiqAccount
+	p.PartialLiqAccount = core.NULL_ADDR
 	return
 
 }
@@ -291,4 +294,8 @@ func (p *MultiCallProcessorv3) End(logId uint, debts []pool_v3.ManageDebt, under
 		log.Fatal("Multicall end called though no multicall was started for sessionid", sessionId)
 	}
 	unit.End(logId, debts, underlyingtoken)
+}
+
+func (p *MultiCallProcessorv3) SetPartialLiq(account common.Address) {
+	p.PartialLiqAccount = account
 }

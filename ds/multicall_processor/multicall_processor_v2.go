@@ -6,6 +6,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/pool/pool_v3"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type MultiCallProcessorv2 struct {
@@ -102,7 +103,7 @@ func (p *MultiCallProcessorv2) End(logId uint, _ []pool_v3.ManageDebt, _ string,
 // - open call without multicalls
 // - open call have the multicalls in them
 // liquidated, closed and directly multicalls are separated entries
-func (p *MultiCallProcessorv2) PopMainActions(_ string, _ *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction) {
+func (p *MultiCallProcessorv2) PopMainActions(_ string, _ *ds.AccountQuotaMgr) (facadeActions, openEventWithoutMulticall []*FacadeAccountAction, _ common.Address) {
 	defer func() { p.facadeActions = nil }()
 	p.noOfOpens = 0
 	for _, entry := range p.facadeActions {
@@ -120,4 +121,6 @@ func (p *MultiCallProcessorv2) PopNonMulticallEvents() []*schemas.AccountOperati
 	calls := p.nonMultiCallEvents
 	p.nonMultiCallEvents = nil
 	return calls
+}
+func (p *MultiCallProcessorv2) SetPartialLiq(account common.Address) {
 }

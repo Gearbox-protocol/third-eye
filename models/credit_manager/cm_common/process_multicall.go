@@ -24,7 +24,7 @@ import (
 func (mdl CommonCMAdapter) ProcessRemainingMultiCalls(version core.VersionType, lastTxHash string, nonMultiCallExecuteEvents []ds.ExecuteParams) {
 
 	accountQuotaMgr := mdl.Repo.GetAccountQuotaMgr()
-	facadeActions, openEventWithoutMulticall := mdl.MulticallMgr.PopMainActions(lastTxHash, accountQuotaMgr)
+	facadeActions, openEventWithoutMulticall, partialLiqAccount := mdl.MulticallMgr.PopMainActions(lastTxHash, accountQuotaMgr)
 
 	// only for v2/v2.10
 	for _, entry := range openEventWithoutMulticall {
@@ -40,7 +40,7 @@ func (mdl CommonCMAdapter) ProcessRemainingMultiCalls(version core.VersionType, 
 	}
 	if len(facadeActions) > 0 { // account operation will only exist if there are one or more facade actions
 		mainCalls := mdl.Repo.GetExecuteParser().GetMainCalls(lastTxHash, mdl.GetCreditFacadeAddr())
-		fixedFacadeActions := mdl.fixFacadeActionStructureViaTenderlyCalls(mainCalls, facadeActions)
+		fixedFacadeActions := mdl.fixFacadeActionStructureViaTenderlyCalls(mainCalls, facadeActions, partialLiqAccount)
 		mdl.validateAndSaveFacadeActions(version, lastTxHash, fixedFacadeActions, mainCalls, nonMultiCallExecuteEvents)
 	} else if len(nonMultiCallExecuteEvents) > 0 {
 		mdl.SaveExecuteEvents(lastTxHash, nonMultiCallExecuteEvents)

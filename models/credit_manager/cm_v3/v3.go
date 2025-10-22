@@ -128,6 +128,7 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 			},
 			Transfers: &core.Transfers{},
 		}
+		mdl.MulticallMgr.SetPartialLiq(creditAccount)
 		poolv3 := mdl.Repo.GetAdapter(mdl.State.PoolAddress).(*pool_v3.Poolv3)
 		debts := poolv3.GetDebt(txLog.TxHash, mdl.Address, txLog.Index)
 		multicall_processor.AddManageDebtsToMain(accountOp, debts, mdl.GetUnderlyingToken())

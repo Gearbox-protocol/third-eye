@@ -19,15 +19,18 @@ import (
 // this function adds multicall to mainFacadeActions
 // if that is the correct structure of operation
 func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
-	facadeActions []*mpi.FacadeAccountAction) (result []*mpi.FacadeAccountAction) { // facadeEvents from rpc, mainCalls from tenderly
+	facadeActions []*mpi.FacadeAccountAction, partialLiqAccount common.Address) (result []*mpi.FacadeAccountAction) { // facadeEvents from rpc, mainCalls from tenderly
 	if len(mainCalls) > len(facadeActions) {
-
-		log.Warn(utils.ToJson(mainCalls), utils.ToJson(facadeActions))
 		log.Warnf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
 			len(mainCalls), len(facadeActions),
 		)
-		if "0x6355aa8c94e2db37e99bb6702dd66ef189d1d356cc3149081be247f72f526c8d" == facadeActions[0].Data.TxHash {
-			//mainCalls = []*ds.FacadeCallNameWithMulticall{mainCalls[1]}
+		if len(facadeActions) == 1 && len(mainCalls) == 2 && partialLiqAccount != core.NULL_ADDR { // in the partial declaration in the open call, there is no instruction done, and there is another separate multi-call where all the instructions are done.
+			if len(mainCalls[0].GetMulticalls()) != 0 || mainCalls[0].Name != ds.FacadeOpenMulticallCall {
+				log.Fatal("first main call should be open with multicall and no multicalls inside")
+			}
+			mainCalls[0].AddMulticall(mainCalls[1].GetMulticalls())
+			log.Warnf(" with partial liquidation for account %s, combining open with multicall", partialLiqAccount.Hex())
+			mainCalls = mainCalls[:1] // skip the first main call which is open with partial liquidation
 		}
 	}
 	//
