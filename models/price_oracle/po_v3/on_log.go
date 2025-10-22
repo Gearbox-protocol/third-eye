@@ -89,6 +89,9 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 				}
 			}
 		}
+		if oracle == core.NULL_ADDR.Hex() { // https://etherscan.io/tx/0x5d5589c1de19c3d20fe4c07f9700e405c55cad4a03d2f03405004bd373e308ee#eventlog
+			return
+		}
 		mdl.Repo.AddDAOOperation(&schemas.DAOOperation{
 			BlockNumber: blockNum,
 			LogID:       txLog.Index,
@@ -104,7 +107,7 @@ func (mdl *PriceOracle) OnLog(txLog types.Log) {
 
 		priceFeedType, underlyingFeeds, err := mdl.checkPriceFeedContract(blockNum, oracle, token)
 		if err != nil {
-			log.Fatalf("Oracle %s, err: %s, blockNum %d", oracle, err, blockNum)
+			log.Fatalf("Oracle %s, token:%s err: %s, blockNum %d. txHash: %s", oracle, token, err, blockNum, txLog.TxHash)
 		}
 		if priceFeedType == ds.RedStonePF {
 			// pfs := core.GetRedStonePFByChainId(core.GetChainId(mdl.Client))
