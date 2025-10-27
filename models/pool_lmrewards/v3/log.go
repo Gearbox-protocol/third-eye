@@ -4,8 +4,10 @@ import (
 	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/core"
+	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/config"
 	"github.com/Gearbox-protocol/third-eye/ethclient"
 	"github.com/ethereum/go-ethereum/common"
@@ -102,6 +104,15 @@ func (mdl LMRewardsv3) OnLog(txLog types.Log) {
 			if lastSync := mdl.poolsToSyncedTill[poolAddr]; lastSync >= blockNum {
 				return
 			}
+			tokenDetails := mdl.Repo.GetToken(poolAddr.Hex())
+			mdl.Repo.AddDieselTransfer(&schemas.DieselTransfer{
+				LogId:       int64(txLog.Index),
+				BlockNum:    int64(txLog.BlockNumber),
+				TokenSymbol: tokenDetails.Symbol,
+				From:        from,
+				To:          to,
+				Amount:      utils.GetFloat64Decimal(amount, tokenDetails.Decimals),
+			})
 			mdl.updateDieselBalances(txLog, poolAddr, from, to, amount)
 			// if to == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" || from == "0x3E965117A51186e41c2BB58b729A1e518A715e5F" {
 			// 	current :=ss{
