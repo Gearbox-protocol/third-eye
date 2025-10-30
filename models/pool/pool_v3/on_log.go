@@ -49,8 +49,21 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 		mdl.Repo.GetAdapter(cm.Hex()).SetUnderlyingState(total)
 		// while processing deposit event, sub from user and add to receiver
 	case core.Topic("Deposit(address,address,uint256,uint256)"):
+		// v300 Zapper is used in which the sign name is Zapper and owner is also Zapper. So using the Zapper config that we have, we will change it and substitute with the correct address.
+		// https://etherscan.io/tx/0x72fda88a3ff310c64af1f70a662c4a9d0e541d3e046f77c1262c477986576c4b#eventlog
+		// v310 zappers are not used but for eth deposit to weth , weth deposit zapper is used.
+		// // https://etherscan.io/address/0xfdBB83182078767dB0D41Aa7C5b06bA118495fC8#code
+		// https://etherscan.io/tx/0xcc5f4bd5fc802131169ecc5a0841c0b4a9f34d096df340d67fc9587d547e23d6#eventlog
+		// v300 non weth deposit https://etherscan.io/tx/0xa3efe9590243e628e53c6723b4ca7862a57d4ee0ae9dd207c1cb5fb7ec76aa9c#eventlog
+		// In this case, the sender and the owner in the transaction are the same.
+		//         v300                            v310
+		// noneth  if zapper, both same            sender=owner=real_user as no zapper
+		// eth.    if zapper, both same                  sender = deposit zapper , owner is real user
+		// In case of v300, the user is replaced, and since both are the same for Zapper, we can keep owner as user,
+		// and the owner will be Zapper in this case. This will be replaced by the actual user in all other cases. Will be real user.
 		deposit, err := mdl.contract.ParseDeposit(txLog)
 		log.CheckFatal(err)
+
 		event := &schemas.PoolLedger{
 			LogId:       txLog.Index,
 			BlockNumber: blockNum,
@@ -58,7 +71,7 @@ func (mdl *Poolv3) OnLog(txLog types.Log) {
 			Pool:        mdl.Address,
 			Event:       "AddLiquidity",
 			Executor:    deposit.Sender.Hex(),
-			User:        deposit.Sender.Hex(),
+			User:        deposit.Owner.Hex(),
 			Receiver:    deposit.Owner.Hex(),
 			SharesBI:    (*core.BigInt)(deposit.Shares),
 			Shares:      utils.GetFloat64Decimal(deposit.Shares, mdl.getDecimals()),
