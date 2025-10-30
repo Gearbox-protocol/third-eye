@@ -43,7 +43,7 @@ func (mdl *CMv3) onOpenCreditAccountV3(txLog *types.Log, onBehalfOf, account str
 		Dapp: cfAddr,
 	}
 	mdl.MulticallMgr.AddOpenEvent(accountOperation)
-	mdl.PoolBorrow(txLog, sessionId, onBehalfOf, borrowAmount)
+	// mdl.PoolBorrow(txLog, sessionId, onBehalfOf, borrowAmount)
 	// add account
 	mdl.AddCreditAccount(account, sessionId, onBehalfOf)
 
