@@ -2,12 +2,14 @@ package pyth_feed
 
 import (
 	"encoding/hex"
+	"math/big"
 
 	"github.com/Gearbox-protocol/sdk-go/artifacts/multicall"
 	"github.com/Gearbox-protocol/sdk-go/core"
 	"github.com/Gearbox-protocol/sdk-go/core/schemas"
 	"github.com/Gearbox-protocol/sdk-go/log"
 	"github.com/Gearbox-protocol/sdk-go/pkg"
+	"github.com/Gearbox-protocol/sdk-go/utils"
 	"github.com/Gearbox-protocol/third-eye/ds"
 	"github.com/Gearbox-protocol/third-eye/models/aggregated_block_feed/base_price_feed"
 	"github.com/ethereum/go-ethereum/common"
@@ -45,6 +47,15 @@ func (adapter *PythPriceFeed) ProcessResult(blockNum int64, results []multicall.
 			ts := adapter.Repo.SetAndGetBlock(blockNum).Timestamp
 			obj, err := pkg.GetPythPrice(adapter.DetailsDS.Underlyings[0], int64(ts))
 			if err != nil {
+				if adapter.Address == "0x258b53A9eAe313ca83E42C444ff2799781fC791E" {
+					price := big.NewInt(126_000_000)
+					return &schemas.PriceFeed{
+						RoundId:     0,
+						PriceBI:     (*core.BigInt)(price),
+						Price:       utils.GetFloat64Decimal(price, 8),
+						BlockNumber: blockNum,
+					}
+				}
 				log.Fatal("Pyth price feed", adapter.GetAddress(), " failed at block: ", blockNum, err)
 			}
 			return &schemas.PriceFeed{
