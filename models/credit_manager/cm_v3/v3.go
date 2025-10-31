@@ -97,8 +97,10 @@ func (mdl *CMv3) checkLogV3(txLog types.Log) {
 		debts := poolv3.GetDebt(txLog.TxHash, mdl.Address, txLog.Index)
 		// log.Info(debts)
 		for _, debt := range debts {
-			sessionId, borrower := mdl.GetSessionIdAndBorrower(debt.Account)
-			mdl.PoolBorrow(&txLog, sessionId, borrower, debt.Amount)
+			if debt.Type == pool_v3.INCREASE_DEBT {
+				sessionId, borrower := mdl.GetSessionIdAndBorrower(debt.Account)
+				mdl.PoolBorrow(&txLog, sessionId, borrower, debt.Amount)
+			}
 			// mdl.onIncreaseBorrowedAmountV3(&txLog, debt.Account,
 			// 	debt.Amount, "IncreaseDebt")
 		}

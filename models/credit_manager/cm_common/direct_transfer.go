@@ -41,6 +41,7 @@ func DirecTokenTransferString(repo ds.RepositoryI, tx *schemas.TokenTransfer) st
 	return msg
 }
 
+// nikitale account
 var gearbox_addr_so_collateral_is_not_from_user = []string{"0x7b065Fcb0760dF0CEA8CFd144e08554F3CeA73D1",
 	"0x6f378f36899cEB7C6fB7D293aAE1ca86B0Edbf6D",
 	"0xFC85C07C3e0D497d97F287a70C6b2fA5CD5fdBE0",
@@ -54,7 +55,8 @@ func (mdl *CommonCMAdapter) processDirectTransfersOnBlock(blockNum int64, sessio
 		txsList := schemas.TokenTransferList(txs)
 		sort.Sort(txsList)
 		for _, tx := range txsList {
-			if tx.Token == "0x9D65fF81a3c488d585bBfb0Bfe3c7707c7917f54" {
+			if tx.Token == "0x9D65fF81a3c488d585bBfb0Bfe3c7707c7917f54" ||
+				tx.TxHash == "0x3eb5d6c93d73517cf1b927e998900fc066dc2912f744178bcb3557ad9b7e5526" { // uni transfer on v1.
 				continue
 			}
 			if session.Account == tx.From {
@@ -71,6 +73,7 @@ func (mdl *CommonCMAdapter) processDirectTransfersOnBlock(blockNum int64, sessio
 				// add transfer as collateral for rewardClaimed too
 				// reward token is enabled to account, and will be counted as user fund
 				// https://github.com/Gearbox-protocol/integrations-v2/blob/main/contracts/adapters/convex/ConvexV1_BaseRewardPool.sol#L292-L298
+				log.Infof("in tx %s , transferred to %s", tx.TxHash, sessionID)
 				mdl.AddCollateralToSession(tx.BlockNum, sessionID, tx.Token, tx.Amount.Convert())
 			}
 			mdl.onDirectTokenTransfer(mdl.Repo, tx, session)
