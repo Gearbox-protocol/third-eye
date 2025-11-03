@@ -9,7 +9,16 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/log"
 )
 
+// retry 2 times and if error then fatal
 func GetRedStoneResult(data []byte, block int64, rpc string) []byte {
+	bytes, err := getRedStoneResult(data, block, rpc) // try 1
+	if err != nil {
+		bytes, err = getRedStoneResult(data, block, rpc) // try 2
+		log.CheckFatal(err)
+	}
+	return bytes
+}
+func getRedStoneResult(data []byte, block int64, rpc string) ([]byte, error) {
 	// Define the command and its arguments.
 	// The first argument to exec.Command is the command itself,
 	// and subsequent arguments are passed to that command.
@@ -31,14 +40,14 @@ func GetRedStoneResult(data []byte, block int64, rpc string) []byte {
 	output, err := cmd.Output()
 	if err != nil {
 		log.Info(strings.Join(cmdstr, " "))
-		log.Fatalf("Error executing command: %v", err)
+		return nil, err
 	}
 
 	// Convert output to string and get the last line
 	outputStr := string(output)
 	lines := strings.Split(strings.TrimSpace(outputStr), "\n")
 	if len(lines) == 0 {
-		return nil
+		return nil, fmt.Errorf("no output from command")
 	}
 	lastLine := ""
 	for _, line := range lines {
@@ -52,9 +61,8 @@ func GetRedStoneResult(data []byte, block int64, rpc string) []byte {
 	// Convert hex string to bytes
 	bytes, err := hex.DecodeString(spls[1])
 	if err != nil {
-		log.Errorf("Error decoding hex string: %v", err)
-		return nil
+		return nil, fmt.Errorf("Error decoding hex string: %v", err)
 	}
 
-	return bytes[len(bytes)-5*32:]
+	return bytes[len(bytes)-5*32:], nil
 }
