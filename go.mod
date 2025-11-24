@@ -5,7 +5,7 @@ go 1.23
 // toolchain go1.23.2
 
 require (
-	github.com/Gearbox-protocol/sdk-go v0.0.0-20251031093135-96e15881421b
+	github.com/Gearbox-protocol/sdk-go v0.0.0-20251124220411-11f3e9b83ccb
 	github.com/ethereum/go-ethereum v1.13.14
 	github.com/go-playground/validator/v10 v10.4.1
 	github.com/google/go-cmp v0.6.0
@@ -84,6 +84,6 @@ require (
 
 replace github.com/btcsuite/btcd => github.com/btcsuite/btcd v0.22.1
 
-replace github.com/Gearbox-protocol/sdk-go v0.0.0-20251030040525-72dbcd908597 => ../sdk-go
+replace github.com/Gearbox-protocol/sdk-go v0.0.0-20251124200255-d893678ae0e8 => ../sdk-go
 
 replace github.com/ethereum/go-ethereum v1.13.14 => github.com/OffchainLabs/go-ethereum v1.13.4-0.20240313010929-e5d8587e7227
