@@ -71,7 +71,12 @@ func (mdl *CommonCMAdapter) retry(oldaccount dc.CreditAccountCallData, blockNum 
 	redPFs := mdl.priceFeedNeededRedStone(bal)
 	pythPFs := mdl.priceFeedPyth(bal, blockNum)
 	v3Pods := mdl.Repo.GetRedStonemgr().GetPodSign(int64(ts), redPFs)
-	v3PodsCalls := redstone.GetpodToCalls(mdl.Client, core.FetchActualVersion(mdl.Address, 0, mdl.Client), common.HexToAddress(mdl.GetCreditFacadeAddr()), v3Pods, redPFs, pythPFs)
+	log.Info(mdl.Address)
+	x := core.FetchActualVersion(mdl.Address, 0, mdl.Client)
+	if x < 310 {
+		x = 300
+	}
+	v3PodsCalls := redstone.GetpodToCalls(mdl.Client, x, common.HexToAddress(mdl.GetCreditFacadeAddr()), v3Pods, redPFs, pythPFs)
 	log.Info("retrying to get credit account data", oldaccount.Addr, blockNum, "pods", len(v3Pods), "calls", len(v3PodsCalls))
 	//
 	return mdl.Repo.GetDCWrapper().Retry(blockNum, oldaccount.Addr, v3Pods, v3PodsCalls)
