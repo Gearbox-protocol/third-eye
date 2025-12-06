@@ -159,6 +159,13 @@ func ParseCallData(input string, contractAddr string) (string, *core.Json) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	if input[2:10] == "ac9d4104" { // on monad ausd to
+		return "manualSwap", &core.Json{
+			"tokenIn":  common.BytesToAddress(hexData[4 : 32+4]),
+			"tokenOut": common.BytesToAddress(hexData[32+4 : 32*2+4]),
+			"amount":   common.BytesToAddress(hexData[32*6+4 : 32*7+4]),
+		}
+	}
 	for _, parser := range abiParsers {
 		// check if the methods for parser matches the input sig
 		method, err := parser.MethodById(hexData[:4])
