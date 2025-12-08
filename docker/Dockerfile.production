@@ -1,5 +1,11 @@
-FROM gcr.io/distroless/base-debian11
+FROM golang:1.24-alpine AS builder
+WORKDIR /app
+# if you dont' specify the destination path created folder name, then only contents of the source folder are copied
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build cmd/main.go
 
-COPY 3eye /
 
-ENTRYPOINT ["/3eye"]
+FROM alpine:latest AS app
+WORKDIR /app
+COPY --from=builder /app/main .
+CMD ["/app/main"]
