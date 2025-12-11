@@ -8,7 +8,6 @@ import (
 func (repo *Repository) Flush(syncTill int64) error {
 	repo.mu.Lock()
 	defer repo.mu.Unlock()
-	// log.Fatal("")
 	// time.Sleep(time.Hour)
 	// preferred order (adapter | token) => pools => cm => credit session => blocks => allowedTokens
 
@@ -42,6 +41,7 @@ func (repo *Repository) Flush(syncTill int64) error {
 	// fix pool v2 ledger
 	repo.GetPoolWrapper().UpdatePoolv2Ledger(tx)
 	//
+	// log.Fatal("")
 	info := tx.Commit()
 	log.CheckFatal(info.Error)
 	return nil

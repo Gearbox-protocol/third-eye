@@ -15,7 +15,7 @@ import (
 
 // checks
 func (eng *DebtEngine) liquidationCheck(debt *schemas.Debt, cmAddr, borrower string, token *ds.CumIndexAndUToken) {
-	lastDebt := eng.lastDebts[debt.SessionId]
+	lastDebt := eng.lastSnapForDebtsTable[debt.SessionId]
 	var sendMsgAfterXBlocks int64 = 20
 
 	if lastDebt != nil {
@@ -99,7 +99,8 @@ func (eng *DebtEngine) addCurrentDebt(debt *schemas.Debt, decimals int8) {
 }
 
 func (eng *DebtEngine) AddDebt(debt *schemas.Debt, forceAdd bool) {
-	lastDebt := eng.lastDebts[debt.SessionId]
+	eng.lastStateOfDebt[debt.SessionId] = debt
+	lastDebt := eng.lastSnapForDebtsTable[debt.SessionId]
 	if eng.config.ThrottleDebtCal {
 		// add debt if throttle is enabled and (last debt is missing or forced add is set)
 		if lastDebt == nil || forceAdd {
@@ -120,31 +121,28 @@ func (eng *DebtEngine) AddDebt(debt *schemas.Debt, forceAdd bool) {
 }
 
 func (eng *DebtEngine) addDebt(debt *schemas.Debt) {
-	eng.addLastDebt(debt)
+	eng.lastSnapForDebtsTable[debt.SessionId] = debt
 	eng.debts = append(eng.debts, debt)
 }
 
-func (eng *DebtEngine) loadLastDebts(lastDebtSync int64) {
-	defer utils.Elapsed("Debt(loadLastDebts)")()
-	data := []*schemas.Debt{}
-	// from debts
-	// query := `SELECT debts.* FROM
-	// 		(SELECT max(block_num), session_id FROM debts GROUP BY session_id) debt_max_block
-	// 		JOIN debts ON debt_max_block.max = debts.block_num AND debt_max_block.session_id = debts.session_id`
-	// from current_debts
-	query := `SELECT * FROM current_debts WHERE block_num <= ?;`
-	err := eng.db.Raw(query, lastDebtSync).Find(&data).Error
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, debt := range data {
-		eng.addLastDebt(debt)
-	}
-}
-
-func (eng *DebtEngine) addLastDebt(debt *schemas.Debt) {
-	eng.lastDebts[debt.SessionId] = debt
-}
+// func (eng *DebtEngine) loadLastDebts(lastDebtSync int64) {
+// 	defer utils.Elapsed("Debt(loadLastDebts)")()
+// 	data := []*schemas.Debt{}
+// 	// from debts
+// 	// query := `SELECT debts.* FROM
+// 	// 		(SELECT max(block_num), session_id FROM debts GROUP BY session_id) debt_max_block
+// 	// 		JOIN debts ON debt_max_block.max = debts.block_num AND debt_max_block.session_id = debts.session_id`
+// 	// from current_debts
+// 	query := `SELECT * FROM current_debts WHERE block_num <= ?;`
+// 	err := eng.db.Raw(query, lastDebtSync).Find(&data).Error
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+// 	log.Info("count", len(data))
+// 	for _, debt := range data {
+// 		eng.addLastDebt(debt)
+// 	}
+// }
 
 func (eng *DebtEngine) flushTvl(tvlDebtSync int64, tx *gorm.DB, lastSync schemas.LastSync) {
 	tvls := []*schemas.TvlSnapshots{}

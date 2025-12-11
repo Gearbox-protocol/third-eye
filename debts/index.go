@@ -24,7 +24,8 @@ type DebtEngine struct {
 	poolLastInterestData   map[string]*schemas.PoolInterestData
 	debts                  []*schemas.Debt
 	tvlSnapshots           []*schemas.TvlSnapshots
-	lastDebts              map[string]*schemas.Debt
+	lastSnapForDebtsTable  map[string]*schemas.Debt
+	lastStateOfDebt        map[string]*schemas.Debt
 	currentDebts           []*schemas.CurrentDebt
 	liquidableBlockTracker map[string]*schemas.LiquidableAccount
 	// cm to paramters
@@ -48,7 +49,8 @@ func GetDebtEngine(db *gorm.DB, client core.ClientI, config *config.Config, repo
 		config:                 config,
 		lastCSS:                make(map[string]*schemas.CreditSessionSnapshot),
 		poolLastInterestData:   make(map[string]*schemas.PoolInterestData),
-		lastDebts:              make(map[string]*schemas.Debt),
+		lastSnapForDebtsTable:  make(map[string]*schemas.Debt),
+		lastStateOfDebt:        make(map[string]*schemas.Debt),
 		liquidableBlockTracker: make(map[string]*schemas.LiquidableAccount),
 		lastParameters:         make(map[string]*schemas.Parameters),
 		isTesting:              testing,
@@ -90,7 +92,7 @@ func (eng *DebtEngine) ProcessBackLogs() {
 	eng.loadAllowedTokenThreshold(minSynced)
 	eng.loadLastLTRamp(minSynced)
 	eng.loadPoolLastInterestData(minSynced)
-	eng.loadLastDebts(minSynced)
+	// eng.loadLastDebts(minSynced) // no need to load computate
 	eng.loadParameters(minSynced)
 	eng.loadLiquidableAccounts(minSynced)
 	//

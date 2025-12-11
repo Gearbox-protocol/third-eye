@@ -191,8 +191,18 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 		}
 		//
+		idsToCalculateDebtFor := []string{}
+		if len(eng.lastStateOfDebt) == 0 {
+			for id := range sessions {
+				idsToCalculateDebtFor = append(idsToCalculateDebtFor, id)
+			}
+		} else {
+			for sessionId := range sessionsUpdated {
+				idsToCalculateDebtFor = append(idsToCalculateDebtFor, sessionId)
+			}
+		}
 		// calculate each session debt
-		for sessionId := range sessionsUpdated {
+		for _, sessionId := range idsToCalculateDebtFor {
 			session := sessions[sessionId]
 			if (session.ClosedAt != 0 && session.ClosedAt <= blockNum) || session.Since > blockNum {
 				continue
@@ -221,7 +231,7 @@ func (eng *DebtEngine) CalculateDebt() {
 			}
 			//
 			market := state.(*schemas.PoolState).Market
-			if debt := eng.lastDebts[session.ID]; debt != nil {
+			if debt := eng.lastStateOfDebt[session.ID]; debt != nil {
 				marketToTvl.add(market, 0, 0, 0, debt.TotalValueInUSD)
 			}
 		}
