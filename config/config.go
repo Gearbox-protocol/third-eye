@@ -30,6 +30,8 @@ type Config struct {
 	log.CommonEnvs
 }
 
+// TRACE_URL using Etherlink to get the trace of a call when the RPCs are not provided by the LTV, so we cannot get the tx trace  on that.
+
 type ReduntantConfig struct {
 	// mining address was contract which minted 5000 credit accounts
 	MiningAddr string `env:"MINING_ADDR"`

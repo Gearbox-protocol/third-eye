@@ -125,6 +125,7 @@ func (mdl Poolv3) Topics() [][]common.Hash {
 }
 
 func (mdl Poolv3) GetAllAddrsForLogs() (addrs []common.Address) {
+	mdl.CMDebtHandler.CheckIsClean()
 	addrs = append(addrs, mdl.SyncAdapter.GetAllAddrsForLogs()...)
 	if mdl.getPoolKeeper() != "" {
 		addrs = append(addrs, common.HexToAddress(mdl.getPoolKeeper()))
