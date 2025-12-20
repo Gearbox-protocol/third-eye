@@ -151,6 +151,8 @@ func (f *FacadeCallNameWithMulticall) v3(client core.ClientI, events []*schemas.
 			callInd++
 		case "f42aeb00": // compareBalances // v310
 			callInd++
+		case "19043543": // setBotPermissions(address,uint192)
+			callInd++
 		case "1f1088a0": // withdrawcollateral
 			if eventInd < eventLen {
 				if events[eventInd].Action != "WithdrawCollateral(address,address,uint256,address)" {
