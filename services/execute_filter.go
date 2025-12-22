@@ -32,6 +32,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/mdeposit"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/mellowR7"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/pendleRouterv4"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/requestRedeem"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/swapRouterv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/testAdapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/uniswapv2Adapter"
@@ -121,6 +122,7 @@ var abiJSONs = []string{
 	curveuint256.Curveuint256ABI, curveAdapter.CurveAdapterABI,
 	universalAdapter.UniversalAdapterABI,
 	mdeposit.MdepositABI,
+	requestRedeem.RequestRedeemABI,
 	// v3
 	// aave, compound, balancer, maker, erc4626
 	aavev2LendingPool.Aavev2LendingPoolABI,
