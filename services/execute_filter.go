@@ -29,6 +29,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/lidov1Gateway"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/llamaethena"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/mdeposit"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/mellowR7"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/pendleRouterv4"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/swapRouterv3"
@@ -119,6 +120,7 @@ var abiJSONs = []string{
 	yearnv2Adapter.Yearnv2AdapterABI,
 	curveuint256.Curveuint256ABI, curveAdapter.CurveAdapterABI,
 	universalAdapter.UniversalAdapterABI,
+	mdeposit.MdepositABI,
 	// v3
 	// aave, compound, balancer, maker, erc4626
 	aavev2LendingPool.Aavev2LendingPoolABI,
