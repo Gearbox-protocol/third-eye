@@ -11,7 +11,7 @@ import (
 func (repo *Repository) loadPool() {
 	defer utils.Elapsed("loadPool")()
 	data := []*schemas.PoolState{}
-	err := repo.db.Find(&data).Error
+	err := repo.db.Raw("select * from pools where address in (select address from sync_adapters where type='Pool' and disabled='f')").Find(&data).Error
 	if err != nil {
 		log.Fatal(err)
 	}
