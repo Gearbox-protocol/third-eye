@@ -36,6 +36,9 @@ func (mdl *Poolv3) OnBlockChange(inputBlock int64) (call multicall.Multicall2Cal
 	if mdl.DiscoveredAt == inputBlock { //ONESNAPPOOL: only one pool stat at the discoveredAt
 		return multicall.Multicall2Call{}, nil
 	}
+	if inputBlock == 184539322 && core.GetBaseChainId(mdl.Client) == 5031 && mdl.Address == "0x6f652fbCfC2107ef9C99456311B5650cd52D6419" {
+		inputBlock = 184539321 // can't get for pool
+	}
 	return mdl.getCallAndProcessFn(inputBlock)
 }
 

@@ -164,6 +164,10 @@ func (ep InternalFetcher) check() {
 		log.Info("Endpoints that support parity trace_transaction: ", endpointsSupportTrace)
 	}
 }
+
+// {"method":"debug_traceTransaction","params":["%s", {"tracer": "callTracer"}], "id":1,"jsonrpc":"2.0"} for quicknode, like monad, etherlink and somnia
+// {"id":1,"jsonrpc":"2.0","params":["%s"],"method":"trace_transaction"} on alchemy, rpcs
+// tenderly for others
 func (ep InternalFetcher) GetTxTrace(txHash string, canLoadLogsFromRPC bool) *TenderlyTrace {
 	var trace *TenderlyTrace
 	if ep.useTenderlyTrace {
