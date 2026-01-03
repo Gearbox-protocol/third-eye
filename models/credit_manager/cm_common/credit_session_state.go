@@ -239,7 +239,9 @@ func (mdl *CommonCMAdapter) createCSSnapshot(blockNum int64, session *schemas.Cr
 	// calculation.
 	session.Balances = css.Balances
 	//
-	css.BorrowedAmountBI = core.NewBigInt(session.BorrowedAmount)
+	// session.BorrowedAmount = core.NewBigInt(data.BorrowedAmount)
+	//
+	css.BorrowedAmountBI = core.NewBigInt(data.BorrowedAmount)
 	css.BorrowedAmount = utils.GetFloat64Decimal(data.BorrowedAmount, mdl.GetUnderlyingDecimal())
 	css.СumulativeIndexAtOpen = core.NewBigInt((*core.BigInt)(data.CumulativeIndexAtOpen))
 	mdl.Repo.AddCreditSessionSnapshot(css)
