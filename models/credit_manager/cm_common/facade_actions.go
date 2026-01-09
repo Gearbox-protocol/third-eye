@@ -155,6 +155,7 @@ func toAddressHex(addr interface{}) string {
 // attach multicall execute operations to facade main actions
 func (mdl *CommonCMAdapter) executeOperations(txHash string, facadeActions []*mpi.FacadeAccountAction,
 	executeParams, nonMultiCallExecuteEvents []ds.ExecuteParams) {
+	executeParams = append(executeParams, nonMultiCallExecuteEvents...) // fix add nonmulticall execute params to execute params for processing
 	sort.Slice(executeParams, func(i, j int) bool { return executeParams[i].Index < executeParams[j].Index })
 	// TRACE-LOGIC: if neither anvil nor main network
 	tenderlyExecOperations := []*schemas.AccountOperation{}
