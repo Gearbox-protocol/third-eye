@@ -16,6 +16,7 @@ import (
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/compoundv2ERC20"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/erc4626Adapter"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/adaptersv3/savingMaker"
+	"github.com/Gearbox-protocol/sdk-go/artifacts/balanceGateway"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/balancerv3"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/claimer"
 	"github.com/Gearbox-protocol/sdk-go/artifacts/convexAdapter"
@@ -138,6 +139,7 @@ var abiJSONs = []string{
 	activeSwapYTv3.ActiveSwapYTv3ABI,
 	activeMiscv3.ActiveMiscv3ABI,
 	balancerv3.Balancerv3ABI,
+	balanceGateway.BalanceGatewayABI,
 	creditFacadev3.CreditFacadev3ABI,
 	//
 	fluidDexT1.FluidDexT1ABI,
