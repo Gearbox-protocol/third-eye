@@ -59,16 +59,16 @@ type ExecuteFilter struct {
 	creditManager common.Address
 }
 
-func (ef *ExecuteFilter) getExecuteCalls(call *trace_service.Call) []*ds.KnownCall {
+// only all paths for call, delegatecall, jump, stop for execute order are valid and then get the dapp call from it
+func (ef *ExecuteFilter) getExecuteCalls(call *trace_service.Call, indexes ...int) []*ds.KnownCall {
 	var calls []*ds.KnownCall
 	if ef.paramsIndex >= len(ef.paramsList) {
 		return calls
 	}
 	ep := ef.paramsList[ef.paramsIndex]
-	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP"}, call.CallerOp) {
+	if utils.Contains([]string{"CALL", "DELEGATECALL", "JUMP", "STOP"}, call.CallerOp) {
 		// Execute call on credit manager
-		if len(call.Input) >= 10 && (                                                            //
-		(ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x6ce4074a") || // for v1 and for v2
+		if len(call.Input) >= 10 && ((ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x6ce4074a") || // for v1 and for v2
 			(ef.creditManager == common.HexToAddress(call.To) && call.Input[:10] == "0x09c5eabe")) { // for v3
 			dappcall := dappCall(call, ep.Protocol)
 			// this check is there as there are 2 executeOrder call in
@@ -78,6 +78,7 @@ func (ef *ExecuteFilter) getExecuteCalls(call *trace_service.Call) []*ds.KnownCa
 			ef.paramsIndex += 1
 		} else {
 			for _, c := range call.Calls {
+				// append(indexes, ind)...
 				calls = append(calls, ef.getExecuteCalls(c)...)
 			}
 		}
