@@ -18,29 +18,42 @@ import (
 // multicalls and liquidate/close/openwithmulticalls are separate data points,
 // this function adds multicall to mainFacadeActions
 // if that is the correct structure of operation
-func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls []*ds.FacadeCallNameWithMulticall,
+func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls *[]*ds.FacadeCallNameWithMulticall,
 	facadeActions []*mpi.FacadeAccountAction, partialLiqAccount common.Address) (result []*mpi.FacadeAccountAction) { // facadeEvents from rpc, mainCalls from tenderly
-	if len(mainCalls) > len(facadeActions) {
+	if len(*mainCalls) > len(facadeActions) {
 		log.Warnf("Len of calls(%d) can't be more than separated close/liquidate and multicall(%d).",
-			len(mainCalls), len(facadeActions),
+			len(*mainCalls), len(facadeActions),
 		)
-		if len(facadeActions) == 1 && len(mainCalls) == 2 && partialLiqAccount != core.NULL_ADDR { // in the partial declaration in the open call, there is no instruction done, and there is another separate multi-call where all the instructions are done.
-			if len(mainCalls[0].GetMulticalls()) != 0 || mainCalls[0].Name != ds.FacadeOpenMulticallCall {
+		mainCallLen := len(*mainCalls)
+		// if
+		if (len(facadeActions) == 1 && mainCallLen == 2 && partialLiqAccount != core.NULL_ADDR) || // in the partial declaration in the open call, there is no instruction done, and there is another separate multi-call where all the instructions are done.
+			len(facadeActions) == 2 && mainCallLen == 3 && (*mainCalls)[1].Name == "FacadeBotMulticall" { // if liquidated using PartialLiquidationBotV3 such as in tx https://etherscan.io/tx/0x3df2f68621486ac4110cbcee7a94d4575ac402b6f52071cf9772877a663fd886#eventlog
+			liquidatingAccountCall := (*mainCalls)[0]
+			if len(liquidatingAccountCall.GetMulticalls()) != 0 || liquidatingAccountCall.Name != ds.FacadeOpenMulticallCall {
 				log.Fatal("first main call should be open with multicall and no multicalls inside")
 			}
-			mainCalls[0].AddMulticall(mainCalls[1].GetMulticalls())
+			liquidatingAccountCall.AddMulticall((*mainCalls)[mainCallLen-1].GetMulticalls())
 			log.Warnf(" with partial liquidation for account %s, combining open with multicall", partialLiqAccount.Hex())
-			mainCalls = mainCalls[:1] // skip the first main call which is open with partial liquidation
+
+			j := []*ds.FacadeCallNameWithMulticall{liquidatingAccountCall}
+			if len(*mainCalls) > 2 {
+				j = append(j, (*mainCalls)[1])
+			}
+			// j := append((*mainCalls)[2:], liquidatingAccountCall) // skip the first main call which is open with partial liquidation
+			*mainCalls = j
 		}
 	}
 	//
 	var ind int
-	for _, mainCall := range mainCalls[:utils.Min(len(facadeActions), len(mainCalls))] { // TOOD fix
+	// for _, mainCall := range (*mainCalls)[:utils.Min(len(facadeActions), len(mainCalls))] { // TOOD fix
+	// log.Fatal(len(*mainCalls))
+	for _, mainCall := range *mainCalls { // TOOD fix
 		if len(facadeActions) <= ind {
 			log.Error(ind, len(facadeActions), mainCall.Name, utils.ToJson(facadeActions[0].Data))
 			return
 		}
 		action := facadeActions[ind]
+		log.Info("event", action.LenofMulticalls(), action.Type, "call", mainCall.LenOfMulticalls(), mainCall.Name)
 		switch mainCall.Name {
 		case ds.FacadeOpenMulticallCall:
 			if !action.IsOpen() {
@@ -79,6 +92,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 	facadeActions []*mpi.FacadeAccountAction,
 	mainCalls []*ds.FacadeCallNameWithMulticall,
 	nonMultiCallExecuteEvents []ds.ExecuteParams) {
+	log.Info("here")
 	executeParams := []ds.ExecuteParams{} // non multicall and multicall execute orders for a tx to be compared with call trace
 	for ind, _mainAction := range facadeActions {
 		mainEvent := _mainAction.Data
@@ -86,6 +100,7 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 		mainCall := mainCalls[ind]
 		//
 		mainEventFromCall := mdl.getEventNameFromCall(version, mainCall.Name, mainEvent.SessionId)
+		log.Info(utils.ToJson(mainCall.GetMulticalls()), "event", utils.ToJson(_mainAction.GetMulticallsFromEvent()))
 
 		if mainEventFromCall != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
 			msg := fmt.Sprintf("Tenderly call(%s)is different from facade event(%s)", mainCall.Name, mainEvent.Action)

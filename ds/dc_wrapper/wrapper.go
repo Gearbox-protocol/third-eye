@@ -600,7 +600,7 @@ func (dcw *DataCompressorWrapper) GetZapperInfo(blockNum int64, poolAddrs ...com
 	case DCV310:
 		data, err := dcw.getZapperInfov3(blockNum, poolAddrs...)
 		if err != nil {
-			log.Warn(err)
+			// log.Warn(err) // of v3.1 pools have zapper info
 		}
 		return data
 		// marketConfigs := GetMarketConfigurators()
