@@ -96,8 +96,10 @@ func (repo *Repository) getValueInCurrency(blockNum int64, oracle schemas.PriceO
 			{ // one token is redstone token
 				tokenPrice := repo.GetRedStonePrice(blockNum, oracle, token)
 				currencyPrice := repo.GetRedStonePrice(blockNum, oracle, currency)
-				if tokenPrice != nil || currencyPrice != nil {
-					if tokenPrice == nil {
+				if tokenPrice != nil || currencyPrice != nil || token == "0xEcb0F0d68C19BdAaDAEbE24f6752A4Db34e2c2cb" {
+					if tokenPrice == nil && token == "0xEcb0F0d68C19BdAaDAEbE24f6752A4Db34e2c2cb" {
+						tokenPrice = big.NewInt(100_000_000)
+					} else if tokenPrice == nil {
 						tokenPrice, err = poContract.GetPrice(opts, common.HexToAddress(token))
 						if err != nil {
 							log.Fatalf("%v %s %d %s %s at block %d. %s", err, oracle, amount, token, currencyAddr, blockNum, currency)
