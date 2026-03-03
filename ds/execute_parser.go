@@ -195,9 +195,12 @@ func (f *FacadeCallNameWithMulticall) v3(client core.ClientI, events []*schemas.
 				// log.Info(callInd)
 				callInd++
 			}
-			if executeEvent > executeCall { // if execute events more than calls
-				return false
-			}
+			//  execute events less than calls, sometimes more events are processed
+			// if executeEvent > executeCall { // if execute events more than calls
+			// 	log.Warnf("More execute calls(%d) than execute event(%d), which shouldn't happen ", executeCall, executeEvent)
+			// 	return false
+			// }
+			//  execute events more than calls, http://etherscan.com/tx/0x251e3d50c737698e7412868f3e782fcf3458ff9c2a3ffebfe1fdcb2632d405f5 more events then calls, due to failed calls. in v3
 		}
 	}
 	return callInd == callLen && eventInd == eventLen
