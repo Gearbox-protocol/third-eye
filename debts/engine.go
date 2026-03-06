@@ -105,6 +105,10 @@ func (eng *DebtEngine) updateLocalState(blockNum int64, block *schemas.Block) (p
 	}
 	// C3.b: updated price
 	for _, pf := range block.GetPriceFeeds() {
+		if pf.Source != "" { // if source is 1inch oracle for redstone or source is redstone api.
+			// REF: SOURCE_A_S
+			continue
+		}
 		// L5
 		eng.priceHandler.AddTokenLastPrice(pf)
 		// TIMECOMPLEX

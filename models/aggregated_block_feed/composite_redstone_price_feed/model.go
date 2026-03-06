@@ -94,8 +94,10 @@ func GetSpotPriceFeed(blockNum int64, token string, feedAddr string, repo ds.Rep
 			BlockNumber: blockNum,
 			Feed:        feedAddr,
 			RoundId:     3, // SPOT
-			PriceBI:     (*core.BigInt)(pricespot),
-			Price:       utils.GetFloat64Decimal(pricespot, 8),
+			// REF: SOURCE_A_S
+			PriceBI: (*core.BigInt)(pricespot),
+			Price:   utils.GetFloat64Decimal(pricespot, 8),
+			Source:  "S",
 		}
 	}
 	return nil
@@ -161,10 +163,11 @@ func parsePriceForRedStone(price *big.Int, isPriceInUSD bool) *schemas.PriceFeed
 		RoundId: 2, // composite red stone
 		PriceBI: (*core.BigInt)(price),
 		Price:   utils.GetFloat64Decimal(price, decimals),
+		Source:  "C",
 	}
 }
 
 // ROUNDID
-// 1  redstone
-// 2 compsoite
-// 3 spot
+// 1  redstone, "A"
+// 2 compsoite "C"
+// 3 spot , "S"

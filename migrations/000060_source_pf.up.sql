@@ -1,0 +1,1 @@
+alter table price_feeds add source varchar(1);

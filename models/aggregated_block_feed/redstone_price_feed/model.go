@@ -67,6 +67,10 @@ func (obj *RedstonePriceFeed) GetCalls(blockNum int64) (calls []multicall.Multic
 func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.Multicall2Result, token string, force ...bool) *schemas.PriceFeed {
 	validTokens := mdl.Repo.TokensValidAtBlock(mdl.GetAddress(), blockNum)
 	isPriceInUSD := mdl.GetVersion().IsPriceInUSD()
+	// if len(force) == 0 {
+	// 	force = []bool{false}
+	// }
+
 	{
 		if len(results) != 1 {
 			log.Fatal("wrong result")
@@ -76,8 +80,20 @@ func (mdl *RedstonePriceFeed) ProcessResult(blockNum int64, results []multicall.
 			log.CheckFatal(err)
 			price := *abi.ConvertType(value[1], new(*big.Int)).(**big.Int)
 			// log.Info("onchain price found for ", mdl.Address, "at", blockNum, price) // ONCHAIN_REDSTONE_PRICE
-			return parsePriceForRedStone(price, isPriceInUSD)
-			// } else if time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(blockNum).Timestamp),0)) > time.Hour {
+			//
+			{
+				useOnChain := true
+				// force fetch if same price from onchain and the saved price is 12 hrs old.
+				// lastUpdate := mdl.Repo.GetPrevPriceFeed(mdl.GetAddress()) // if the last fetched price for feed is 1 hr old then we force
+				// if lastUpdate != nil {
+				// 	samePrice := lastUpdate.PriceBI.Convert().Cmp(price) == 0
+				// 	oldUpdate := time.Since(time.Unix(int64(mdl.Repo.SetAndGetBlock(lastUpdate.BlockNumber).Timestamp), 0)) > time.Hour*12
+				// 	useOnChain = !(oldUpdate && samePrice)
+				// }
+				if useOnChain {
+					return parsePriceForRedStone(price, isPriceInUSD)
+				}
+			}
 		} else {
 			if len(force) == 0 || !force[0] {
 				return nil
@@ -108,9 +124,11 @@ func parsePriceForRedStone(price *big.Int, isPriceInUSD bool) *schemas.PriceFeed
 	if isPriceInUSD {
 		decimals = 8 // for usd
 	}
+	// REF: SOURCE_A_S
 	return &schemas.PriceFeed{
-		RoundId: 1, // redstone
+		RoundId: 1, // redstone api
 		PriceBI: (*core.BigInt)(price),
 		Price:   utils.GetFloat64Decimal(price, decimals),
+		Source:  "A",
 	}
 }
