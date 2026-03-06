@@ -154,8 +154,10 @@ func (mdl *AQFWrapper) getRoundDataCalls(blockNum int64) (calls []multicall.Mult
 func processRoundDataWithAdapterTokens(blockNum int64, adapter ds.QueryPriceFeedI, entries []multicall.Multicall2Result, force bool) []*schemas.PriceFeed {
 
 	// } else if utils.Contains([]string{"0xCbeCfA4017965939805Da5a2150E3DB1BeDD0364", "0x814E6564e8cda436c1ab25041C10bfdb21dEC519"},
-
 	priceData := adapter.ProcessResult(blockNum, entries, "", force)
+	if adapter.GetAddress() == "0x5239Bc291c5F0F9b3999ea48f63F43d73669C209" {
+		log.Warn(priceData, blockNum)
+	}
 	if priceData == nil {
 		return nil
 	}
