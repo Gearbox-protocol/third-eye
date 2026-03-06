@@ -180,7 +180,7 @@ func getForceForAdapter(repo ds.RepositoryI, adapter ds.QueryPriceFeedI, newbloc
 
 	force := time.Duration(repo.SetAndGetBlock(newblock).Timestamp-repo.SetAndGetBlock(lastBlock).Timestamp)*time.Second > time.Hour
 	if force {
-		log.Info(feed, " last price at ", lastBlock)
+		// log.Info(feed, " last price at ", lastBlock)
 		_lastBlock.Set(feed, utils.Max(_lastBlock.Get(feed), newblock))
 	}
 	return force

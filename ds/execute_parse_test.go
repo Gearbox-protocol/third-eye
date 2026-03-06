@@ -87,6 +87,8 @@ func TestCmpLenTrivalRevertV2(t *testing.T) {
 		log.Fatal()
 	}
 }
+
+// http://etherscan.com/tx/0x251e3d50c737698e7412868f3e782fcf3458ff9c2a3ffebfe1fdcb2632d405f5
 func TestSmallMulticallwitheventsV3(t *testing.T) {
 	log.SetTestLogging(t)
 	//

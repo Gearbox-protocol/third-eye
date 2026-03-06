@@ -53,7 +53,6 @@ func (mdl *CommonCMAdapter) fixFacadeActionStructureViaTenderlyCalls(mainCalls *
 			return
 		}
 		action := facadeActions[ind]
-		log.Info("event", action.LenofMulticalls(), action.Type, "call", mainCall.LenOfMulticalls(), mainCall.Name)
 		switch mainCall.Name {
 		case ds.FacadeOpenMulticallCall:
 			if !action.IsOpen() {
@@ -92,7 +91,6 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 	facadeActions []*mpi.FacadeAccountAction,
 	mainCalls []*ds.FacadeCallNameWithMulticall,
 	nonMultiCallExecuteEvents []ds.ExecuteParams) {
-	log.Info("here")
 	executeParams := []ds.ExecuteParams{} // non multicall and multicall execute orders for a tx to be compared with call trace
 	for ind, _mainAction := range facadeActions {
 		mainEvent := _mainAction.Data
@@ -100,7 +98,6 @@ func (mdl *CommonCMAdapter) validateAndSaveFacadeActions(version core.VersionTyp
 		mainCall := mainCalls[ind]
 		//
 		mainEventFromCall := mdl.getEventNameFromCall(version, mainCall.Name, mainEvent.SessionId)
-		log.Info(utils.ToJson(mainCall.GetMulticalls()), "event", utils.ToJson(_mainAction.GetMulticallsFromEvent()))
 
 		if mainEventFromCall != mainEvent.Action { // if the mainaction name is different for events(parsed with eth rpc) and calls (received from tenderly)
 			msg := fmt.Sprintf("Tenderly call(%s)is different from facade event(%s)", mainCall.Name, mainEvent.Action)
